@@ -1,0 +1,318 @@
+{
+  "project": {
+    "name": "WhoAndWhat",
+    "description": "Smart Task Management with Social & AI Integration - Backend API",
+    "version": "1.0.0",
+    "type": "web-api",
+    "framework": "ASP.NET Core 9.0"
+  },
+  "architecture": {
+    "pattern": "Clean Architecture",
+    "principles": [
+      "Separation of Concerns",
+      "Dependency Inversion",
+      "SOLID Principles",
+      "Domain-Driven Design"
+    ],
+    "layers": {
+      "domain": {
+        "name": "WhoAndWhat.Domain",
+        "purpose": "Core business logic, entities, value objects, domain services",
+        "dependencies": []
+      },
+      "application": {
+        "name": "WhoAndWhat.Application",
+        "purpose": "Use cases, DTOs, interfaces, business rules orchestration",
+        "dependencies": ["Domain"]
+      },
+      "infrastructure": {
+        "name": "WhoAndWhat.Infrastructure", 
+        "purpose": "Database access, external services, repositories",
+        "dependencies": ["Domain", "Application"]
+      },
+      "presentation": {
+        "name": "WhoAndWhat.API",
+        "purpose": "Controllers, middleware, SignalR hubs, API configuration",
+        "dependencies": ["Domain", "Application", "Infrastructure"]
+      }
+    }
+  },
+  "technology_stack": {
+    "backend": {
+      "framework": "ASP.NET Core 9.0",
+      "language": "C# 13",
+      "runtime": ".NET 9.0"
+    },
+    "database": {
+      "primary": "PostgreSQL",
+      "orm": "Entity Framework Core",
+      "migrations": true
+    },
+    "authentication": {
+      "primary": "JWT",
+      "oauth_providers": ["Google", "Facebook", "Apple"],
+      "fallback": "Email/Password"
+    },
+    "real_time": {
+      "technology": "SignalR",
+      "use_cases": ["Task updates", "Notifications", "Collaboration"]
+    },
+    "containerization": {
+      "local": "Docker",
+      "production": "Azure Container Technologies"
+    },
+    "cloud": {
+      "provider": "Microsoft Azure",
+      "services": [
+        "Azure App Service",
+        "Azure Database for PostgreSQL",
+        "Azure Key Vault",
+        "Azure Application Insights"
+      ]
+    }
+  },
+  "domain_model": {
+    "core_entities": {
+      "User": {
+        "properties": ["Id", "Email", "Username", "PreferredLanguage", "CreatedAt", "LastLoginAt"],
+        "relationships": ["Tasks", "Contacts", "Projects", "DashboardSettings"]
+      },
+      "Task": {
+        "properties": ["Id", "Title", "Description", "DueDate", "Priority", "Category", "Status", "CreatedAt", "UpdatedAt"],
+        "categories": ["ToDo", "Idea", "Appointment", "BillReminder", "Project"],
+        "relationships": ["User", "Contacts", "Project", "Subtasks"]
+      },
+      "Contact": {
+        "properties": ["Id", "Name", "Email", "Phone", "QRCode", "InviteCode", "RelationshipType"],
+        "relationships": ["User", "Tasks", "SharedTasks"]
+      },
+      "Project": {
+        "properties": ["Id", "Name", "Description", "StartDate", "EndDate", "Status", "Progress"],
+        "relationships": ["User", "Tasks", "Contacts"]
+      },
+      "Event": {
+        "properties": ["Id", "Title", "Description", "StartDate", "EndDate", "Location", "Type"],
+        "relationships": ["User", "Tasks"]
+      }
+    },
+    "value_objects": [
+      "Priority",
+      "TaskCategory", 
+      "TaskStatus",
+      "Language",
+      "ContactRelationType"
+    ]
+  },
+  "api_design": {
+    "versioning": {
+      "strategy": "URL path versioning",
+      "format": "/api/v1/"
+    },
+    "response_format": {
+      "success": {
+        "data": "object|array",
+        "message": "string",
+        "timestamp": "ISO 8601",
+        "version": "string"
+      },
+      "error": {
+        "error": "string",
+        "message": "string", 
+        "details": "object",
+        "timestamp": "ISO 8601"
+      }
+    },
+    "endpoints": {
+      "authentication": [
+        "POST /api/v1/auth/register",
+        "POST /api/v1/auth/login",
+        "POST /api/v1/auth/refresh",
+        "POST /api/v1/auth/logout",
+        "POST /api/v1/auth/forgot-password",
+        "POST /api/v1/auth/reset-password"
+      ],
+      "tasks": [
+        "GET /api/v1/tasks",
+        "GET /api/v1/tasks/{id}",
+        "POST /api/v1/tasks",
+        "PUT /api/v1/tasks/{id}",
+        "DELETE /api/v1/tasks/{id}",
+        "POST /api/v1/tasks/{id}/convert-to-project",
+        "GET /api/v1/tasks/categories",
+        "GET /api/v1/tasks/search"
+      ],
+      "contacts": [
+        "GET /api/v1/contacts",
+        "GET /api/v1/contacts/{id}",
+        "POST /api/v1/contacts",
+        "PUT /api/v1/contacts/{id}",
+        "DELETE /api/v1/contacts/{id}",
+        "POST /api/v1/contacts/invite",
+        "POST /api/v1/contacts/qr-scan",
+        "GET /api/v1/contacts/qr-code"
+      ],
+      "projects": [
+        "GET /api/v1/projects",
+        "GET /api/v1/projects/{id}",
+        "POST /api/v1/projects",
+        "PUT /api/v1/projects/{id}",
+        "DELETE /api/v1/projects/{id}",
+        "GET /api/v1/projects/{id}/tasks"
+      ],
+      "dashboard": [
+        "GET /api/v1/dashboard/metrics",
+        "GET /api/v1/dashboard/motivation",
+        "PUT /api/v1/dashboard/settings"
+      ],
+      "ai": [
+        "POST /api/v1/ai/plan-day",
+        "GET /api/v1/ai/suggestions",
+        "POST /api/v1/ai/optimize-schedule"
+      ],
+      "calendar": [
+        "GET /api/v1/calendar/month/{year}/{month}",
+        "GET /api/v1/calendar/week/{date}",
+        "GET /api/v1/calendar/day/{date}"
+      ],
+      "events": [
+        "GET /api/v1/events",
+        "GET /api/v1/events/discover",
+        "POST /api/v1/events/{id}/subscribe"
+      ]
+    }
+  },
+  "data_transfer_objects": {
+    "naming_convention": "PascalCase with DTO suffix",
+    "categories": {
+      "requests": ["CreateTaskRequestDTO", "UpdateUserRequestDTO", "LoginRequestDTO"],
+      "responses": ["TaskResponseDTO", "UserProfileResponseDTO", "DashboardMetricsResponseDTO"],
+      "commands": ["CreateTaskCommandDTO", "UpdateTaskCommandDTO"],
+      "queries": ["GetTasksQueryDTO", "GetDashboardQueryDTO"]
+    }
+  },
+  "security": {
+    "authentication": {
+      "jwt": {
+        "access_token_expiry": "15 minutes",
+        "refresh_token_expiry": "7 days",
+        "algorithm": "HS256"
+      },
+      "oauth": {
+        "providers": ["Google", "Facebook", "Apple"],
+        "scopes": ["openid", "profile", "email"]
+      }
+    },
+    "authorization": {
+      "strategy": "Role-based and Resource-based",
+      "roles": ["User", "Administrator"]
+    },
+    "data_protection": {
+      "encryption_at_rest": true,
+      "encryption_in_transit": "TLS 1.3",
+      "pii_handling": "GDPR compliant",
+      "secrets_management": "Azure Key Vault"
+    }
+  },
+  "testing": {
+    "frameworks": {
+      "unit": "xUnit",
+      "integration": "ASP.NET Core Test Host",
+      "mocking": "Moq"
+    },
+    "coverage_requirements": {
+      "minimum": "80%",
+      "target": "90%"
+    },
+    "test_categories": [
+      "Unit Tests",
+      "Integration Tests", 
+      "End-to-End Tests",
+      "Performance Tests"
+    ]
+  },
+  "localization": {
+    "supported_languages": ["en", "es"],
+    "resource_strategy": "Resource files (.resx)",
+    "api_headers": ["Accept-Language"],
+    "fallback_language": "en"
+  },
+  "monitoring": {
+    "application_insights": true,
+    "health_checks": true,
+    "metrics": [
+      "Response time",
+      "Error rate", 
+      "Database performance",
+      "Resource utilization"
+    ],
+    "logging": {
+      "provider": "Serilog",
+      "levels": ["Debug", "Information", "Warning", "Error", "Critical"],
+      "structured_logging": true
+    }
+  },
+  "development": {
+    "environment": "Docker",
+    "hot_reload": true,
+    "database_seeding": true,
+    "swagger_ui": true
+  },
+  "deployment": {
+    "containerization": {
+      "dockerfile": "Multi-stage build",
+      "base_image": "mcr.microsoft.com/dotnet/aspnet:9.0"
+    },
+    "environments": {
+      "development": "Docker Compose",
+      "staging": "Azure Container Instances",
+      "production": "Azure App Service"
+    },
+    "ci_cd": {
+      "platform": "Azure DevOps",
+      "stages": ["Build", "Test", "Security Scan", "Deploy"]
+    }
+  },
+  "signalr": {
+    "hubs": {
+      "TaskHub": {
+        "methods": ["TaskCreated", "TaskUpdated", "TaskDeleted", "TaskShared"],
+        "groups": ["User_{userId}", "Project_{projectId}"]
+      },
+      "NotificationHub": {
+        "methods": ["ReceiveNotification", "ReceiveReminder"],
+        "groups": ["User_{userId}"]
+      }
+    }
+  },
+  "business_rules": {
+    "task_management": {
+      "max_tasks_per_user": 10000,
+      "max_project_depth": 5,
+      "task_categories": ["ToDo", "Idea", "Appointment", "BillReminder", "Project"]
+    },
+    "contact_management": {
+      "max_contacts_per_user": 1000,
+      "invite_code_expiry": "7 days",
+      "qr_code_expiry": "24 hours"
+    },
+    "ai_planning": {
+      "max_tasks_per_day_plan": 50,
+      "planning_algorithms": ["Priority-based", "Time-based", "Energy-based"]
+    }
+  },
+  "performance": {
+    "caching": {
+      "strategy": "Redis",
+      "cache_duration": {
+        "user_profile": "30 minutes",
+        "dashboard_metrics": "5 minutes",
+        "motivation_content": "1 hour"
+      }
+    },
+    "database": {
+      "connection_pooling": true,
+      "query_optimization": true,
+      "indexing_strategy": "Composite indexes for common queries"
+    }
+  }
+}
