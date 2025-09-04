@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RunSettings>
+  <!-- Data collection and test execution -->
+  <DataCollectionRunSettings>
+    <DataCollectors>
+      <DataCollector friendlyName="XPlat code coverage">
+        <Configuration>
+          <Format>cobertura,opencover</Format>
+          <Exclude>[*Test*]*,[*Tests*]*</Exclude>
+          <ExcludeByAttribute>Obsolete,GeneratedCodeAttribute,CompilerGeneratedAttribute</ExcludeByAttribute>
+          <ExcludeByFile>**/Migrations/*.cs</ExcludeByFile>
+          <SkipAutoProps>true</SkipAutoProps>
+        </Configuration>
+      </DataCollector>
+    </DataCollectors>
+  </DataCollectionRunSettings>
+  
+  <!-- Test execution settings -->
+  <TestRunParameters>
+    <Parameter name="Environment" value="Test" />
+  </TestRunParameters>
+  
+  <!-- MSTest configuration -->
+  <MSTest>
+    <Parallelize>
+      <Workers>4</Workers>
+      <Scope>method</Scope>
+    </Parallelize>
+  </MSTest>
+</RunSettings>

@@ -11,7 +11,10 @@
       "Bash(timeout:*)",
       "Bash(dotnet sln:*)",
       "Bash(docker:*)",
-      "Bash(curl:*)"
+      "Bash(curl:*)",
+      "Bash(dotnet ef migrations add:*)",
+      "Bash(dotnet ef migrations:*)",
+      "Bash(dotnet ef database update:*)"
     ],
     "deny": [],
     "ask": []

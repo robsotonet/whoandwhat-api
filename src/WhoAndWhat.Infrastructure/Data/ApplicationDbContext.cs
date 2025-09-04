@@ -7,11 +7,10 @@ namespace WhoAndWhat.Infrastructure.Data;
 
 public class ApplicationDbContext : DbContext
 {
-    private readonly IDomainEventDispatcher _dispatcher;
-
-    public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options, IDomainEventDispatcher dispatcher) : base(options)
+    public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options)
     {
-        _dispatcher = dispatcher;
+        // TODO: Domain event dispatching will be implemented here when business logic requires it
+        // The IDomainEventDispatcher infrastructure is available but not yet used by domain entities
     }
 
     public DbSet<User> Users { get; set; }

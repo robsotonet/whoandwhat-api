@@ -1,11 +1,9 @@
 using Microsoft.EntityFrameworkCore;
 using WhoAndWhat.Application;
 using WhoAndWhat.Application.Interfaces;
-using WhoAndWhat.Domain.Events;
 using WhoAndWhat.Infrastructure;
 using WhoAndWhat.Infrastructure.Data;
 using WhoAndWhat.Infrastructure.Repositories;
-using WhoAndWhat.Infrastructure.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -14,10 +12,10 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
-builder.Services.AddScoped<IDomainEventDispatcher, DomainEventDispatcher>();
+// TODO: IDomainEventDispatcher registration will be added when domain event functionality is implemented
 builder.Services.AddMediatR(cfg => {
-    cfg.RegisterServicesFromAssembly(typeof(Application.AssemblyReference).Assembly);
-    cfg.RegisterServicesFromAssembly(typeof(Infrastructure.AssemblyReference).Assembly);
+    cfg.RegisterServicesFromAssembly(typeof(WhoAndWhat.Application.AssemblyReference).Assembly);
+    cfg.RegisterServicesFromAssembly(typeof(WhoAndWhat.Infrastructure.AssemblyReference).Assembly);
 });
 
 builder.Services.AddOpenApi();
@@ -37,7 +35,9 @@ app.MapControllers();
 // Seed the database in development
 if (app.Environment.IsDevelopment())
 {
-    await DataSeeder.SeedDatabaseAsync(app);
+    using var scope = app.Services.CreateScope();
+    var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    await DataSeeder.SeedDatabaseAsync(context);
 }
 
 app.Run();
