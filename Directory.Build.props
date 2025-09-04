@@ -1,0 +1,56 @@
+<Project>
+
+  <PropertyGroup>
+    <!-- Target Framework -->
+    <TargetFramework>net9.0</TargetFramework>
+    
+    <!-- Language Features -->
+    <LangVersion>13.0</LangVersion>
+    <Nullable>enable</Nullable>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <WarningsAsErrors />
+    <WarningsNotAsErrors>NU1605</WarningsNotAsErrors>
+    
+    <!-- Implicit Usings -->
+    <ImplicitUsings>enable</ImplicitUsings>
+    
+    <!-- Assembly Information -->
+    <Product>WhoAndWhat Task Management API</Product>
+    <Company>WhoAndWhat</Company>
+    <Copyright>Copyright © WhoAndWhat 2025</Copyright>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+    <FileVersion>1.0.0.0</FileVersion>
+    <Version>1.0.0</Version>
+    
+    <!-- Build Configuration -->
+    <Deterministic>true</Deterministic>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    
+    <!-- Code Analysis -->
+    <EnableNETAnalyzers>true</EnableNETAnalyzers>
+    <AnalysisLevel>9.0</AnalysisLevel>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+  </PropertyGroup>
+
+  <!-- Package References Common to All Projects -->
+  <ItemGroup>
+    <!-- Code Analysis -->
+    <PackageReference Include="Microsoft.CodeAnalysis.Analyzers" Version="3.11.0">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
+    </PackageReference>
+    
+    <!-- Guard Clauses for Parameter Validation -->
+    <PackageReference Include="Ardalis.GuardClauses" Version="4.6.0" />
+  </ItemGroup>
+
+  <!-- Global Usings for All Projects -->
+  <ItemGroup>
+    <Using Include="System" />
+    <Using Include="System.Collections.Generic" />
+    <Using Include="System.Linq" />
+    <Using Include="System.Threading.Tasks" />
+    <Using Include="Ardalis.GuardClauses" />
+  </ItemGroup>
+
+</Project>

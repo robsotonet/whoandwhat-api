@@ -1,0 +1,78 @@
+# Build output
+**/bin/
+**/obj/
+**/out/
+
+# Visual Studio / VS Code
+.vs/
+.vscode/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# IDE specific files
+**/.idea/
+**/*.swp
+**/*.swo
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# Documentation and project files
+README.md
+LICENSE
+*.md
+docs/
+tasks/
+
+# Test files and coverage
+**/TestResults/
+**/*.trx
+**/*.coverage
+**/*.coveragexml
+
+# NuGet packages
+**/packages/
+*.nupkg
+*.snupkg
+
+# Logs
+**/logs/
+**/*.log
+
+# Temporary files
+**/tmp/
+**/temp/
+
+# Node modules (if any frontend tools)
+**/node_modules/
+**/npm-debug.log*
+
+# Development Docker files
+docker-compose*.yml
+Dockerfile.dev
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Database files
+**/*.db
+**/*.db-shm
+**/*.db-wal
+
+# JetBrains
+**/.idea/

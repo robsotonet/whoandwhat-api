@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="9.0.8" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.8" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.8">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <!-- InMemory provider removed - only needed in test projects -->
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\WhoAndWhat.Domain\WhoAndWhat.Domain.csproj" />
+    <ProjectReference Include="..\WhoAndWhat.Application\WhoAndWhat.Application.csproj" />
+    <ProjectReference Include="..\WhoAndWhat.Infrastructure\WhoAndWhat.Infrastructure.csproj" />
+  </ItemGroup>
+
+</Project>

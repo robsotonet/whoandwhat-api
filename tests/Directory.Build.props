@@ -1,0 +1,8 @@
+<Project>
+  
+  <PropertyGroup>
+    <!-- Disable XML documentation generation for test projects -->
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+  </PropertyGroup>
+  
+</Project>
