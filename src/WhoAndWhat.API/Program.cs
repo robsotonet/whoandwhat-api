@@ -3,9 +3,11 @@ using Serilog;
 using WhoAndWhat.API.Configuration;
 using WhoAndWhat.Application;
 using WhoAndWhat.Application.Interfaces;
+using WhoAndWhat.Domain.Services;
 using WhoAndWhat.Infrastructure;
 using WhoAndWhat.Infrastructure.Data;
 using WhoAndWhat.Infrastructure.Repositories;
+using WhoAndWhat.Application.Features.Auth;
 
 // Configure Serilog early for logging during bootstrap
 Log.Logger = new LoggerConfiguration()
@@ -28,6 +30,10 @@ try
         options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
     builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
+    builder.Services.AddScoped<IUserDomainService, UserDomainService>();
+    builder.Services.AddScoped<IUserRepository, UserRepository>();
+    builder.Services.AddScoped<IAccountVerificationService, AccountVerificationService>();
+    builder.Services.AddScoped<IPasswordResetService, PasswordResetService>();
 
     // MediatR for CQRS
     builder.Services.AddMediatR(cfg =>

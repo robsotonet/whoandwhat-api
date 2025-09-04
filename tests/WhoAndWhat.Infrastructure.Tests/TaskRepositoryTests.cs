@@ -32,7 +32,9 @@ public class TaskRepositoryTests
         { 
             Id = Guid.NewGuid(), 
             Username = "testuser", 
-            Email = "test@test.com" 
+            Email = "test@test.com",
+            PasswordHash = "testhash",
+            Salt = "testsalt"
         };
         _context.Users.Add(_testUser);
         _context.SaveChanges();
@@ -145,7 +147,9 @@ public class TaskRepositoryTests
         { 
             Id = Guid.NewGuid(), 
             Username = "anotheruser", 
-            Email = "another@test.com" 
+            Email = "another@test.com",
+            PasswordHash = "testhash",
+            Salt = "testsalt"
         };
         await _context.Users.AddAsync(anotherUser);
         

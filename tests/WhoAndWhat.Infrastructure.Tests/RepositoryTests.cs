@@ -30,7 +30,7 @@ public class RepositoryTests
     public async Task Should_Add_User()
     {
         // Arrange
-        var user = new User { Id = Guid.NewGuid(), Username = "test", Email = "test@test.com" };
+        var user = new User { Id = Guid.NewGuid(), Username = "test", Email = "test@test.com", PasswordHash = "hash", Salt = "salt" };
 
         // Act
         await _repository.AddAsync(user);
@@ -46,8 +46,8 @@ public class RepositoryTests
     public async Task Should_Get_All_Users()
     {
         // Arrange
-        var user1 = new User { Id = Guid.NewGuid(), Username = "test1", Email = "test1@test.com" };
-        var user2 = new User { Id = Guid.NewGuid(), Username = "test2", Email = "test2@test.com" };
+        var user1 = new User { Id = Guid.NewGuid(), Username = "test1", Email = "test1@test.com", PasswordHash = "hash", Salt = "salt" };
+        var user2 = new User { Id = Guid.NewGuid(), Username = "test2", Email = "test2@test.com", PasswordHash = "hash", Salt = "salt" };
         await _context.Users.AddRangeAsync(user1, user2);
         await _context.SaveChangesAsync();
 
@@ -63,7 +63,7 @@ public class RepositoryTests
     {
         // Arrange
         var userId = Guid.NewGuid();
-        var user = new User { Id = userId, Username = "test", Email = "test@test.com" };
+        var user = new User { Id = userId, Username = "test", Email = "test@test.com", PasswordHash = "hash", Salt = "salt" };
         await _context.Users.AddAsync(user);
         await _context.SaveChangesAsync();
 
@@ -79,7 +79,7 @@ public class RepositoryTests
     public async Task Should_Find_User()
     {
         // Arrange
-        var user = new User { Id = Guid.NewGuid(), Username = "findme", Email = "findme@test.com" };
+        var user = new User { Id = Guid.NewGuid(), Username = "findme", Email = "findme@test.com", PasswordHash = "hash", Salt = "salt" };
         await _context.Users.AddAsync(user);
         await _context.SaveChangesAsync();
 
@@ -95,7 +95,7 @@ public class RepositoryTests
     public async Task Should_Update_User()
     {
         // Arrange
-        var user = new User { Id = Guid.NewGuid(), Username = "test", Email = "test@test.com" };
+        var user = new User { Id = Guid.NewGuid(), Username = "test", Email = "test@test.com", PasswordHash = "hash", Salt = "salt" };
         await _repository.AddAsync(user);
         await _repository.SaveChangesAsync();
 
@@ -114,7 +114,7 @@ public class RepositoryTests
     public async Task Should_Remove_User()
     {
         // Arrange
-        var user = new User { Id = Guid.NewGuid(), Username = "test", Email = "test@test.com" };
+        var user = new User { Id = Guid.NewGuid(), Username = "test", Email = "test@test.com", PasswordHash = "hash", Salt = "salt" };
         await _repository.AddAsync(user);
         await _repository.SaveChangesAsync();
 

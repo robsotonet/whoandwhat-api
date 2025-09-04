@@ -31,7 +31,9 @@ public class ProjectRepositoryTests
         { 
             Id = Guid.NewGuid(), 
             Username = "testuser", 
-            Email = "test@test.com" 
+            Email = "test@test.com",
+            PasswordHash = "testhash",
+            Salt = "testsalt"
         };
         _context.Users.Add(_testUser);
         _context.SaveChanges();
