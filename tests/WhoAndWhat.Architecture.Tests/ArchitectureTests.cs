@@ -14,7 +14,7 @@ public class ArchitectureTests
     public void Domain_Should_Not_HaveDependencyOnOtherProjects()
     {
         // Arrange
-        var assembly = typeof(Domain.AssemblyReference).Assembly;
+        var assembly = typeof(WhoAndWhat.Domain.AssemblyReference).Assembly;
 
         // Act
         var testResult = Types

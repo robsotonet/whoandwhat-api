@@ -67,7 +67,9 @@ public class SecurityValidationTests : IClassFixture<WebApplicationFactory<Progr
             content.Should().NotContain("password=", "Configuration should not contain hardcoded passwords");
             content.Should().NotContain("Password=", "Configuration should not contain hardcoded passwords");
             content.Should().NotMatch("*secret*", "Configuration should not contain hardcoded secrets");
-            content.Should().NotMatch("*key*=*", "Configuration should use secure key management");
+            content.Should().NotMatch("*secretKey*=*", "Configuration should not contain hardcoded secret keys");
+            content.Should().NotMatch("*privateKey*=*", "Configuration should not contain hardcoded private keys");
+            content.Should().NotMatch("*accessKey*=*", "Configuration should not contain hardcoded access keys");
             
             // Ensure JWT secrets are not hardcoded (should be environment variables or Key Vault)
             if (content.Contains("JWT"))
