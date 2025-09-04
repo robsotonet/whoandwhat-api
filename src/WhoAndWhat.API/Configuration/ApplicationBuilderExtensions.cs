@@ -51,9 +51,9 @@ public static class ApplicationBuilderExtensions
         // CORS
         app.UseCors(env.IsDevelopment() ? "DevelopmentPolicy" : "DefaultPolicy");
 
-        // Authentication & Authorization (prepared for future implementation)
-        // app.UseAuthentication();
-        // app.UseAuthorization();
+        // Authentication & Authorization
+        app.UseAuthentication();
+        app.UseAuthorization();
 
         return app;
     }

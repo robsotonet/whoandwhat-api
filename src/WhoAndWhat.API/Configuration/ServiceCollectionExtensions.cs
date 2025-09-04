@@ -1,9 +1,16 @@
 using Asp.Versioning;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
+using Microsoft.IdentityModel.Tokens;
 using Serilog;
 using Swashbuckle.AspNetCore.SwaggerGen;
 using System.Reflection;
+using System.Security.Claims;
+using System.Text;
+using WhoAndWhat.Application.Interfaces;
+using WhoAndWhat.Infrastructure.Configuration;
 using WhoAndWhat.Infrastructure.Data;
+using WhoAndWhat.Infrastructure.Services;
 
 namespace WhoAndWhat.API.Configuration;
 
@@ -158,6 +165,91 @@ public static class ServiceCollectionExtensions
                 options.ConnectionString = connectionString;
             });
         }
+
+        return services;
+    }
+
+    /// <summary>
+    /// Configure JWT authentication and authorization
+    /// </summary>
+    public static IServiceCollection AddJwtAuthenticationConfiguration(this IServiceCollection services, IConfiguration configuration)
+    {
+        // Configure JWT settings
+        var jwtSettings = new JwtSettings();
+        configuration.GetSection(JwtSettings.SectionName).Bind(jwtSettings);
+        
+        // Validate JWT settings
+        if (string.IsNullOrEmpty(jwtSettings.SecretKey))
+            throw new InvalidOperationException("JWT SecretKey is not configured");
+        if (string.IsNullOrEmpty(jwtSettings.Issuer))
+            throw new InvalidOperationException("JWT Issuer is not configured");
+        if (string.IsNullOrEmpty(jwtSettings.Audience))
+            throw new InvalidOperationException("JWT Audience is not configured");
+
+        services.Configure<JwtSettings>(configuration.GetSection(JwtSettings.SectionName));
+
+        // Register JWT service
+        services.AddScoped<IJwtTokenService, JwtTokenService>();
+
+        // Configure JWT authentication
+        services.AddAuthentication(options =>
+        {
+            options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+            options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+            options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
+        })
+        .AddJwtBearer(options =>
+        {
+            options.SaveToken = true;
+            options.RequireHttpsMetadata = false; // Set to true in production
+            options.TokenValidationParameters = new TokenValidationParameters
+            {
+                ValidateIssuerSigningKey = jwtSettings.ValidateIssuerSigningKey,
+                IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings.SecretKey)),
+                ValidateIssuer = jwtSettings.ValidateIssuer,
+                ValidIssuer = jwtSettings.Issuer,
+                ValidateAudience = jwtSettings.ValidateAudience,
+                ValidAudience = jwtSettings.Audience,
+                ValidateLifetime = jwtSettings.ValidateLifetime,
+                RequireExpirationTime = jwtSettings.RequireExpirationTime,
+                ClockSkew = TimeSpan.FromMinutes(jwtSettings.ClockSkewMinutes)
+            };
+
+            // Handle JWT events
+            options.Events = new JwtBearerEvents
+            {
+                OnAuthenticationFailed = context =>
+                {
+                    var logger = context.HttpContext.RequestServices.GetRequiredService<ILogger<JwtBearerEvents>>();
+                    logger.LogError(context.Exception, "JWT authentication failed");
+                    return Task.CompletedTask;
+                },
+                OnTokenValidated = context =>
+                {
+                    var logger = context.HttpContext.RequestServices.GetRequiredService<ILogger<JwtBearerEvents>>();
+                    logger.LogDebug("JWT token validated for user: {UserId}", 
+                        context.Principal?.FindFirst(ClaimTypes.NameIdentifier)?.Value);
+                    return Task.CompletedTask;
+                },
+                OnChallenge = context =>
+                {
+                    var logger = context.HttpContext.RequestServices.GetRequiredService<ILogger<JwtBearerEvents>>();
+                    logger.LogWarning("JWT authentication challenge: {Error} - {Description}", 
+                        context.Error, context.ErrorDescription);
+                    return Task.CompletedTask;
+                }
+            };
+        });
+
+        // Add authorization
+        services.AddAuthorization(options =>
+        {
+            options.AddPolicy("RequireVerifiedEmail", policy =>
+                policy.RequireClaim("email_verified", "true"));
+            
+            options.AddPolicy("RequireAuthentication", policy =>
+                policy.RequireAuthenticatedUser());
+        });
 
         return services;
     }

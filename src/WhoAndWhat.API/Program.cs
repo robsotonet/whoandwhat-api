@@ -43,6 +43,9 @@ try
     builder.Services.AddCorsConfiguration();
     builder.Services.AddResponseCompressionConfiguration();
     builder.Services.AddApplicationInsightsConfiguration(builder.Configuration);
+    
+    // JWT Authentication
+    builder.Services.AddJwtAuthenticationConfiguration(builder.Configuration);
 
     builder.Services.AddControllers(options =>
     {

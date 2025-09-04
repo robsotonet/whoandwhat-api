@@ -11,15 +11,7 @@ public static class DataSeeder
     {
         if (!await context.Users.AnyAsync())
         {
-            var user = new User
-            {
-                Id = Guid.NewGuid(),
-                Username = "devuser",
-                Email = "dev@example.com",
-                PreferredLanguage = Language.en,
-                CreatedAt = DateTime.UtcNow,
-                LastLoginAt = DateTime.UtcNow
-            };
+            var user = new User("dev@example.com", "devuser", Language.en);
             await context.Users.AddAsync(user);
             await context.SaveChangesAsync();
         }
