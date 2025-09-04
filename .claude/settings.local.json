@@ -9,7 +9,9 @@
       "Bash(dotnet build:*)",
       "Bash(dotnet test:*)",
       "Bash(timeout:*)",
-      "Bash(dotnet sln:*)"
+      "Bash(dotnet sln:*)",
+      "Bash(docker:*)",
+      "Bash(curl:*)"
     ],
     "deny": [],
     "ask": []
