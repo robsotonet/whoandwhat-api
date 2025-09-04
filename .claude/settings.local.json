@@ -14,7 +14,10 @@
       "Bash(curl:*)",
       "Bash(dotnet ef migrations add:*)",
       "Bash(dotnet ef migrations:*)",
-      "Bash(dotnet ef database update:*)"
+      "Bash(dotnet ef database update:*)",
+      "Bash(dotnet list:*)",
+      "Bash(dotnet add src/WhoAndWhat.Infrastructure package Npgsql.EntityFrameworkCore.PostgreSQL --version 9.0.8)",
+      "Bash(dotnet add:*)"
     ],
     "deny": [],
     "ask": []
