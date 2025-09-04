@@ -19,7 +19,8 @@
       "Bash(dotnet add src/WhoAndWhat.Infrastructure package Npgsql.EntityFrameworkCore.PostgreSQL --version 9.0.8)",
       "Bash(dotnet add:*)",
       "Bash(dotnet run:*)",
-      "Bash(Start-Sleep 3)"
+      "Bash(Start-Sleep 3)",
+      "Bash(dotnet restore:*)"
     ],
     "deny": [],
     "ask": []
