@@ -7,113 +7,135 @@ namespace WhoAndWhat.Domain.Tests;
 public class UserEntityTests
 {
     [Fact]
-    public void User_Should_Initialize_With_Default_Values()
+    public void User_Should_Initialize_With_Valid_Constructor()
     {
-        var user = new User();
+        var email = "test@example.com";
+        var username = "testuser";
+        var language = Language.en;
         
-        user.Id.Should().Be(Guid.Empty);
-        user.Email.Should().BeNull();
-        user.Username.Should().BeNull();
-        user.PreferredLanguage.Should().Be(Language.en); // Default enum value
-        user.CreatedAt.Should().Be(DateTime.MinValue);
-        user.LastLoginAt.Should().Be(DateTime.MinValue);
+        var user = new User(email, username, language);
+        
+        user.Id.Should().NotBe(Guid.Empty);
+        user.Email.Should().Be(email);
+        user.Username.Should().Be(username);
+        user.PreferredLanguage.Should().Be(language);
+        user.IsActive.Should().BeTrue();
+        user.IsEmailVerified.Should().BeFalse();
+        user.IsLocked.Should().BeFalse();
+        user.FailedLoginAttempts.Should().Be(0);
         user.Tasks.Should().NotBeNull().And.BeEmpty();
         user.Contacts.Should().NotBeNull().And.BeEmpty();
         user.Projects.Should().NotBeNull().And.BeEmpty();
     }
 
     [Fact]
-    public void User_Should_Allow_Setting_All_Properties()
+    public void User_Should_Set_Password_With_Hashing()
     {
-        var userId = Guid.NewGuid();
-        var email = "test@example.com";
-        var username = "testuser";
-        var preferredLanguage = Language.es;
-        var createdAt = DateTime.UtcNow;
-        var lastLoginAt = DateTime.UtcNow.AddHours(-1);
+        var user = new User("test@example.com", "testuser", Language.en);
+        var password = "TestPassword123!";
 
-        var user = new User
+        user.SetPassword(password);
+
+        user.PasswordHash.Should().NotBeNullOrEmpty();
+        user.PasswordHash.Should().NotBe(password);
+        user.VerifyPassword(password).Should().BeTrue();
+        user.VerifyPassword("wrongpassword").Should().BeFalse();
+    }
+
+    [Fact]
+    public void User_Should_Handle_Failed_Login_Attempts()
+    {
+        var user = new User("test@example.com", "testuser", Language.en);
+
+        // Simulate 4 failed attempts (should not lock)
+        for (int i = 0; i < 4; i++)
         {
-            Id = userId,
-            Email = email,
-            Username = username,
-            PreferredLanguage = preferredLanguage,
-            CreatedAt = createdAt,
-            LastLoginAt = lastLoginAt
-        };
+            user.RecordLoginAttempt(false);
+        }
 
-        user.Id.Should().Be(userId);
-        user.Email.Should().Be(email);
-        user.Username.Should().Be(username);
-        user.PreferredLanguage.Should().Be(preferredLanguage);
-        user.CreatedAt.Should().Be(createdAt);
-        user.LastLoginAt.Should().Be(lastLoginAt);
+        user.FailedLoginAttempts.Should().Be(4);
+        user.IsLocked.Should().BeFalse();
+
+        // 5th attempt should lock the account
+        user.RecordLoginAttempt(false);
+
+        user.FailedLoginAttempts.Should().Be(5);
+        user.IsLocked.Should().BeTrue();
+        user.LockedUntil.Should().BeAfter(DateTime.UtcNow);
     }
 
     [Fact]
-    public void User_Should_Allow_Adding_Tasks()
+    public void User_Should_Reset_Failed_Attempts_On_Successful_Login()
     {
-        var user = new User();
-        var task1 = new WhoAndWhat.Domain.Entities.Task { Title = "Task 1" };
-        var task2 = new WhoAndWhat.Domain.Entities.Task { Title = "Task 2" };
+        var user = new User("test@example.com", "testuser", Language.en);
 
-        user.Tasks.Add(task1);
-        user.Tasks.Add(task2);
+        // Simulate failed attempts
+        user.RecordLoginAttempt(false);
+        user.RecordLoginAttempt(false);
+        user.FailedLoginAttempts.Should().Be(2);
 
-        user.Tasks.Should().HaveCount(2);
-        user.Tasks.Should().Contain(task1);
-        user.Tasks.Should().Contain(task2);
+        // Successful login should reset counter
+        user.RecordLoginAttempt(true);
+
+        user.FailedLoginAttempts.Should().Be(0);
+        user.LastLoginAt.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(5));
     }
 
     [Fact]
-    public void User_Should_Allow_Adding_Contacts()
+    public void User_Should_Verify_Email()
     {
-        var user = new User();
-        var contact1 = new Contact { Name = "Contact 1" };
-        var contact2 = new Contact { Name = "Contact 2" };
-
-        user.Contacts.Add(contact1);
-        user.Contacts.Add(contact2);
-
-        user.Contacts.Should().HaveCount(2);
-        user.Contacts.Should().Contain(contact1);
-        user.Contacts.Should().Contain(contact2);
+        var user = new User("test@example.com", "testuser", Language.en);
+        
+        user.IsEmailVerified.Should().BeFalse();
+        
+        user.VerifyEmail();
+        
+        user.IsEmailVerified.Should().BeTrue();
     }
 
     [Fact]
-    public void User_Should_Allow_Adding_Projects()
+    public void User_Should_Update_Preferred_Language()
     {
-        var user = new User();
-        var project1 = new Project { Name = "Project 1" };
-        var project2 = new Project { Name = "Project 2" };
-
-        user.Projects.Add(project1);
-        user.Projects.Add(project2);
-
-        user.Projects.Should().HaveCount(2);
-        user.Projects.Should().Contain(project1);
-        user.Projects.Should().Contain(project2);
-    }
-
-    [Fact]
-    public void User_Should_Support_English_Language()
-    {
-        var user = new User
-        {
-            PreferredLanguage = Language.en
-        };
-
+        var user = new User("test@example.com", "testuser", Language.en);
+        
         user.PreferredLanguage.Should().Be(Language.en);
+        
+        user.UpdatePreferredLanguage(Language.es);
+        
+        user.PreferredLanguage.Should().Be(Language.es);
     }
 
     [Fact]
-    public void User_Should_Support_Spanish_Language()
+    public void User_Should_Lock_And_Unlock_Account()
     {
-        var user = new User
-        {
-            PreferredLanguage = Language.es
-        };
+        var user = new User("test@example.com", "testuser", Language.en);
+        
+        user.IsLocked.Should().BeFalse();
+        
+        user.LockAccount();
+        
+        user.IsLocked.Should().BeTrue();
+        user.LockedUntil.Should().BeAfter(DateTime.UtcNow);
+        
+        user.UnlockAccount();
+        
+        user.IsLocked.Should().BeFalse();
+        user.LockedUntil.Should().BeNull();
+        user.FailedLoginAttempts.Should().Be(0);
+    }
 
-        user.PreferredLanguage.Should().Be(Language.es);
+    [Theory]
+    [InlineData("short")] // Too short
+    [InlineData("nouppercase123")] // No uppercase
+    [InlineData("NOLOWERCASE123")] // No lowercase  
+    [InlineData("NoNumbers")] // No numbers
+    public void User_Should_Reject_Invalid_Passwords(string invalidPassword)
+    {
+        var user = new User("test@example.com", "testuser", Language.en);
+
+        var action = () => user.SetPassword(invalidPassword);
+
+        action.Should().Throw<ArgumentException>()
+            .WithMessage("Password does not meet requirements*");
     }
 }

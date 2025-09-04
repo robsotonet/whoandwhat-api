@@ -5,6 +5,7 @@ using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using WhoAndWhat.Application.Interfaces;
 using WhoAndWhat.Domain.Entities;
+using WhoAndWhat.Domain.ValueObjects;
 using WhoAndWhat.Infrastructure.Data;
 using WhoAndWhat.Infrastructure.Repositories;
 using Xunit;
@@ -27,12 +28,7 @@ public class ContactRepositoryTests
         _repository = new Repository<Contact>(_context);
         
         // Create test user for foreign key relationships
-        _testUser = new User 
-        { 
-            Id = Guid.NewGuid(), 
-            Username = "testuser", 
-            Email = "test@test.com" 
-        };
+        _testUser = new User("test@test.com", "testuser", Language.en);
         _context.Users.Add(_testUser);
         _context.SaveChanges();
     }

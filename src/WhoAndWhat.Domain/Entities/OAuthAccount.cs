@@ -23,8 +23,8 @@ public class OAuthAccount : BaseEntity
     public OAuthAccount(Guid userId, string provider, string externalId, string? email = null, string? name = null)
     {
         UserId = userId;
-        Provider = provider ?? throw new ArgumentNullException(nameof(provider));
-        ExternalId = externalId ?? throw new ArgumentNullException(nameof(externalId));
+        Provider = string.IsNullOrEmpty(provider) ? throw new ArgumentNullException(nameof(provider)) : provider;
+        ExternalId = string.IsNullOrEmpty(externalId) ? throw new ArgumentNullException(nameof(externalId)) : externalId;
         Email = email;
         Name = name;
         IsActive = true;

@@ -103,10 +103,14 @@ public class JwtTokenService : IJwtTokenService
             .FirstOrDefaultAsync(rt => rt.Token == refreshToken);
 
         if (storedToken == null)
+        {
             return Result<TokenResult>.Failure("Invalid refresh token");
+        }
 
         if (!storedToken.IsActive)
+        {
             return Result<TokenResult>.Failure("Refresh token is not active");
+        }
 
         // Revoke the old refresh token
         storedToken.Revoke(GetClientIpAddress());

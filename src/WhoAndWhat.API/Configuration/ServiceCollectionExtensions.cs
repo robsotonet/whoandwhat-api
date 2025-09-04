@@ -180,11 +180,17 @@ public static class ServiceCollectionExtensions
         
         // Validate JWT settings
         if (string.IsNullOrEmpty(jwtSettings.SecretKey))
+        {
             throw new InvalidOperationException("JWT SecretKey is not configured");
+        }
         if (string.IsNullOrEmpty(jwtSettings.Issuer))
+        {
             throw new InvalidOperationException("JWT Issuer is not configured");
+        }
         if (string.IsNullOrEmpty(jwtSettings.Audience))
+        {
             throw new InvalidOperationException("JWT Audience is not configured");
+        }
 
         services.Configure<JwtSettings>(configuration.GetSection(JwtSettings.SectionName));
 

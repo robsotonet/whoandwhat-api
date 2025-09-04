@@ -23,9 +23,9 @@ public class RefreshToken : BaseEntity
     public RefreshToken(Guid userId, string token, DateTime expiresAt, string createdByIp)
     {
         UserId = userId;
-        Token = token ?? throw new ArgumentNullException(nameof(token));
+        Token = string.IsNullOrEmpty(token) ? throw new ArgumentNullException(nameof(token)) : token;
         ExpiresAt = expiresAt;
-        CreatedByIp = createdByIp ?? throw new ArgumentNullException(nameof(createdByIp));
+        CreatedByIp = string.IsNullOrEmpty(createdByIp) ? throw new ArgumentNullException(nameof(createdByIp)) : createdByIp;
         IsRevoked = false;
     }
 
