@@ -141,36 +141,14 @@ public static class ApplicationBuilderExtensions
 
     /// <summary>
     /// Configure static files for Swagger custom CSS
+    /// Uses pre-existing static CSS files from wwwroot directory
     /// </summary>
     public static IApplicationBuilder UseStaticFilesConfiguration(this IApplicationBuilder app, IWebHostEnvironment env)
     {
         if (env.IsDevelopment() || env.IsStaging())
         {
-            // Create custom CSS content for Swagger UI
-            var customCssPath = Path.Combine(env.WebRootPath ?? "wwwroot", "swagger-ui");
-            Directory.CreateDirectory(customCssPath);
-
-            var cssFilePath = Path.Combine(customCssPath, "custom.css");
-            if (!File.Exists(cssFilePath))
-            {
-                var customCss = @"
-.swagger-ui .topbar {
-    background-color: #2c5282;
-}
-.swagger-ui .topbar .download-url-wrapper {
-    display: none;
-}
-.swagger-ui .info .title {
-    color: #2d3748;
-}
-.swagger-ui .scheme-container {
-    background: #f7fafc;
-    border-radius: 4px;
-    padding: 10px;
-}";
-                File.WriteAllText(cssFilePath, customCss);
-            }
-
+            // Serve static files from wwwroot directory
+            // Custom CSS for Swagger UI should be placed in wwwroot/swagger-ui/custom.css
             app.UseStaticFiles();
         }
 
