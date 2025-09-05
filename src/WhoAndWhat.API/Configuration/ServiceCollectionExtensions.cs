@@ -11,6 +11,11 @@ using WhoAndWhat.Application.Interfaces;
 using WhoAndWhat.Infrastructure.Configuration;
 using WhoAndWhat.Infrastructure.Data;
 using WhoAndWhat.Infrastructure.Services;
+using WhoAndWhat.Infrastructure.Repositories;
+using AspNetCoreRateLimit;
+using Azure.Extensions.AspNetCore.Configuration.Secrets;
+using Azure.Identity;
+using Azure.Security.KeyVault.Secrets;
 
 namespace WhoAndWhat.API.Configuration;
 
@@ -112,27 +117,118 @@ public static class ServiceCollectionExtensions
     }
 
     /// <summary>
-    /// Configure CORS policies
+    /// Configure CORS policies with comprehensive support for web and mobile clients
     /// </summary>
     public static IServiceCollection AddCorsConfiguration(this IServiceCollection services)
     {
         services.AddCors(options =>
         {
+            // Default policy for production web clients
             options.AddPolicy("DefaultPolicy", policy =>
             {
                 policy.AllowAnyOrigin()
                       .AllowAnyMethod()
                       .AllowAnyHeader()
-                      .WithExposedHeaders("X-Pagination", "X-API-Version");
+                      .WithExposedHeaders("X-Pagination", "X-API-Version", "X-Rate-Limit-Remaining", "X-Rate-Limit-Reset");
             });
 
+            // Development policy for local web development
             options.AddPolicy("DevelopmentPolicy", policy =>
             {
                 policy.WithOrigins("http://localhost:3000", "http://localhost:8080", "https://localhost:3000")
                       .AllowAnyMethod()
                       .AllowAnyHeader()
                       .AllowCredentials()
-                      .WithExposedHeaders("X-Pagination", "X-API-Version");
+                      .WithExposedHeaders("X-Pagination", "X-API-Version", "X-Rate-Limit-Remaining", "X-Rate-Limit-Reset");
+            });
+
+            // Mobile client policy with support for custom URI schemes and native app domains
+            options.AddPolicy("MobilePolicy", policy =>
+            {
+                policy.WithOrigins(
+                          // iOS app custom schemes
+                          "whoandwhat://oauth/callback",
+                          "whoandwhat-dev://oauth/callback",
+                          
+                          // Android app custom schemes
+                          "com.whoandwhat.app://oauth/callback",
+                          "com.whoandwhat.app.dev://oauth/callback",
+                          
+                          // Capacitor/Ionic local development
+                          "http://localhost",
+                          "http://localhost:3000",
+                          "http://localhost:8080",
+                          "http://localhost:8100",
+                          "http://localhost:4200",
+                          
+                          // Mobile app domains (production)
+                          "https://app.whoandwhat.com",
+                          "https://mobile.whoandwhat.com",
+                          
+                          // Development app domains
+                          "https://app-dev.whoandwhat.com",
+                          "https://app-staging.whoandwhat.com")
+                      .AllowAnyMethod()
+                      .AllowAnyHeader()
+                      .AllowCredentials()
+                      .WithExposedHeaders(
+                          "X-Pagination", 
+                          "X-API-Version", 
+                          "X-Rate-Limit-Remaining", 
+                          "X-Rate-Limit-Reset",
+                          "X-Device-Type",
+                          "X-App-Version")
+                      .SetPreflightMaxAge(TimeSpan.FromHours(24)); // Cache preflight requests for 24 hours
+            });
+
+            // Strict policy for production with known origins only
+            options.AddPolicy("ProductionPolicy", policy =>
+            {
+                policy.WithOrigins(
+                          "https://whoandwhat.com",
+                          "https://www.whoandwhat.com",
+                          "https://app.whoandwhat.com",
+                          "https://mobile.whoandwhat.com")
+                      .WithMethods("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH")
+                      .WithHeaders(
+                          "Authorization",
+                          "Content-Type",
+                          "X-Requested-With",
+                          "X-API-Version",
+                          "X-Device-Type",
+                          "X-App-Version",
+                          "X-Client-Id")
+                      .AllowCredentials()
+                      .WithExposedHeaders(
+                          "X-Pagination", 
+                          "X-API-Version", 
+                          "X-Rate-Limit-Remaining", 
+                          "X-Rate-Limit-Reset")
+                      .SetPreflightMaxAge(TimeSpan.FromHours(1));
+            });
+
+            // OAuth callback policy specifically for OAuth providers
+            options.AddPolicy("OAuthPolicy", policy =>
+            {
+                policy.WithOrigins(
+                          // OAuth provider callbacks
+                          "https://accounts.google.com",
+                          "https://www.facebook.com",
+                          "https://login.microsoftonline.com",
+                          "https://appleid.apple.com",
+                          
+                          // Local development
+                          "http://localhost:5000",
+                          "https://localhost:7071",
+                          
+                          // Production domains
+                          "https://api.whoandwhat.com",
+                          "https://api-dev.whoandwhat.com")
+                      .AllowAnyMethod()
+                      .AllowAnyHeader()
+                      .AllowCredentials()
+                      .WithExposedHeaders("X-API-Version")
+                      .SetPreflightMaxAge(TimeSpan.FromMinutes(30));
             });
         });
 
@@ -257,6 +353,148 @@ public static class ServiceCollectionExtensions
                 policy.RequireAuthenticatedUser());
         });
 
+        return services;
+    }
+
+    /// <summary>
+    /// Configure OAuth authentication providers (Google, Facebook, Apple, Microsoft)
+    /// </summary>
+    public static IServiceCollection AddOAuthConfiguration(this IServiceCollection services, IConfiguration configuration)
+    {
+        // Configure OAuth settings
+        var oauthSettings = new OAuthSettings();
+        configuration.GetSection(OAuthSettings.SectionName).Bind(oauthSettings);
+        
+        services.Configure<OAuthSettings>(configuration.GetSection(OAuthSettings.SectionName));
+
+        // Register OAuth services and repositories
+        services.AddScoped<IOAuthService, OAuthService>();
+        services.AddScoped<IOAuthAccountRepository, OAuthAccountRepository>();
+
+        var authenticationBuilder = services.AddAuthentication();
+
+        // Configure Google OAuth
+        if (!string.IsNullOrEmpty(oauthSettings.Google.ClientId) && !string.IsNullOrEmpty(oauthSettings.Google.ClientSecret))
+        {
+            authenticationBuilder.AddGoogle(options =>
+            {
+                options.ClientId = oauthSettings.Google.ClientId;
+                options.ClientSecret = oauthSettings.Google.ClientSecret;
+                options.Scope.Add("email");
+                options.Scope.Add("profile");
+                options.CallbackPath = oauthSettings.CallbackUrl.Google;
+                options.SaveTokens = true;
+
+                options.Events.OnCreatingTicket = context =>
+                {
+                    var logger = context.HttpContext.RequestServices.GetRequiredService<ILogger<string>>();
+                    logger.LogDebug("Google OAuth ticket created for user: {Email}", 
+                        context.Principal?.FindFirst(ClaimTypes.Email)?.Value);
+                    return System.Threading.Tasks.Task.CompletedTask;
+                };
+            });
+        }
+
+        // Configure Facebook OAuth
+        if (!string.IsNullOrEmpty(oauthSettings.Facebook.AppId) && !string.IsNullOrEmpty(oauthSettings.Facebook.AppSecret))
+        {
+            authenticationBuilder.AddFacebook(options =>
+            {
+                options.AppId = oauthSettings.Facebook.AppId;
+                options.AppSecret = oauthSettings.Facebook.AppSecret;
+                options.Scope.Add("email");
+                options.Scope.Add("public_profile");
+                options.CallbackPath = oauthSettings.CallbackUrl.Facebook;
+                options.SaveTokens = true;
+
+                options.Events.OnCreatingTicket = context =>
+                {
+                    var logger = context.HttpContext.RequestServices.GetRequiredService<ILogger<string>>();
+                    logger.LogDebug("Facebook OAuth ticket created for user: {Email}", 
+                        context.Principal?.FindFirst(ClaimTypes.Email)?.Value);
+                    return System.Threading.Tasks.Task.CompletedTask;
+                };
+            });
+        }
+
+        // Configure Microsoft OAuth
+        authenticationBuilder.AddMicrosoftAccount(options =>
+        {
+            options.ClientId = "microsoft-client-id-placeholder";
+            options.ClientSecret = "microsoft-client-secret-placeholder";
+            options.CallbackPath = "/api/v1/oauth/microsoft/callback";
+            options.SaveTokens = true;
+        });
+
+        return services;
+    }
+
+    /// <summary>
+    /// Configure rate limiting and DDoS protection
+    /// </summary>
+    public static IServiceCollection AddRateLimitingConfiguration(this IServiceCollection services, IConfiguration configuration)
+    {
+        // Add memory cache for rate limiting
+        services.AddMemoryCache();
+
+        // Configure IP rate limiting
+        services.Configure<IpRateLimitOptions>(configuration.GetSection("IpRateLimiting"));
+        
+        // Configure client rate limiting
+        services.Configure<ClientRateLimitOptions>(configuration.GetSection("ClientRateLimiting"));
+
+        // Add rate limiting stores
+        services.AddInMemoryRateLimiting();
+
+        // Register rate limiting services
+        services.AddSingleton<IIpPolicyStore, MemoryCacheIpPolicyStore>();
+        services.AddSingleton<IRateLimitCounterStore, MemoryCacheRateLimitCounterStore>();
+        services.AddSingleton<IClientPolicyStore, MemoryCacheClientPolicyStore>();
+        services.AddSingleton<IRateLimitConfiguration, RateLimitConfiguration>();
+        services.AddSingleton<IProcessingStrategy, AsyncKeyLockProcessingStrategy>();
+
+        return services;
+    }
+
+    /// <summary>
+    /// Configure Azure Key Vault integration for secrets management
+    /// </summary>
+    public static IServiceCollection AddAzureKeyVaultConfiguration(this IServiceCollection services, IConfiguration configuration)
+    {
+        var keyVaultEndpoint = configuration["KeyVault:Endpoint"];
+        
+        if (!string.IsNullOrEmpty(keyVaultEndpoint))
+        {
+            // Register Azure Key Vault services for runtime access
+            services.AddScoped<SecretClient>(provider =>
+            {
+                var credential = new DefaultAzureCredential();
+                return new SecretClient(new Uri(keyVaultEndpoint), credential);
+            });
+        }
+        
+        return services;
+    }
+
+    /// <summary>
+    /// Configure DDoS protection middleware with advanced threat detection
+    /// </summary>
+    public static IServiceCollection AddDDoSProtectionConfiguration(this IServiceCollection services, IConfiguration configuration)
+    {
+        // Configure DDoS protection settings
+        services.Configure<DDoSProtectionSettings>(configuration.GetSection(DDoSProtectionSettings.SectionName));
+        
+        return services;
+    }
+
+    /// <summary>
+    /// Configure enhanced security headers with comprehensive modern web security policies
+    /// </summary>
+    public static IServiceCollection AddSecurityHeadersConfiguration(this IServiceCollection services, IConfiguration configuration)
+    {
+        // Configure security headers settings
+        services.Configure<SecurityHeadersSettings>(configuration.GetSection(SecurityHeadersSettings.SectionName));
+        
         return services;
     }
 }

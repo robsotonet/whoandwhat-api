@@ -1,0 +1,183 @@
+using FluentAssertions;
+using FluentValidation;
+using FluentValidation.Results;
+using Microsoft.Extensions.Logging;
+using Moq;
+using WhoAndWhat.Application.Behaviors;
+using WhoAndWhat.Application.Common;
+using Xunit;
+using MediatR;
+using Task = System.Threading.Tasks.Task;
+
+namespace WhoAndWhat.Application.Tests.Behaviors;
+
+public class ValidationBehaviorTests
+{
+    private readonly Mock<ILogger<ValidationBehavior<TestRequest, Result<TestResponse>>>> _loggerMock;
+
+    public ValidationBehaviorTests()
+    {
+        _loggerMock = new Mock<ILogger<ValidationBehavior<TestRequest, Result<TestResponse>>>>();
+    }
+
+    [Fact]
+    public async Task Handle_Should_Call_Next_When_No_Validators_Are_Present()
+    {
+        // Arrange
+        var validators = new List<IValidator<TestRequest>>();
+        var behavior = new ValidationBehavior<TestRequest, Result<TestResponse>>(validators, _loggerMock.Object);
+        var request = new TestRequest { Value = "test" };
+        var expectedResponse = Result<TestResponse>.Success(new TestResponse { Result = "success" });
+        
+        var nextCalled = false;
+        async Task<Result<TestResponse>> nextHandler()
+        {
+            nextCalled = true;
+            return await Task.FromResult(expectedResponse);
+        }
+
+        // Act
+        var result = await behavior.Handle(request, nextHandler, CancellationToken.None);
+
+        // Assert
+        result.Should().Be(expectedResponse);
+        nextCalled.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task Handle_Should_Call_Next_When_Validation_Passes()
+    {
+        // Arrange
+        var validatorMock = new Mock<IValidator<TestRequest>>();
+        var validators = new List<IValidator<TestRequest>> { validatorMock.Object };
+        var behavior = new ValidationBehavior<TestRequest, Result<TestResponse>>(validators, _loggerMock.Object);
+        var request = new TestRequest { Value = "test" };
+        var expectedResponse = Result<TestResponse>.Success(new TestResponse { Result = "success" });
+
+        var validationResult = new ValidationResult(); // Empty result = no errors
+        validatorMock.Setup(v => v.ValidateAsync(It.IsAny<ValidationContext<TestRequest>>(), default))
+            .ReturnsAsync(validationResult);
+
+        var nextCalled = false;
+        async Task<Result<TestResponse>> nextHandler()
+        {
+            nextCalled = true;
+            return await Task.FromResult(expectedResponse);
+        }
+
+        // Act
+        var result = await behavior.Handle(request, nextHandler, CancellationToken.None);
+
+        // Assert
+        result.Should().Be(expectedResponse);
+        nextCalled.Should().BeTrue();
+        validatorMock.Verify(v => v.ValidateAsync(It.IsAny<ValidationContext<TestRequest>>(), default), Times.Once);
+    }
+
+    [Fact]
+    public async Task Handle_Should_Return_Failure_Result_When_Validation_Fails()
+    {
+        // Arrange
+        var validatorMock = new Mock<IValidator<TestRequest>>();
+        var validators = new List<IValidator<TestRequest>> { validatorMock.Object };
+        var behavior = new ValidationBehavior<TestRequest, Result<TestResponse>>(validators, _loggerMock.Object);
+        var request = new TestRequest { Value = "test" };
+
+        var validationFailure = new ValidationFailure("Value", "Value is required");
+        var validationResult = new ValidationResult(new[] { validationFailure });
+        validatorMock.Setup(v => v.ValidateAsync(It.IsAny<ValidationContext<TestRequest>>(), default))
+            .ReturnsAsync(validationResult);
+
+        var nextCalled = false;
+        async Task<Result<TestResponse>> nextHandler()
+        {
+            nextCalled = true;
+            return await Task.FromResult(Result<TestResponse>.Success(new TestResponse()));
+        }
+
+        // Act
+        var result = await behavior.Handle(request, nextHandler, CancellationToken.None);
+
+        // Assert
+        result.Should().NotBeNull();
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Be("Value is required");
+        nextCalled.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task Handle_Should_Combine_Multiple_Validation_Errors()
+    {
+        // Arrange
+        var validatorMock = new Mock<IValidator<TestRequest>>();
+        var validators = new List<IValidator<TestRequest>> { validatorMock.Object };
+        var behavior = new ValidationBehavior<TestRequest, Result<TestResponse>>(validators, _loggerMock.Object);
+        var request = new TestRequest { Value = "test" };
+
+        var validationFailures = new[]
+        {
+            new ValidationFailure("Value", "Value is required"),
+            new ValidationFailure("Name", "Name must be at least 3 characters"),
+            new ValidationFailure("Email", "Email format is invalid")
+        };
+        var validationResult = new ValidationResult(validationFailures);
+        validatorMock.Setup(v => v.ValidateAsync(It.IsAny<ValidationContext<TestRequest>>(), default))
+            .ReturnsAsync(validationResult);
+
+        var nextCalled = false;
+        async Task<Result<TestResponse>> nextHandler()
+        {
+            nextCalled = true;
+            return await Task.FromResult(Result<TestResponse>.Success(new TestResponse()));
+        }
+
+        // Act
+        var result = await behavior.Handle(request, nextHandler, CancellationToken.None);
+
+        // Assert
+        result.Should().NotBeNull();
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Be("Value is required; Name must be at least 3 characters; Email format is invalid");
+        nextCalled.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task Handle_Should_Throw_ValidationException_For_Non_Result_Types()
+    {
+        // Arrange
+        var validatorMock = new Mock<IValidator<NonResultRequest>>();
+        var validators = new List<IValidator<NonResultRequest>> { validatorMock.Object };
+        var behavior = new ValidationBehavior<NonResultRequest, TestResponse>(validators, Mock.Of<ILogger<ValidationBehavior<NonResultRequest, TestResponse>>>());
+        var request = new NonResultRequest { Value = "test" };
+
+        var validationFailure = new ValidationFailure("Value", "Value is required");
+        var validationResult = new ValidationResult(new[] { validationFailure });
+        validatorMock.Setup(v => v.ValidateAsync(It.IsAny<ValidationContext<NonResultRequest>>(), default))
+            .ReturnsAsync(validationResult);
+
+        var nextCalled = false;
+        async Task<TestResponse> nextHandler()
+        {
+            nextCalled = true;
+            return await Task.FromResult(new TestResponse());
+        }
+
+        // Act & Assert
+        var exception = await Assert.ThrowsAsync<ValidationException>(() =>
+            behavior.Handle(request, nextHandler, CancellationToken.None));
+
+        exception.Errors.Should().ContainSingle();
+        exception.Errors.First().ErrorMessage.Should().Be("Value is required");
+        nextCalled.Should().BeFalse();
+    }
+}
+
+// Test types for the validation behavior tests
+public record TestRequest(string Value = "") : IRequest<Result<TestResponse>>;
+
+public record NonResultRequest(string Value = "") : IRequest<TestResponse>;
+
+public class TestResponse
+{
+    public string Result { get; set; } = string.Empty;
+}

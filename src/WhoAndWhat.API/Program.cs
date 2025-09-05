@@ -3,11 +3,15 @@ using Serilog;
 using WhoAndWhat.API.Configuration;
 using WhoAndWhat.Application;
 using WhoAndWhat.Application.Interfaces;
+using WhoAndWhat.Application.DependencyInjection;
 using WhoAndWhat.Domain.Services;
 using WhoAndWhat.Infrastructure;
 using WhoAndWhat.Infrastructure.Data;
 using WhoAndWhat.Infrastructure.Repositories;
 using WhoAndWhat.Application.Features.Auth;
+using Azure.Extensions.AspNetCore.Configuration.Secrets;
+using Azure.Identity;
+using Azure.Security.KeyVault.Secrets;
 
 // Configure Serilog early for logging during bootstrap
 Log.Logger = new LoggerConfiguration()
@@ -20,6 +24,25 @@ try
     Log.Information("Starting WhoAndWhat API application");
 
     var builder = WebApplication.CreateBuilder(args);
+
+    // Configure Azure Key Vault (only in production or if endpoint is configured)
+    var keyVaultEndpoint = builder.Configuration["KeyVault:Endpoint"];
+    if (!string.IsNullOrEmpty(keyVaultEndpoint))
+    {
+        builder.Configuration.AddAzureKeyVault(
+            new Uri(keyVaultEndpoint),
+            new DefaultAzureCredential(),
+            new AzureKeyVaultConfigurationOptions
+            {
+                ReloadInterval = TimeSpan.FromMinutes(30) // Reload secrets every 30 minutes
+            });
+            
+        Log.Information("Azure Key Vault configuration enabled for endpoint: {Endpoint}", keyVaultEndpoint);
+    }
+    else
+    {
+        Log.Information("Azure Key Vault not configured - using local configuration");
+    }
 
     // Configure Serilog
     builder.Host.UseSerilog((context, configuration) =>
@@ -35,12 +58,8 @@ try
     builder.Services.AddScoped<IAccountVerificationService, AccountVerificationService>();
     builder.Services.AddScoped<IPasswordResetService, PasswordResetService>();
 
-    // MediatR for CQRS
-    builder.Services.AddMediatR(cfg =>
-    {
-        cfg.RegisterServicesFromAssembly(typeof(WhoAndWhat.Application.AssemblyReference).Assembly);
-        cfg.RegisterServicesFromAssembly(typeof(WhoAndWhat.Infrastructure.AssemblyReference).Assembly);
-    });
+    // Application services (MediatR, FluentValidation, Pipeline Behaviors)
+    builder.Services.AddApplicationServices();
 
     // API Foundation Services
     builder.Services.AddApiVersioningConfiguration();
@@ -52,6 +71,21 @@ try
     
     // JWT Authentication
     builder.Services.AddJwtAuthenticationConfiguration(builder.Configuration);
+    
+    // OAuth Authentication
+    builder.Services.AddOAuthConfiguration(builder.Configuration);
+    
+    // Rate Limiting
+    builder.Services.AddRateLimitingConfiguration(builder.Configuration);
+    
+    // DDoS Protection
+    builder.Services.AddDDoSProtectionConfiguration(builder.Configuration);
+    
+    // Security Headers
+    builder.Services.AddSecurityHeadersConfiguration(builder.Configuration);
+    
+    // Azure Key Vault
+    builder.Services.AddAzureKeyVaultConfiguration(builder.Configuration);
 
     builder.Services.AddControllers(options =>
     {
