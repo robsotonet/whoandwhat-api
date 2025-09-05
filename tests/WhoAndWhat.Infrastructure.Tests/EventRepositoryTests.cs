@@ -5,6 +5,7 @@ using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using WhoAndWhat.Application.Interfaces;
 using WhoAndWhat.Domain.Entities;
+using WhoAndWhat.Domain.ValueObjects;
 using WhoAndWhat.Infrastructure.Data;
 using WhoAndWhat.Infrastructure.Repositories;
 using Xunit;
@@ -27,6 +28,7 @@ public class EventRepositoryTests
         _repository = new Repository<Event>(_context);
         
         // Create test user for foreign key relationships
+
         _testUser = new User 
         { 
             Id = Guid.NewGuid(), 
@@ -35,6 +37,7 @@ public class EventRepositoryTests
             PasswordHash = "testhash",
             Salt = "testsalt"
         };
+
         _context.Users.Add(_testUser);
         _context.SaveChanges();
     }

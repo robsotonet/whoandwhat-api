@@ -18,6 +18,8 @@ public class ApplicationDbContext : DbContext
     public DbSet<Contact> Contacts { get; set; }
     public DbSet<Project> Projects { get; set; }
     public DbSet<Event> Events { get; set; }
+    public DbSet<RefreshToken> RefreshTokens { get; set; }
+    public DbSet<OAuthAccount> OAuthAccounts { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -27,15 +29,26 @@ public class ApplicationDbContext : DbContext
         modelBuilder.Entity<User>(entity =>
         {
             entity.HasKey(e => e.Id);
-            entity.Property(e => e.Email).IsRequired();
+            entity.Property(e => e.Email).IsRequired().HasMaxLength(256);
             entity.HasIndex(e => e.Email).IsUnique();
-            entity.Property(e => e.Username).IsRequired();
+            entity.Property(e => e.Username).IsRequired().HasMaxLength(50);
+            entity.HasIndex(e => e.Username).IsUnique();
+            
+            entity.Property(e => e.PasswordHash).HasMaxLength(500);
+            entity.Property(e => e.IsEmailVerified).HasDefaultValue(false);
+            entity.Property(e => e.IsActive).HasDefaultValue(true);
+            entity.Property(e => e.IsLocked).HasDefaultValue(false);
+            entity.Property(e => e.FailedLoginAttempts).HasDefaultValue(0);
             
             entity.Property(e => e.PreferredLanguage)
                 .IsRequired()
                 .HasConversion(
                     v => v.ToString(),
                     v => (Language)Enum.Parse(typeof(Language), v));
+
+            // Configure ignore for private collections used by EF Core relationships
+            entity.Ignore(e => e.RefreshTokens);
+            entity.Ignore(e => e.OAuthAccounts);
         });
 
         // Task Configuration
@@ -83,6 +96,48 @@ public class ApplicationDbContext : DbContext
 
             entity.HasOne(e => e.User).WithMany().HasForeignKey(e => e.UserId).OnDelete(DeleteBehavior.Restrict);
             entity.HasMany(e => e.Tasks).WithMany();
+        });
+
+        // RefreshToken Configuration
+        modelBuilder.Entity<RefreshToken>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Token).IsRequired().HasMaxLength(500);
+            entity.HasIndex(e => e.Token).IsUnique();
+            entity.Property(e => e.CreatedByIp).IsRequired().HasMaxLength(45);
+            entity.Property(e => e.RevokedByIp).HasMaxLength(45);
+            entity.Property(e => e.ReplacedByToken).HasMaxLength(500);
+
+            entity.HasOne(e => e.User)
+                .WithMany()
+                .HasForeignKey(e => e.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Index for efficient queries
+            entity.HasIndex(e => new { e.UserId, e.ExpiresAt });
+            entity.HasIndex(e => e.ExpiresAt);
+        });
+
+        // OAuthAccount Configuration
+        modelBuilder.Entity<OAuthAccount>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Provider).IsRequired().HasMaxLength(50);
+            entity.Property(e => e.ExternalId).IsRequired().HasMaxLength(100);
+            entity.Property(e => e.Email).HasMaxLength(256);
+            entity.Property(e => e.Name).HasMaxLength(100);
+            entity.Property(e => e.ProfileImageUrl).HasMaxLength(500);
+            entity.Property(e => e.IsActive).HasDefaultValue(true);
+
+            entity.HasOne(e => e.User)
+                .WithMany()
+                .HasForeignKey(e => e.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Unique constraint for provider + external ID combination
+            entity.HasIndex(e => new { e.Provider, e.ExternalId }).IsUnique();
+            // Index for efficient user queries
+            entity.HasIndex(e => e.UserId);
         });
     }
 }

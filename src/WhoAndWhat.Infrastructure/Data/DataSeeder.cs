@@ -12,7 +12,11 @@ public static class DataSeeder
     {
         if (await context.Users.AnyAsync())
         {
-            return;
+
+            var user = new User("dev@example.com", "devuser", Language.en);
+            await context.Users.AddAsync(user);
+            await context.SaveChangesAsync();
+
         }
 
         var userDomainService = new UserDomainService();

@@ -5,6 +5,7 @@ using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using WhoAndWhat.Application.Interfaces;
 using WhoAndWhat.Domain.Entities;
+using WhoAndWhat.Domain.ValueObjects;
 using WhoAndWhat.Infrastructure.Data;
 using WhoAndWhat.Infrastructure.Repositories;
 using Xunit;
@@ -28,6 +29,7 @@ public class TaskRepositoryTests
         _repository = new Repository<DomainTask>(_context);
         
         // Create test user for foreign key relationships
+
         _testUser = new User 
         { 
             Id = Guid.NewGuid(), 
@@ -36,6 +38,7 @@ public class TaskRepositoryTests
             PasswordHash = "testhash",
             Salt = "testsalt"
         };
+
         _context.Users.Add(_testUser);
         _context.SaveChanges();
     }
@@ -143,6 +146,7 @@ public class TaskRepositoryTests
     public async Task Should_Find_Tasks_By_User()
     {
         // Arrange
+
         var anotherUser = new User 
         { 
             Id = Guid.NewGuid(), 
@@ -151,6 +155,7 @@ public class TaskRepositoryTests
             PasswordHash = "testhash",
             Salt = "testsalt"
         };
+
         await _context.Users.AddAsync(anotherUser);
         
         var task1 = new DomainTask 
