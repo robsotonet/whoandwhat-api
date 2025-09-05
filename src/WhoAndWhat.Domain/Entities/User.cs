@@ -5,16 +5,33 @@ namespace WhoAndWhat.Domain.Entities;
 
 public class User : BaseEntity
 {
-    public string Email { get; private set; }
-    public string Username { get; private set; }
-    public string? PasswordHash { get; private set; }
-    public Language PreferredLanguage { get; private set; }
-    public DateTime? LastLoginAt { get; private set; }
-    public bool IsEmailVerified { get; private set; }
+
+    public Guid Id { get; set; }
+    public string Email { get; set; } = null!;
+    public string Username { get; set; } = null!;
+    public Language PreferredLanguage { get; set; }
+    public DateTime CreatedAt { get; set; }
+    public DateTime LastLoginAt { get; set; }
+    
+    // Authentication properties
+    public string PasswordHash { get; set; } = null!;
+    public string Salt { get; set; } = null!;
+    public string? RefreshToken { get; set; }
+    public DateTime? RefreshTokenExpiryTime { get; set; }
+    
+    // Account verification properties
+    public bool IsVerified { get; set; }
+    public string? VerificationToken { get; set; }
+    
+    // Password reset properties
+    public string? ResetToken { get; set; }
+    public DateTime? ResetTokenExpires { get; set; }
+
     public bool IsActive { get; private set; }
     public bool IsLocked { get; private set; }
     public DateTime? LockedUntil { get; private set; }
     public int FailedLoginAttempts { get; private set; }
+
 
     private readonly List<RefreshToken> _refreshTokens = new();
     public IReadOnlyList<RefreshToken> RefreshTokens => _refreshTokens.AsReadOnly();

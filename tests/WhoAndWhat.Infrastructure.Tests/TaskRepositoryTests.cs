@@ -29,7 +29,16 @@ public class TaskRepositoryTests
         _repository = new Repository<DomainTask>(_context);
         
         // Create test user for foreign key relationships
-        _testUser = new User("test@test.com", "testuser", Language.en);
+
+        _testUser = new User 
+        { 
+            Id = Guid.NewGuid(), 
+            Username = "testuser", 
+            Email = "test@test.com",
+            PasswordHash = "testhash",
+            Salt = "testsalt"
+        };
+
         _context.Users.Add(_testUser);
         _context.SaveChanges();
     }
@@ -137,7 +146,16 @@ public class TaskRepositoryTests
     public async Task Should_Find_Tasks_By_User()
     {
         // Arrange
-        var anotherUser = new User("another@test.com", "anotheruser", Language.en);
+
+        var anotherUser = new User 
+        { 
+            Id = Guid.NewGuid(), 
+            Username = "anotheruser", 
+            Email = "another@test.com",
+            PasswordHash = "testhash",
+            Salt = "testsalt"
+        };
+
         await _context.Users.AddAsync(anotherUser);
         
         var task1 = new DomainTask 

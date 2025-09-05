@@ -28,7 +28,16 @@ public class ProjectRepositoryTests
         _repository = new Repository<Project>(_context);
         
         // Create test user for foreign key relationships
-        _testUser = new User("test@test.com", "testuser", Language.en);
+
+        _testUser = new User 
+        { 
+            Id = Guid.NewGuid(), 
+            Username = "testuser", 
+            Email = "test@test.com",
+            PasswordHash = "testhash",
+            Salt = "testsalt"
+        };
+
         _context.Users.Add(_testUser);
         _context.SaveChanges();
     }
