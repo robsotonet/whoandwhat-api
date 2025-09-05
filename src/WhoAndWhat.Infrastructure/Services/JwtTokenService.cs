@@ -204,7 +204,7 @@ public class JwtTokenService : IJwtTokenService
     public async System.Threading.Tasks.Task RevokeAllUserTokensAsync(Guid userId)
     {
         var tokens = await _context.RefreshTokens
-            .Where(rt => rt.UserId == userId && rt.IsActive)
+            .Where(rt => rt.UserId == userId && !rt.IsRevoked && rt.ExpiresAt > DateTime.UtcNow)
             .ToListAsync();
 
         var clientIp = GetClientIpAddress();

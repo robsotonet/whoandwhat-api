@@ -23,11 +23,11 @@ public class PasswordResetService : IPasswordResetService
             return null;
         }
 
-        user.ResetToken = Convert.ToBase64String(Guid.NewGuid().ToByteArray());
-        user.ResetTokenExpires = DateTime.UtcNow.AddHours(1); // Token valid for 1 hour
+        var resetToken = Convert.ToBase64String(Guid.NewGuid().ToByteArray());
+        user.SetPasswordResetToken(resetToken, DateTime.UtcNow.AddHours(1)); // Token valid for 1 hour
         await _userRepository.SaveChangesAsync(cancellationToken);
 
-        return user.ResetToken;
+        return resetToken;
     }
 
     public async Task<bool> ResetPasswordAsync(string token, string newPassword, CancellationToken cancellationToken = default)
@@ -39,11 +39,8 @@ public class PasswordResetService : IPasswordResetService
             return false;
         }
 
-        var (passwordHash, salt) = _userDomainService.CreatePasswordHash(newPassword);
-        user.PasswordHash = passwordHash;
-        user.Salt = salt;
-        user.ResetToken = null;
-        user.ResetTokenExpires = null;
+        user.SetPassword(newPassword);
+        user.ClearPasswordResetToken();
 
         await _userRepository.SaveChangesAsync(cancellationToken);
 

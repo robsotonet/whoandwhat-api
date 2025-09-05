@@ -32,7 +32,8 @@ public class RepositoryTests
     {
         // Arrange
 
-        var user = new User { Id = Guid.NewGuid(), Username = "test", Email = "test@test.com", PasswordHash = "hash", Salt = "salt" };
+        var user = new User("test@test.com", "test", Language.en);
+        user.SetPassword("TestPassword123!");
 
 
         // Act
@@ -50,8 +51,10 @@ public class RepositoryTests
     {
         // Arrange
 
-        var user1 = new User { Id = Guid.NewGuid(), Username = "test1", Email = "test1@test.com", PasswordHash = "hash", Salt = "salt" };
-        var user2 = new User { Id = Guid.NewGuid(), Username = "test2", Email = "test2@test.com", PasswordHash = "hash", Salt = "salt" };
+        var user1 = new User("test1@test.com", "test1", Language.en);
+        user1.SetPassword("TestPassword123!");
+        var user2 = new User("test2@test.com", "test2", Language.en);
+        user2.SetPassword("TestPassword123!");
 
         await _context.Users.AddRangeAsync(user1, user2);
         await _context.SaveChangesAsync();
@@ -68,8 +71,8 @@ public class RepositoryTests
     {
         // Arrange
 
-        var userId = Guid.NewGuid();
-        var user = new User { Id = userId, Username = "test", Email = "test@test.com", PasswordHash = "hash", Salt = "salt" };
+        var user = new User("test@test.com", "test", Language.en);
+        user.SetPassword("TestPassword123!");
 
         await _context.Users.AddAsync(user);
         await _context.SaveChangesAsync();
@@ -87,7 +90,8 @@ public class RepositoryTests
     {
         // Arrange
 
-        var user = new User { Id = Guid.NewGuid(), Username = "findme", Email = "findme@test.com", PasswordHash = "hash", Salt = "salt" };
+        var user = new User("findme@test.com", "findme", Language.en);
+        user.SetPassword("TestPassword123!");
 
         await _context.Users.AddAsync(user);
         await _context.SaveChangesAsync();
@@ -105,7 +109,8 @@ public class RepositoryTests
     {
         // Arrange
 
-        var user = new User { Id = Guid.NewGuid(), Username = "test", Email = "test@test.com", PasswordHash = "hash", Salt = "salt" };
+        var user = new User("test@test.com", "test", Language.en);
+        user.SetPassword("TestPassword123!");
 
         await _repository.AddAsync(user);
         await _repository.SaveChangesAsync();
@@ -126,7 +131,8 @@ public class RepositoryTests
     {
         // Arrange
 
-        var user = new User { Id = Guid.NewGuid(), Username = "test", Email = "test@test.com", PasswordHash = "hash", Salt = "salt" };
+        var user = new User("test@test.com", "test", Language.en);
+        user.SetPassword("TestPassword123!");
 
         await _repository.AddAsync(user);
         await _repository.SaveChangesAsync();

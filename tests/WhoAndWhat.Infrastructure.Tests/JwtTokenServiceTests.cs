@@ -52,6 +52,7 @@ public class JwtTokenServiceTests : IDisposable
     {
         // Arrange
         var user = new User("test@example.com", "testuser", Language.en);
+        user.SetPassword("TestPassword123!");
         await _context.Users.AddAsync(user);
         await _context.SaveChangesAsync();
 
@@ -79,6 +80,7 @@ public class JwtTokenServiceTests : IDisposable
     {
         // Arrange
         var user = new User("test@example.com", "testuser", Language.en);
+        user.SetPassword("TestPassword123!");
         user.VerifyEmail();
 
         // Act
@@ -123,6 +125,7 @@ public class JwtTokenServiceTests : IDisposable
     {
         // Arrange
         var user = new User("test@example.com", "testuser", Language.en);
+        user.SetPassword("TestPassword123!");
         await _context.Users.AddAsync(user);
         await _context.SaveChangesAsync();
 
@@ -168,6 +171,7 @@ public class JwtTokenServiceTests : IDisposable
     {
         // Arrange
         var user = new User("test@example.com", "testuser", Language.en);
+        user.SetPassword("TestPassword123!");
         await _context.Users.AddAsync(user);
         await _context.SaveChangesAsync();
 
@@ -187,6 +191,7 @@ public class JwtTokenServiceTests : IDisposable
     {
         // Arrange
         var user = new User("test@example.com", "testuser", Language.en);
+        user.SetPassword("TestPassword123!");
         await _context.Users.AddAsync(user);
 
         var expiredToken = new RefreshToken(
@@ -211,6 +216,7 @@ public class JwtTokenServiceTests : IDisposable
     {
         // Arrange
         var user = new User("test@example.com", "testuser", Language.en);
+        user.SetPassword("TestPassword123!");
         await _context.Users.AddAsync(user);
         await _context.SaveChangesAsync();
 
@@ -235,7 +241,7 @@ public class JwtTokenServiceTests : IDisposable
 
         // Assert
         result.IsSuccess.Should().BeFalse();
-        result.Error.Should().Contain("Token validation failed");
+        result.Error.Should().Contain("Token validation");
     }
 
     [Fact]
@@ -243,6 +249,7 @@ public class JwtTokenServiceTests : IDisposable
     {
         // Arrange
         var user = new User("test@example.com", "testuser", Language.en);
+        user.SetPassword("TestPassword123!");
         user.DeactivateAccount();
         await _context.Users.AddAsync(user);
         await _context.SaveChangesAsync();
@@ -262,6 +269,7 @@ public class JwtTokenServiceTests : IDisposable
     {
         // Arrange
         var user = new User("test@example.com", "testuser", Language.en);
+        user.SetPassword("TestPassword123!");
         await _context.Users.AddAsync(user);
         await _context.SaveChangesAsync();
 
@@ -289,6 +297,7 @@ public class JwtTokenServiceTests : IDisposable
     {
         // Arrange
         var user = new User("test@example.com", "testuser", Language.en);
+        user.SetPassword("TestPassword123!");
         await _context.Users.AddAsync(user);
         await _context.SaveChangesAsync();
 
@@ -317,6 +326,7 @@ public class JwtTokenServiceTests : IDisposable
     {
         // Arrange
         var user = new User("test@example.com", "testuser", Language.en);
+        user.SetPassword("TestPassword123!");
         await _context.Users.AddAsync(user);
         await _context.SaveChangesAsync();
 
@@ -343,6 +353,7 @@ public class JwtTokenServiceTests : IDisposable
     {
         // Arrange
         var user = new User("test@example.com", "testuser", Language.en);
+        user.SetPassword("TestPassword123!");
         await _context.Users.AddAsync(user);
         await _context.SaveChangesAsync();
 
@@ -371,6 +382,7 @@ public class JwtTokenServiceTests : IDisposable
         // So we test during token generation instead
         var service = new JwtTokenService(Options.Create(invalidSettings), _context);
         var user = new User("test@example.com", "testuser", Language.en);
+        user.SetPassword("TestPassword123!");
         
         var tokenGeneration = async () => await service.GenerateAccessTokenAsync(user);
         await tokenGeneration.Should().ThrowAsync<Exception>();

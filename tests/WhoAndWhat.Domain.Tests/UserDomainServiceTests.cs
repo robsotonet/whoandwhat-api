@@ -1,5 +1,6 @@
 
 using WhoAndWhat.Domain.Services;
+using WhoAndWhat.Domain.ValueObjects;
 using Xunit;
 
 namespace WhoAndWhat.Domain.Tests;
@@ -14,47 +15,43 @@ public class UserDomainServiceTests
     }
 
     [Fact]
-    public void CreatePasswordHash_ShouldReturnHashAndSalt()
+    public void CreateUser_ShouldCreateUserWithPasswordSet()
     {
         // Arrange
-        var password = "password123";
+        var email = "test@example.com";
+        var username = "testuser";
+        var password = "TestPassword123!";
+        var language = Language.en;
 
         // Act
-        var (passwordHash, salt) = _userDomainService.CreatePasswordHash(password);
+        var user = _userDomainService.CreateUser(email, username, password, language);
 
         // Assert
-        Assert.NotNull(passwordHash);
-        Assert.NotNull(salt);
-        Assert.NotEmpty(passwordHash);
-        Assert.NotEmpty(salt);
+        Assert.NotNull(user);
+        Assert.Equal(email, user.Email);
+        Assert.Equal(username, user.Username);
+        Assert.Equal(language, user.PreferredLanguage);
+        Assert.True(user.VerifyPassword(password));
+        Assert.False(user.VerifyPassword("wrongpassword"));
+        Assert.True(user.IsActive);
+        Assert.False(user.IsEmailVerified);
     }
 
     [Fact]
-    public void VerifyPasswordHash_ShouldReturnTrue_ForCorrectPassword()
+    public void CreateUser_ShouldGenerateDomainEvents()
     {
         // Arrange
-        var password = "password123";
-        var (passwordHash, salt) = _userDomainService.CreatePasswordHash(password);
+        var email = "test@example.com";
+        var username = "testuser";
+        var password = "TestPassword123!";
+        var language = Language.en;
 
         // Act
-        var result = _userDomainService.VerifyPasswordHash(password, passwordHash, salt);
+        var user = _userDomainService.CreateUser(email, username, password, language);
 
         // Assert
-        Assert.True(result);
-    }
-
-    [Fact]
-    public void VerifyPasswordHash_ShouldReturnFalse_ForIncorrectPassword()
-    {
-        // Arrange
-        var password = "password123";
-        var incorrectPassword = "wrongpassword";
-        var (passwordHash, salt) = _userDomainService.CreatePasswordHash(password);
-
-        // Act
-        var result = _userDomainService.VerifyPasswordHash(incorrectPassword, passwordHash, salt);
-
-        // Assert
-        Assert.False(result);
+        Assert.Equal(2, user.DomainEvents.Count); // UserCreatedEvent and UserPasswordChangedEvent
+        Assert.Contains(user.DomainEvents, e => e.GetType().Name == "UserCreatedEvent");
+        Assert.Contains(user.DomainEvents, e => e.GetType().Name == "UserPasswordChangedEvent");
     }
 }

@@ -29,15 +29,8 @@ public class TaskRepositoryTests
         _repository = new Repository<DomainTask>(_context);
         
         // Create test user for foreign key relationships
-
-        _testUser = new User 
-        { 
-            Id = Guid.NewGuid(), 
-            Username = "testuser", 
-            Email = "test@test.com",
-            PasswordHash = "testhash",
-            Salt = "testsalt"
-        };
+        _testUser = new User("test@test.com", "testuser", Language.en);
+        _testUser.SetPassword("TestPassword123!");
 
         _context.Users.Add(_testUser);
         _context.SaveChanges();
@@ -147,14 +140,8 @@ public class TaskRepositoryTests
     {
         // Arrange
 
-        var anotherUser = new User 
-        { 
-            Id = Guid.NewGuid(), 
-            Username = "anotheruser", 
-            Email = "another@test.com",
-            PasswordHash = "testhash",
-            Salt = "testsalt"
-        };
+        var anotherUser = new User("another@test.com", "anotheruser", Language.en);
+        anotherUser.SetPassword("TestPassword123!");
 
         await _context.Users.AddAsync(anotherUser);
         

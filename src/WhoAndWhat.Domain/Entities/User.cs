@@ -5,27 +5,23 @@ namespace WhoAndWhat.Domain.Entities;
 
 public class User : BaseEntity
 {
-
-    public Guid Id { get; set; }
-    public string Email { get; set; } = null!;
-    public string Username { get; set; } = null!;
-    public Language PreferredLanguage { get; set; }
-    public DateTime CreatedAt { get; set; }
-    public DateTime LastLoginAt { get; set; }
+    public string Email { get; private set; } = null!;
+    public string Username { get; private set; } = null!;
+    public Language PreferredLanguage { get; private set; }
+    public DateTime LastLoginAt { get; private set; }
     
     // Authentication properties
-    public string PasswordHash { get; set; } = null!;
-    public string Salt { get; set; } = null!;
-    public string? RefreshToken { get; set; }
-    public DateTime? RefreshTokenExpiryTime { get; set; }
+    public string PasswordHash { get; private set; } = null!;
+    public string? RefreshToken { get; private set; }
+    public DateTime? RefreshTokenExpiryTime { get; private set; }
+    public bool IsEmailVerified { get; private set; }
     
-    // Account verification properties
-    public bool IsVerified { get; set; }
-    public string? VerificationToken { get; set; }
+    // Account verification properties  
+    public string? VerificationToken { get; private set; }
     
     // Password reset properties
-    public string? ResetToken { get; set; }
-    public DateTime? ResetTokenExpires { get; set; }
+    public string? ResetToken { get; private set; }
+    public DateTime? ResetTokenExpires { get; private set; }
 
     public bool IsActive { get; private set; }
     public bool IsLocked { get; private set; }
@@ -72,6 +68,7 @@ public class User : BaseEntity
         }
 
         PasswordHash = BCrypt.Net.BCrypt.HashPassword(password, 12);
+        MarkAsModified();
         AddDomainEvent(new UserPasswordChangedEvent(Id));
     }
 
@@ -96,6 +93,7 @@ public class User : BaseEntity
                 IsLocked = false;
                 LockedUntil = null;
             }
+            MarkAsModified();
             AddDomainEvent(new UserLoggedInEvent(Id));
         }
         else
@@ -107,12 +105,14 @@ public class User : BaseEntity
                 LockedUntil = DateTime.UtcNow.AddMinutes(30);
                 AddDomainEvent(new UserLockedEvent(Id, LockedUntil.Value));
             }
+            MarkAsModified();
         }
     }
 
     public void VerifyEmail()
     {
         IsEmailVerified = true;
+        MarkAsModified();
         AddDomainEvent(new UserEmailVerifiedEvent(Id));
     }
 
@@ -120,6 +120,7 @@ public class User : BaseEntity
     {
         IsLocked = true;
         LockedUntil = DateTime.UtcNow.AddHours(24);
+        MarkAsModified();
         AddDomainEvent(new UserLockedEvent(Id, LockedUntil.Value));
     }
 
@@ -128,12 +129,14 @@ public class User : BaseEntity
         IsLocked = false;
         LockedUntil = null;
         FailedLoginAttempts = 0;
+        MarkAsModified();
         AddDomainEvent(new UserUnlockedEvent(Id));
     }
 
     public void DeactivateAccount()
     {
         IsActive = false;
+        MarkAsModified();
         AddDomainEvent(new UserDeactivatedEvent(Id));
     }
 
@@ -155,7 +158,81 @@ public class User : BaseEntity
     public void UpdatePreferredLanguage(Language language)
     {
         PreferredLanguage = language;
+        MarkAsModified();
         AddDomainEvent(new UserPreferencesUpdatedEvent(Id));
+    }
+
+    public void UpdateEmail(string newEmail)
+    {
+        if (string.IsNullOrWhiteSpace(newEmail))
+        {
+            throw new ArgumentNullException(nameof(newEmail));
+        }
+        
+        if (!IsValidEmail(newEmail))
+        {
+            throw new ArgumentException("Invalid email format", nameof(newEmail));
+        }
+
+        Email = newEmail;
+        IsEmailVerified = false; // Reset verification when email changes
+        MarkAsModified();
+    }
+
+    public void UpdateUsername(string newUsername)
+    {
+        if (string.IsNullOrWhiteSpace(newUsername))
+        {
+            throw new ArgumentNullException(nameof(newUsername));
+        }
+
+        if (newUsername.Length < 3 || newUsername.Length > 50)
+        {
+            throw new ArgumentException("Username must be between 3 and 50 characters", nameof(newUsername));
+        }
+
+        Username = newUsername;
+        MarkAsModified();
+    }
+
+    public void SetRefreshToken(string token, DateTime expiry)
+    {
+        RefreshToken = token;
+        RefreshTokenExpiryTime = expiry;
+        MarkAsModified();
+    }
+
+    public void ClearRefreshToken()
+    {
+        RefreshToken = null;
+        RefreshTokenExpiryTime = null;
+        MarkAsModified();
+    }
+
+    public void SetVerificationToken(string token)
+    {
+        VerificationToken = token;
+        MarkAsModified();
+    }
+
+    public void ClearVerificationToken()
+    {
+        VerificationToken = null;
+        MarkAsModified();
+    }
+
+    public void SetPasswordResetToken(string token, DateTime expiry)
+    {
+        ResetToken = token;
+        ResetTokenExpires = expiry;
+        MarkAsModified();
+    }
+
+    public void ClearPasswordResetToken()
+    {
+        ResetToken = null;
+        ResetTokenExpires = null;
+        MarkAsModified();
     }
 
     private static bool IsValidPassword(string password)
@@ -164,5 +241,23 @@ public class User : BaseEntity
                password.Any(char.IsUpper) &&
                password.Any(char.IsLower) &&
                password.Any(char.IsDigit);
+    }
+
+    private static bool IsValidEmail(string email)
+    {
+        if (string.IsNullOrWhiteSpace(email))
+        {
+            return false;
+        }
+
+        try
+        {
+            var emailAddress = new System.Net.Mail.MailAddress(email);
+            return emailAddress.Address == email;
+        }
+        catch
+        {
+            return false;
+        }
     }
 }

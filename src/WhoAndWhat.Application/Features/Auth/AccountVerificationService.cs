@@ -15,15 +15,16 @@ public class AccountVerificationService : IAccountVerificationService
     public async Task<string?> GenerateVerificationTokenAsync(Guid userId, CancellationToken cancellationToken = default)
     {
         var user = await _userRepository.GetByIdAsync(userId, cancellationToken);
-        if (user is null || user.IsVerified)
+        if (user is null || user.IsEmailVerified)
         {
             return null;
         }
 
-        user.VerificationToken = Convert.ToBase64String(Guid.NewGuid().ToByteArray());
+        var verificationToken = Convert.ToBase64String(Guid.NewGuid().ToByteArray());
+        user.SetVerificationToken(verificationToken);
         await _userRepository.SaveChangesAsync(cancellationToken);
 
-        return user.VerificationToken;
+        return verificationToken;
     }
 
     public async Task<bool> VerifyAccountAsync(string token, CancellationToken cancellationToken = default)
@@ -35,8 +36,8 @@ public class AccountVerificationService : IAccountVerificationService
             return false;
         }
 
-        user.IsVerified = true;
-        user.VerificationToken = null;
+        user.VerifyEmail();
+        user.ClearVerificationToken();
         await _userRepository.SaveChangesAsync(cancellationToken);
 
         return true;

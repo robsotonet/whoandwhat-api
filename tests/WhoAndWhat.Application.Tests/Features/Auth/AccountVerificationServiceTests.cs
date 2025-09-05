@@ -3,6 +3,7 @@ using Moq;
 using WhoAndWhat.Application.Features.Auth;
 using WhoAndWhat.Application.Interfaces;
 using WhoAndWhat.Domain.Entities;
+using WhoAndWhat.Domain.ValueObjects;
 using Task = System.Threading.Tasks.Task;
 
 namespace WhoAndWhat.Application.Tests.Features.Auth;
@@ -23,7 +24,9 @@ public class AccountVerificationServiceTests
     {
         // Arrange
         var userId = Guid.NewGuid();
-        var user = new User { Id = userId, IsVerified = false };
+        var user = new User("test@example.com", "testuser", Language.en);
+        // Set user ID using reflection since it's needed for the test
+        typeof(BaseEntity).GetProperty("Id")!.SetValue(user, userId);
         _userRepositoryMock.Setup(x => x.GetByIdAsync(userId, default)).ReturnsAsync(user);
 
         // Act
@@ -39,7 +42,10 @@ public class AccountVerificationServiceTests
     {
         // Arrange
         var userId = Guid.NewGuid();
-        var user = new User { Id = userId, IsVerified = true };
+        var user = new User("test@example.com", "testuser", Language.en);
+        // Set user ID using reflection and verify email
+        typeof(BaseEntity).GetProperty("Id")!.SetValue(user, userId);
+        user.VerifyEmail();
         _userRepositoryMock.Setup(x => x.GetByIdAsync(userId, default)).ReturnsAsync(user);
 
         // Act
@@ -55,7 +61,8 @@ public class AccountVerificationServiceTests
     {
         // Arrange
         var token = "valid-token";
-        var user = new User { VerificationToken = token };
+        var user = new User("test@example.com", "testuser", Language.en);
+        user.SetVerificationToken(token);
         _userRepositoryMock.Setup(x => x.FindAsync(It.IsAny<System.Linq.Expressions.Expression<System.Func<User, bool>>>(), default)).ReturnsAsync(new[] { user });
 
         // Act
@@ -63,7 +70,7 @@ public class AccountVerificationServiceTests
 
         // Assert
         Assert.True(result);
-        Assert.True(user.IsVerified);
+        Assert.True(user.IsEmailVerified);
         Assert.Null(user.VerificationToken);
         _userRepositoryMock.Verify(x => x.SaveChangesAsync(default), Times.Once);
     }

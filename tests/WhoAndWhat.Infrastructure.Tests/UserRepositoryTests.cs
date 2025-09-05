@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using WhoAndWhat.Application.Interfaces;
 using WhoAndWhat.Domain.Entities;
+using WhoAndWhat.Domain.ValueObjects;
 using WhoAndWhat.Infrastructure.Data;
 using WhoAndWhat.Infrastructure.Repositories;
 using Xunit;
@@ -28,14 +29,8 @@ public class UserRepositoryTests
     public async Task GetUserByEmailAsync_ShouldReturnUser_WhenUserExists()
     {
         // Arrange
-        var user = new User
-        {
-            Id = Guid.NewGuid(),
-            Username = "testuser",
-            Email = "test@example.com",
-            PasswordHash = "hash",
-            Salt = "salt"
-        };
+        var user = new User("test@example.com", "testuser", Language.en);
+        user.SetPassword("TestPassword123!");
         await _context.Users.AddAsync(user);
         await _context.SaveChangesAsync();
 

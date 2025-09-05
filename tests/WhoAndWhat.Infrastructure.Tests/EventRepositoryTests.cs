@@ -28,15 +28,8 @@ public class EventRepositoryTests
         _repository = new Repository<Event>(_context);
         
         // Create test user for foreign key relationships
-
-        _testUser = new User 
-        { 
-            Id = Guid.NewGuid(), 
-            Username = "testuser", 
-            Email = "test@test.com",
-            PasswordHash = "testhash",
-            Salt = "testsalt"
-        };
+        _testUser = new User("test@test.com", "testuser", Language.en);
+        _testUser.SetPassword("TestPassword123!");
 
         _context.Users.Add(_testUser);
         _context.SaveChanges();
