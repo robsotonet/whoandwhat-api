@@ -56,6 +56,10 @@ public class RegisterRequestValidator : AbstractValidator<RegisterRequest>
 
     private static bool BeValidLanguage(string language)
     {
-        return Enum.TryParse<Language>(language, true, out _);
+        if (Enum.TryParse<Language>(language, true, out var parsedLanguage))
+        {
+            return Enum.IsDefined(typeof(Language), parsedLanguage);
+        }
+        return false;
     }
 }

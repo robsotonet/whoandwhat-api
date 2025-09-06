@@ -4,6 +4,7 @@ using Moq;
 using WhoAndWhat.Application.Common;
 using WhoAndWhat.Application.Features.Auth.Commands.LoginUser;
 using WhoAndWhat.Application.Interfaces;
+using WhoAndWhat.Application.Tests.TestHelpers;
 using WhoAndWhat.Domain.Entities;
 using WhoAndWhat.Domain.ValueObjects;
 using Xunit;
@@ -184,12 +185,9 @@ public class LoginUserCommandHandlerTests
     {
         // Arrange
         var command = new LoginUserCommand("test@example.com", "TestPassword123!", false);
-        var user = new User("test@example.com", "testuser", Language.en);
+        var expiredLockTime = DateTime.UtcNow.AddMinutes(-1); // Expired 1 minute ago
+        var user = UserTestFactory.CreateWithExpiredLock("test@example.com", "testuser", Language.en, expiredLockTime);
         user.SetPassword("TestPassword123!");
-        
-        // Manually set lock state to simulate expired lock
-        typeof(User).GetProperty("IsLocked")!.SetValue(user, true);
-        typeof(User).GetProperty("LockedUntil")!.SetValue(user, DateTime.UtcNow.AddMinutes(-1)); // Expired 1 minute ago
 
         var tokenResult = new Application.DTOs.Authentication.TokenResult
         {

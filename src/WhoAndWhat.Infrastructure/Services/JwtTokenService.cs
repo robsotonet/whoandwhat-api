@@ -11,6 +11,7 @@ using WhoAndWhat.Domain.Entities;
 using WhoAndWhat.Infrastructure.Configuration;
 using WhoAndWhat.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace WhoAndWhat.Infrastructure.Services;
 
@@ -19,12 +20,14 @@ public class JwtTokenService : IJwtTokenService
     private readonly JwtSettings _jwtSettings;
     private readonly ApplicationDbContext _context;
     private readonly JwtSecurityTokenHandler _tokenHandler;
+    private readonly ILogger<JwtTokenService> _logger;
 
-    public JwtTokenService(IOptions<JwtSettings> jwtSettings, ApplicationDbContext context)
+    public JwtTokenService(IOptions<JwtSettings> jwtSettings, ApplicationDbContext context, ILogger<JwtTokenService> logger)
     {
         _jwtSettings = jwtSettings.Value;
         _context = context;
         _tokenHandler = new JwtSecurityTokenHandler();
+        _logger = logger;
     }
 
     public async Task<TokenResult> GenerateTokensAsync(User user)
@@ -80,20 +83,31 @@ public class JwtTokenService : IJwtTokenService
 
     public async Task<string> GenerateRefreshTokenAsync()
     {
+        const int maxRetries = 10;
         var randomBytes = new byte[64];
         using var rng = RandomNumberGenerator.Create();
-        rng.GetBytes(randomBytes);
         
-        var refreshToken = Convert.ToBase64String(randomBytes);
-        
-        // Ensure uniqueness
-        var exists = await _context.RefreshTokens.AnyAsync(rt => rt.Token == refreshToken);
-        if (exists)
+        for (int attempt = 0; attempt < maxRetries; attempt++)
         {
-            return await GenerateRefreshTokenAsync(); // Recursively generate a new one
+            rng.GetBytes(randomBytes);
+            var refreshToken = Convert.ToBase64String(randomBytes);
+            
+            // Check uniqueness
+            var exists = await _context.RefreshTokens.AnyAsync(rt => rt.Token == refreshToken);
+            if (!exists)
+            {
+                return refreshToken;
+            }
+            
+            // If this was the last attempt, log a warning
+            if (attempt == maxRetries - 1)
+            {
+                _logger.LogWarning("Failed to generate unique refresh token after {MaxRetries} attempts", maxRetries);
+            }
         }
         
-        return refreshToken;
+        // This should be extremely unlikely, but throw an exception if we can't generate a unique token
+        throw new InvalidOperationException($"Failed to generate a unique refresh token after {maxRetries} attempts");
     }
 
     public async Task<Result<TokenResult>> RefreshTokensAsync(string refreshToken)

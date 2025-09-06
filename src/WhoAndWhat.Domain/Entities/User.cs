@@ -47,6 +47,21 @@ public class User : BaseEntity
         PreferredLanguage = Language.en;
     }
 
+    // Protected constructor for testing purposes - allows setting specific Id
+    protected User(Guid id, string email, string username, Language preferredLanguage, DateTime? createdAt = null) 
+        : base(id, createdAt)
+    {
+        Email = email ?? throw new ArgumentNullException(nameof(email));
+        Username = username ?? throw new ArgumentNullException(nameof(username));
+        PreferredLanguage = preferredLanguage;
+        IsActive = true;
+        IsEmailVerified = false;
+        IsLocked = false;
+        FailedLoginAttempts = 0;
+        
+        AddDomainEvent(new UserCreatedEvent(Id, Email, Username));
+    }
+
     public User(string email, string username, Language preferredLanguage)
     {
         Email = email ?? throw new ArgumentNullException(nameof(email));
@@ -120,6 +135,15 @@ public class User : BaseEntity
     {
         IsLocked = true;
         LockedUntil = DateTime.UtcNow.AddHours(24);
+        MarkAsModified();
+        AddDomainEvent(new UserLockedEvent(Id, LockedUntil.Value));
+    }
+
+    // Protected method for testing - allows setting a custom lock expiry time
+    protected void LockAccountUntil(DateTime lockedUntil)
+    {
+        IsLocked = true;
+        LockedUntil = lockedUntil;
         MarkAsModified();
         AddDomainEvent(new UserLockedEvent(Id, LockedUntil.Value));
     }
