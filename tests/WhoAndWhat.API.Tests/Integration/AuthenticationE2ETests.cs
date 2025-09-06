@@ -69,7 +69,9 @@ public class AuthenticationE2ETests : IClassFixture<WebApplicationFactory<Progra
             Email = "journey@example.com",
             Username = "journeyuser",
             Password = "JourneyPassword123!",
-            ConfirmPassword = "JourneyPassword123!"
+            ConfirmPassword = "JourneyPassword123!",
+            PreferredLanguage = "en",
+            AcceptTerms = true
         };
 
         var registerResponse = await PostJsonAsync("/api/v1/auth/register", registerRequest);
@@ -131,7 +133,9 @@ public class AuthenticationE2ETests : IClassFixture<WebApplicationFactory<Progra
             Email = "unverified@example.com",
             Username = "unverifieduser",
             Password = "UnverifiedPassword123!",
-            ConfirmPassword = "UnverifiedPassword123!"
+            ConfirmPassword = "UnverifiedPassword123!",
+            PreferredLanguage = "en",
+            AcceptTerms = true
         };
 
         var registerResponse = await PostJsonAsync("/api/v1/auth/register", registerRequest);
@@ -356,7 +360,9 @@ public class AuthenticationE2ETests : IClassFixture<WebApplicationFactory<Progra
             Email = "duplicate@example.com",
             Username = "duplicateuser",
             Password = "DuplicatePassword123!",
-            ConfirmPassword = "DuplicatePassword123!"
+            ConfirmPassword = "DuplicatePassword123!",
+            PreferredLanguage = "en",
+            AcceptTerms = true
         };
 
         var firstResponse = await PostJsonAsync("/api/v1/auth/register", registerRequest);
@@ -372,7 +378,9 @@ public class AuthenticationE2ETests : IClassFixture<WebApplicationFactory<Progra
             Email = "different@example.com",
             Username = "duplicateuser", // Same username
             Password = "DuplicatePassword123!",
-            ConfirmPassword = "DuplicatePassword123!"
+            ConfirmPassword = "DuplicatePassword123!",
+            PreferredLanguage = "en",
+            AcceptTerms = true
         };
 
         var duplicateUsernameResponse = await PostJsonAsync("/api/v1/auth/register", duplicateUsernameRequest);
@@ -390,7 +398,9 @@ public class AuthenticationE2ETests : IClassFixture<WebApplicationFactory<Progra
             Email = email,
             Username = username,
             Password = password,
-            ConfirmPassword = password
+            ConfirmPassword = password,
+            PreferredLanguage = "en",
+            AcceptTerms = true
         };
 
         var response = await PostJsonAsync("/api/v1/auth/register", registerRequest);
