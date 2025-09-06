@@ -20,7 +20,8 @@
       "Bash(dotnet add:*)",
       "Bash(dotnet run:*)",
       "Bash(Start-Sleep 3)",
-      "Bash(dotnet restore:*)"
+      "Bash(dotnet restore:*)",
+      "Bash(dotnet --info)"
     ],
     "deny": [],
     "ask": []

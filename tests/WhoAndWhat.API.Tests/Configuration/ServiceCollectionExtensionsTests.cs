@@ -1,4 +1,5 @@
 using FluentAssertions;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
@@ -16,11 +17,35 @@ public class ServiceCollectionExtensionsTests
 {
     private readonly IServiceCollection _services;
     private readonly Mock<IConfiguration> _mockConfiguration;
+    private readonly Mock<IWebHostEnvironment> _mockEnvironment;
 
     public ServiceCollectionExtensionsTests()
     {
         _services = new ServiceCollection();
         _mockConfiguration = new Mock<IConfiguration>();
+        _mockEnvironment = new Mock<IWebHostEnvironment>();
+        _mockEnvironment.Setup(e => e.EnvironmentName).Returns("Development"); // Default to Development environment
+    }
+
+    /// <summary>
+    /// Creates a real IConfiguration instance with connection strings for testing
+    /// This replaces mocking approach which fails for extension methods like GetConnectionString
+    /// </summary>
+    private IConfiguration CreateConfigurationWithConnectionStrings(Dictionary<string, string?> connectionStrings)
+    {
+        var configData = new Dictionary<string, string?>();
+        
+        foreach (var kvp in connectionStrings)
+        {
+            if (kvp.Value != null)
+            {
+                configData[$"ConnectionStrings:{kvp.Key}"] = kvp.Value;
+            }
+        }
+
+        return new ConfigurationBuilder()
+            .AddInMemoryCollection(configData)
+            .Build();
     }
 
     [Fact]
@@ -54,8 +79,11 @@ public class ServiceCollectionExtensionsTests
     [Fact]
     public void AddHealthCheckConfiguration_Should_Register_Health_Check_Services()
     {
+        // Arrange
+        _services.AddLogging(); // HealthCheckService requires ILogger<T>
+
         // Act
-        _services.AddHealthCheckConfiguration();
+        _services.AddHealthCheckConfiguration(_mockEnvironment.Object);
 
         // Assert
         var serviceProvider = _services.BuildServiceProvider();
@@ -69,10 +97,11 @@ public class ServiceCollectionExtensionsTests
     public void AddHealthCheckConfiguration_Should_Register_Database_Health_Check()
     {
         // Arrange
+        _services.AddLogging(); // HealthCheckService requires ILogger<T>
         _services.AddDbContext<WhoAndWhat.Infrastructure.Data.ApplicationDbContext>(options => { });
 
         // Act
-        _services.AddHealthCheckConfiguration();
+        _services.AddHealthCheckConfiguration(_mockEnvironment.Object);
 
         // Assert
         var serviceProvider = _services.BuildServiceProvider();
@@ -130,11 +159,13 @@ public class ServiceCollectionExtensionsTests
     public void AddApplicationInsightsConfiguration_Should_Register_AppInsights_When_ConnectionString_Provided()
     {
         // Arrange
-        _mockConfiguration.Setup(c => c.GetConnectionString("ApplicationInsights"))
-                          .Returns("InstrumentationKey=test-key");
+        var configuration = CreateConfigurationWithConnectionStrings(new Dictionary<string, string?>
+        {
+            ["ApplicationInsights"] = "InstrumentationKey=test-key"
+        });
 
         // Act
-        _services.AddApplicationInsightsConfiguration(_mockConfiguration.Object);
+        _services.AddApplicationInsightsConfiguration(configuration);
 
         // Assert
         var serviceProvider = _services.BuildServiceProvider();
@@ -148,11 +179,13 @@ public class ServiceCollectionExtensionsTests
     public void AddApplicationInsightsConfiguration_Should_Not_Register_AppInsights_When_ConnectionString_Missing()
     {
         // Arrange
-        _mockConfiguration.Setup(c => c.GetConnectionString("ApplicationInsights"))
-                          .Returns((string?)null);
+        var configuration = CreateConfigurationWithConnectionStrings(new Dictionary<string, string?>
+        {
+            // No ApplicationInsights connection string provided
+        });
 
         // Act
-        _services.AddApplicationInsightsConfiguration(_mockConfiguration.Object);
+        _services.AddApplicationInsightsConfiguration(configuration);
 
         // Assert
         var serviceProvider = _services.BuildServiceProvider();
@@ -166,11 +199,13 @@ public class ServiceCollectionExtensionsTests
     public void AddApplicationInsightsConfiguration_Should_Not_Register_AppInsights_When_ConnectionString_Empty()
     {
         // Arrange
-        _mockConfiguration.Setup(c => c.GetConnectionString("ApplicationInsights"))
-                          .Returns(string.Empty);
+        var configuration = CreateConfigurationWithConnectionStrings(new Dictionary<string, string?>
+        {
+            ["ApplicationInsights"] = string.Empty
+        });
 
         // Act
-        _services.AddApplicationInsightsConfiguration(_mockConfiguration.Object);
+        _services.AddApplicationInsightsConfiguration(configuration);
 
         // Assert
         var serviceProvider = _services.BuildServiceProvider();
@@ -183,13 +218,16 @@ public class ServiceCollectionExtensionsTests
     [Fact]
     public void All_Extension_Methods_Should_Return_IServiceCollection_For_Chaining()
     {
+        // Arrange
+        var configuration = CreateConfigurationWithConnectionStrings(new Dictionary<string, string?>());
+
         // Act & Assert
         _services.AddApiVersioningConfiguration()
                 .AddSwaggerConfiguration()
-                .AddHealthCheckConfiguration()
+                .AddHealthCheckConfiguration(_mockEnvironment.Object)
                 .AddCorsConfiguration()
                 .AddResponseCompressionConfiguration()
-                .AddApplicationInsightsConfiguration(_mockConfiguration.Object)
+                .AddApplicationInsightsConfiguration(configuration)
                 .Should().BeSameAs(_services, "All extension methods should return IServiceCollection for method chaining");
     }
 
@@ -205,8 +243,8 @@ public class ServiceCollectionExtensionsTests
             _services.AddSwaggerConfiguration();
             _services.AddSwaggerConfiguration(); // Second call should not throw
 
-            _services.AddHealthCheckConfiguration();
-            _services.AddHealthCheckConfiguration(); // Second call should not throw
+            _services.AddHealthCheckConfiguration(_mockEnvironment.Object);
+            _services.AddHealthCheckConfiguration(_mockEnvironment.Object); // Second call should not throw
 
             _services.AddCorsConfiguration();
             _services.AddCorsConfiguration(); // Second call should not throw
@@ -235,8 +273,11 @@ public class ServiceCollectionExtensionsTests
     [Fact]
     public void AddHealthCheckConfiguration_Should_Configure_API_And_Database_Checks()
     {
+        // Arrange
+        _services.AddLogging(); // HealthCheckService requires ILogger<T>
+
         // Act
-        _services.AddHealthCheckConfiguration();
+        _services.AddHealthCheckConfiguration(_mockEnvironment.Object);
         var serviceProvider = _services.BuildServiceProvider();
         var healthCheckService = serviceProvider.GetService<HealthCheckService>();
 

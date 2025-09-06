@@ -1,3 +1,8 @@
+using System.Runtime.CompilerServices;
+
+[assembly: InternalsVisibleTo("WhoAndWhat.Application.Tests")]
+[assembly: InternalsVisibleTo("WhoAndWhat.Domain.Tests")]
+
 namespace WhoAndWhat.Domain;
 
 /// <summary>

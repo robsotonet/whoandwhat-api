@@ -1,6 +1,9 @@
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Serilog;
 using WhoAndWhat.API.Middleware;
+using AspNetCoreRateLimit;
+using WhoAndWhat.Infrastructure.Configuration;
+using Microsoft.Extensions.Options;
 
 namespace WhoAndWhat.API.Configuration;
 
@@ -14,8 +17,15 @@ public static class ApplicationBuilderExtensions
     /// </summary>
     public static IApplicationBuilder UseComprehensiveMiddleware(this IApplicationBuilder app, IWebHostEnvironment env)
     {
-        // Security headers (should be early in pipeline)
-        app.UseMiddleware<SecurityHeadersMiddleware>();
+        // Enhanced security headers (should be early in pipeline)
+        app.UseMiddleware<EnhancedSecurityHeadersMiddleware>();
+
+        // DDoS protection (before rate limiting for advanced threat detection)
+        var ddosSettings = app.ApplicationServices.GetService<IOptions<DDoSProtectionSettings>>();
+        if (ddosSettings?.Value?.Enabled == true)
+        {
+            app.UseMiddleware<DDoSProtectionMiddleware>();
+        }
 
         // Response compression
         app.UseResponseCompression();
@@ -51,9 +61,13 @@ public static class ApplicationBuilderExtensions
         // CORS
         app.UseCors(env.IsDevelopment() ? "DevelopmentPolicy" : "DefaultPolicy");
 
-        // Authentication & Authorization (prepared for future implementation)
-        // app.UseAuthentication();
-        // app.UseAuthorization();
+        // Rate Limiting (before authentication)
+        app.UseIpRateLimiting();
+        app.UseClientRateLimiting();
+
+        // Authentication & Authorization
+        app.UseAuthentication();
+        app.UseAuthorization();
 
         return app;
     }
