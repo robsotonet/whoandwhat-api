@@ -23,7 +23,7 @@ public class ApiFoundationIntegrationTests : IClassFixture<WebApplicationFactory
     {
         _factory = factory.WithWebHostBuilder(builder =>
         {
-            builder.UseEnvironment("Testing");
+            builder.UseEnvironment("Development"); // Use Development to enable Swagger
             builder.ConfigureServices(services =>
             {
                 // Remove the existing DbContext
