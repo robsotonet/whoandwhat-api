@@ -103,15 +103,28 @@ public static class ServiceCollectionExtensions
     /// <summary>
     /// Configure health checks for monitoring
     /// </summary>
-    public static IServiceCollection AddHealthCheckConfiguration(this IServiceCollection services)
+    public static IServiceCollection AddHealthCheckConfiguration(this IServiceCollection services, IWebHostEnvironment environment)
     {
-        services.AddHealthChecks()
-            .AddDbContextCheck<ApplicationDbContext>(
-                name: "database",
-                failureStatus: HealthStatus.Degraded,
-                tags: new[] { "database", "postgresql" })
-            .AddCheck("api", () => HealthCheckResult.Healthy("API is running"), 
-                tags: new[] { "api", "self" });
+        if (environment.IsEnvironment("Testing"))
+        {
+            // For testing environment, use simple health checks without database dependency
+            services.AddHealthChecks()
+                .AddCheck("database", () => HealthCheckResult.Healthy("InMemory database is always healthy"), 
+                    tags: new[] { "database", "inmemory" })
+                .AddCheck("api", () => HealthCheckResult.Healthy("API is running"), 
+                    tags: new[] { "api", "self" });
+        }
+        else
+        {
+            // For development and production, use PostgreSQL database checks
+            services.AddHealthChecks()
+                .AddDbContextCheck<ApplicationDbContext>(
+                    name: "database",
+                    failureStatus: HealthStatus.Degraded,
+                    tags: new[] { "database", "postgresql" })
+                .AddCheck("api", () => HealthCheckResult.Healthy("API is running"), 
+                    tags: new[] { "api", "self" });
+        }
 
         return services;
     }

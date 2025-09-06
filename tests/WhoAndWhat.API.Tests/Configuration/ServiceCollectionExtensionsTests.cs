@@ -1,4 +1,5 @@
 using FluentAssertions;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
@@ -16,11 +17,14 @@ public class ServiceCollectionExtensionsTests
 {
     private readonly IServiceCollection _services;
     private readonly Mock<IConfiguration> _mockConfiguration;
+    private readonly Mock<IWebHostEnvironment> _mockEnvironment;
 
     public ServiceCollectionExtensionsTests()
     {
         _services = new ServiceCollection();
         _mockConfiguration = new Mock<IConfiguration>();
+        _mockEnvironment = new Mock<IWebHostEnvironment>();
+        _mockEnvironment.Setup(e => e.EnvironmentName).Returns("Development"); // Default to Development environment
     }
 
     [Fact]
@@ -55,7 +59,7 @@ public class ServiceCollectionExtensionsTests
     public void AddHealthCheckConfiguration_Should_Register_Health_Check_Services()
     {
         // Act
-        _services.AddHealthCheckConfiguration();
+        _services.AddHealthCheckConfiguration(_mockEnvironment.Object);
 
         // Assert
         var serviceProvider = _services.BuildServiceProvider();
@@ -72,7 +76,7 @@ public class ServiceCollectionExtensionsTests
         _services.AddDbContext<WhoAndWhat.Infrastructure.Data.ApplicationDbContext>(options => { });
 
         // Act
-        _services.AddHealthCheckConfiguration();
+        _services.AddHealthCheckConfiguration(_mockEnvironment.Object);
 
         // Assert
         var serviceProvider = _services.BuildServiceProvider();
@@ -186,7 +190,7 @@ public class ServiceCollectionExtensionsTests
         // Act & Assert
         _services.AddApiVersioningConfiguration()
                 .AddSwaggerConfiguration()
-                .AddHealthCheckConfiguration()
+                .AddHealthCheckConfiguration(_mockEnvironment.Object)
                 .AddCorsConfiguration()
                 .AddResponseCompressionConfiguration()
                 .AddApplicationInsightsConfiguration(_mockConfiguration.Object)
@@ -205,8 +209,8 @@ public class ServiceCollectionExtensionsTests
             _services.AddSwaggerConfiguration();
             _services.AddSwaggerConfiguration(); // Second call should not throw
 
-            _services.AddHealthCheckConfiguration();
-            _services.AddHealthCheckConfiguration(); // Second call should not throw
+            _services.AddHealthCheckConfiguration(_mockEnvironment.Object);
+            _services.AddHealthCheckConfiguration(_mockEnvironment.Object); // Second call should not throw
 
             _services.AddCorsConfiguration();
             _services.AddCorsConfiguration(); // Second call should not throw
@@ -236,7 +240,7 @@ public class ServiceCollectionExtensionsTests
     public void AddHealthCheckConfiguration_Should_Configure_API_And_Database_Checks()
     {
         // Act
-        _services.AddHealthCheckConfiguration();
+        _services.AddHealthCheckConfiguration(_mockEnvironment.Object);
         var serviceProvider = _services.BuildServiceProvider();
         var healthCheckService = serviceProvider.GetService<HealthCheckService>();
 

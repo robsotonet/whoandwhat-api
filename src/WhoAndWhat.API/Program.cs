@@ -48,9 +48,19 @@ try
     builder.Host.UseSerilog((context, configuration) =>
         configuration.ReadFrom.Configuration(context.Configuration));
 
-    // Core services
-    builder.Services.AddDbContext<ApplicationDbContext>(options =>
-        options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+    // Core services - Environment-conditional database configuration
+    if (builder.Environment.IsEnvironment("Testing"))
+    {
+        // Use InMemory database for integration tests
+        builder.Services.AddDbContext<ApplicationDbContext>(options =>
+            options.UseInMemoryDatabase("IntegrationTestDb"));
+    }
+    else
+    {
+        // Use PostgreSQL for Development and Production
+        builder.Services.AddDbContext<ApplicationDbContext>(options =>
+            options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+    }
 
     builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
     builder.Services.AddScoped<IUserDomainService, UserDomainService>();
@@ -64,7 +74,7 @@ try
     // API Foundation Services
     builder.Services.AddApiVersioningConfiguration();
     builder.Services.AddSwaggerConfiguration();
-    builder.Services.AddHealthCheckConfiguration();
+    builder.Services.AddHealthCheckConfiguration(builder.Environment);
     builder.Services.AddCorsConfiguration();
     builder.Services.AddResponseCompressionConfiguration();
     builder.Services.AddApplicationInsightsConfiguration(builder.Configuration);
