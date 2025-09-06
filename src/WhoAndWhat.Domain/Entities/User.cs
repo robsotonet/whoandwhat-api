@@ -139,8 +139,9 @@ public class User : BaseEntity
         AddDomainEvent(new UserLockedEvent(Id, LockedUntil.Value));
     }
 
-    // Protected method for testing - allows setting a custom lock expiry time
-    protected void LockAccountUntil(DateTime lockedUntil)
+    // Internal method for testing - allows setting a custom lock expiry time
+    // Made internal and exposed via InternalsVisibleTo attribute for test assemblies
+    internal void LockAccountUntil(DateTime lockedUntil)
     {
         IsLocked = true;
         LockedUntil = lockedUntil;
