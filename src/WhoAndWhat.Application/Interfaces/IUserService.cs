@@ -82,7 +82,7 @@ public interface IUserService
     /// <param name="preferredLanguage">New preferred language (optional)</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Result containing updated user or error message</returns>
-    Task<Result<User>> UpdateUserProfileAsync(Guid userId, string? username = null, Language? preferredLanguage = null, CancellationToken cancellationToken = default);
+    Task<Result<User>> UpdateUserProfileAsync(Guid userId, string? username = null, string? preferredLanguage = null, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Get user by ID
@@ -115,4 +115,67 @@ public interface IUserService
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>True if username exists, false otherwise</returns>
     Task<bool> UsernameExistsAsync(string username, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Validate user password
+    /// </summary>
+    /// <param name="userId">User ID</param>
+    /// <param name="password">Password to validate</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>True if password is valid, false otherwise</returns>
+    Task<bool> ValidatePasswordAsync(Guid userId, string password, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Deactivate user account
+    /// </summary>
+    /// <param name="userId">User ID</param>
+    /// <param name="reason">Reason for deactivation (optional)</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Result indicating success or failure</returns>
+    Task<Result> DeactivateUserAsync(Guid userId, string? reason = null, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Export user data in specified format
+    /// </summary>
+    /// <param name="userId">User ID</param>
+    /// <param name="format">Export format (json, csv)</param>
+    /// <param name="includeProfile">Include profile data</param>
+    /// <param name="includeTasks">Include tasks data</param>
+    /// <param name="includeProjects">Include projects data</param>
+    /// <param name="includeContacts">Include contacts data</param>
+    /// <param name="includeOAuthAccounts">Include OAuth accounts data</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Result containing exported data or error message</returns>
+    Task<Result<ExportData>> ExportUserDataAsync(Guid userId, string format, bool includeProfile, bool includeTasks, bool includeProjects, bool includeContacts, bool includeOAuthAccounts, CancellationToken cancellationToken = default);
+}
+
+/// <summary>
+/// Data transfer object for exported user data
+/// </summary>
+public class ExportData
+{
+    /// <summary>
+    /// Exported data as byte array
+    /// </summary>
+    public byte[] Data { get; set; } = Array.Empty<byte>();
+
+    /// <summary>
+    /// Content type of exported data
+    /// </summary>
+    public string ContentType { get; set; } = string.Empty;
+
+    /// <summary>
+    /// File name for the exported data
+    /// </summary>
+    public string FileName { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Size of exported data in bytes
+    /// </summary>
+    public long SizeBytes { get; set; }
+
+    /// <summary>
+    /// Number of records exported
+    /// </summary>
+    public int RecordCount { get; set; }
 }

@@ -7,6 +7,7 @@ using Swashbuckle.AspNetCore.SwaggerGen;
 using System.Reflection;
 using System.Security.Claims;
 using System.Text;
+using WhoAndWhat.API.Filters;
 using WhoAndWhat.Application.Interfaces;
 using WhoAndWhat.Application.Services;
 using WhoAndWhat.Infrastructure.Configuration;
@@ -57,11 +58,53 @@ public static class ServiceCollectionExtensions
             {
                 Version = "v1",
                 Title = "WhoAndWhat Task Management API",
-                Description = "A comprehensive bilingual task management platform with AI-powered features and social connectivity.",
+                Description = @"A comprehensive bilingual task management platform with AI-powered features and social connectivity.
+
+## Authentication
+This API supports multiple authentication methods:
+- **JWT Bearer Token**: For regular API access
+- **OAuth 2.0**: Google, Facebook, and Apple Sign-In
+- **Password Reset**: Email-based password recovery
+
+## Features
+- User registration and authentication
+- Password management (change, reset, forgot)
+- OAuth 2.0 integration (Google, Facebook, Apple)
+- User account management (profile, deactivation, data export)
+- Email verification system
+- Rate limiting and DDoS protection
+- Comprehensive security headers
+
+## Rate Limiting
+API requests are limited to:
+- 100 requests per minute per IP
+- 1000 requests per hour per IP
+- Higher limits for authenticated users
+
+## Data Export
+Users can export their data in JSON or CSV format including:
+- Profile information
+- Tasks and projects
+- Contacts
+- OAuth account connections",
                 Contact = new Microsoft.OpenApi.Models.OpenApiContact
                 {
                     Name = "WhoAndWhat Development Team",
                     Email = "dev@whoandwhat.com"
+                },
+                License = new Microsoft.OpenApi.Models.OpenApiLicense
+                {
+                    Name = "MIT License",
+                    Url = new Uri("https://opensource.org/licenses/MIT")
+                },
+                TermsOfService = new Uri("https://whoandwhat.com/terms"),
+                Extensions = new Dictionary<string, Microsoft.OpenApi.Interfaces.IOpenApiExtension>
+                {
+                    ["x-logo"] = new Microsoft.OpenApi.Any.OpenApiObject
+                    {
+                        ["url"] = new Microsoft.OpenApi.Any.OpenApiString("https://whoandwhat.com/logo.png"),
+                        ["altText"] = new Microsoft.OpenApi.Any.OpenApiString("WhoAndWhat Logo")
+                    }
                 }
             });
 
@@ -73,16 +116,79 @@ public static class ServiceCollectionExtensions
                 options.IncludeXmlComments(xmlPath);
             }
 
-            // JWT Authentication configuration (prepared for future)
+            // JWT Authentication configuration
             options.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
             {
-                Description = "JWT Authorization header using the Bearer scheme. Enter 'Bearer' [space] and then your token in the text input below.",
+                Description = "JWT Authorization header using the Bearer scheme. Enter 'Bearer' [space] and then your token in the text input below.\n\nExample: 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...'",
                 Name = "Authorization",
                 In = Microsoft.OpenApi.Models.ParameterLocation.Header,
-                Type = Microsoft.OpenApi.Models.SecuritySchemeType.ApiKey,
-                Scheme = "Bearer"
+                Type = Microsoft.OpenApi.Models.SecuritySchemeType.Http,
+                Scheme = "bearer",
+                BearerFormat = "JWT"
             });
 
+            // OAuth 2.0 Google Authentication
+            options.AddSecurityDefinition("Google", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+            {
+                Type = Microsoft.OpenApi.Models.SecuritySchemeType.OAuth2,
+                Description = "Google OAuth 2.0 authentication",
+                Flows = new Microsoft.OpenApi.Models.OpenApiOAuthFlows
+                {
+                    AuthorizationCode = new Microsoft.OpenApi.Models.OpenApiOAuthFlow
+                    {
+                        AuthorizationUrl = new Uri("https://accounts.google.com/o/oauth2/v2/auth"),
+                        TokenUrl = new Uri("https://oauth2.googleapis.com/token"),
+                        Scopes = new Dictionary<string, string>
+                        {
+                            ["openid"] = "OpenID Connect",
+                            ["profile"] = "Access to user profile information",
+                            ["email"] = "Access to user email address"
+                        }
+                    }
+                }
+            });
+
+            // OAuth 2.0 Facebook Authentication
+            options.AddSecurityDefinition("Facebook", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+            {
+                Type = Microsoft.OpenApi.Models.SecuritySchemeType.OAuth2,
+                Description = "Facebook OAuth 2.0 authentication",
+                Flows = new Microsoft.OpenApi.Models.OpenApiOAuthFlows
+                {
+                    AuthorizationCode = new Microsoft.OpenApi.Models.OpenApiOAuthFlow
+                    {
+                        AuthorizationUrl = new Uri("https://www.facebook.com/v18.0/dialog/oauth"),
+                        TokenUrl = new Uri("https://graph.facebook.com/v18.0/oauth/access_token"),
+                        Scopes = new Dictionary<string, string>
+                        {
+                            ["email"] = "Access to user email address",
+                            ["public_profile"] = "Access to user public profile information"
+                        }
+                    }
+                }
+            });
+
+            // OAuth 2.0 Apple Authentication
+            options.AddSecurityDefinition("Apple", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+            {
+                Type = Microsoft.OpenApi.Models.SecuritySchemeType.OAuth2,
+                Description = "Apple Sign In OAuth 2.0 authentication",
+                Flows = new Microsoft.OpenApi.Models.OpenApiOAuthFlows
+                {
+                    AuthorizationCode = new Microsoft.OpenApi.Models.OpenApiOAuthFlow
+                    {
+                        AuthorizationUrl = new Uri("https://appleid.apple.com/auth/authorize"),
+                        TokenUrl = new Uri("https://appleid.apple.com/auth/token"),
+                        Scopes = new Dictionary<string, string>
+                        {
+                            ["name"] = "Access to user name",
+                            ["email"] = "Access to user email address"
+                        }
+                    }
+                }
+            });
+
+            // Default JWT security requirement
             options.AddSecurityRequirement(new Microsoft.OpenApi.Models.OpenApiSecurityRequirement
             {
                 {
@@ -98,7 +204,41 @@ public static class ServiceCollectionExtensions
                 }
             });
 
-            // Custom operation filters can be added here for future enhancements
+            // Configure response examples and schemas
+            options.EnableAnnotations();
+            
+            // Add servers for different environments
+            options.AddServer(new Microsoft.OpenApi.Models.OpenApiServer
+            {
+                Url = "https://localhost:7071",
+                Description = "Development Server"
+            });
+            
+            options.AddServer(new Microsoft.OpenApi.Models.OpenApiServer
+            {
+                Url = "https://api-dev.whoandwhat.com",
+                Description = "Development Environment"
+            });
+            
+            options.AddServer(new Microsoft.OpenApi.Models.OpenApiServer
+            {
+                Url = "https://api-staging.whoandwhat.com", 
+                Description = "Staging Environment"
+            });
+            
+            options.AddServer(new Microsoft.OpenApi.Models.OpenApiServer
+            {
+                Url = "https://api.whoandwhat.com",
+                Description = "Production Environment"
+            });
+
+            // Configure operation sorting
+            options.OrderActionsBy(apiDesc => $"{apiDesc.ActionDescriptor.RouteValues["controller"]}_{apiDesc.HttpMethod}");
+
+            // Custom schema filters for better documentation
+            options.SchemaFilter<EnumSchemaFilter>();
+            options.OperationFilter<AuthResponseOperationFilter>();
+            options.OperationFilter<FileUploadOperationFilter>();
         });
 
         return services;
@@ -490,6 +630,31 @@ public static class ServiceCollectionExtensions
                 {
                     var logger = context.HttpContext.RequestServices.GetRequiredService<ILogger<string>>();
                     logger.LogDebug("Facebook OAuth ticket created for user: {Email}", 
+                        context.Principal?.FindFirst(ClaimTypes.Email)?.Value);
+                    return System.Threading.Tasks.Task.CompletedTask;
+                };
+            });
+        }
+
+        // Configure Apple OAuth
+        if (!string.IsNullOrEmpty(oauthSettings.Apple.ClientId) && 
+            !string.IsNullOrEmpty(oauthSettings.Apple.TeamId) && 
+            !string.IsNullOrEmpty(oauthSettings.Apple.KeyId) && 
+            !string.IsNullOrEmpty(oauthSettings.Apple.PrivateKey))
+        {
+            authenticationBuilder.AddApple(options =>
+            {
+                options.ClientId = oauthSettings.Apple.ClientId;
+                options.TeamId = oauthSettings.Apple.TeamId;
+                options.KeyId = oauthSettings.Apple.KeyId;
+                options.PrivateKey = oauthSettings.Apple.PrivateKey;
+                options.CallbackPath = oauthSettings.CallbackUrl.Apple;
+                options.SaveTokens = true;
+
+                options.Events.OnCreatingTicket = context =>
+                {
+                    var logger = context.HttpContext.RequestServices.GetRequiredService<ILogger<string>>();
+                    logger.LogDebug("Apple OAuth ticket created for user: {Email}", 
                         context.Principal?.FindFirst(ClaimTypes.Email)?.Value);
                     return System.Threading.Tasks.Task.CompletedTask;
                 };

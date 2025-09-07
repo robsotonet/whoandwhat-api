@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Logging;
+using System.Text.Json;
 using WhoAndWhat.Application.Common;
 using WhoAndWhat.Application.Interfaces;
 using WhoAndWhat.Domain.Entities;
@@ -338,7 +339,7 @@ public class UserService : IUserService
     }
 
     /// <inheritdoc />
-    public async Task<Result<User>> UpdateUserProfileAsync(Guid userId, string? username = null, Language? preferredLanguage = null, CancellationToken cancellationToken = default)
+    public async Task<Result<User>> UpdateUserProfileAsync(Guid userId, string? username = null, string? preferredLanguage = null, CancellationToken cancellationToken = default)
     {
         try
         {
@@ -364,9 +365,17 @@ public class UserService : IUserService
             }
 
             // Update preferred language if provided
-            if (preferredLanguage.HasValue && preferredLanguage != user.PreferredLanguage)
+            if (!string.IsNullOrWhiteSpace(preferredLanguage))
             {
-                user.UpdatePreferredLanguage(preferredLanguage.Value);
+                if (Enum.TryParse<Language>(preferredLanguage, true, out var language) && language != user.PreferredLanguage)
+                {
+                    user.UpdatePreferredLanguage(language);
+                }
+                else if (!Enum.TryParse<Language>(preferredLanguage, true, out _))
+                {
+                    _logger.LogWarning("Invalid language provided for user {UserId}: {Language}", userId, preferredLanguage);
+                    return Result<User>.Failure("Invalid language. Supported languages are: en, es");
+                }
             }
 
             await _userRepository.UpdateAsync(user, cancellationToken);
@@ -448,6 +457,167 @@ public class UserService : IUserService
         {
             _logger.LogError(ex, "Error checking username existence: {Username}", username);
             return false;
+        }
+    }
+
+    /// <inheritdoc />
+    public async Task<bool> ValidatePasswordAsync(Guid userId, string password, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(password))
+                return false;
+
+            var user = await _userRepository.GetByIdAsync(userId, cancellationToken);
+            if (user == null)
+            {
+                _logger.LogWarning("Password validation attempt for non-existent user: {UserId}", userId);
+                return false;
+            }
+
+            // Use domain service to validate password
+            return _userDomainService.ValidatePassword(user, password);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error validating password for user: {UserId}", userId);
+            return false;
+        }
+    }
+
+    /// <inheritdoc />
+    public async Task<Result> DeactivateUserAsync(Guid userId, string? reason = null, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var user = await _userRepository.GetByIdAsync(userId, cancellationToken);
+            if (user == null)
+            {
+                _logger.LogWarning("Account deactivation attempt for non-existent user: {UserId}", userId);
+                return Result.Failure("User not found");
+            }
+
+            // Deactivate the user account
+            user.DeactivateAccount();
+            await _userRepository.UpdateAsync(user, cancellationToken);
+
+            _logger.LogInformation("User account deactivated: {UserId}, Reason: {Reason}", userId, reason);
+            return Result.Success();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error deactivating user account: {UserId}", userId);
+            return Result.Failure("An error occurred while deactivating the account. Please try again.");
+        }
+    }
+
+    /// <inheritdoc />
+    public async Task<Result<ExportData>> ExportUserDataAsync(Guid userId, string format, bool includeProfile, bool includeTasks, bool includeProjects, bool includeContacts, bool includeOAuthAccounts, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var user = await _userRepository.GetByIdAsync(userId, cancellationToken);
+            if (user == null)
+            {
+                _logger.LogWarning("Data export attempt for non-existent user: {UserId}", userId);
+                return Result<ExportData>.Failure("User not found");
+            }
+
+            var exportData = new Dictionary<string, object>();
+            int recordCount = 0;
+
+            // Include profile data
+            if (includeProfile)
+            {
+                exportData["profile"] = new
+                {
+                    user.Id,
+                    user.Email,
+                    user.Username,
+                    PreferredLanguage = user.PreferredLanguage.ToString(),
+                    user.IsEmailVerified,
+                    user.IsActive,
+                    user.CreatedAt,
+                    user.UpdatedAt,
+                    user.LastLoginAt
+                };
+                recordCount++;
+            }
+
+            // TODO: Add task, project, contact, and OAuth account data when those repositories are available
+            // For now, we'll just include placeholder data structures
+            if (includeTasks)
+            {
+                exportData["tasks"] = new List<object>(); // Will be populated when ITaskRepository is available
+            }
+
+            if (includeProjects)
+            {
+                exportData["projects"] = new List<object>(); // Will be populated when IProjectRepository is available
+            }
+
+            if (includeContacts)
+            {
+                exportData["contacts"] = new List<object>(); // Will be populated when IContactRepository is available
+            }
+
+            if (includeOAuthAccounts)
+            {
+                exportData["oauthAccounts"] = new List<object>(); // Will be populated when IOAuthAccountRepository is available
+            }
+
+            // Convert to requested format
+            byte[] data;
+            string contentType;
+            
+            switch (format.ToLowerInvariant())
+            {
+                case "json":
+                    var jsonData = System.Text.Json.JsonSerializer.Serialize(exportData, new JsonSerializerOptions
+                    {
+                        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+                        WriteIndented = true
+                    });
+                    data = System.Text.Encoding.UTF8.GetBytes(jsonData);
+                    contentType = "application/json";
+                    break;
+
+                case "csv":
+                    // For CSV, we'll create a simple format with profile data only for now
+                    var csvLines = new List<string>();
+                    
+                    if (includeProfile)
+                    {
+                        csvLines.Add("Type,Id,Email,Username,PreferredLanguage,IsEmailVerified,IsActive,CreatedAt,UpdatedAt,LastLoginAt");
+                        csvLines.Add($"Profile,{user.Id},{user.Email},{user.Username},{user.PreferredLanguage},{user.IsEmailVerified},{user.IsActive},{user.CreatedAt:yyyy-MM-dd HH:mm:ss},{user.UpdatedAt:yyyy-MM-dd HH:mm:ss},{user.LastLoginAt:yyyy-MM-dd HH:mm:ss}");
+                    }
+                    
+                    var csvContent = string.Join(Environment.NewLine, csvLines);
+                    data = System.Text.Encoding.UTF8.GetBytes(csvContent);
+                    contentType = "text/csv";
+                    break;
+
+                default:
+                    _logger.LogWarning("Unsupported export format requested: {Format} for user: {UserId}", format, userId);
+                    return Result<ExportData>.Failure("Unsupported export format. Use 'json' or 'csv'.");
+            }
+
+            var result = new ExportData
+            {
+                Data = data,
+                ContentType = contentType,
+                FileName = $"user-data-export-{DateTime.UtcNow:yyyyMMdd-HHmmss}.{format.ToLowerInvariant()}",
+                SizeBytes = data.Length,
+                RecordCount = recordCount
+            };
+
+            _logger.LogInformation("User data exported successfully: {UserId}, Format: {Format}, Size: {Size} bytes", userId, format, data.Length);
+            return Result<ExportData>.Success(result);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error exporting user data: {UserId}", userId);
+            return Result<ExportData>.Failure("An error occurred while exporting data. Please try again.");
         }
     }
 }
