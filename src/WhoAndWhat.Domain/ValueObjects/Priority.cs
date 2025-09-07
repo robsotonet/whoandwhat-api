@@ -359,6 +359,22 @@ public record Priority : IComparable<Priority>
         };
     }
 
+    /// <summary>
+    /// Gets urgency multiplier for scheduling algorithms
+    /// </summary>
+    /// <returns>Numeric multiplier for urgency calculation</returns>
+    public double GetUrgencyMultiplier()
+    {
+        return this switch
+        {
+            _ when this == Low => 0.5,
+            _ when this == Medium => 1.0,
+            _ when this == High => 2.0,
+            _ when this == Urgent => 4.0,
+            _ => 1.0
+        };
+    }
+
     // Implicit conversion from Priority to int for database storage
     public static implicit operator int(Priority priority) => priority.Value;
 

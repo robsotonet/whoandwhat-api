@@ -11,10 +11,12 @@ public record TaskStatus
     public static readonly TaskStatus InProgress = new("InProgress", 1, "Task is currently being worked on");
     public static readonly TaskStatus Completed = new("Completed", 2, "Task has been completed successfully");
     public static readonly TaskStatus Archived = new("Archived", 3, "Task has been archived for record-keeping");
+    public static readonly TaskStatus Confirmed = new("Confirmed", 4, "Task has been confirmed (appointments)");
+    public static readonly TaskStatus Cancelled = new("Cancelled", 5, "Task has been cancelled");
 
     private static readonly IReadOnlyList<TaskStatus> AllStatuses = new List<TaskStatus>
     {
-        Pending, InProgress, Completed, Archived
+        Pending, InProgress, Completed, Archived, Confirmed, Cancelled
     };
 
     private static readonly IReadOnlyDictionary<int, TaskStatus> StatusByValue = AllStatuses.ToDictionary(s => s.Value);
@@ -117,9 +119,11 @@ public record TaskStatus
 
         return this switch
         {
-            _ when this == Pending => targetStatus == InProgress || targetStatus == Completed,
-            _ when this == InProgress => targetStatus == Completed || targetStatus == Pending,
+            _ when this == Pending => targetStatus == InProgress || targetStatus == Completed || targetStatus == Confirmed || targetStatus == Cancelled,
+            _ when this == InProgress => targetStatus == Completed || targetStatus == Pending || targetStatus == Cancelled,
             _ when this == Completed => targetStatus == Archived,
+            _ when this == Confirmed => targetStatus == InProgress || targetStatus == Completed || targetStatus == Cancelled,
+            _ when this == Cancelled => false, // Cannot transition from cancelled
             _ when this == Archived => false, // Cannot transition from archived
             _ => false
         };
@@ -138,13 +142,13 @@ public record TaskStatus
     /// Determines if this is a terminal status (no further transitions possible)
     /// </summary>
     /// <returns>True if this is a terminal status</returns>
-    public bool IsTerminal() => this == Archived;
+    public bool IsTerminal() => this == Archived || this == Cancelled;
 
     /// <summary>
     /// Determines if this status represents an active task
     /// </summary>
     /// <returns>True if task is active</returns>
-    public bool IsActive() => this == Pending || this == InProgress;
+    public bool IsActive() => this == Pending || this == InProgress || this == Confirmed;
 
     /// <summary>
     /// Determines if this status represents a completed task
@@ -162,6 +166,8 @@ public record TaskStatus
         "InProgress" => "In Progress", 
         "Completed" => "Completed",
         "Archived" => "Archived",
+        "Confirmed" => "Confirmed",
+        "Cancelled" => "Cancelled",
         _ => Name
     };
 
@@ -175,6 +181,8 @@ public record TaskStatus
         "InProgress" => "status-in-progress",
         "Completed" => "status-completed", 
         "Archived" => "status-archived",
+        "Confirmed" => "status-confirmed",
+        "Cancelled" => "status-cancelled",
         _ => "status-unknown"
     };
 
@@ -188,6 +196,8 @@ public record TaskStatus
         "InProgress" => "#007bff",  // Blue
         "Completed" => "#28a745",   // Green
         "Archived" => "#17a2b8",    // Teal
+        "Confirmed" => "#20c997",   // Success green
+        "Cancelled" => "#dc3545",   // Red
         _ => "#000000"
     };
 

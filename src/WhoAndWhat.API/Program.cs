@@ -4,6 +4,7 @@ using WhoAndWhat.API.Configuration;
 using WhoAndWhat.Application;
 using WhoAndWhat.Application.Interfaces;
 using WhoAndWhat.Application.DependencyInjection;
+using WhoAndWhat.Application.Services;
 using WhoAndWhat.Domain.Services;
 using WhoAndWhat.Infrastructure;
 using WhoAndWhat.Infrastructure.Data;
@@ -65,6 +66,7 @@ try
     builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
     builder.Services.AddScoped<IUserDomainService, UserDomainService>();
     builder.Services.AddScoped<IUserRepository, UserRepository>();
+    builder.Services.AddScoped<IUserService, UserService>();
     builder.Services.AddScoped<IAccountVerificationService, AccountVerificationService>();
     builder.Services.AddScoped<IPasswordResetService, PasswordResetService>();
 

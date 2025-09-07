@@ -12,16 +12,16 @@ namespace WhoAndWhat.Application.Features.Auth.Commands.LoginUser;
 /// </summary>
 public class LoginUserCommandHandler : IRequestHandler<LoginUserCommand, Result<LoginResponse>>
 {
-    private readonly IUserRepository _userRepository;
+    private readonly IUserService _userService;
     private readonly IJwtTokenService _jwtTokenService;
     private readonly ILogger<LoginUserCommandHandler> _logger;
 
     public LoginUserCommandHandler(
-        IUserRepository userRepository,
+        IUserService userService,
         IJwtTokenService jwtTokenService,
         ILogger<LoginUserCommandHandler> logger)
     {
-        _userRepository = userRepository;
+        _userService = userService;
         _jwtTokenService = jwtTokenService;
         _logger = logger;
     }
@@ -30,54 +30,18 @@ public class LoginUserCommandHandler : IRequestHandler<LoginUserCommand, Result<
     {
         try
         {
-            // Get user by email
-            var user = await _userRepository.GetByEmailAsync(request.Email, cancellationToken);
-            if (user == null)
+            // Use UserService for authentication logic
+            var authenticationResult = await _userService.AuthenticateAsync(
+                request.Email,
+                request.Password,
+                cancellationToken);
+
+            if (!authenticationResult.IsSuccess)
             {
-                _logger.LogWarning("Login attempt with non-existent email: {Email}", request.Email);
-                return Result<LoginResponse>.Failure("Invalid email or password");
+                return Result<LoginResponse>.Failure(authenticationResult.Error);
             }
 
-            // Check if user is active
-            if (!user.IsActive)
-            {
-                _logger.LogWarning("Login attempt with inactive user: {UserId}", user.Id);
-                return Result<LoginResponse>.Failure("Account is deactivated. Please contact support.");
-            }
-
-            // Check if user is locked
-            if (user.IsLocked)
-            {
-                _logger.LogWarning("Login attempt with locked user: {UserId}", user.Id);
-                
-                if (user.LockedUntil.HasValue && user.LockedUntil > DateTime.UtcNow)
-                {
-                    return Result<LoginResponse>.Failure($"Account is locked until {user.LockedUntil:yyyy-MM-dd HH:mm} UTC");
-                }
-                
-                // If lock period expired, unlock the user
-                user.UnlockAccount();
-                await _userRepository.UpdateAsync(user, cancellationToken);
-            }
-
-            // Verify password
-            if (!user.VerifyPassword(request.Password))
-            {
-                _logger.LogWarning("Invalid password attempt for user: {UserId}", user.Id);
-                
-                // Increment failed login attempts
-                user.RecordLoginAttempt(false);
-                await _userRepository.UpdateAsync(user, cancellationToken);
-                
-                // Check if user should be locked after failed attempts
-                if (user.IsLocked)
-                {
-                    _logger.LogWarning("User locked due to failed login attempts: {UserId}", user.Id);
-                    return Result<LoginResponse>.Failure("Account has been locked due to too many failed login attempts");
-                }
-                
-                return Result<LoginResponse>.Failure("Invalid email or password");
-            }
+            var user = authenticationResult.Value;
 
             // Check email verification (optional - can be configured)
             // For now, we'll allow login without email verification but track it

@@ -366,6 +366,9 @@ public static class ServiceCollectionExtensions
 
         services.Configure<JwtSettings>(configuration.GetSection(JwtSettings.SectionName));
 
+        // Add HttpContextAccessor for IP address tracking
+        services.AddHttpContextAccessor();
+
         // Register JWT service
         services.AddScoped<IJwtTokenService, JwtTokenService>();
 

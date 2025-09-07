@@ -21,7 +21,9 @@
       "Bash(dotnet run:*)",
       "Bash(Start-Sleep 3)",
       "Bash(dotnet restore:*)",
-      "Bash(dotnet --info)"
+      "Bash(dotnet --info)",
+      "Bash(grep:*)",
+      "WebSearch"
     ],
     "deny": [],
     "ask": []
