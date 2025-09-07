@@ -16,17 +16,20 @@ public class RegisterUserCommandHandler : IRequestHandler<RegisterUserCommand, R
     private readonly IUserService _userService;
     private readonly IAccountVerificationService _accountVerificationService;
     private readonly IJwtTokenService _jwtTokenService;
+    private readonly IEmailService _emailService;
     private readonly ILogger<RegisterUserCommandHandler> _logger;
 
     public RegisterUserCommandHandler(
         IUserService userService,
         IAccountVerificationService accountVerificationService,
         IJwtTokenService jwtTokenService,
+        IEmailService emailService,
         ILogger<RegisterUserCommandHandler> logger)
     {
         _userService = userService;
         _accountVerificationService = accountVerificationService;
         _jwtTokenService = jwtTokenService;
+        _emailService = emailService;
         _logger = logger;
     }
 
@@ -85,10 +88,24 @@ public class RegisterUserCommandHandler : IRequestHandler<RegisterUserCommand, R
                 Message = "User registered successfully. Please check your email for verification instructions."
             };
 
-            // TODO: Send verification email (implement email service)
-            if (requiresEmailVerification)
+            // Send verification email if token was generated
+            if (requiresEmailVerification && !string.IsNullOrEmpty(verificationToken))
             {
-                _logger.LogInformation("Email verification required for user: {UserId}, Token: {Token}", user.Id, verificationToken);
+                var emailSent = await _emailService.SendEmailVerificationAsync(
+                    user.Email, 
+                    user.Username, 
+                    verificationToken, 
+                    user.Id, 
+                    cancellationToken);
+
+                if (emailSent)
+                {
+                    _logger.LogInformation("Email verification sent successfully for user: {UserId}", user.Id);
+                }
+                else
+                {
+                    _logger.LogWarning("Failed to send verification email for user: {UserId}", user.Id);
+                }
             }
 
             return Result<RegisterResponse>.Success(response);
