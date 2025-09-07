@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using WhoAndWhat.Infrastructure.Data;
@@ -11,9 +12,11 @@ using WhoAndWhat.Infrastructure.Data;
 namespace WhoAndWhat.Infrastructure.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250906153121_AddFullTextSearchIndexes")]
+    partial class AddFullTextSearchIndexes
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -65,193 +68,6 @@ namespace WhoAndWhat.Infrastructure.Migrations
                     b.HasIndex("TasksId");
 
                     b.ToTable("EventTask");
-                });
-
-            modelBuilder.Entity("WhoAndWhat.Domain.Entities.ArchivedProject", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("ArchiveReason")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)");
-
-                    b.Property<DateTime>("ArchivedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid?>("ArchivedByUserId")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("CompletedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<int>("CompletedTasksCount")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("ContactsJson")
-                        .HasColumnType("jsonb");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("Description")
-                        .HasMaxLength(2000)
-                        .HasColumnType("character varying(2000)");
-
-                    b.Property<DateTime?>("EndDate")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("MetadataJson")
-                        .HasColumnType("jsonb");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
-                    b.Property<Guid>("OriginalProjectId")
-                        .HasColumnType("uuid");
-
-                    b.Property<int>("Progress")
-                        .HasColumnType("integer");
-
-                    b.Property<DateTime?>("StartDate")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<int>("Status")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("TasksJson")
-                        .HasColumnType("jsonb");
-
-                    b.Property<TimeSpan?>("TotalDuration")
-                        .HasColumnType("interval");
-
-                    b.Property<int>("TotalTasksCount")
-                        .HasColumnType("integer");
-
-                    b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uuid");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ArchivedAt");
-
-                    b.HasIndex("OriginalProjectId")
-                        .IsUnique();
-
-                    b.HasIndex("UserId");
-
-                    b.HasIndex("UserId", "ArchivedAt");
-
-                    b.HasIndex("UserId", "Status");
-
-                    b.ToTable("ArchivedProjects");
-                });
-
-            modelBuilder.Entity("WhoAndWhat.Domain.Entities.ArchivedTask", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("ArchiveReason")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)");
-
-                    b.Property<DateTime>("ArchivedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid?>("ArchivedByUserId")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("AttachmentsJson")
-                        .HasColumnType("jsonb");
-
-                    b.Property<int>("Category")
-                        .HasColumnType("integer");
-
-                    b.Property<DateTime?>("CompletedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("ContactsJson")
-                        .HasColumnType("jsonb");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("Description")
-                        .HasMaxLength(5000)
-                        .HasColumnType("character varying(5000)");
-
-                    b.Property<DateTime?>("DueDate")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid>("OriginalTaskId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid?>("ParentTaskId")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("ParentTaskTitle")
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)");
-
-                    b.Property<int>("Priority")
-                        .HasColumnType("integer");
-
-                    b.Property<Guid?>("ProjectId")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("ProjectName")
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
-                    b.Property<int>("Status")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("SubtasksJson")
-                        .HasColumnType("jsonb");
-
-                    b.Property<string>("Title")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)");
-
-                    b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uuid");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ArchivedAt");
-
-                    b.HasIndex("OriginalTaskId")
-                        .IsUnique();
-
-                    b.HasIndex("ParentTaskId")
-                        .HasFilter("parent_task_id IS NOT NULL");
-
-                    b.HasIndex("ProjectId")
-                        .HasFilter("project_id IS NOT NULL");
-
-                    b.HasIndex("UserId");
-
-                    b.HasIndex("UserId", "ArchivedAt");
-
-                    b.HasIndex("UserId", "Category");
-
-                    b.HasIndex("UserId", "Status");
-
-                    b.ToTable("ArchivedTasks");
                 });
 
             modelBuilder.Entity("WhoAndWhat.Domain.Entities.Contact", b =>
@@ -646,28 +462,6 @@ namespace WhoAndWhat.Infrastructure.Migrations
                         .HasForeignKey("TasksId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-                });
-
-            modelBuilder.Entity("WhoAndWhat.Domain.Entities.ArchivedProject", b =>
-                {
-                    b.HasOne("WhoAndWhat.Domain.Entities.User", "User")
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("User");
-                });
-
-            modelBuilder.Entity("WhoAndWhat.Domain.Entities.ArchivedTask", b =>
-                {
-                    b.HasOne("WhoAndWhat.Domain.Entities.User", "User")
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("WhoAndWhat.Domain.Entities.Contact", b =>

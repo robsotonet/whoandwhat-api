@@ -71,6 +71,12 @@ try
     // Application services (MediatR, FluentValidation, Pipeline Behaviors)
     builder.Services.AddApplicationServices();
 
+    // Redis Caching Infrastructure
+    builder.Services.AddRedisCachingConfiguration(builder.Configuration);
+
+    // Task Search Infrastructure
+    builder.Services.AddTaskSearchConfiguration(builder.Configuration);
+
     // API Foundation Services
     builder.Services.AddApiVersioningConfiguration();
     builder.Services.AddSwaggerConfiguration();

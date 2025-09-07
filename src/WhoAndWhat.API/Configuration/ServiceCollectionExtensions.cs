@@ -8,14 +8,18 @@ using System.Reflection;
 using System.Security.Claims;
 using System.Text;
 using WhoAndWhat.Application.Interfaces;
+using WhoAndWhat.Application.Services;
 using WhoAndWhat.Infrastructure.Configuration;
+using Microsoft.Extensions.Configuration;
 using WhoAndWhat.Infrastructure.Data;
 using WhoAndWhat.Infrastructure.Services;
+using Microsoft.Extensions.Options;
 using WhoAndWhat.Infrastructure.Repositories;
 using AspNetCoreRateLimit;
 using Azure.Extensions.AspNetCore.Configuration.Secrets;
 using Azure.Identity;
 using Azure.Security.KeyVault.Secrets;
+using WhoAndWhat.Infrastructure.Configuration;
 
 namespace WhoAndWhat.API.Configuration;
 
@@ -101,6 +105,62 @@ public static class ServiceCollectionExtensions
     }
 
     /// <summary>
+    /// Configure Redis caching infrastructure with performance monitoring
+    /// </summary>
+    public static IServiceCollection AddRedisCachingConfiguration(this IServiceCollection services, IConfiguration configuration)
+    {
+        // Add Redis caching with health checks and performance monitoring
+        services.AddRedisCaching(configuration);
+        
+        // Optionally add cache warming (can be disabled via configuration)
+        services.AddCacheWarming();
+        
+        return services;
+    }
+
+    /// <summary>
+    /// Configure task search services with PostgreSQL full-text search and Redis caching
+    /// </summary>
+    public static IServiceCollection AddTaskSearchConfiguration(this IServiceCollection services, IConfiguration configuration)
+    {
+        // Configure cache settings from Redis configuration
+        services.Configure<WhoAndWhat.Application.Configuration.CacheSettings>(options =>
+        {
+            var redisSettings = configuration.GetSection(RedisCacheSettings.SectionName).Get<RedisCacheSettings>() ?? new RedisCacheSettings();
+            options.DefaultExpirationMinutes = redisSettings.DefaultExpirationMinutes;
+            options.TaskListCacheExpirationMinutes = redisSettings.TaskListCacheExpirationMinutes;
+            options.KeyPrefix = redisSettings.KeyPrefix;
+        });
+        
+        // Register the interface with the concrete implementation
+        services.AddSingleton<WhoAndWhat.Application.Configuration.ICacheSettings>(provider =>
+            provider.GetRequiredService<IOptions<WhoAndWhat.Application.Configuration.CacheSettings>>().Value);
+        
+        // Register search repository and service
+        services.AddScoped<ITaskSearchRepository, TaskSearchRepository>();
+        services.AddScoped<ITaskSearchService, TaskSearchService>();
+        
+        return services;
+    }
+
+    /// <summary>
+    /// Configure task archiving services with Hangfire background job processing
+    /// </summary>
+    public static IServiceCollection AddTaskArchiveConfiguration(this IServiceCollection services, IConfiguration configuration)
+    {
+        // Configure archive settings
+        services.Configure<ArchiveSettings>(configuration.GetSection(ArchiveSettings.SectionName));
+        
+        // Register archive service
+        services.AddScoped<ITaskArchiveService, TaskArchiveService>();
+        
+        // Add Hangfire background job services
+        services.AddHangfireServices(configuration);
+        
+        return services;
+    }
+
+    /// <summary>
     /// Configure health checks for monitoring
     /// </summary>
     public static IServiceCollection AddHealthCheckConfiguration(this IServiceCollection services, IWebHostEnvironment environment)
@@ -112,11 +172,14 @@ public static class ServiceCollectionExtensions
                 .AddCheck("database", () => HealthCheckResult.Healthy("InMemory database is always healthy"), 
                     tags: new[] { "database", "inmemory" })
                 .AddCheck("api", () => HealthCheckResult.Healthy("API is running"), 
-                    tags: new[] { "api", "self" });
+                    tags: new[] { "api", "self" })
+                .AddCheck("cache", () => HealthCheckResult.Healthy("In-memory cache is always healthy"), 
+                    tags: new[] { "cache", "inmemory" });
         }
         else
         {
             // For development and production, use PostgreSQL database checks
+            // Redis health checks are automatically added via AddRedisCaching() extension method
             services.AddHealthChecks()
                 .AddDbContextCheck<ApplicationDbContext>(
                     name: "database",

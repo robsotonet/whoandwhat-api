@@ -2,6 +2,7 @@ using FluentAssertions;
 using WhoAndWhat.Domain.Entities;
 using WhoAndWhat.Domain.ValueObjects;
 using Task = WhoAndWhat.Domain.Entities.Task;
+using DomainTaskStatus = WhoAndWhat.Domain.ValueObjects.TaskStatus;
 
 namespace WhoAndWhat.Domain.Tests;
 
@@ -38,7 +39,7 @@ public class TaskEntityTests
         var dueDate = DateTime.UtcNow.AddDays(7);
         var priority = (int)Priority.High;
         var category = (int)TaskCategory.ToDo;
-        var status = (int)WhoAndWhat.Domain.ValueObjects.TaskStatus.InProgress;
+        var status = (int)DomainTaskStatus.InProgress;
         var createdAt = DateTime.UtcNow;
         var updatedAt = DateTime.UtcNow.AddMinutes(30);
 
