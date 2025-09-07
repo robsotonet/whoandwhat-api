@@ -4,9 +4,11 @@ namespace WhoAndWhat.Domain.Entities;
 
 public abstract class BaseEntity
 {
-    public Guid Id { get; protected set; } = Guid.NewGuid();
-    public DateTime CreatedAt { get; protected set; } = DateTime.UtcNow;
-    public DateTime UpdatedAt { get; protected set; } = DateTime.UtcNow;
+    public Guid Id { get; set; } = Guid.NewGuid();
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+    public bool IsDeleted { get; set; } = false;
+    public DateTime? DeletedAt { get; set; }
 
     // Protected constructor for testing purposes
     protected BaseEntity()
@@ -37,5 +39,49 @@ public abstract class BaseEntity
     public void MarkAsModified()
     {
         UpdatedAt = DateTime.UtcNow;
+    }
+
+    /// <summary>
+    /// Soft deletes the entity by marking it as deleted
+    /// </summary>
+    public virtual void SoftDelete()
+    {
+        if (IsDeleted)
+            return;
+
+        IsDeleted = true;
+        DeletedAt = DateTime.UtcNow;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    /// <summary>
+    /// Restores a soft deleted entity
+    /// </summary>
+    public virtual void Restore()
+    {
+        if (!IsDeleted)
+            return;
+
+        IsDeleted = false;
+        DeletedAt = null;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    /// <summary>
+    /// Checks if the entity can be soft deleted
+    /// </summary>
+    /// <returns>True if the entity can be soft deleted</returns>
+    public virtual bool CanSoftDelete()
+    {
+        return !IsDeleted;
+    }
+
+    /// <summary>
+    /// Checks if the entity can be restored
+    /// </summary>
+    /// <returns>True if the entity can be restored</returns>
+    public virtual bool CanRestore()
+    {
+        return IsDeleted;
     }
 }

@@ -7,7 +7,7 @@ namespace WhoAndWhat.Domain.Entities;
 /// <summary>
 /// Task entity with rich domain behavior and business rules
 /// </summary>
-public class Task
+public class Task : BaseEntity
 {
     /// <summary>
     /// Maximum allowed title length
@@ -19,16 +19,12 @@ public class Task
     /// </summary>
     public const int MaxDescriptionLength = 5000;
 
-    public Guid Id { get; set; }
     public string Title { get; set; } = null!;
     public string? Description { get; set; }
     public DateTime? DueDate { get; set; }
     public int Priority { get; set; } // Mapped from Priority value object
     public int Category { get; set; } // Mapped from TaskCategory value object
     public int Status { get; set; } // Mapped from TaskStatus value object
-    public DateTime CreatedAt { get; set; }
-    public DateTime UpdatedAt { get; set; }
-    public bool IsDeleted { get; set; } = false; // Soft delete flag
 
     public Guid UserId { get; set; }
     public User User { get; set; } = null!;
@@ -333,21 +329,60 @@ public class Task
     }
 
     /// <summary>
-    /// Soft deletes the task
+    /// Checks if the task can be soft deleted
+    /// Completed and archived tasks can be deleted
     /// </summary>
-    public void SoftDelete()
+    /// <returns>True if the task can be soft deleted</returns>
+    public override bool CanSoftDelete()
     {
-        IsDeleted = true;
-        UpdatedAt = DateTime.UtcNow;
+        if (!base.CanSoftDelete())
+            return false;
+
+        var currentStatus = (TaskStatus)Status;
+        
+        // Any task can be soft deleted regardless of status
+        // Business rules may restrict this in higher layers
+        return true;
     }
 
     /// <summary>
-    /// Restores a soft-deleted task
+    /// Soft deletes the task and all its subtasks
     /// </summary>
-    public void Restore()
+    public override void SoftDelete()
     {
-        IsDeleted = false;
-        UpdatedAt = DateTime.UtcNow;
+        if (!CanSoftDelete())
+            return;
+
+        base.SoftDelete();
+
+        // Soft delete all subtasks recursively
+        if (Subtasks != null)
+        {
+            foreach (var subtask in Subtasks.Where(st => !st.IsDeleted))
+            {
+                subtask.SoftDelete();
+            }
+        }
+    }
+
+    /// <summary>
+    /// Restores the task and optionally its subtasks
+    /// </summary>
+    /// <param name="restoreSubtasks">Whether to restore subtasks</param>
+    public void Restore(bool restoreSubtasks = false)
+    {
+        if (!CanRestore())
+            return;
+
+        base.Restore();
+
+        if (restoreSubtasks && Subtasks != null)
+        {
+            foreach (var subtask in Subtasks.Where(st => st.IsDeleted))
+            {
+                subtask.Restore(restoreSubtasks);
+            }
+        }
     }
 
     /// <summary>

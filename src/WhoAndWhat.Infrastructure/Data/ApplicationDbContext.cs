@@ -90,6 +90,10 @@ public class ApplicationDbContext : DbContext
 
             entity.HasOne(e => e.User).WithMany(u => u.Contacts).HasForeignKey(e => e.UserId).OnDelete(DeleteBehavior.Restrict);
             entity.HasMany(e => e.Tasks).WithMany(t => t.Contacts);
+
+            // Soft delete configuration
+            entity.HasIndex(e => e.IsDeleted);
+            entity.HasQueryFilter(e => !e.IsDeleted);
         });
 
         // Project Configuration
@@ -100,6 +104,11 @@ public class ApplicationDbContext : DbContext
 
             entity.HasOne(e => e.User).WithMany(u => u.Projects).HasForeignKey(e => e.UserId).OnDelete(DeleteBehavior.Restrict);
             entity.HasMany(e => e.Contacts).WithMany();
+
+            // Soft delete configuration
+            entity.HasIndex(e => e.IsDeleted);
+            entity.HasIndex(e => new { e.UserId, e.IsDeleted });
+            entity.HasQueryFilter(e => !e.IsDeleted);
         });
         
         // Event Configuration
