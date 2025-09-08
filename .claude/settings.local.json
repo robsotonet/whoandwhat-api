@@ -40,7 +40,10 @@
       "Bash(then echo \"NEEDS FIX: $file\")",
       "Bash(fi)",
       "Bash(rg:*)",
-      "Bash(dotnet format:*)"
+      "Bash(dotnet format:*)",
+      "Bash(for:*)",
+      "Bash(do)",
+      "Bash(echo \"Skipped $file\")"
     ],
     "deny": [],
     "ask": []

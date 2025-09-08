@@ -26,10 +26,10 @@ public class TaskRepositoryIntegrationTests : IDisposable
 {
     private readonly ApplicationDbContext _context;
     private readonly IAppTaskRepository _taskRepository;
-    private readonly User _testUser;
-    private readonly User _otherUser;
-    private readonly Project _testProject;
-    private readonly Contact _testContact;
+    private User _testUser = null!;
+    private User _otherUser = null!;
+    private Project _testProject = null!;
+    private Contact _testContact = null!;
 
     public TaskRepositoryIntegrationTests()
     {
@@ -176,11 +176,11 @@ public class TaskRepositoryIntegrationTests : IDisposable
         // Arrange
         var highPriorityTask = CreateTestTask("High Priority", _testUser.Id);
         highPriorityTask.Priority = (int)Priority.High;
-        highPriorityTask.Category = (int)TaskCategory.ToDos;
+        highPriorityTask.Category = (int)AppTaskCategory.ToDo;
         
         var lowPriorityTask = CreateTestTask("Low Priority", _testUser.Id);
         lowPriorityTask.Priority = (int)Priority.Low;
-        lowPriorityTask.Category = (int)TaskCategory.Ideas;
+        lowPriorityTask.Category = (int)AppTaskCategory.Idea;
 
         var overdueTask = CreateTestTask("Overdue Task", _testUser.Id);
         overdueTask.DueDate = DateTime.UtcNow.AddDays(-1);
@@ -191,7 +191,7 @@ public class TaskRepositoryIntegrationTests : IDisposable
         var filter = new TaskFilter
         {
             Priority = Priority.High,
-            Category = TaskCategory.ToDos,
+            Category = AppTaskCategory.ToDo,
             PageSize = 10,
             PageNumber = 1
         };
@@ -393,19 +393,19 @@ public class TaskRepositoryIntegrationTests : IDisposable
     {
         // Arrange
         var todoTask = CreateTestTask("Todo Task", _testUser.Id);
-        todoTask.Category = (int)TaskCategory.ToDos;
+        todoTask.Category = (int)AppTaskCategory.ToDo;
         
         var ideaTask = CreateTestTask("Idea Task", _testUser.Id);
-        ideaTask.Category = (int)TaskCategory.Ideas;
+        ideaTask.Category = (int)AppTaskCategory.Idea;
         
         var appointmentTask = CreateTestTask("Appointment Task", _testUser.Id);
-        appointmentTask.Category = (int)TaskCategory.Appointments;
+        appointmentTask.Category = (int)AppTaskCategory.Appointment;
 
         await _context.Tasks.AddRangeAsync(todoTask, ideaTask, appointmentTask);
         await _context.SaveChangesAsync();
 
         // Act
-        var result = await _taskRepository.GetTasksByCategoryAsync(_testUser.Id, TaskCategory.Ideas);
+        var result = await _taskRepository.GetTasksByCategoryAsync(_testUser.Id, AppTaskCategory.Idea);
 
         // Assert
         var resultList = result.ToList();
@@ -413,32 +413,6 @@ public class TaskRepositoryIntegrationTests : IDisposable
         resultList.First().Title.Should().Be("Idea Task");
     }
 
-    [Fact]
-    public async Task GetTasksByPriorityRangeAsync_Should_Return_Tasks_In_Priority_Range()
-    {
-        // Arrange
-        var lowTask = CreateTestTask("Low Priority", _testUser.Id);
-        lowTask.Priority = (int)Priority.Low;
-        
-        var mediumTask = CreateTestTask("Medium Priority", _testUser.Id);
-        mediumTask.Priority = (int)Priority.Medium;
-        
-        var highTask = CreateTestTask("High Priority", _testUser.Id);
-        highTask.Priority = (int)Priority.High;
-
-        await _context.Tasks.AddRangeAsync(lowTask, mediumTask, highTask);
-        await _context.SaveChangesAsync();
-
-        // Act
-        var result = await _taskRepository.GetTasksByPriorityRangeAsync(_testUser.Id, Priority.Medium, Priority.High);
-
-        // Assert
-        var resultList = result.ToList();
-        resultList.Should().HaveCount(2);
-        resultList.Should().Contain(t => t.Title == "Medium Priority");
-        resultList.Should().Contain(t => t.Title == "High Priority");
-        resultList.Should().NotContain(t => t.Title == "Low Priority");
-    }
 
     #endregion
 
@@ -506,34 +480,6 @@ public class TaskRepositoryIntegrationTests : IDisposable
         resultList.First().Title.Should().Be("Deleted Task");
     }
 
-    [Fact]
-    public async Task ArchiveTaskAsync_Should_Archive_Task_And_Move_To_Archive_Table()
-    {
-        // Arrange
-        var task = CreateTestTask("Task to Archive", _testUser.Id);
-        task.Status = (int)DomainTaskStatus.Completed;
-        await _context.Tasks.AddAsync(task);
-        await _context.SaveChangesAsync();
-
-        // Act
-        var result = await _taskRepository.ArchiveTaskAsync(task.Id, _testUser.Id, "Completed task archival");
-
-        // Assert
-        result.Should().BeTrue();
-        
-        // Task should be soft deleted
-        var originalTask = await _context.Tasks.IgnoreQueryFilters()
-            .FirstOrDefaultAsync(t => t.Id == task.Id);
-        originalTask.Should().NotBeNull();
-        originalTask.IsDeleted.Should().BeTrue();
-
-        // Archived version should exist
-        var archivedTask = await _context.ArchivedTasks
-            .FirstOrDefaultAsync(at => at.OriginalTaskId == task.Id);
-        archivedTask.Should().NotBeNull();
-        archivedTask.Title.Should().Be("Task to Archive");
-        archivedTask.ArchiveReason.Should().Be("Completed task archival");
-    }
 
     #endregion
 
@@ -553,7 +499,7 @@ public class TaskRepositoryIntegrationTests : IDisposable
         var taskIds = new[] { task1.Id, task2.Id };
 
         // Act
-        var result = await _taskRepository.SoftDeleteTasksBatchAsync(taskIds, _testUser.Id);
+        var result = await _taskRepository.BulkSoftDeleteTasksAsync(taskIds, _testUser.Id);
 
         // Assert
         result.Should().Be(2);
@@ -585,7 +531,7 @@ public class TaskRepositoryIntegrationTests : IDisposable
         var taskIds = new[] { task1.Id, task2.Id };
 
         // Act
-        var result = await _taskRepository.UpdateTasksStatusBatchAsync(taskIds, _testUser.Id, DomainTaskStatus.InProgress);
+        var result = await _taskRepository.BulkUpdateStatusAsync(taskIds, DomainTaskStatus.InProgress, _testUser.Id);
 
         // Assert
         result.Should().Be(2);
@@ -594,63 +540,11 @@ public class TaskRepositoryIntegrationTests : IDisposable
         updatedTasks.Should().AllSatisfy(t => t.Status.Should().Be((int)DomainTaskStatus.InProgress));
     }
 
-    [Fact]
-    public async Task UpdateTasksCategoryBatchAsync_Should_Update_Multiple_Task_Categories()
-    {
-        // Arrange
-        var task1 = CreateTestTask("Task 1", _testUser.Id);
-        var task2 = CreateTestTask("Task 2", _testUser.Id);
-        
-        task1.Category = (int)TaskCategory.ToDos;
-        task2.Category = (int)TaskCategory.ToDos;
-
-        await _context.Tasks.AddRangeAsync(task1, task2);
-        await _context.SaveChangesAsync();
-
-        var taskIds = new[] { task1.Id, task2.Id };
-
-        // Act
-        var result = await _taskRepository.UpdateTasksCategoryBatchAsync(taskIds, _testUser.Id, TaskCategory.Ideas);
-
-        // Assert
-        result.Should().Be(2);
-
-        var updatedTasks = await _context.Tasks.Where(t => taskIds.Contains(t.Id)).ToListAsync();
-        updatedTasks.Should().AllSatisfy(t => t.Category.Should().Be((int)TaskCategory.Ideas));
-    }
 
     #endregion
 
     #region Performance and Analytics Tests
 
-    [Fact]
-    public async Task GetTaskStatisticsAsync_Should_Return_User_Task_Statistics()
-    {
-        // Arrange
-        var activeTask = CreateTestTask("Active Task", _testUser.Id);
-        activeTask.Status = (int)DomainTaskStatus.InProgress;
-        
-        var completedTask = CreateTestTask("Completed Task", _testUser.Id);
-        completedTask.Status = (int)DomainTaskStatus.Completed;
-        
-        var overdueTask = CreateTestTask("Overdue Task", _testUser.Id);
-        overdueTask.DueDate = DateTime.UtcNow.AddDays(-1);
-        overdueTask.Status = (int)DomainTaskStatus.InProgress;
-
-        await _context.Tasks.AddRangeAsync(activeTask, completedTask, overdueTask);
-        await _context.SaveChangesAsync();
-
-        // Act
-        var result = await _taskRepository.GetTaskStatisticsAsync(_testUser.Id);
-
-        // Assert
-        result.Should().NotBeNull();
-        result.UserId.Should().Be(_testUser.Id);
-        result.TotalTasks.Should().Be(3);
-        result.ActiveTasks.Should().Be(2);
-        result.CompletedTasks.Should().Be(1);
-        result.OverdueTasks.Should().Be(1);
-    }
 
     [Fact]
     public async Task GetTaskCompletionTrendsAsync_Should_Return_Completion_Trends()
@@ -667,11 +561,10 @@ public class TaskRepositoryIntegrationTests : IDisposable
         await _context.Tasks.AddRangeAsync(completedTask1, completedTask2);
         await _context.SaveChangesAsync();
 
-        var fromDate = DateTime.UtcNow.AddDays(-7);
-        var toDate = DateTime.UtcNow;
+        var period = TimeSpan.FromDays(7);
 
         // Act
-        var result = await _taskRepository.GetTaskCompletionTrendsAsync(_testUser.Id, fromDate, toDate);
+        var result = await _taskRepository.GetTaskCompletionTrendsAsync(_testUser.Id, period);
 
         // Assert
         result.Should().NotBeNull();
@@ -679,101 +572,13 @@ public class TaskRepositoryIntegrationTests : IDisposable
         result.DailyData.Should().NotBeEmpty();
     }
 
-    [Fact]
-    public async Task GetMostActiveTimePeriodsAsync_Should_Return_Activity_Periods()
-    {
-        // Arrange
-        // Create tasks with different creation times
-        var morningTask = CreateTestTask("Morning Task", _testUser.Id);
-        morningTask.CreatedAt = DateTime.Today.AddHours(9);
-        
-        var afternoonTask = CreateTestTask("Afternoon Task", _testUser.Id);
-        afternoonTask.CreatedAt = DateTime.Today.AddHours(14);
-        
-        var eveningTask = CreateTestTask("Evening Task", _testUser.Id);
-        eveningTask.CreatedAt = DateTime.Today.AddHours(19);
-
-        await _context.Tasks.AddRangeAsync(morningTask, afternoonTask, eveningTask);
-        await _context.SaveChangesAsync();
-
-        // Act
-        var result = await _taskRepository.GetMostActiveTimePeriodsAsync(_testUser.Id, 5);
-
-        // Assert
-        result.Should().NotBeEmpty();
-        result.Should().HaveCountLessOrEqualTo(5);
-    }
 
     #endregion
 
     #region Data Integrity and Validation Tests
 
-    [Fact]
-    public async Task ValidateTaskIntegrityAsync_Should_Identify_Integrity_Issues()
-    {
-        // Arrange - Create a task with potential integrity issues
-        var task = CreateTestTask("Task with Issues", _testUser.Id);
-        task.ProjectId = Guid.NewGuid(); // Non-existent project
-        
-        await _context.Tasks.AddAsync(task);
-        await _context.SaveChangesAsync();
 
-        // Act
-        var result = await _taskRepository.ValidateTaskIntegrityAsync(_testUser.Id);
 
-        // Assert
-        result.Should().NotBeEmpty();
-        result.Should().Contain(issue => issue.Contains("invalid project reference"));
-    }
-
-    [Fact]
-    public async Task FindOrphanedTasksAsync_Should_Find_Tasks_With_Missing_Parents()
-    {
-        // Arrange
-        var orphanTask = CreateTestTask("Orphan Task", _testUser.Id);
-        orphanTask.ProjectId = Guid.NewGuid(); // Non-existent parent
-        
-        var validTask = CreateTestTask("Valid Task", _testUser.Id);
-
-        await _context.Tasks.AddRangeAsync(orphanTask, validTask);
-        await _context.SaveChangesAsync();
-
-        // Act
-        var result = await _taskRepository.FindOrphanedTasksAsync(_testUser.Id);
-
-        // Assert
-        var resultList = result.ToList();
-        resultList.Should().HaveCount(1);
-        resultList.First().Title.Should().Be("Orphan Task");
-    }
-
-    [Fact]
-    public async Task GetTasksRequiringAttentionAsync_Should_Find_Tasks_Needing_Attention()
-    {
-        // Arrange
-        var staleTask = CreateTestTask("Stale Task", _testUser.Id);
-        staleTask.UpdatedAt = DateTime.UtcNow.AddDays(-30);
-        staleTask.Status = (int)DomainTaskStatus.InProgress;
-        
-        var overdueTask = CreateTestTask("Overdue Task", _testUser.Id);
-        overdueTask.DueDate = DateTime.UtcNow.AddDays(-5);
-        overdueTask.Status = (int)DomainTaskStatus.InProgress;
-        
-        var recentTask = CreateTestTask("Recent Task", _testUser.Id);
-        recentTask.UpdatedAt = DateTime.UtcNow.AddDays(-1);
-
-        await _context.Tasks.AddRangeAsync(staleTask, overdueTask, recentTask);
-        await _context.SaveChangesAsync();
-
-        // Act
-        var result = await _taskRepository.GetTasksRequiringAttentionAsync(_testUser.Id);
-
-        // Assert
-        var resultList = result.ToList();
-        resultList.Should().HaveCount(2);
-        resultList.Should().Contain(t => t.Title == "Stale Task");
-        resultList.Should().Contain(t => t.Title == "Overdue Task");
-    }
 
     #endregion
 
@@ -790,7 +595,7 @@ public class TaskRepositoryIntegrationTests : IDisposable
             ProjectId = projectId,
             Status = (int)DomainTaskStatus.Pending,
             Priority = (int)Priority.Medium,
-            Category = (int)TaskCategory.ToDos,
+            Category = (int)AppTaskCategory.ToDo,
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
         };

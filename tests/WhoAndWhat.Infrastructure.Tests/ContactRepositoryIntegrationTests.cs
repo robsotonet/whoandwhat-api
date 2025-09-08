@@ -25,8 +25,8 @@ public class ContactRepositoryIntegrationTests : IDisposable
     private readonly ApplicationDbContext _context;
     private readonly IRepository<Contact> _baseRepository;
     private readonly SoftDeleteService _softDeleteService;
-    private readonly User _testUser;
-    private readonly User _otherUser;
+    private User _testUser = null!;
+    private User _otherUser = null!;
 
     public ContactRepositoryIntegrationTests()
     {
@@ -602,7 +602,7 @@ public class ContactRepositoryIntegrationTests : IDisposable
             UserId = userId,
             Status = (int)DomainTaskStatus.Pending,
             Priority = (int)Priority.Medium,
-            Category = (int)TaskCategory.ToDos,
+            Category = (int)AppTaskCategory.ToDo,
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
         };

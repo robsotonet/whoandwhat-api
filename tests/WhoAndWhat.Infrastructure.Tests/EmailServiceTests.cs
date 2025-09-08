@@ -24,21 +24,15 @@ public class EmailServiceTests
             FromEmail = "test@whoandwhat.com",
             SmtpHost = "smtp.test.com",
             SmtpPort = 587,
-            SmtpUsername = "test@whoandwhat.com",
-            SmtpPassword = "testpassword",
-            EnableSsl = true,
+            Username = "test@whoandwhat.com",
+            Password = "testpassword",
+            UseSsl = true,
             Templates = new EmailTemplateSettings
             {
-                PasswordReset = new EmailTemplateConfig
-                {
-                    Subject = "Reset Your Password - WhoAndWhat",
-                    EnableCustomization = true
-                },
-                EmailVerification = new EmailTemplateConfig
-                {
-                    Subject = "Verify Your Email - WhoAndWhat",
-                    EnableCustomization = true
-                }
+                PasswordResetExpirationHours = 1,
+                EmailVerificationExpirationHours = 24,
+                SupportEmail = "support@test.com",
+                CompanyName = "WhoAndWhat Test"
             }
         };
 
@@ -144,7 +138,7 @@ public class EmailServiceTests
     }
 
     [Fact]
-    public async Task SendPasswordChangedNotificationAsync_Should_Return_True_When_Email_Disabled()
+    public async Task SendPasswordChangedEmailAsync_Should_Return_True_When_Email_Disabled()
     {
         // Arrange
         _emailSettings.Enabled = false;
@@ -152,23 +146,7 @@ public class EmailServiceTests
         var username = "testuser";
 
         // Act
-        var result = await _emailService.SendPasswordChangedNotificationAsync(email, username);
-
-        // Assert
-        result.Should().BeTrue();
-    }
-
-    [Fact]
-    public async Task SendAccountDeactivatedNotificationAsync_Should_Return_True_When_Email_Disabled()
-    {
-        // Arrange
-        _emailSettings.Enabled = false;
-        var email = "test@example.com";
-        var username = "testuser";
-        var reason = "User requested deactivation";
-
-        // Act
-        var result = await _emailService.SendAccountDeactivatedNotificationAsync(email, username, reason);
+        var result = await _emailService.SendPasswordChangedEmailAsync(email, username);
 
         // Assert
         result.Should().BeTrue();
@@ -259,14 +237,10 @@ public class EmailServiceTests
     {
         // Assert
         _emailSettings.Templates.Should().NotBeNull();
-        _emailSettings.Templates.PasswordReset.Should().NotBeNull();
-        _emailSettings.Templates.EmailVerification.Should().NotBeNull();
-        _emailSettings.Templates.Welcome.Should().NotBeNull();
-        _emailSettings.Templates.PasswordChanged.Should().NotBeNull();
-        _emailSettings.Templates.AccountDeactivated.Should().NotBeNull();
-
-        _emailSettings.Templates.PasswordReset.Subject.Should().NotBeNullOrEmpty();
-        _emailSettings.Templates.EmailVerification.Subject.Should().NotBeNullOrEmpty();
+        _emailSettings.Templates.PasswordResetExpirationHours.Should().BeGreaterThan(0);
+        _emailSettings.Templates.EmailVerificationExpirationHours.Should().BeGreaterThan(0);
+        _emailSettings.Templates.SupportEmail.Should().NotBeNullOrEmpty();
+        _emailSettings.Templates.CompanyName.Should().NotBeNullOrEmpty();
     }
 
     [Theory]

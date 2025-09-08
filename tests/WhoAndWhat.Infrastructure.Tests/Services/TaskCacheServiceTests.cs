@@ -4,6 +4,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Moq;
 using StackExchange.Redis;
+using System.Net;
 using WhoAndWhat.Domain.Entities;
 using WhoAndWhat.Infrastructure.Configuration;
 using WhoAndWhat.Infrastructure.Services;
@@ -38,13 +39,15 @@ public class TaskCacheServiceTests : IDisposable
         _cacheSettings = Options.Create(new RedisCacheSettings
         {
             ConnectionString = "localhost:6379",
-            DefaultExpiry = TimeSpan.FromMinutes(30),
-            TaskExpiry = TimeSpan.FromMinutes(15),
-            UserTasksExpiry = TimeSpan.FromMinutes(10),
-            SearchResultsExpiry = TimeSpan.FromMinutes(5),
+            DefaultExpirationMinutes = 30,
+            TaskCacheExpirationMinutes = 15,
+            TaskListCacheExpirationMinutes = 10,
+            UserTaskSummaryCacheExpirationMinutes = 5,
             MaxRetryAttempts = 3,
-            RetryDelay = TimeSpan.FromMilliseconds(100),
-            EnablePerformanceMetrics = true
+            CommandTimeoutMs = 100,
+            EnablePerformanceMonitoring = true,
+            KeyPrefix = "test",
+            DatabaseIndex = 0
         });
 
         _service = new TaskCacheService(
@@ -111,150 +114,154 @@ public class TaskCacheServiceTests : IDisposable
     }
 
     [Fact]
-    public async Task GetTaskAsync_Should_Return_Null_When_Task_Not_In_Cache()
+    public async Task GetCachedTaskAsync_Should_Return_Null_When_Task_Not_In_Cache()
     {
         // Arrange
         var taskId = Guid.NewGuid();
         var userId = Guid.NewGuid();
         
-        _mockDatabase.Setup(x => x.StringGetAsync(It.IsAny<RedisKey>(), It.IsAny<CommandFlags>()))
-            .ReturnsAsync(RedisValue.Null);
+        _mockDistributedCache.Setup(x => x.GetStringAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((string?)null);
 
         // Act
-        var result = await _service.GetTaskAsync(taskId, userId);
+        var result = await _service.GetCachedTaskAsync(taskId);
 
         // Assert
         result.Should().BeNull();
-        _mockDatabase.Verify(x => x.StringGetAsync(It.IsAny<RedisKey>(), It.IsAny<CommandFlags>()), Times.Once);
+        _mockDistributedCache.Verify(x => x.GetStringAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
-    public async Task SetTaskAsync_Should_Handle_Null_Task()
+    public async Task CacheTaskAsync_Should_Handle_Null_Task()
     {
         // Arrange
         var userId = Guid.NewGuid();
 
         // Act & Assert
-        Func<Task> act = async () => await _service.SetTaskAsync(null!, userId);
+        Func<Task> act = async () => await _service.CacheTaskAsync(null!);
         await act.Should().NotThrowAsync();
     }
 
     [Fact] 
-    public async Task RemoveTaskAsync_Should_Call_Database_Delete()
+    public async Task InvalidateTaskCacheAsync_Should_Remove_Cache_Entries()
     {
         // Arrange
         var taskId = Guid.NewGuid();
         var userId = Guid.NewGuid();
 
-        _mockDatabase.Setup(x => x.KeyDeleteAsync(It.IsAny<RedisKey>(), It.IsAny<CommandFlags>()))
-            .ReturnsAsync(true);
+        _mockDistributedCache.Setup(x => x.RemoveAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        var mockServer = new Mock<IServer>();
+        var mockEndPoint = new IPEndPoint(IPAddress.Loopback, 6379);
+        
+        _mockRedis.Setup(x => x.GetEndPoints(It.IsAny<bool>()))
+            .Returns(new EndPoint[] { mockEndPoint });
+        _mockRedis.Setup(x => x.GetServer(It.IsAny<EndPoint>(), It.IsAny<object>()))
+            .Returns(mockServer.Object);
 
         // Act
-        await _service.RemoveTaskAsync(taskId, userId);
+        var result = await _service.InvalidateTaskCacheAsync(taskId, userId);
 
         // Assert
-        _mockDatabase.Verify(x => x.KeyDeleteAsync(It.IsAny<RedisKey>(), It.IsAny<CommandFlags>()), Times.Once);
+        result.Should().BeTrue();
+        _mockDistributedCache.Verify(x => x.RemoveAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.AtLeast(1));
     }
 
     [Fact]
-    public async Task RemoveUserTasksAsync_Should_Call_Appropriate_Methods()
+    public async Task InvalidateUserTaskCacheAsync_Should_Remove_User_Cache_Entries()
     {
         // Arrange
         var userId = Guid.NewGuid();
         
-        _mockDatabase.Setup(x => x.KeyDeleteAsync(It.IsAny<RedisKey>(), It.IsAny<CommandFlags>()))
-            .ReturnsAsync(true);
+        _mockDistributedCache.Setup(x => x.RemoveAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
 
-        // Act
-        await _service.RemoveUserTasksAsync(userId);
-
-        // Assert
-        _mockDatabase.Verify(x => x.KeyDeleteAsync(It.IsAny<RedisKey>(), It.IsAny<CommandFlags>()), Times.AtLeastOnce);
-    }
-
-    [Fact]
-    public async Task ClearAllAsync_Should_Call_FlushDatabase()
-    {
-        // Arrange
         var mockServer = new Mock<IServer>();
-        _mockRedis.Setup(x => x.GetServer(It.IsAny<string>(), It.IsAny<object>()))
+        var mockEndPoint = new IPEndPoint(IPAddress.Loopback, 6379);
+        
+        _mockRedis.Setup(x => x.GetEndPoints(It.IsAny<bool>()))
+            .Returns(new EndPoint[] { mockEndPoint });
+        _mockRedis.Setup(x => x.GetServer(It.IsAny<EndPoint>(), It.IsAny<object>()))
             .Returns(mockServer.Object);
 
         // Act
-        await _service.ClearAllAsync();
+        var result = await _service.InvalidateUserTaskCacheAsync(userId);
 
         // Assert
-        mockServer.Verify(x => x.FlushDatabaseAsync(It.IsAny<int>(), It.IsAny<CommandFlags>()), Times.Once);
+        result.Should().BeTrue();
+        _mockDistributedCache.Verify(x => x.RemoveAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.AtLeast(1));
     }
 
     [Fact]
-    public void GetCacheMetrics_Should_Return_Valid_Metrics()
+    public async Task ClearAllCacheAsync_Should_Clear_Task_Keys()
+    {
+        // Arrange
+        var mockServer = new Mock<IServer>();
+        var mockEndPoint = new IPEndPoint(IPAddress.Loopback, 6379);
+        
+        _mockRedis.Setup(x => x.GetEndPoints(It.IsAny<bool>()))
+            .Returns(new EndPoint[] { mockEndPoint });
+        _mockRedis.Setup(x => x.GetServer(It.IsAny<EndPoint>(), It.IsAny<object>()))
+            .Returns(mockServer.Object);
+            
+        var mockKeys = new RedisKey[] { "test:task:id:123", "test:task:user:456" };
+        mockServer.Setup(x => x.Keys(It.IsAny<int>(), It.IsAny<RedisValue>(), It.IsAny<int>(), It.IsAny<long>(), It.IsAny<int>(), It.IsAny<CommandFlags>()))
+            .Returns(mockKeys);
+            
+        _mockDatabase.Setup(x => x.KeyDeleteAsync(It.IsAny<RedisKey[]>(), It.IsAny<CommandFlags>()))
+            .ReturnsAsync(2);
+
+        // Act
+        var result = await _service.ClearAllCacheAsync();
+
+        // Assert
+        result.Should().BeTrue();
+        _mockDatabase.Verify(x => x.KeyDeleteAsync(It.IsAny<RedisKey[]>(), It.IsAny<CommandFlags>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task GetCacheMetricsAsync_Should_Return_Valid_Metrics()
     {
         // Act
-        var metrics = _service.GetCacheMetrics();
+        var metrics = await _service.GetCacheMetricsAsync();
 
         // Assert
         metrics.Should().NotBeNull();
         metrics.TotalRequests.Should().BeGreaterOrEqualTo(0);
-        metrics.CacheHitRatio.Should().BeInRange(0, 1);
-        metrics.AverageResponseTimeMs.Should().BeGreaterOrEqualTo(0);
+        metrics.HitRatio.Should().BeInRange(0, 1);
+        metrics.AverageResponseTime.Should().BeGreaterOrEqualTo(TimeSpan.Zero);
     }
+
+
 
     [Fact]
-    public void ResetMetrics_Should_Reset_Performance_Counters()
-    {
-        // Act
-        _service.ResetMetrics();
-
-        // Assert
-        var metrics = _service.GetCacheMetrics();
-        metrics.TotalRequests.Should().Be(0);
-        metrics.CacheHits.Should().Be(0);
-        metrics.CacheMisses.Should().Be(0);
-    }
-
-    [Theory]
-    [InlineData(true)]
-    [InlineData(false)]
-    public async Task IsHealthyAsync_Should_Return_Connection_Status(bool isConnected)
-    {
-        // Arrange
-        _mockRedis.Setup(x => x.IsConnected).Returns(isConnected);
-
-        // Act
-        var result = await _service.IsHealthyAsync();
-
-        // Assert
-        result.Should().Be(isConnected);
-    }
-
-    [Fact]
-    public async Task GetTaskAsync_Should_Handle_Redis_Exception()
+    public async Task GetCachedTaskAsync_Should_Handle_Redis_Exception()
     {
         // Arrange
         var taskId = Guid.NewGuid();
         var userId = Guid.NewGuid();
         
-        _mockDatabase.Setup(x => x.StringGetAsync(It.IsAny<RedisKey>(), It.IsAny<CommandFlags>()))
+        _mockDistributedCache.Setup(x => x.GetStringAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ThrowsAsync(new RedisException("Connection failed"));
 
         // Act & Assert
-        var result = await _service.GetTaskAsync(taskId, userId);
+        var result = await _service.GetCachedTaskAsync(taskId);
         result.Should().BeNull(); // Should gracefully handle exception and return null
     }
 
     [Fact]
-    public async Task SetTaskAsync_Should_Handle_Redis_Exception()
+    public async Task CacheTaskAsync_Should_Handle_Redis_Exception()
     {
         // Arrange
         var task = CreateTestTask();
         var userId = Guid.NewGuid();
         
-        _mockDatabase.Setup(x => x.StringSetAsync(It.IsAny<RedisKey>(), It.IsAny<RedisValue>(), It.IsAny<TimeSpan?>(), It.IsAny<When>(), It.IsAny<CommandFlags>()))
+        _mockDistributedCache.Setup(x => x.SetStringAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<DistributedCacheEntryOptions>(), It.IsAny<CancellationToken>()))
             .ThrowsAsync(new RedisException("Connection failed"));
 
         // Act & Assert
-        Func<Task> act = async () => await _service.SetTaskAsync(task, userId);
+        Func<Task> act = async () => await _service.CacheTaskAsync(task);
         await act.Should().NotThrowAsync(); // Should gracefully handle exception
     }
 

@@ -49,7 +49,7 @@ public class UserAccountControllerTests
     {
         // Arrange
         var user = new User("test@example.com", "testuser", Language.en);
-        user.UpdateLastLoginAt(DateTime.UtcNow.AddDays(-1));
+        user.RecordLoginAttempt(true); // This sets LastLoginAt to DateTime.UtcNow
         
         _userServiceMock.Setup(x => x.GetUserByIdAsync(_userId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(user);
