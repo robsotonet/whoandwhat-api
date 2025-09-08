@@ -12,7 +12,7 @@ public class Contact : BaseEntity
     public Guid UserId { get; set; }
     public User User { get; set; } = null!;
 
-    public ICollection<Task> Tasks { get; set; } = new List<Task>();
+    public ICollection<AppTask> Tasks { get; set; } = new List<AppTask>();
 
     /// <summary>
     /// Checks if the contact can be soft deleted

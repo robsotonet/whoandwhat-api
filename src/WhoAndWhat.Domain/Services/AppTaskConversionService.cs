@@ -1,22 +1,22 @@
 using WhoAndWhat.Domain.Common;
 using WhoAndWhat.Domain.ValueObjects;
-using DomainTask = WhoAndWhat.Domain.Entities.Task;
-using DomainTaskStatus = WhoAndWhat.Domain.ValueObjects.TaskStatus;
+using DomainTask = WhoAndWhat.Domain.Entities.AppTask;
+using DomainTaskStatus = WhoAndWhat.Domain.ValueObjects.AppTaskStatus;
 
 namespace WhoAndWhat.Domain.Services;
 
 /// <summary>
 /// Domain service for handling task conversions and transformations
 /// </summary>
-public class TaskConversionService
+public class AppTaskConversionService
 {
     /// <summary>
     /// Converts a task to a project with validation and business rules
     /// </summary>
-    /// <param name="task">Task to convert</param>
+    /// <param name="task">AppTask to convert</param>
     /// <param name="subtasks">Existing subtasks to associate with the new project</param>
     /// <returns>Validation result and converted project task</returns>
-    public (ValidationResult ValidationResult, DomainTask? ConvertedProject) ConvertTaskToProject(DomainTask task, IEnumerable<DomainTask>? subtasks = null)
+    public (ValidationResult ValidationResult, DomainTask? ConvertedProject) ConvertTaskToProject(DomainAppTask task, IEnumerable<DomainTask>? subtasks = null)
     {
         var validationResult = ValidateTaskToProjectConversion(task, subtasks);
         if (!validationResult.IsValid)
@@ -25,14 +25,14 @@ public class TaskConversionService
         }
 
         // Create the converted project task
-        var convertedTask = new DomainTask
+        var convertedAppTask = new DomainTask
         {
             Id = task.Id,
             Title = task.Title,
             Description = EnhanceDescriptionForProject(task.Description, task),
             DueDate = task.DueDate,
             Priority = task.Priority,
-            Category = TaskCategory.Project.Value,
+            Category = AppTaskCategory.Project.Value,
             Status = task.Status,
             CreatedAt = task.CreatedAt,
             UpdatedAt = DateTime.UtcNow,
@@ -48,25 +48,25 @@ public class TaskConversionService
     /// <summary>
     /// Validates if a task can be converted to a project
     /// </summary>
-    private ValidationResult ValidateTaskToProjectConversion(DomainTask task, IEnumerable<DomainTask>? subtasks = null)
+    private ValidationResult ValidateTaskToProjectConversion(DomainAppTask task, IEnumerable<DomainTask>? subtasks = null)
     {
         var errors = new List<string>();
-        var currentStatus = DomainTaskStatus.FromValue(task.Status);
-        var currentCategory = TaskCategory.FromValue(task.Category);
+        var currentStatus = DomainAppTaskStatus.FromValue(task.Status);
+        var currentCategory = AppTaskCategory.FromValue(task.Category);
 
         // Use the task's own business logic
         if (!task.CanConvertToProject())
         {
-            errors.Add("Task cannot be converted to project based on current state");
+            errors.Add("AppTask cannot be converted to project based on current state");
         }
 
         // Additional validation for specific scenarios
-        if (currentCategory == TaskCategory.Appointment)
+        if (currentCategory == AppTaskCategory.Appointment)
         {
             errors.Add("Appointments cannot be converted to projects");
         }
 
-        if (currentCategory == TaskCategory.BillReminder)
+        if (currentCategory == AppTaskCategory.BillReminder)
         {
             errors.Add("Bill reminders cannot be converted to projects");
         }
@@ -76,8 +76,8 @@ public class TaskConversionService
         {
             foreach (var subtask in subtasks)
             {
-                var subtaskStatus = DomainTaskStatus.FromValue(subtask.Status);
-                if (subtaskStatus == DomainTaskStatus.Archived)
+                var subtaskStatus = DomainAppTaskStatus.FromValue(subtask.Status);
+                if (subtaskStatus == DomainAppTaskStatus.Archived)
                 {
                     errors.Add($"Cannot include archived subtask '{subtask.Title}' in project conversion");
                 }
@@ -92,12 +92,12 @@ public class TaskConversionService
     /// <summary>
     /// Converts a task from one category to another with validation
     /// </summary>
-    /// <param name="task">Task to convert</param>
+    /// <param name="task">AppTask to convert</param>
     /// <param name="targetCategory">Target category</param>
     /// <returns>Validation result and converted task</returns>
-    public (ValidationResult ValidationResult, DomainTask? ConvertedTask) ConvertTaskCategory(DomainTask task, TaskCategory targetCategory)
+    public (ValidationResult ValidationResult, DomainTask? ConvertedTask) ConvertAppTaskCategory(DomainAppTask task, AppTaskCategory targetCategory)
     {
-        var currentCategory = TaskCategory.FromValue(task.Category);
+        var currentCategory = AppTaskCategory.FromValue(task.Category);
         
         // Validate the conversion is allowed
         if (!currentCategory.CanConvertTo(targetCategory))
@@ -113,7 +113,7 @@ public class TaskConversionService
         }
 
         // Create converted task
-        var convertedTask = CreateConvertedTask(task, targetCategory);
+        var convertedAppTask = CreateConvertedTask(task, targetCategory);
         
         return (ValidationResult.Success(), convertedTask);
     }
@@ -121,7 +121,7 @@ public class TaskConversionService
     /// <summary>
     /// Validates specific category conversion rules
     /// </summary>
-    private ValidationResult ValidateCategoryConversion(DomainTask task, TaskCategory fromCategory, TaskCategory toCategory)
+    private ValidationResult ValidateCategoryConversion(DomainAppTask task, AppTaskCategory fromCategory, AppTaskCategory toCategory)
     {
         var errors = new List<string>();
 
@@ -138,7 +138,7 @@ public class TaskConversionService
         }
 
         // Specific conversion business rules
-        if (fromCategory == TaskCategory.Idea && toCategory == TaskCategory.Appointment)
+        if (fromCategory == AppTaskCategory.Idea && toCategory == AppTaskCategory.Appointment)
         {
             if (!task.DueDate.HasValue)
             {
@@ -150,7 +150,7 @@ public class TaskConversionService
             }
         }
 
-        if (fromCategory == TaskCategory.Idea && toCategory == TaskCategory.BillReminder)
+        if (fromCategory == AppTaskCategory.Idea && toCategory == AppTaskCategory.BillReminder)
         {
             if (!task.DueDate.HasValue)
             {
@@ -171,9 +171,9 @@ public class TaskConversionService
     /// <summary>
     /// Creates a converted task with appropriate adjustments for the new category
     /// </summary>
-    private DomainTask CreateConvertedTask(DomainTask originalTask, TaskCategory newCategory)
+    private DomainAppTask CreateConvertedTask(DomainAppTask originalTask, AppTaskCategory newCategory)
     {
-        var convertedTask = new DomainTask
+        var convertedAppTask = new DomainTask
         {
             Id = originalTask.Id,
             Title = originalTask.Title,
@@ -191,7 +191,7 @@ public class TaskConversionService
         };
 
         // Category-specific adjustments
-        if (newCategory == TaskCategory.Appointment)
+        if (newCategory == AppTaskCategory.Appointment)
         {
             // Appointments should have higher priority if due soon
             if (convertedTask.DueDate.HasValue && convertedTask.DueDate.Value <= DateTime.UtcNow.AddDays(1))
@@ -204,7 +204,7 @@ public class TaskConversionService
             }
         }
 
-        if (newCategory == TaskCategory.BillReminder)
+        if (newCategory == AppTaskCategory.BillReminder)
         {
             // Bill reminders should have at least medium priority
             var priority = Priority.FromValue(convertedTask.Priority);
@@ -220,7 +220,7 @@ public class TaskConversionService
     /// <summary>
     /// Adjusts task priority based on the new category's requirements
     /// </summary>
-    private int AdjustPriorityForCategory(int currentPriorityValue, TaskCategory newCategory)
+    private int AdjustPriorityForCategory(int currentPriorityValue, AppTaskCategory newCategory)
     {
         var currentPriority = Priority.FromValue(currentPriorityValue);
         var suggestedPriorities = newCategory.GetSuggestedPriorities().ToList();
@@ -242,12 +242,12 @@ public class TaskConversionService
     /// <param name="subtaskTemplates">Templates for creating subtasks</param>
     /// <returns>Validation result and collection of created subtasks</returns>
     public (ValidationResult ValidationResult, IEnumerable<DomainTask>? Subtasks) BreakdownProject(
-        DomainTask projectTask, 
+        DomainAppTask projectTask, 
         IEnumerable<(string Title, string? Description, DateTime? DueDate, Priority Priority)> subtaskTemplates)
     {
-        var category = TaskCategory.FromValue(projectTask.Category);
+        var category = AppTaskCategory.FromValue(projectTask.Category);
         
-        if (category != TaskCategory.Project)
+        if (category != AppTaskCategory.Project)
         {
             return (ValidationResult.Failure("Only project tasks can be broken down into subtasks"), null);
         }
@@ -279,8 +279,8 @@ public class TaskConversionService
                 Description = template.Description,
                 DueDate = template.DueDate,
                 Priority = template.Priority.Value,
-                Category = TaskCategory.ToDo.Value, // Subtasks are typically ToDo items
-                Status = DomainTaskStatus.Pending.Value,
+                Category = AppTaskCategory.ToDo.Value, // Subtasks are typically ToDo items
+                Status = DomainAppTaskStatus.Pending.Value,
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow,
                 IsDeleted = false,
@@ -302,13 +302,13 @@ public class TaskConversionService
     /// <summary>
     /// Enhances task description when converting to project
     /// </summary>
-    private string EnhanceDescriptionForProject(string? originalDescription, DomainTask originalTask)
+    private string EnhanceDescriptionForProject(string? originalDescription, DomainAppTask originalTask)
     {
         var enhancedDescription = originalDescription ?? "";
 
         if (!enhancedDescription.Contains("Project converted from"))
         {
-            var conversionNote = $"\n\n--- Project converted from {TaskCategory.FromValue(originalTask.Category).GetDisplayName()} on {DateTime.UtcNow:yyyy-MM-dd} ---";
+            var conversionNote = $"\n\n--- Project converted from {AppTaskCategory.FromValue(originalTask.Category).GetDisplayName()} on {DateTime.UtcNow:yyyy-MM-dd} ---";
             enhancedDescription += conversionNote;
         }
 
@@ -323,17 +323,17 @@ public class TaskConversionService
     /// <summary>
     /// Suggests task category based on content analysis
     /// </summary>
-    /// <param name="title">Task title</param>
-    /// <param name="description">Task description</param>
-    /// <param name="dueDate">Task due date</param>
+    /// <param name="title">AppTask title</param>
+    /// <param name="description">AppTask description</param>
+    /// <param name="dueDate">AppTask due date</param>
     /// <returns>Suggested category with confidence score</returns>
-    public (TaskCategory SuggestedCategory, double ConfidenceScore) SuggestTaskCategory(string title, string? description, DateTime? dueDate)
+    public (AppTaskCategory SuggestedCategory, double ConfidenceScore) SuggestAppTaskCategory(string title, string? description, DateTime? dueDate)
     {
-        var scores = new Dictionary<TaskCategory, double>();
+        var scores = new Dictionary<AppTaskCategory, double>();
         var content = $"{title} {description}".ToLowerInvariant();
 
         // Initialize all categories with base score
-        foreach (var category in TaskCategory.GetAll())
+        foreach (var category in AppTaskCategory.GetAll())
         {
             scores[category] = 0.1;
         }
@@ -344,10 +344,10 @@ public class TaskConversionService
         var projectKeywords = new[] { "project", "plan", "develop", "build", "create", "design", "implement" };
         var ideaKeywords = new[] { "idea", "think", "consider", "maybe", "brainstorm", "concept", "inspiration" };
 
-        scores[TaskCategory.Appointment] += CountKeywords(content, appointmentKeywords) * 0.3;
-        scores[TaskCategory.BillReminder] += CountKeywords(content, billKeywords) * 0.3;
-        scores[TaskCategory.Project] += CountKeywords(content, projectKeywords) * 0.3;
-        scores[TaskCategory.Idea] += CountKeywords(content, ideaKeywords) * 0.3;
+        scores[AppTaskCategory.Appointment] += CountKeywords(content, appointmentKeywords) * 0.3;
+        scores[AppTaskCategory.BillReminder] += CountKeywords(content, billKeywords) * 0.3;
+        scores[AppTaskCategory.Project] += CountKeywords(content, projectKeywords) * 0.3;
+        scores[AppTaskCategory.Idea] += CountKeywords(content, ideaKeywords) * 0.3;
 
         // Due date based scoring
         if (dueDate.HasValue)
@@ -356,30 +356,30 @@ public class TaskConversionService
             
             if (daysUntilDue <= 1)
             {
-                scores[TaskCategory.Appointment] += 0.4; // Likely an appointment
-                scores[TaskCategory.BillReminder] += 0.3; // Could be a bill
+                scores[AppTaskCategory.Appointment] += 0.4; // Likely an appointment
+                scores[AppTaskCategory.BillReminder] += 0.3; // Could be a bill
             }
             else if (daysUntilDue > 30)
             {
-                scores[TaskCategory.Project] += 0.2; // Long-term could be project
-                scores[TaskCategory.Idea] += 0.1; // Or long-term idea
+                scores[AppTaskCategory.Project] += 0.2; // Long-term could be project
+                scores[AppTaskCategory.Idea] += 0.1; // Or long-term idea
             }
         }
         else
         {
-            scores[TaskCategory.Idea] += 0.2; // No due date suggests idea
+            scores[AppTaskCategory.Idea] += 0.2; // No due date suggests idea
         }
 
         // Length-based scoring
         var totalLength = content.Length;
         if (totalLength > 200)
         {
-            scores[TaskCategory.Project] += 0.2; // Detailed descriptions suggest projects
+            scores[AppTaskCategory.Project] += 0.2; // Detailed descriptions suggest projects
         }
         else if (totalLength < 50)
         {
-            scores[TaskCategory.ToDo] += 0.2; // Short descriptions suggest simple todos
-            scores[TaskCategory.Idea] += 0.1;
+            scores[AppTaskCategory.ToDo] += 0.2; // Short descriptions suggest simple todos
+            scores[AppTaskCategory.Idea] += 0.1;
         }
 
         var bestMatch = scores.OrderByDescending(kvp => kvp.Value).First();

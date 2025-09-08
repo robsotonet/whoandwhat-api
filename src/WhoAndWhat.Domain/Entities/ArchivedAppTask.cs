@@ -1,15 +1,15 @@
 namespace WhoAndWhat.Domain.Entities;
 
 /// <summary>
-/// Archived task entity that preserves all original task data for historical records
-/// Tasks are archived when completed for extended periods to optimize active dataset performance
+/// Archived AppTask entity that preserves all original AppTask data for historical records
+/// AppTasks are archived when completed for extended periods to optimize active dataset performance
 /// </summary>
-public class ArchivedTask
+public class ArchivedAppTask
 {
     public Guid Id { get; set; }
     
     // Original task data preservation
-    public Guid OriginalTaskId { get; set; }
+    public Guid OriginalAppTaskId { get; set; }
     public Guid UserId { get; set; }
     public string Title { get; set; } = null!;
     public string? Description { get; set; }
@@ -31,8 +31,8 @@ public class ArchivedTask
     // Preserved relationship data (denormalized for performance)
     public Guid? ProjectId { get; set; }
     public string? ProjectName { get; set; }
-    public Guid? ParentTaskId { get; set; }
-    public string? ParentTaskTitle { get; set; }
+    public Guid? ParentAppTaskId { get; set; }
+    public string? ParentAppTaskTitle { get; set; }
     
     // Serialized related data for complete preservation
     public string? SubtasksJson { get; set; } // JSON of subtasks that were archived together
@@ -44,8 +44,8 @@ public class ArchivedTask
     
     // Archive validation and business rules
     public bool CanBeRestored => 
-        Status == (int)ValueObjects.TaskStatus.Completed || 
-        Status == (int)ValueObjects.TaskStatus.Archived;
+        Status == (int)ValueObjects.AppTaskStatus.Completed || 
+        Status == (int)ValueObjects.AppTaskStatus.Archived;
     
     public bool IsRecentlyArchived => 
         ArchivedAt > DateTime.UtcNow.AddDays(-30);

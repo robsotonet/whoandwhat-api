@@ -5,7 +5,7 @@ namespace WhoAndWhat.Domain.ValueObjects;
 /// <summary>
 /// Value object representing search criteria for tasks with validation and defaults
 /// </summary>
-public class TaskSearchCriteria
+public class AppTaskSearchCriteria
 {
     public Guid? UserId { get; init; }
     public string Query { get; init; } = string.Empty;
@@ -116,7 +116,7 @@ public class TaskSearchCriteria
     /// Creates a copy with normalized and sanitized values
     /// </summary>
     /// <returns>Normalized search criteria</returns>
-    public TaskSearchCriteria Normalize()
+    public AppTaskSearchCriteria Normalize()
     {
         var normalizedQuery = Query?.Trim();
         if (string.IsNullOrWhiteSpace(normalizedQuery))
@@ -133,7 +133,7 @@ public class TaskSearchCriteria
         var clampedPageSize = Math.Min(Math.Max(PageSize, 1), MaxPageSize);
         var clampedPageNumber = Math.Max(PageNumber, 1);
 
-        return new TaskSearchCriteria
+        return new AppTaskSearchCriteria
         {
             UserId = UserId,
             Query = normalizedQuery,

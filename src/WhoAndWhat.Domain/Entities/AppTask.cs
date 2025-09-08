@@ -1,13 +1,12 @@
 using WhoAndWhat.Domain.ValueObjects;
 using WhoAndWhat.Domain.Common;
-using TaskStatus = WhoAndWhat.Domain.ValueObjects.TaskStatus;
 
 namespace WhoAndWhat.Domain.Entities;
 
 /// <summary>
-/// Task entity with rich domain behavior and business rules
+/// AppTask entity with rich domain behavior and business rules
 /// </summary>
-public class Task : BaseEntity
+public class AppTask : BaseEntity
 {
     /// <summary>
     /// Maximum allowed title length
@@ -33,7 +32,7 @@ public class Task : BaseEntity
     public Project? Project { get; set; }
 
     public ICollection<Contact> Contacts { get; set; } = new List<Contact>();
-    public ICollection<Task> Subtasks { get; set; } = new List<Task>();
+    public ICollection<AppTask> Subtasks { get; set; } = new List<AppTask>();
 
     // Calculated Properties
     
@@ -44,7 +43,7 @@ public class Task : BaseEntity
     {
         get
         {
-            if (!DueDate.HasValue || Status == (int)TaskStatus.Completed || Status == (int)TaskStatus.Archived)
+            if (!DueDate.HasValue || Status == (int)AppTaskStatus.Completed || Status == (int)AppTaskStatus.Archived)
             {
                 return false;
             }
@@ -74,17 +73,17 @@ public class Task : BaseEntity
     {
         get
         {
-            if (Status == (int)TaskStatus.Completed)
+            if (Status == (int)AppTaskStatus.Completed)
             {
                 return 100m;
             }
             
             if (!Subtasks.Any())
             {
-                return Status == (int)TaskStatus.InProgress ? 50m : 0m;
+                return Status == (int)AppTaskStatus.InProgress ? 50m : 0m;
             }
 
-            var completedSubtasks = Subtasks.Count(s => s.Status == (int)TaskStatus.Completed);
+            var completedSubtasks = Subtasks.Count(s => s.Status == (int)AppTaskStatus.Completed);
             return (decimal)completedSubtasks / Subtasks.Count * 100m;
         }
     }
@@ -92,7 +91,7 @@ public class Task : BaseEntity
     /// <summary>
     /// Gets whether the task has active (non-completed) subtasks
     /// </summary>
-    public bool HasActiveSubtasks => Subtasks.Any(s => s.Status != (int)TaskStatus.Completed && s.Status != (int)TaskStatus.Archived);
+    public bool HasActiveSubtasks => Subtasks.Any(s => s.Status != (int)AppTaskStatus.Completed && s.Status != (int)AppTaskStatus.Archived);
 
     /// <summary>
     /// Gets whether the task is a standalone task (not part of a project)

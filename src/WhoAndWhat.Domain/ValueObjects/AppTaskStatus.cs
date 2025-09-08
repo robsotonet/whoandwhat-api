@@ -5,28 +5,28 @@ namespace WhoAndWhat.Domain.ValueObjects;
 /// <summary>
 /// Rich value object representing task status with business rules and validation
 /// </summary>
-public record TaskStatus
+public record AppTaskStatus
 {
-    public static readonly TaskStatus Pending = new("Pending", 0, "Task is pending and not yet started");
-    public static readonly TaskStatus InProgress = new("InProgress", 1, "Task is currently being worked on");
-    public static readonly TaskStatus Completed = new("Completed", 2, "Task has been completed successfully");
-    public static readonly TaskStatus Archived = new("Archived", 3, "Task has been archived for record-keeping");
-    public static readonly TaskStatus Confirmed = new("Confirmed", 4, "Task has been confirmed (appointments)");
-    public static readonly TaskStatus Cancelled = new("Cancelled", 5, "Task has been cancelled");
+    public static readonly AppTaskStatus Pending = new("Pending", 0, "Task is pending and not yet started");
+    public static readonly AppTaskStatus InProgress = new("InProgress", 1, "Task is currently being worked on");
+    public static readonly AppTaskStatus Completed = new("Completed", 2, "Task has been completed successfully");
+    public static readonly AppTaskStatus Archived = new("Archived", 3, "Task has been archived for record-keeping");
+    public static readonly AppTaskStatus Confirmed = new("Confirmed", 4, "Task has been confirmed (appointments)");
+    public static readonly AppTaskStatus Cancelled = new("Cancelled", 5, "Task has been cancelled");
 
-    private static readonly IReadOnlyList<TaskStatus> AllStatuses = new List<TaskStatus>
+    private static readonly IReadOnlyList<AppTaskStatus> AllStatuses = new List<AppTaskStatus>
     {
         Pending, InProgress, Completed, Archived, Confirmed, Cancelled
     };
 
-    private static readonly IReadOnlyDictionary<int, TaskStatus> StatusByValue = AllStatuses.ToDictionary(s => s.Value);
-    private static readonly IReadOnlyDictionary<string, TaskStatus> StatusByName = AllStatuses.ToDictionary(s => s.Name, StringComparer.OrdinalIgnoreCase);
+    private static readonly IReadOnlyDictionary<int, AppTaskStatus> StatusByValue = AllStatuses.ToDictionary(s => s.Value);
+    private static readonly IReadOnlyDictionary<string, AppTaskStatus> StatusByName = AllStatuses.ToDictionary(s => s.Name, StringComparer.OrdinalIgnoreCase);
 
     public string Name { get; }
     public int Value { get; }
     public string Description { get; }
 
-    private TaskStatus(string name, int value, string description)
+    private AppTaskStatus(string name, int value, string description)
     {
         Name = name;
         Value = value;
@@ -37,15 +37,15 @@ public record TaskStatus
     /// Gets all available task statuses
     /// </summary>
     /// <returns>Collection of all task statuses</returns>
-    public static IEnumerable<TaskStatus> GetAll() => AllStatuses;
+    public static IEnumerable<AppTaskStatus> GetAll() => AllStatuses;
 
     /// <summary>
-    /// Creates TaskStatus from integer value
+    /// Creates AppTaskStatus from integer value
     /// </summary>
     /// <param name="value">Integer value</param>
-    /// <returns>TaskStatus instance</returns>
+    /// <returns>AppTaskStatus instance</returns>
     /// <exception cref="ArgumentException">When value is invalid</exception>
-    public static TaskStatus FromValue(int value)
+    public static AppTaskStatus FromValue(int value)
     {
         if (StatusByValue.TryGetValue(value, out var status))
         {
@@ -56,12 +56,12 @@ public record TaskStatus
     }
 
     /// <summary>
-    /// Creates TaskStatus from name string
+    /// Creates AppTaskStatus from name string
     /// </summary>
     /// <param name="name">Status name</param>
-    /// <returns>TaskStatus instance</returns>
+    /// <returns>AppTaskStatus instance</returns>
     /// <exception cref="ArgumentException">When name is invalid</exception>
-    public static TaskStatus FromName(string name)
+    public static AppTaskStatus FromName(string name)
     {
         if (string.IsNullOrWhiteSpace(name))
         {
@@ -77,23 +77,23 @@ public record TaskStatus
     }
 
     /// <summary>
-    /// Tries to create TaskStatus from integer value
+    /// Tries to create AppTaskStatus from integer value
     /// </summary>
     /// <param name="value">Integer value</param>
-    /// <param name="status">Output TaskStatus if successful</param>
+    /// <param name="status">Output AppTaskStatus if successful</param>
     /// <returns>True if successful, false otherwise</returns>
-    public static bool TryFromValue(int value, out TaskStatus? status)
+    public static bool TryFromValue(int value, out AppTaskStatus? status)
     {
         return StatusByValue.TryGetValue(value, out status);
     }
 
     /// <summary>
-    /// Tries to create TaskStatus from name string
+    /// Tries to create AppTaskStatus from name string
     /// </summary>
     /// <param name="name">Status name</param>
-    /// <param name="status">Output TaskStatus if successful</param>
+    /// <param name="status">Output AppTaskStatus if successful</param>
     /// <returns>True if successful, false otherwise</returns>
-    public static bool TryFromName(string name, out TaskStatus? status)
+    public static bool TryFromName(string name, out AppTaskStatus? status)
     {
         status = null;
         if (string.IsNullOrWhiteSpace(name))
@@ -109,7 +109,7 @@ public record TaskStatus
     /// </summary>
     /// <param name="targetStatus">Target status to transition to</param>
     /// <returns>True if the transition is valid</returns>
-    public bool CanTransitionTo(TaskStatus targetStatus)
+    public bool CanTransitionTo(AppTaskStatus targetStatus)
     {
         // Cannot transition to the same status
         if (this == targetStatus)
@@ -133,7 +133,7 @@ public record TaskStatus
     /// Gets all valid transition statuses from the current status
     /// </summary>
     /// <returns>Collection of valid target statuses</returns>
-    public IEnumerable<TaskStatus> GetValidTransitions()
+    public IEnumerable<AppTaskStatus> GetValidTransitions()
     {
         return AllStatuses.Where(CanTransitionTo);
     }
@@ -208,7 +208,7 @@ public record TaskStatus
     /// <param name="hasActiveSubtasks">Whether the task has active subtasks</param>
     /// <param name="taskCategory">Task category</param>
     /// <returns>Validation result</returns>
-    public ValidationResult ValidateTransition(TaskStatus targetStatus, bool hasActiveSubtasks = false, TaskCategory? taskCategory = null)
+    public ValidationResult ValidateTransition(AppTaskStatus targetStatus, bool hasActiveSubtasks = false, TaskCategory? taskCategory = null)
     {
         var errors = new List<string>();
 
@@ -238,11 +238,11 @@ public record TaskStatus
         };
     }
 
-    // Explicit conversion from TaskStatus to int for database storage
-    public static explicit operator int(TaskStatus status) => status.Value;
+    // Explicit conversion from AppTaskStatus to int for database storage
+    public static explicit operator int(AppTaskStatus status) => status.Value;
 
-    // Explicit conversion from int to TaskStatus
-    public static explicit operator TaskStatus(int value) => FromValue(value);
+    // Explicit conversion from int to AppTaskStatus
+    public static explicit operator AppTaskStatus(int value) => FromValue(value);
 
     public override string ToString() => Name;
 

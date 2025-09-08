@@ -1,7 +1,7 @@
 using WhoAndWhat.Application.DTOs;
 using WhoAndWhat.Domain.Entities;
 using WhoAndWhat.Domain.ValueObjects;
-using DomainTask = WhoAndWhat.Domain.Entities.Task;
+using DomainAppTask = WhoAndWhat.Domain.Entities.Task;
 using DomainTaskStatus = WhoAndWhat.Domain.ValueObjects.TaskStatus;
 
 namespace WhoAndWhat.Application.Interfaces;
@@ -10,7 +10,7 @@ namespace WhoAndWhat.Application.Interfaces;
 /// Advanced repository interface for Task-specific operations
 /// Extends the generic repository with domain-specific functionality
 /// </summary>
-public interface ITaskRepository : IRepository<DomainTask>
+public interface IAppTaskRepository : IRepository<DomainAppTask>
 {
     #region Enhanced Retrieval Methods
     
@@ -20,7 +20,7 @@ public interface ITaskRepository : IRepository<DomainTask>
     /// <param name="taskId">The task ID</param>
     /// <param name="userId">The user ID for security filtering</param>
     /// <param name="cancellationToken">Cancellation token</param>
-    /// <returns>Task with subtasks or null if not found</returns>
+    /// <returns>AppTask with subtasks or null if not found</returns>
     Task<DomainTask?> GetTaskWithSubtasksAsync(Guid taskId, Guid userId, CancellationToken cancellationToken = default);
     
     /// <summary>
@@ -28,7 +28,7 @@ public interface ITaskRepository : IRepository<DomainTask>
     /// </summary>
     /// <param name="taskId">The task ID</param>
     /// <param name="cancellationToken">Cancellation token</param>
-    /// <returns>Task with subtasks or null if not found</returns>
+    /// <returns>AppTask with subtasks or null if not found</returns>
     Task<DomainTask?> GetByIdWithSubtasksAsync(Guid taskId, CancellationToken cancellationToken = default);
     
     /// <summary>
@@ -39,7 +39,7 @@ public interface ITaskRepository : IRepository<DomainTask>
     /// <param name="includeCompleted">Include completed tasks</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Tasks in the project</returns>
-    Task<IEnumerable<DomainTask>> GetTasksByProjectIdAsync(Guid projectId, Guid userId, bool includeCompleted = true, CancellationToken cancellationToken = default);
+    Task<IEnumerable<DomainAppTask>> GetTasksByProjectIdAsync(Guid projectId, Guid userId, bool includeCompleted = true, CancellationToken cancellationToken = default);
     
     /// <summary>
     /// Gets tasks for a user with advanced filtering
@@ -48,7 +48,7 @@ public interface ITaskRepository : IRepository<DomainTask>
     /// <param name="filter">Advanced filter criteria</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Filtered tasks with total count</returns>
-    Task<(IEnumerable<DomainTask> Tasks, int TotalCount)> GetTasksByUserIdAsync(Guid userId, TaskFilter filter, CancellationToken cancellationToken = default);
+    Task<(IEnumerable<DomainAppTask> Tasks, int TotalCount)> GetTasksByUserIdAsync(Guid userId, TaskFilter filter, CancellationToken cancellationToken = default);
     
     /// <summary>
     /// Gets all overdue tasks for a user
@@ -56,7 +56,7 @@ public interface ITaskRepository : IRepository<DomainTask>
     /// <param name="userId">The user ID</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Overdue tasks</returns>
-    Task<IEnumerable<DomainTask>> GetOverdueTasksAsync(Guid userId, CancellationToken cancellationToken = default);
+    Task<IEnumerable<DomainAppTask>> GetOverdueTasksAsync(Guid userId, CancellationToken cancellationToken = default);
     
     /// <summary>
     /// Gets tasks within a specific date range
@@ -66,7 +66,7 @@ public interface ITaskRepository : IRepository<DomainTask>
     /// <param name="toDate">End date (inclusive)</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Tasks in date range</returns>
-    Task<IEnumerable<DomainTask>> GetTasksForDateRangeAsync(Guid userId, DateTime fromDate, DateTime toDate, CancellationToken cancellationToken = default);
+    Task<IEnumerable<DomainAppTask>> GetTasksForDateRangeAsync(Guid userId, DateTime fromDate, DateTime toDate, CancellationToken cancellationToken = default);
     
     /// <summary>
     /// Gets recently created or updated tasks for a user
@@ -75,7 +75,7 @@ public interface ITaskRepository : IRepository<DomainTask>
     /// <param name="count">Maximum number of tasks to return</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Recent tasks</returns>
-    Task<IEnumerable<DomainTask>> GetRecentTasksAsync(Guid userId, int count = 10, CancellationToken cancellationToken = default);
+    Task<IEnumerable<DomainAppTask>> GetRecentTasksAsync(Guid userId, int count = 10, CancellationToken cancellationToken = default);
     
     #endregion
     
@@ -106,7 +106,7 @@ public interface ITaskRepository : IRepository<DomainTask>
     /// <param name="userId">The user ID for security filtering</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Ancestor tasks from root to parent</returns>
-    Task<IEnumerable<DomainTask>> GetTaskAncestorsAsync(Guid taskId, Guid userId, CancellationToken cancellationToken = default);
+    Task<IEnumerable<DomainAppTask>> GetTaskAncestorsAsync(Guid taskId, Guid userId, CancellationToken cancellationToken = default);
     
     /// <summary>
     /// Gets all descendant tasks (children and their children)
@@ -115,7 +115,7 @@ public interface ITaskRepository : IRepository<DomainTask>
     /// <param name="userId">The user ID for security filtering</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>All descendant tasks</returns>
-    Task<IEnumerable<DomainTask>> GetTaskDescendantsAsync(Guid taskId, Guid userId, CancellationToken cancellationToken = default);
+    Task<IEnumerable<DomainAppTask>> GetTaskDescendantsAsync(Guid taskId, Guid userId, CancellationToken cancellationToken = default);
     
     /// <summary>
     /// Gets direct subtasks of a parent task
@@ -124,7 +124,7 @@ public interface ITaskRepository : IRepository<DomainTask>
     /// <param name="userId">The user ID for security filtering</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Direct subtasks</returns>
-    Task<IEnumerable<DomainTask>> GetSubtasksAsync(Guid parentTaskId, Guid userId, CancellationToken cancellationToken = default);
+    Task<IEnumerable<DomainAppTask>> GetSubtasksAsync(Guid parentTaskId, Guid userId, CancellationToken cancellationToken = default);
     
     #endregion
     
@@ -137,7 +137,7 @@ public interface ITaskRepository : IRepository<DomainTask>
     /// <param name="category">The task category</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Tasks in the category</returns>
-    Task<IEnumerable<DomainTask>> GetTasksByCategoryAsync(Guid userId, TaskCategory category, CancellationToken cancellationToken = default);
+    Task<IEnumerable<DomainAppTask>> GetTasksByCategoryAsync(Guid userId, TaskCategory category, CancellationToken cancellationToken = default);
     
     /// <summary>
     /// Gets tasks by specific status
@@ -146,7 +146,7 @@ public interface ITaskRepository : IRepository<DomainTask>
     /// <param name="status">The task status</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Tasks with the status</returns>
-    Task<IEnumerable<DomainTask>> GetTasksByStatusAsync(Guid userId, DomainTaskStatus status, CancellationToken cancellationToken = default);
+    Task<IEnumerable<DomainAppTask>> GetTasksByStatusAsync(Guid userId, DomainTaskStatus status, CancellationToken cancellationToken = default);
     
     /// <summary>
     /// Gets tasks by specific priority
@@ -155,7 +155,7 @@ public interface ITaskRepository : IRepository<DomainTask>
     /// <param name="priority">The priority level</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Tasks with the priority</returns>
-    Task<IEnumerable<DomainTask>> GetTasksByPriorityAsync(Guid userId, Priority priority, CancellationToken cancellationToken = default);
+    Task<IEnumerable<DomainAppTask>> GetTasksByPriorityAsync(Guid userId, Priority priority, CancellationToken cancellationToken = default);
     
     /// <summary>
     /// Gets tasks due today for a user
@@ -163,7 +163,7 @@ public interface ITaskRepository : IRepository<DomainTask>
     /// <param name="userId">The user ID</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Tasks due today</returns>
-    Task<IEnumerable<DomainTask>> GetTasksDueTodayAsync(Guid userId, CancellationToken cancellationToken = default);
+    Task<IEnumerable<DomainAppTask>> GetTasksDueTodayAsync(Guid userId, CancellationToken cancellationToken = default);
     
     /// <summary>
     /// Gets tasks due within the next specified days
@@ -172,7 +172,7 @@ public interface ITaskRepository : IRepository<DomainTask>
     /// <param name="days">Number of days to look ahead</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Tasks due soon</returns>
-    Task<IEnumerable<DomainTask>> GetTasksDueSoonAsync(Guid userId, int days, CancellationToken cancellationToken = default);
+    Task<IEnumerable<DomainAppTask>> GetTasksDueSoonAsync(Guid userId, int days, CancellationToken cancellationToken = default);
     
     /// <summary>
     /// Searches tasks by title or description content
@@ -182,7 +182,7 @@ public interface ITaskRepository : IRepository<DomainTask>
     /// <param name="maxResults">Maximum results to return</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Matching tasks</returns>
-    Task<IEnumerable<DomainTask>> SearchTasksAsync(Guid userId, string searchTerm, int maxResults = 50, CancellationToken cancellationToken = default);
+    Task<IEnumerable<DomainAppTask>> SearchTasksAsync(Guid userId, string searchTerm, int maxResults = 50, CancellationToken cancellationToken = default);
     
     /// <summary>
     /// Searches tasks using advanced criteria with pagination
@@ -194,7 +194,7 @@ public interface ITaskRepository : IRepository<DomainTask>
     /// <param name="sortDescending">Sort direction</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Paged search results</returns>
-    Task<PagedResult<DomainTask>> SearchAsync(TaskSearchCriteria searchCriteria, int pageNumber, int pageSize, string sortBy, bool sortDescending, CancellationToken cancellationToken = default);
+    Task<PagedResult<DomainAppTask>> SearchAsync(AppTaskSearchCriteria searchCriteria, int pageNumber, int pageSize, string sortBy, bool sortDescending, CancellationToken cancellationToken = default);
     
     #endregion
     
@@ -224,7 +224,7 @@ public interface ITaskRepository : IRepository<DomainTask>
     /// <param name="userId">The user ID</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Soft-deleted tasks</returns>
-    Task<IEnumerable<DomainTask>> GetDeletedTasksAsync(Guid userId, CancellationToken cancellationToken = default);
+    Task<IEnumerable<DomainAppTask>> GetDeletedTasksAsync(Guid userId, CancellationToken cancellationToken = default);
     
     /// <summary>
     /// Gets tasks that are eligible for archiving
@@ -232,7 +232,7 @@ public interface ITaskRepository : IRepository<DomainTask>
     /// <param name="userId">The user ID</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Tasks ready for archiving</returns>
-    Task<IEnumerable<DomainTask>> GetArchivableTasksAsync(Guid userId, CancellationToken cancellationToken = default);
+    Task<IEnumerable<DomainAppTask>> GetArchivableTasksAsync(Guid userId, CancellationToken cancellationToken = default);
     
     /// <summary>
     /// Gets archived tasks for a user
@@ -242,7 +242,7 @@ public interface ITaskRepository : IRepository<DomainTask>
     /// <param name="take">Number of records to take</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Archived tasks</returns>
-    Task<IEnumerable<DomainTask>> GetArchivedTasksAsync(Guid userId, int skip = 0, int take = 50, CancellationToken cancellationToken = default);
+    Task<IEnumerable<DomainAppTask>> GetArchivedTasksAsync(Guid userId, int skip = 0, int take = 50, CancellationToken cancellationToken = default);
     
     #endregion
     
@@ -294,8 +294,8 @@ public interface ITaskRepository : IRepository<DomainTask>
     /// </summary>
     /// <param name="userId">The user ID</param>
     /// <param name="cancellationToken">Cancellation token</param>
-    /// <returns>Task statistics</returns>
-    Task<TaskStatistics> GetTaskStatisticsAsync(Guid userId, CancellationToken cancellationToken = default);
+    /// <returns>AppTask statistics</returns>
+    Task<AppTaskStatistics> GetAppTaskStatisticsAsync(Guid userId, CancellationToken cancellationToken = default);
     
     /// <summary>
     /// Gets task completion trends for a user over a specified period
@@ -303,7 +303,7 @@ public interface ITaskRepository : IRepository<DomainTask>
     /// <param name="userId">The user ID</param>
     /// <param name="period">The time period to analyze</param>
     /// <param name="cancellationToken">Cancellation token</param>
-    /// <returns>Task completion trends</returns>
+    /// <returns>AppTask completion trends</returns>
     Task<TaskCompletionTrends> GetTaskCompletionTrendsAsync(Guid userId, TimeSpan period, CancellationToken cancellationToken = default);
     
     /// <summary>
@@ -313,7 +313,7 @@ public interface ITaskRepository : IRepository<DomainTask>
     /// <param name="count">Number of tasks to return</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Most active tasks</returns>
-    Task<IEnumerable<DomainTask>> GetMostActiveTasksAsync(Guid userId, int count = 10, CancellationToken cancellationToken = default);
+    Task<IEnumerable<DomainAppTask>> GetMostActiveTasksAsync(Guid userId, int count = 10, CancellationToken cancellationToken = default);
     
     /// <summary>
     /// Gets tasks that haven't been updated for a specified period
@@ -322,7 +322,7 @@ public interface ITaskRepository : IRepository<DomainTask>
     /// <param name="inactivePeriod">Period of inactivity</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Stale tasks</returns>
-    Task<IEnumerable<DomainTask>> GetStaleTasksAsync(Guid userId, TimeSpan inactivePeriod, CancellationToken cancellationToken = default);
+    Task<IEnumerable<DomainAppTask>> GetStaleTasksAsync(Guid userId, TimeSpan inactivePeriod, CancellationToken cancellationToken = default);
     
     #endregion
     
@@ -351,7 +351,7 @@ public interface ITaskRepository : IRepository<DomainTask>
     /// <param name="userId">The user ID</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Tasks with potential issues</returns>
-    Task<IEnumerable<DomainTask>> GetTasksWithIntegrityIssuesAsync(Guid userId, CancellationToken cancellationToken = default);
+    Task<IEnumerable<DomainAppTask>> GetTasksWithIntegrityIssuesAsync(Guid userId, CancellationToken cancellationToken = default);
     
     #endregion
     
@@ -363,7 +363,7 @@ public interface ITaskRepository : IRepository<DomainTask>
     /// <param name="userId">The user ID</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Tasks suitable for project conversion</returns>
-    Task<IEnumerable<DomainTask>> GetProjectConversionCandidatesAsync(Guid userId, CancellationToken cancellationToken = default);
+    Task<IEnumerable<DomainAppTask>> GetProjectConversionCandidatesAsync(Guid userId, CancellationToken cancellationToken = default);
     
     /// <summary>
     /// Gets tasks that need priority escalation based on due dates and age
@@ -371,7 +371,7 @@ public interface ITaskRepository : IRepository<DomainTask>
     /// <param name="userId">The user ID</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Tasks needing priority escalation</returns>
-    Task<IEnumerable<DomainTask>> GetTasksNeedingPriorityEscalationAsync(Guid userId, CancellationToken cancellationToken = default);
+    Task<IEnumerable<DomainAppTask>> GetTasksNeedingPriorityEscalationAsync(Guid userId, CancellationToken cancellationToken = default);
     
     /// <summary>
     /// Gets user's productivity patterns by analyzing task creation and completion times

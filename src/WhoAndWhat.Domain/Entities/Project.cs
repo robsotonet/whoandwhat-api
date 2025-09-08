@@ -1,5 +1,4 @@
 using WhoAndWhat.Domain.ValueObjects;
-using DomainTaskStatus = WhoAndWhat.Domain.ValueObjects.TaskStatus;
 
 namespace WhoAndWhat.Domain.Entities;
 
@@ -15,7 +14,7 @@ public class Project : BaseEntity
     public Guid UserId { get; set; }
     public User User { get; set; } = null!;
 
-    public ICollection<Task> Tasks { get; set; } = new List<Task>();
+    public ICollection<AppTask> Tasks { get; set; } = new List<AppTask>();
     public ICollection<Contact> Contacts { get; set; } = new List<Contact>();
 
     /// <summary>
@@ -30,8 +29,8 @@ public class Project : BaseEntity
 
         // Cannot delete project if it has active tasks
         var activeTasks = Tasks?.Where(t => !t.IsDeleted && 
-            t.Status != (int)DomainTaskStatus.Completed && 
-            t.Status != (int)DomainTaskStatus.Archived).ToList();
+            t.Status != (int)AppTaskStatus.Completed && 
+            t.Status != (int)AppTaskStatus.Archived).ToList();
             
         return activeTasks?.Count == 0;
     }

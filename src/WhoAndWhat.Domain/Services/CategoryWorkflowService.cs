@@ -2,8 +2,8 @@ using WhoAndWhat.Domain.Common;
 using WhoAndWhat.Domain.Entities;
 using WhoAndWhat.Domain.Events;
 using WhoAndWhat.Domain.ValueObjects;
-using DomainTask = WhoAndWhat.Domain.Entities.Task;
-using DomainTaskStatus = WhoAndWhat.Domain.ValueObjects.TaskStatus;
+using DomainTask = WhoAndWhat.Domain.Entities.AppTask;
+using DomainTaskStatus = WhoAndWhat.Domain.ValueObjects.AppTaskStatus;
 
 namespace WhoAndWhat.Domain.Services;
 
@@ -25,12 +25,12 @@ public class CategoryWorkflowService
     /// <param name="task">Task to process</param>
     /// <param name="action">Workflow action to perform</param>
     /// <returns>Workflow result</returns>
-    public WorkflowResult ProcessTaskAction(DomainTask task, WorkflowAction action)
+    public WorkflowResult ProcessAppTaskAction(DomainTask task, WorkflowAction action)
     {
         if (task == null)
             return WorkflowResult.Failed("Task cannot be null");
 
-        var category = TaskCategory.FromValue(task.Category);
+        var category = AppTaskCategory.FromValue(task.Category);
         
         return category.Name switch
         {
@@ -50,8 +50,8 @@ public class CategoryWorkflowService
     /// <returns>Current workflow state</returns>
     public WorkflowState GetWorkflowState(DomainTask task)
     {
-        var category = TaskCategory.FromValue(task.Category);
-        var status = (DomainTaskStatus)task.Status;
+        var category = AppTaskCategory.FromValue(task.Category);
+        var status = (DomainAppTaskStatus)task.Status;
 
         return new WorkflowState
         {
@@ -72,7 +72,7 @@ public class CategoryWorkflowService
     /// <returns>New recurring task</returns>
     public WorkflowResult CreateRecurringTask(DomainTask originalTask, RecurrencePattern recurrencePattern)
     {
-        var category = TaskCategory.FromValue(originalTask.Category);
+        var category = AppTaskCategory.FromValue(originalTask.Category);
 
         // Only certain categories support recurrence
         if (!IsCategorySuitableForRecurrence(category))
@@ -100,8 +100,8 @@ public class CategoryWorkflowService
     /// <returns>Completion result</returns>
     public WorkflowResult CompleteTask(DomainTask task)
     {
-        var category = TaskCategory.FromValue(task.Category);
-        var currentStatus = (DomainTaskStatus)task.Status;
+        var category = AppTaskCategory.FromValue(task.Category);
+        var currentStatus = (DomainAppTaskStatus)task.Status;
 
         // Validate completion is allowed
         var validation = ValidateTaskCompletion(task, category);
@@ -118,7 +118,7 @@ public class CategoryWorkflowService
         }
 
         // Mark task as completed
-        task.Status = (int)DomainTaskStatus.Completed;
+        task.Status = (int)DomainAppTaskStatus.Completed;
         task.UpdatedAt = DateTime.UtcNow;
 
         // Schedule auto-archiving if category supports it
@@ -138,23 +138,23 @@ public class CategoryWorkflowService
 
     private WorkflowResult ProcessAppointmentWorkflow(DomainTask task, WorkflowAction action)
     {
-        var currentStatus = (DomainTaskStatus)task.Status;
+        var currentStatus = (DomainAppTaskStatus)task.Status;
 
         return action.Type switch
         {
-            WorkflowActionType.Confirm => currentStatus == DomainTaskStatus.Pending 
+            WorkflowActionType.Confirm => currentStatus == DomainAppTaskStatus.Pending 
                 ? ConfirmAppointment(task)
                 : WorkflowResult.Failed("Can only confirm pending appointments"),
 
-            WorkflowActionType.Reschedule => currentStatus != DomainTaskStatus.Completed
+            WorkflowActionType.Reschedule => currentStatus != DomainAppTaskStatus.Completed
                 ? RescheduleAppointment(task, action.Parameters)
                 : WorkflowResult.Failed("Cannot reschedule completed appointments"),
 
-            WorkflowActionType.Cancel => currentStatus != DomainTaskStatus.Completed
+            WorkflowActionType.Cancel => currentStatus != DomainAppTaskStatus.Completed
                 ? CancelAppointment(task)
                 : WorkflowResult.Failed("Cannot cancel completed appointments"),
 
-            WorkflowActionType.Complete => currentStatus == DomainTaskStatus.Confirmed || currentStatus == DomainTaskStatus.InProgress
+            WorkflowActionType.Complete => currentStatus == DomainAppTaskStatus.Confirmed || currentStatus == DomainAppTaskStatus.InProgress
                 ? CompleteAppointment(task)
                 : WorkflowResult.Failed("Appointments must be confirmed before completion"),
 
@@ -229,7 +229,7 @@ public class CategoryWorkflowService
             return WorkflowResult.Failed("Cannot confirm appointments in the past");
         }
 
-        task.Status = (int)DomainTaskStatus.Confirmed;
+        task.Status = (int)DomainAppTaskStatus.Confirmed;
         task.UpdatedAt = DateTime.UtcNow;
 
         return WorkflowResult.Success("Appointment confirmed", task);
@@ -249,7 +249,7 @@ public class CategoryWorkflowService
         }
 
         task.DueDate = newDateTime;
-        task.Status = (int)DomainTaskStatus.Pending; // Reset to pending after reschedule
+        task.Status = (int)DomainAppTaskStatus.Pending; // Reset to pending after reschedule
         task.UpdatedAt = DateTime.UtcNow;
 
         return WorkflowResult.Success("Appointment rescheduled", task);
@@ -257,7 +257,7 @@ public class CategoryWorkflowService
 
     private WorkflowResult CancelAppointment(DomainTask task)
     {
-        task.Status = (int)DomainTaskStatus.Cancelled;
+        task.Status = (int)DomainAppTaskStatus.Cancelled;
         task.UpdatedAt = DateTime.UtcNow;
 
         return WorkflowResult.Success("Appointment cancelled", task);
@@ -265,11 +265,11 @@ public class CategoryWorkflowService
 
     private WorkflowResult CompleteAppointment(DomainTask task)
     {
-        task.Status = (int)DomainTaskStatus.Completed;
+        task.Status = (int)DomainAppTaskStatus.Completed;
         task.UpdatedAt = DateTime.UtcNow;
 
         // Auto-archive completed appointments
-        ScheduleAutoArchive(task, TaskCategory.Appointment);
+        ScheduleAutoArchive(task, AppTaskCategory.Appointment);
 
         return WorkflowResult.Success("Appointment completed", task);
     }
@@ -280,7 +280,7 @@ public class CategoryWorkflowService
 
     private WorkflowResult MarkBillPaid(DomainTask task)
     {
-        task.Status = (int)DomainTaskStatus.Completed;
+        task.Status = (int)DomainAppTaskStatus.Completed;
         task.UpdatedAt = DateTime.UtcNow;
 
         // Add payment confirmation to description
@@ -288,7 +288,7 @@ public class CategoryWorkflowService
         task.Description = (task.Description ?? "") + paymentNote;
 
         // Auto-archive paid bills
-        ScheduleAutoArchive(task, TaskCategory.BillReminder);
+        ScheduleAutoArchive(task, AppTaskCategory.BillReminder);
 
         return WorkflowResult.Success("Bill marked as paid", task);
     }
@@ -309,7 +309,7 @@ public class CategoryWorkflowService
         }
 
         // Mark original as completed
-        task.Status = (int)DomainTaskStatus.Completed;
+        task.Status = (int)DomainAppTaskStatus.Completed;
         task.UpdatedAt = DateTime.UtcNow;
 
         return WorkflowResult.Success("Recurring bill reminder set up", task);
@@ -361,11 +361,11 @@ public class CategoryWorkflowService
 
         if (progress >= 100)
         {
-            task.Status = (int)DomainTaskStatus.Completed;
+            task.Status = (int)DomainAppTaskStatus.Completed;
         }
         else if (progress > 0)
         {
-            task.Status = (int)DomainTaskStatus.InProgress;
+            task.Status = (int)DomainAppTaskStatus.InProgress;
         }
 
         task.UpdatedAt = DateTime.UtcNow;
@@ -385,13 +385,13 @@ public class CategoryWorkflowService
 
     private WorkflowResult ConvertIdeaToTodo(DomainTask task)
     {
-        if (!TaskCategory.Idea.CanConvertTo(TaskCategory.ToDo))
+        if (!AppTaskCategory.Idea.CanConvertTo(AppTaskCategory.ToDo))
         {
             return WorkflowResult.Failed("Cannot convert idea to to-do");
         }
 
-        task.Category = (int)TaskCategory.ToDo;
-        task.Status = (int)DomainTaskStatus.Pending;
+        task.Category = (int)AppTaskCategory.ToDo;
+        task.Status = (int)DomainAppTaskStatus.Pending;
         task.UpdatedAt = DateTime.UtcNow;
 
         return WorkflowResult.Success("Idea converted to To-Do", task);
@@ -399,7 +399,7 @@ public class CategoryWorkflowService
 
     private WorkflowResult ConvertIdeaToProject(DomainTask task)
     {
-        if (!TaskCategory.Idea.CanConvertTo(TaskCategory.Project))
+        if (!AppTaskCategory.Idea.CanConvertTo(AppTaskCategory.Project))
         {
             return WorkflowResult.Failed("Cannot convert idea to project");
         }
@@ -409,8 +409,8 @@ public class CategoryWorkflowService
             return WorkflowResult.Failed("Ideas must have detailed descriptions before converting to projects");
         }
 
-        task.Category = (int)TaskCategory.Project;
-        task.Status = (int)DomainTaskStatus.Pending;
+        task.Category = (int)AppTaskCategory.Project;
+        task.Status = (int)DomainAppTaskStatus.Pending;
         task.UpdatedAt = DateTime.UtcNow;
 
         return WorkflowResult.Success("Idea converted to Project", task);
@@ -418,7 +418,7 @@ public class CategoryWorkflowService
 
     private WorkflowResult ArchiveIdea(DomainTask task)
     {
-        task.Status = (int)DomainTaskStatus.Archived;
+        task.Status = (int)DomainAppTaskStatus.Archived;
         task.UpdatedAt = DateTime.UtcNow;
 
         return WorkflowResult.Success("Idea archived", task);
@@ -448,12 +448,12 @@ public class CategoryWorkflowService
 
     private WorkflowResult StartTask(DomainTask task)
     {
-        if (task.Status != (int)DomainTaskStatus.Pending)
+        if (task.Status != (int)DomainAppTaskStatus.Pending)
         {
             return WorkflowResult.Failed("Only pending tasks can be started");
         }
 
-        task.Status = (int)DomainTaskStatus.InProgress;
+        task.Status = (int)DomainAppTaskStatus.InProgress;
         task.UpdatedAt = DateTime.UtcNow;
 
         return WorkflowResult.Success("Task started", task);
@@ -461,12 +461,12 @@ public class CategoryWorkflowService
 
     private WorkflowResult PauseTask(DomainTask task)
     {
-        if (task.Status != (int)DomainTaskStatus.InProgress)
+        if (task.Status != (int)DomainAppTaskStatus.InProgress)
         {
             return WorkflowResult.Failed("Only in-progress tasks can be paused");
         }
 
-        task.Status = (int)DomainTaskStatus.Pending;
+        task.Status = (int)DomainAppTaskStatus.Pending;
         task.UpdatedAt = DateTime.UtcNow;
 
         return WorkflowResult.Success("Task paused", task);
@@ -474,12 +474,12 @@ public class CategoryWorkflowService
 
     private WorkflowResult ResumeTask(DomainTask task)
     {
-        if (task.Status != (int)DomainTaskStatus.Pending)
+        if (task.Status != (int)DomainAppTaskStatus.Pending)
         {
             return WorkflowResult.Failed("Can only resume paused tasks");
         }
 
-        task.Status = (int)DomainTaskStatus.InProgress;
+        task.Status = (int)DomainAppTaskStatus.InProgress;
         task.UpdatedAt = DateTime.UtcNow;
 
         return WorkflowResult.Success("Task resumed", task);
@@ -509,7 +509,7 @@ public class CategoryWorkflowService
 
     private WorkflowResult ConvertToDoToProject(DomainTask task)
     {
-        task.Category = (int)TaskCategory.Project;
+        task.Category = (int)AppTaskCategory.Project;
         task.UpdatedAt = DateTime.UtcNow;
 
         return WorkflowResult.Success("To-Do converted to Project", task);
@@ -519,21 +519,21 @@ public class CategoryWorkflowService
 
     #region Helper Methods
 
-    private ValidationResult ValidateTaskCompletion(DomainTask task, TaskCategory category)
+    private ValidationResult ValidateTaskCompletion(DomainTask task, AppTaskCategory category)
     {
         var errors = new List<string>();
 
         switch (category.Name)
         {
             case "Project":
-                if (task.Subtasks?.Any(st => !st.IsDeleted && st.Status != (int)DomainTaskStatus.Completed) == true)
+                if (task.Subtasks?.Any(st => !st.IsDeleted && st.Status != (int)DomainAppTaskStatus.Completed) == true)
                 {
                     errors.Add("Cannot complete project with incomplete subtasks");
                 }
                 break;
 
             case "Appointment":
-                if (task.Status != (int)DomainTaskStatus.Confirmed && task.Status != (int)DomainTaskStatus.InProgress)
+                if (task.Status != (int)DomainAppTaskStatus.Confirmed && task.Status != (int)DomainAppTaskStatus.InProgress)
                 {
                     errors.Add("Appointments must be confirmed before completion");
                 }
@@ -545,7 +545,7 @@ public class CategoryWorkflowService
             : ValidationResult.Success();
     }
 
-    private WorkflowResult ApplyCategoryCompletionLogic(DomainTask task, TaskCategory category)
+    private WorkflowResult ApplyCategoryCompletionLogic(DomainTask task, AppTaskCategory category)
     {
         // Category-specific completion logic
         return category.Name switch
@@ -556,13 +556,13 @@ public class CategoryWorkflowService
         };
     }
 
-    private void ScheduleAutoArchive(DomainTask task, TaskCategory category)
+    private void ScheduleAutoArchive(DomainTask task, AppTaskCategory category)
     {
         // Auto-archiving logic would be implemented here
         // This could involve scheduling a background job or setting a flag
     }
 
-    private bool IsCategorySuitableForRecurrence(TaskCategory category)
+    private bool IsCategorySuitableForRecurrence(AppTaskCategory category)
     {
         return category.Name is "BillReminder" or "Appointment";
     }
@@ -578,11 +578,11 @@ public class CategoryWorkflowService
             Priority = original.Priority,
             UserId = original.UserId,
             DueDate = CalculateNextRecurrenceDate(original.DueDate, pattern),
-            Status = (int)DomainTaskStatus.Pending
+            Status = (int)DomainAppTaskStatus.Pending
         };
     }
 
-    private void ApplyCategorySpecificRecurrenceRules(DomainTask task, TaskCategory category, RecurrencePattern pattern)
+    private void ApplyCategorySpecificRecurrenceRules(DomainTask task, AppTaskCategory category, RecurrencePattern pattern)
     {
         switch (category.Name)
         {
@@ -591,7 +591,7 @@ public class CategoryWorkflowService
                 break;
             case "Appointment":
                 // Reset appointment status for new occurrence
-                task.Status = (int)DomainTaskStatus.Pending;
+                task.Status = (int)DomainAppTaskStatus.Pending;
                 break;
         }
     }
@@ -610,53 +610,53 @@ public class CategoryWorkflowService
         };
     }
 
-    private string GetCurrentWorkflowStep(DomainTask task, TaskCategory category, DomainTaskStatus status)
+    private string GetCurrentWorkflowStep(DomainTask task, AppTaskCategory category, DomainAppTaskStatus status)
     {
         if (category.Name == "Appointment")
         {
-            if (status == DomainTaskStatus.Pending) return "Awaiting Confirmation";
-            if (status == DomainTaskStatus.Confirmed) return "Confirmed";
-            if (status == DomainTaskStatus.InProgress) return "In Progress";
-            if (status == DomainTaskStatus.Completed) return "Completed";
+            if (status == DomainAppTaskStatus.Pending) return "Awaiting Confirmation";
+            if (status == DomainAppTaskStatus.Confirmed) return "Confirmed";
+            if (status == DomainAppTaskStatus.InProgress) return "In Progress";
+            if (status == DomainAppTaskStatus.Completed) return "Completed";
         }
         else if (category.Name == "BillReminder")
         {
-            if (status == DomainTaskStatus.Pending) return "Payment Due";
-            if (status == DomainTaskStatus.InProgress) return "Processing Payment";
-            if (status == DomainTaskStatus.Completed) return "Payment Completed";
+            if (status == DomainAppTaskStatus.Pending) return "Payment Due";
+            if (status == DomainAppTaskStatus.InProgress) return "Processing Payment";
+            if (status == DomainAppTaskStatus.Completed) return "Payment Completed";
         }
         else if (category.Name == "Project")
         {
-            if (status == DomainTaskStatus.Pending) return "Planning Phase";
-            if (status == DomainTaskStatus.InProgress) return "Execution Phase";
-            if (status == DomainTaskStatus.Completed) return "Project Completed";
+            if (status == DomainAppTaskStatus.Pending) return "Planning Phase";
+            if (status == DomainAppTaskStatus.InProgress) return "Execution Phase";
+            if (status == DomainAppTaskStatus.Completed) return "Project Completed";
         }
         else if (category.Name == "Idea")
         {
-            if (status == DomainTaskStatus.Pending) return "Idea Captured";
-            if (status == DomainTaskStatus.InProgress) return "Under Development";
+            if (status == DomainAppTaskStatus.Pending) return "Idea Captured";
+            if (status == DomainAppTaskStatus.InProgress) return "Under Development";
         }
         else if (category.Name == "ToDo")
         {
-            if (status == DomainTaskStatus.Pending) return "Ready to Start";
-            if (status == DomainTaskStatus.InProgress) return "In Progress";
+            if (status == DomainAppTaskStatus.Pending) return "Ready to Start";
+            if (status == DomainAppTaskStatus.InProgress) return "In Progress";
         }
 
         return status.GetDisplayName();
     }
 
-    private int CalculateProgressPercentage(DomainTask task, TaskCategory category, DomainTaskStatus status)
+    private int CalculateProgressPercentage(DomainTask task, AppTaskCategory category, DomainAppTaskStatus status)
     {
-        if (status == DomainTaskStatus.Pending) return 0;
-        if (status == DomainTaskStatus.Confirmed) return 25;
-        if (status == DomainTaskStatus.InProgress) return 50;
-        if (status == DomainTaskStatus.Completed) return 100;
+        if (status == DomainAppTaskStatus.Pending) return 0;
+        if (status == DomainAppTaskStatus.Confirmed) return 25;
+        if (status == DomainAppTaskStatus.InProgress) return 50;
+        if (status == DomainAppTaskStatus.Completed) return 100;
         return 0;
     }
 
-    private TimeSpan? EstimateTimeRemaining(DomainTask task, TaskCategory category, DomainTaskStatus status)
+    private TimeSpan? EstimateTimeRemaining(DomainTask task, AppTaskCategory category, DomainAppTaskStatus status)
     {
-        if (status == DomainTaskStatus.Completed)
+        if (status == DomainAppTaskStatus.Completed)
             return TimeSpan.Zero;
 
         var baseHours = category.GetEstimatedHours();
@@ -666,7 +666,7 @@ public class CategoryWorkflowService
         return TimeSpan.FromHours(baseHours * remainingPercentage);
     }
 
-    private List<string> IdentifyBlockers(DomainTask task, TaskCategory category)
+    private List<string> IdentifyBlockers(DomainTask task, AppTaskCategory category)
     {
         var blockers = new List<string>();
 
@@ -732,8 +732,8 @@ public enum WorkflowActionType
 public class WorkflowState
 {
     public string CurrentStep { get; set; } = null!;
-    public List<TaskAction> AvailableActions { get; set; } = new();
-    public DomainTaskStatus? NextRecommendedStatus { get; set; }
+    public List<AppTaskAction> AvailableActions { get; set; } = new();
+    public DomainAppTaskStatus? NextRecommendedStatus { get; set; }
     public int ProgressPercentage { get; set; }
     public TimeSpan? EstimatedTimeRemaining { get; set; }
     public List<string> Blockers { get; set; } = new();

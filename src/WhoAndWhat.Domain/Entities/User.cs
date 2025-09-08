@@ -36,7 +36,7 @@ public class User : BaseEntity
     public IReadOnlyList<OAuthAccount> OAuthAccounts => _oAuthAccounts.AsReadOnly();
 
     // Navigation properties
-    public ICollection<Task> Tasks { get; set; } = new List<Task>();
+    public ICollection<AppTask> Tasks { get; set; } = new List<AppTask>();
     public ICollection<Contact> Contacts { get; set; } = new List<Contact>();
     public ICollection<Project> Projects { get; set; } = new List<Project>();
 
