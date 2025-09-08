@@ -13,15 +13,15 @@ public class TaskEntityTests
     {
         var task = new Task();
         
-        task.Id.Should().Be(Guid.Empty);
+        task.Id.Should().NotBe(Guid.Empty); // BaseEntity auto-generates ID
         task.Title.Should().BeNull();
         task.Description.Should().BeNull();
         task.DueDate.Should().BeNull();
         task.Priority.Should().Be(0);
         task.Category.Should().Be(0);
         task.Status.Should().Be(0);
-        task.CreatedAt.Should().Be(DateTime.MinValue);
-        task.UpdatedAt.Should().Be(DateTime.MinValue);
+        task.CreatedAt.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(1)); // BaseEntity auto-sets timestamps
+        task.UpdatedAt.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(1));
         task.UserId.Should().Be(Guid.Empty);
         task.ProjectId.Should().BeNull();
         task.Contacts.Should().NotBeNull().And.BeEmpty();

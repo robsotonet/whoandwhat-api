@@ -10,7 +10,7 @@ public class ProjectEntityTests
     {
         var project = new Project();
         
-        project.Id.Should().Be(Guid.Empty);
+        project.Id.Should().NotBe(Guid.Empty); // BaseEntity auto-generates ID
         project.Name.Should().BeNull();
         project.Description.Should().BeNull();
         project.StartDate.Should().BeNull();
