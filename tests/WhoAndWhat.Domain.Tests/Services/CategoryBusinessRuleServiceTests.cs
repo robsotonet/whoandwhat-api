@@ -6,8 +6,8 @@ using WhoAndWhat.Domain.Entities;
 using WhoAndWhat.Domain.Services;
 using WhoAndWhat.Domain.ValueObjects;
 using Xunit;
-using DomainTask = WhoAndWhat.Domain.Entities.Task;
-using DomainTaskStatus = WhoAndWhat.Domain.ValueObjects.TaskStatus;
+using DomainTask = WhoAndWhat.Domain.Entities.AppTask;
+using DomainTaskStatus = WhoAndWhat.Domain.ValueObjects.AppTaskStatus;
 
 namespace WhoAndWhat.Domain.Tests.Services;
 
@@ -26,7 +26,7 @@ public class CategoryBusinessRuleServiceTests
     public void ValidateTaskCreation_ValidToDoTask_ShouldSucceed()
     {
         // Arrange
-        var task = CreateTestTask("Buy groceries", TaskCategory.ToDo);
+        var task = CreateTestTask("Buy groceries", AppTaskCategory.ToDo);
 
         // Act
         var result = _service.ValidateTaskCreation(task);
@@ -40,7 +40,7 @@ public class CategoryBusinessRuleServiceTests
     public void ValidateTaskCreation_AppointmentWithoutDueDate_ShouldFail()
     {
         // Arrange
-        var task = CreateTestTask("Doctor appointment", TaskCategory.Appointment);
+        var task = CreateTestTask("Doctor appointment", AppTaskCategory.Appointment);
         task.DueDate = null;
 
         // Act
@@ -55,7 +55,7 @@ public class CategoryBusinessRuleServiceTests
     public void ValidateTaskCreation_AppointmentInPast_ShouldFail()
     {
         // Arrange
-        var task = CreateTestTask("Past appointment", TaskCategory.Appointment);
+        var task = CreateTestTask("Past appointment", AppTaskCategory.Appointment);
         task.DueDate = DateTime.UtcNow.AddDays(-1);
 
         // Act
@@ -70,7 +70,7 @@ public class CategoryBusinessRuleServiceTests
     public void ValidateTaskCreation_BillReminderWithoutAmount_ShouldHaveWarning()
     {
         // Arrange
-        var task = CreateTestTask("Electric bill", TaskCategory.BillReminder);
+        var task = CreateTestTask("Electric bill", AppTaskCategory.BillReminder);
         task.DueDate = DateTime.UtcNow.AddDays(7);
         task.Description = "Monthly electric bill";
 
@@ -86,7 +86,7 @@ public class CategoryBusinessRuleServiceTests
     public void ValidateTaskCreation_ProjectWithoutDescription_ShouldFail()
     {
         // Arrange
-        var task = CreateTestTask("Big project", TaskCategory.Project);
+        var task = CreateTestTask("Big project", AppTaskCategory.Project);
         task.Description = null;
 
         // Act
@@ -101,7 +101,7 @@ public class CategoryBusinessRuleServiceTests
     public void ValidateTaskCreation_IdeaWithUrgentPriority_ShouldFail()
     {
         // Arrange
-        var task = CreateTestTask("Random idea", TaskCategory.Idea);
+        var task = CreateTestTask("Random idea", AppTaskCategory.Idea);
         task.Priority = (int)Priority.High;
 
         // Act
@@ -131,10 +131,10 @@ public class CategoryBusinessRuleServiceTests
     public void ValidateTaskUpdate_ValidCategoryChange_ShouldSucceed()
     {
         // Arrange
-        var existingTask = CreateTestTask("Great idea", TaskCategory.Idea);
-        var updates = new TaskUpdateRequest
+        var existingTask = CreateTestTask("Great idea", AppTaskCategory.Idea);
+        var updates = new AppTaskUpdateRequest
         {
-            Category = (int)TaskCategory.ToDo
+            Category = (int)AppTaskCategory.ToDo
         };
 
         // Act
@@ -148,10 +148,10 @@ public class CategoryBusinessRuleServiceTests
     public void ValidateTaskUpdate_InvalidCategoryChange_ShouldFail()
     {
         // Arrange
-        var existingTask = CreateTestTask("Appointment", TaskCategory.Appointment);
-        var updates = new TaskUpdateRequest
+        var existingTask = CreateTestTask("Appointment", AppTaskCategory.Appointment);
+        var updates = new AppTaskUpdateRequest
         {
-            Category = (int)TaskCategory.Idea
+            Category = (int)AppTaskCategory.Idea
         };
 
         // Act
@@ -166,10 +166,10 @@ public class CategoryBusinessRuleServiceTests
     public void ValidateTaskUpdate_ProjectToBillReminder_ShouldFail()
     {
         // Arrange
-        var existingTask = CreateTestTask("Software project", TaskCategory.Project);
-        var updates = new TaskUpdateRequest
+        var existingTask = CreateTestTask("Software project", AppTaskCategory.Project);
+        var updates = new AppTaskUpdateRequest
         {
-            Category = (int)TaskCategory.BillReminder
+            Category = (int)AppTaskCategory.BillReminder
         };
 
         // Act
@@ -184,9 +184,9 @@ public class CategoryBusinessRuleServiceTests
     public void ValidateTaskUpdate_AppointmentStatusChangeWithPastDate_ShouldFail()
     {
         // Arrange
-        var existingTask = CreateTestTask("Past appointment", TaskCategory.Appointment);
+        var existingTask = CreateTestTask("Past appointment", AppTaskCategory.Appointment);
         existingTask.DueDate = DateTime.UtcNow.AddDays(-1);
-        var updates = new TaskUpdateRequest
+        var updates = new AppTaskUpdateRequest
         {
             Status = DomainTaskStatus.Confirmed
         };
@@ -203,7 +203,7 @@ public class CategoryBusinessRuleServiceTests
     public void ValidateTaskUpdate_NullExistingTask_ShouldFail()
     {
         // Arrange
-        var updates = new TaskUpdateRequest();
+        var updates = new AppTaskUpdateRequest();
 
         // Act
         var result = _service.ValidateTaskUpdate(null!, updates);
@@ -221,7 +221,7 @@ public class CategoryBusinessRuleServiceTests
     public void GetRecommendedNextStatus_PendingAppointment_ShouldSuggestConfirmed()
     {
         // Arrange
-        var task = CreateTestTask("Doctor visit", TaskCategory.Appointment);
+        var task = CreateTestTask("Doctor visit", AppTaskCategory.Appointment);
         task.Status = (int)DomainTaskStatus.Pending;
 
         // Act
@@ -235,7 +235,7 @@ public class CategoryBusinessRuleServiceTests
     public void GetRecommendedNextStatus_ConfirmedAppointment_ShouldSuggestInProgress()
     {
         // Arrange
-        var task = CreateTestTask("Doctor visit", TaskCategory.Appointment);
+        var task = CreateTestTask("Doctor visit", AppTaskCategory.Appointment);
         task.Status = (int)DomainTaskStatus.Confirmed;
 
         // Act
@@ -249,7 +249,7 @@ public class CategoryBusinessRuleServiceTests
     public void GetRecommendedNextStatus_PendingBillReminder_ShouldSuggestInProgress()
     {
         // Arrange
-        var task = CreateTestTask("Pay electric bill", TaskCategory.BillReminder);
+        var task = CreateTestTask("Pay electric bill", AppTaskCategory.BillReminder);
         task.Status = (int)DomainTaskStatus.Pending;
 
         // Act
@@ -263,10 +263,10 @@ public class CategoryBusinessRuleServiceTests
     public void GetRecommendedNextStatus_ProjectWithInProgressSubtasks_ShouldStayInProgress()
     {
         // Arrange
-        var project = CreateTestTask("Software project", TaskCategory.Project);
+        var project = CreateTestTask("Software project", AppTaskCategory.Project);
         project.Status = (int)DomainTaskStatus.InProgress;
         
-        var subtask = CreateTestTask("Design database", TaskCategory.ToDo);
+        var subtask = CreateTestTask("Design database", AppTaskCategory.ToDo);
         subtask.Status = (int)DomainTaskStatus.InProgress;
         project.Subtasks.Add(subtask);
 
@@ -281,7 +281,7 @@ public class CategoryBusinessRuleServiceTests
     public void GetRecommendedNextStatus_PendingToDo_ShouldSuggestInProgress()
     {
         // Arrange
-        var task = CreateTestTask("Clean garage", TaskCategory.ToDo);
+        var task = CreateTestTask("Clean garage", AppTaskCategory.ToDo);
         task.Status = (int)DomainTaskStatus.Pending;
 
         // Act
@@ -299,7 +299,7 @@ public class CategoryBusinessRuleServiceTests
     public void GetAvailableActions_PendingAppointment_ShouldIncludeAppointmentActions()
     {
         // Arrange
-        var task = CreateTestTask("Doctor visit", TaskCategory.Appointment);
+        var task = CreateTestTask("Doctor visit", AppTaskCategory.Appointment);
         task.Status = (int)DomainTaskStatus.Pending;
 
         // Act
@@ -316,7 +316,7 @@ public class CategoryBusinessRuleServiceTests
     public void GetAvailableActions_PendingBillReminder_ShouldIncludeBillActions()
     {
         // Arrange
-        var task = CreateTestTask("Pay utilities", TaskCategory.BillReminder);
+        var task = CreateTestTask("Pay utilities", AppTaskCategory.BillReminder);
         task.Status = (int)DomainTaskStatus.Pending;
 
         // Act
@@ -332,7 +332,7 @@ public class CategoryBusinessRuleServiceTests
     public void GetAvailableActions_PendingProject_ShouldIncludeProjectActions()
     {
         // Arrange
-        var task = CreateTestTask("Build website", TaskCategory.Project);
+        var task = CreateTestTask("Build website", AppTaskCategory.Project);
         task.Status = (int)DomainTaskStatus.Pending;
 
         // Act
@@ -348,7 +348,7 @@ public class CategoryBusinessRuleServiceTests
     public void GetAvailableActions_PendingIdea_ShouldIncludeIdeaActions()
     {
         // Arrange
-        var task = CreateTestTask("App idea", TaskCategory.Idea);
+        var task = CreateTestTask("App idea", AppTaskCategory.Idea);
         task.Status = (int)DomainTaskStatus.Pending;
 
         // Act
@@ -365,7 +365,7 @@ public class CategoryBusinessRuleServiceTests
     public void GetAvailableActions_CompletedTask_ShouldIncludeReopen()
     {
         // Arrange
-        var task = CreateTestTask("Completed task", TaskCategory.ToDo);
+        var task = CreateTestTask("Completed task", AppTaskCategory.ToDo);
         task.Status = (int)DomainTaskStatus.Completed;
 
         // Act
@@ -386,14 +386,14 @@ public class CategoryBusinessRuleServiceTests
         // Arrange
         var tasks = new List<DomainTask>
         {
-            CreateCompletedTask("Todo 1", TaskCategory.ToDo),
-            CreateCompletedTask("Todo 2", TaskCategory.ToDo),
-            CreateTestTask("Todo 3", TaskCategory.ToDo),
+            CreateCompletedTask("Todo 1", AppTaskCategory.ToDo),
+            CreateCompletedTask("Todo 2", AppTaskCategory.ToDo),
+            CreateTestTask("Todo 3", AppTaskCategory.ToDo),
             
-            CreateCompletedTask("Appt 1", TaskCategory.Appointment),
-            CreateOverdueTask("Appt 2", TaskCategory.Appointment),
+            CreateCompletedTask("Appt 1", AppTaskCategory.Appointment),
+            CreateOverdueTask("Appt 2", AppTaskCategory.Appointment),
             
-            CreateTestTask("Idea 1", TaskCategory.Idea)
+            CreateTestTask("Idea 1", AppTaskCategory.Idea)
         };
 
         // Act
@@ -440,10 +440,10 @@ public class CategoryBusinessRuleServiceTests
         // Arrange
         var tasks = new List<DomainTask>
         {
-            CreateTestTask("High priority todo", TaskCategory.ToDo, Priority.High),
-            CreateTestTask("Future appointment", TaskCategory.Appointment, Priority.Medium),
-            CreateTestTask("Bill payment", TaskCategory.BillReminder, Priority.Medium),
-            CreateTestTask("Creative idea", TaskCategory.Idea, Priority.Low)
+            CreateTestTask("High priority todo", AppTaskCategory.ToDo, Priority.High),
+            CreateTestTask("Future appointment", AppTaskCategory.Appointment, Priority.Medium),
+            CreateTestTask("Bill payment", AppTaskCategory.BillReminder, Priority.Medium),
+            CreateTestTask("Creative idea", AppTaskCategory.Idea, Priority.Low)
         };
 
         tasks[1].DueDate = DateTime.UtcNow.AddDays(3); // Appointment
@@ -455,14 +455,14 @@ public class CategoryBusinessRuleServiceTests
         // Assert
         suggestions.Suggestions.Should().HaveCount(4);
         
-        var appointmentSuggestion = suggestions.Suggestions.First(s => s.Task.Category == (int)TaskCategory.Appointment);
+        var appointmentSuggestion = suggestions.Suggestions.First(s => s.Task.Category == (int)AppTaskCategory.Appointment);
         appointmentSuggestion.RecommendedDate.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromDays(1));
         appointmentSuggestion.EstimatedDuration.Should().Be(TimeSpan.FromHours(2));
 
-        var billSuggestion = suggestions.Suggestions.First(s => s.Task.Category == (int)TaskCategory.BillReminder);
+        var billSuggestion = suggestions.Suggestions.First(s => s.Task.Category == (int)AppTaskCategory.BillReminder);
         billSuggestion.EstimatedDuration.Should().Be(TimeSpan.FromHours(0.25));
 
-        var ideaSuggestion = suggestions.Suggestions.First(s => s.Task.Category == (int)TaskCategory.Idea);
+        var ideaSuggestion = suggestions.Suggestions.First(s => s.Task.Category == (int)AppTaskCategory.Idea);
         ideaSuggestion.EstimatedDuration.Should().Be(TimeSpan.FromHours(0.5));
     }
 
@@ -472,8 +472,8 @@ public class CategoryBusinessRuleServiceTests
         // Arrange
         var tasks = new List<DomainTask>
         {
-            CreateCompletedTask("Completed todo", TaskCategory.ToDo),
-            CreateTestTask("Active todo", TaskCategory.ToDo)
+            CreateCompletedTask("Completed todo", AppTaskCategory.ToDo),
+            CreateTestTask("Active todo", AppTaskCategory.ToDo)
         };
 
         // Act
@@ -488,7 +488,7 @@ public class CategoryBusinessRuleServiceTests
 
     #region Helper Methods
 
-    private DomainTask CreateTestTask(string title, TaskCategory category, Priority priority = null!)
+    private DomainTask CreateTestTask(string title, AppTaskCategory category, Priority priority = null!)
     {
         priority ??= Priority.Medium;
         
@@ -505,14 +505,14 @@ public class CategoryBusinessRuleServiceTests
         };
     }
 
-    private DomainTask CreateCompletedTask(string title, TaskCategory category)
+    private DomainTask CreateCompletedTask(string title, AppTaskCategory category)
     {
         var task = CreateTestTask(title, category);
         task.Status = (int)DomainTaskStatus.Completed;
         return task;
     }
 
-    private DomainTask CreateOverdueTask(string title, TaskCategory category)
+    private DomainTask CreateOverdueTask(string title, AppTaskCategory category)
     {
         var task = CreateTestTask(title, category);
         task.DueDate = DateTime.UtcNow.AddDays(-1);

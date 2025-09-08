@@ -14,8 +14,8 @@ public class OAuthAccount : BaseEntity
     // Navigation property
     public User User { get; set; } = null!;
 
-    private OAuthAccount() 
-    { 
+    private OAuthAccount()
+    {
         Provider = string.Empty;
         ExternalId = string.Empty;
     }

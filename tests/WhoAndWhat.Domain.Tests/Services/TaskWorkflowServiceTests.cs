@@ -2,21 +2,21 @@ using FluentAssertions;
 using WhoAndWhat.Domain.Services;
 using WhoAndWhat.Domain.ValueObjects;
 using WhoAndWhat.Domain.Common;
-using DomainTask = WhoAndWhat.Domain.Entities.Task;
-using DomainTaskStatus = WhoAndWhat.Domain.ValueObjects.TaskStatus;
+using DomainTask = WhoAndWhat.Domain.Entities.AppTask;
+using DomainTaskStatus = WhoAndWhat.Domain.ValueObjects.AppTaskStatus;
 
 namespace WhoAndWhat.Domain.Tests.Services;
 
-public class TaskWorkflowServiceTests
+public class AppTaskWorkflowServiceTests
 {
-    private readonly TaskWorkflowService _service;
+    private readonly AppTaskWorkflowService _service;
 
-    public TaskWorkflowServiceTests()
+    public AppTaskWorkflowServiceTests()
     {
-        _service = new TaskWorkflowService();
+        _service = new AppTaskWorkflowService();
     }
 
-    private DomainTask CreateValidTask(DomainTaskStatus? status = null, TaskCategory? category = null)
+    private DomainTask CreateValidTask(DomainTaskStatus? status = null, AppTaskCategory? category = null)
     {
         return new DomainTask
         {
@@ -25,7 +25,7 @@ public class TaskWorkflowServiceTests
             Description = "Test Description",
             DueDate = DateTime.UtcNow.AddDays(7),
             Priority = Priority.Medium.Value,
-            Category = (category ?? TaskCategory.ToDo).Value,
+            Category = (category ?? AppTaskCategory.ToDo).Value,
             Status = (status ?? DomainTaskStatus.Pending).Value,
             CreatedAt = DateTime.UtcNow.AddDays(-1),
             UpdatedAt = DateTime.UtcNow,
@@ -60,7 +60,7 @@ public class TaskWorkflowServiceTests
     [Fact]
     public void TransitionTaskStatus_Should_Prevent_Completing_Appointment_Before_Time()
     {
-        var task = CreateValidTask(DomainTaskStatus.InProgress, TaskCategory.Appointment);
+        var task = CreateValidTask(DomainTaskStatus.InProgress, AppTaskCategory.Appointment);
         task.DueDate = DateTime.UtcNow.AddHours(2);
         
         var result = _service.TransitionTaskStatus(task, DomainTaskStatus.Completed);
@@ -72,7 +72,7 @@ public class TaskWorkflowServiceTests
     [Fact]
     public void TransitionTaskStatus_Should_Allow_Completing_Past_Appointment()
     {
-        var task = CreateValidTask(DomainTaskStatus.InProgress, TaskCategory.Appointment);
+        var task = CreateValidTask(DomainTaskStatus.InProgress, AppTaskCategory.Appointment);
         task.DueDate = DateTime.UtcNow.AddHours(-1);
         
         var result = _service.TransitionTaskStatus(task, DomainTaskStatus.Completed);
@@ -83,7 +83,7 @@ public class TaskWorkflowServiceTests
     [Fact]
     public void TransitionTaskStatus_Should_Prevent_Early_Bill_Reminder_Completion()
     {
-        var task = CreateValidTask(DomainTaskStatus.InProgress, TaskCategory.BillReminder);
+        var task = CreateValidTask(DomainTaskStatus.InProgress, AppTaskCategory.BillReminder);
         task.DueDate = DateTime.UtcNow.AddDays(5);
         
         var result = _service.TransitionTaskStatus(task, DomainTaskStatus.Completed);
@@ -95,7 +95,7 @@ public class TaskWorkflowServiceTests
     [Fact]
     public void TransitionTaskStatus_Should_Prevent_Completing_Project_With_Active_Subtasks()
     {
-        var task = CreateValidTask(DomainTaskStatus.InProgress, TaskCategory.Project);
+        var task = CreateValidTask(DomainTaskStatus.InProgress, AppTaskCategory.Project);
         var subtasks = new List<DomainTask>
         {
             new() { Status = DomainTaskStatus.InProgress.Value },
@@ -139,7 +139,7 @@ public class TaskWorkflowServiceTests
     {
         var tasks = new List<DomainTask>
         {
-            CreateValidTask(DomainTaskStatus.InProgress, TaskCategory.Appointment)
+            CreateValidTask(DomainTaskStatus.InProgress, AppTaskCategory.Appointment)
         };
         tasks[0].DueDate = DateTime.UtcNow.AddHours(-3);
         
@@ -155,7 +155,7 @@ public class TaskWorkflowServiceTests
     {
         var tasks = new List<DomainTask>
         {
-            CreateValidTask(DomainTaskStatus.InProgress, TaskCategory.Appointment)
+            CreateValidTask(DomainTaskStatus.InProgress, AppTaskCategory.Appointment)
         };
         tasks[0].DueDate = DateTime.UtcNow.AddHours(-1);
         
@@ -167,7 +167,7 @@ public class TaskWorkflowServiceTests
     [Fact]
     public void AutoManageTaskStatuses_Should_Auto_Archive_Old_Bill_Reminders()
     {
-        var task = CreateValidTask(DomainTaskStatus.Completed, TaskCategory.BillReminder);
+        var task = CreateValidTask(DomainTaskStatus.Completed, AppTaskCategory.BillReminder);
         task.UpdatedAt = DateTime.UtcNow.AddDays(-35);
         
         var updates = _service.AutoManageTaskStatuses(new[] { task }).ToList();
@@ -209,7 +209,7 @@ public class TaskWorkflowServiceTests
     [Fact]
     public void SuggestPriorityEscalations_Should_Ensure_High_Priority_For_Urgent_Appointments()
     {
-        var task = CreateValidTask(DomainTaskStatus.Pending, TaskCategory.Appointment);
+        var task = CreateValidTask(DomainTaskStatus.Pending, AppTaskCategory.Appointment);
         task.Priority = Priority.Low.Value;
         task.DueDate = DateTime.UtcNow.AddHours(12);
         
@@ -249,7 +249,7 @@ public class TaskWorkflowServiceTests
     [Fact]
     public void ValidateTaskDependencies_Should_Pass_For_Valid_Project_With_Subtasks()
     {
-        var parentTask = CreateValidTask(DomainTaskStatus.InProgress, TaskCategory.Project);
+        var parentTask = CreateValidTask(DomainTaskStatus.InProgress, AppTaskCategory.Project);
         var subtasks = new List<DomainTask>
         {
             new()
@@ -268,7 +268,7 @@ public class TaskWorkflowServiceTests
     [Fact]
     public void ValidateTaskDependencies_Should_Fail_For_Category_Not_Allowing_Subtasks()
     {
-        var parentTask = CreateValidTask(DomainTaskStatus.InProgress, TaskCategory.Appointment);
+        var parentTask = CreateValidTask(DomainTaskStatus.InProgress, AppTaskCategory.Appointment);
         var subtasks = new List<DomainTask> { new() };
         
         var result = _service.ValidateTaskDependencies(parentTask, subtasks);
@@ -280,7 +280,7 @@ public class TaskWorkflowServiceTests
     [Fact]
     public void ValidateTaskDependencies_Should_Fail_For_Subtask_Due_After_Parent()
     {
-        var parentTask = CreateValidTask(DomainTaskStatus.InProgress, TaskCategory.Project);
+        var parentTask = CreateValidTask(DomainTaskStatus.InProgress, AppTaskCategory.Project);
         parentTask.DueDate = DateTime.UtcNow.AddDays(5);
         
         var subtasks = new List<DomainTask>
@@ -302,7 +302,7 @@ public class TaskWorkflowServiceTests
     [Fact]
     public void ValidateTaskDependencies_Should_Warn_For_Higher_Priority_Subtask()
     {
-        var parentTask = CreateValidTask(DomainTaskStatus.InProgress, TaskCategory.Project);
+        var parentTask = CreateValidTask(DomainTaskStatus.InProgress, AppTaskCategory.Project);
         parentTask.Priority = Priority.Medium.Value;
         
         var subtasks = new List<DomainTask>
@@ -323,7 +323,7 @@ public class TaskWorkflowServiceTests
     [Fact]
     public void ValidateTaskDependencies_Should_Fail_For_Different_Users()
     {
-        var parentTask = CreateValidTask(DomainTaskStatus.InProgress, TaskCategory.Project);
+        var parentTask = CreateValidTask(DomainTaskStatus.InProgress, AppTaskCategory.Project);
         var subtasks = new List<DomainTask>
         {
             new()

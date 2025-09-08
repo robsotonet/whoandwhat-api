@@ -1,13 +1,13 @@
 using FluentValidation.TestHelper;
 using WhoAndWhat.Domain.Entities;
 using WhoAndWhat.Domain.Validators;
-using Task = WhoAndWhat.Domain.Entities.Task;
+using Task = WhoAndWhat.Domain.Entities.AppTask;
 
 namespace WhoAndWhat.Domain.Tests;
 
-public class TaskValidatorTests
+public class AppTaskValidatorTests
 {
-    private readonly TaskValidator _validator = new();
+    private readonly AppTaskValidator _validator = new();
 
     [Fact]
     public void Should_Have_Error_When_Title_Is_Empty()

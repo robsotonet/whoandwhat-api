@@ -6,20 +6,21 @@ using WhoAndWhat.Application.Interfaces;
 using WhoAndWhat.Domain.Entities;
 using WhoAndWhat.Domain.Services;
 using WhoAndWhat.Domain.ValueObjects;
-using DomainTask = WhoAndWhat.Domain.Entities.Task;
-using DomainTaskStatus = WhoAndWhat.Domain.ValueObjects.TaskStatus;
+using AppTaskUpdateRequest = WhoAndWhat.Domain.Services.AppTaskUpdateRequest;
+using DomainTask = WhoAndWhat.Domain.Entities.AppTask;
+using DomainTaskStatus = WhoAndWhat.Domain.ValueObjects.AppTaskStatus;
 using SystemTask = System.Threading.Tasks.Task;
 
 namespace WhoAndWhat.Application.Features.Tasks.Commands.UpdateTask;
 
 public class UpdateTaskCommandHandler : IRequestHandler<UpdateTaskCommand, Result<TaskDto>>
 {
-    private readonly ITaskRepository _taskRepository;
+    private readonly IAppTaskRepository _taskRepository;
     private readonly CategoryBusinessRuleService _categoryBusinessRuleService;
     private readonly ILogger<UpdateTaskCommandHandler> _logger;
 
     public UpdateTaskCommandHandler(
-        ITaskRepository taskRepository,
+        IAppTaskRepository taskRepository,
         CategoryBusinessRuleService categoryBusinessRuleService,
         ILogger<UpdateTaskCommandHandler> logger)
     {
@@ -39,15 +40,14 @@ public class UpdateTaskCommandHandler : IRequestHandler<UpdateTaskCommand, Resul
             }
 
             // Create update request for validation
-            var updateRequest = new TaskUpdateRequest
+            var updateRequest = new AppTaskUpdateRequest
             {
                 Title = request.Title,
                 Description = request.Description,
                 Category = request.Category,
-                Status = request.Status,
+                Status = request.Status.HasValue ? DomainTaskStatus.FromValue(request.Status.Value) : null,
                 Priority = request.Priority,
                 DueDate = request.DueDate,
-                ClearDueDate = request.ClearDueDate
             };
 
             // Validate update using category-specific business rules
@@ -60,7 +60,7 @@ public class UpdateTaskCommandHandler : IRequestHandler<UpdateTaskCommand, Resul
             // Log warnings if any
             if (validationResult.HasWarnings)
             {
-                _logger.LogWarning("Task update warnings for task {TaskId}: {Warnings}", 
+                _logger.LogWarning("Task update warnings for task {TaskId}: {Warnings}",
                     task.Id, string.Join(", ", validationResult.WarningMessages));
             }
 
@@ -150,7 +150,7 @@ public class UpdateTaskCommandHandler : IRequestHandler<UpdateTaskCommand, Resul
 
     private static TaskDto MapToDto(DomainTask task)
     {
-        var category = TaskCategory.FromValue(task.Category);
+        var category = AppTaskCategory.FromValue(task.Category);
         var status = DomainTaskStatus.FromValue(task.Status);
         var priority = Priority.FromValue(task.Priority);
 

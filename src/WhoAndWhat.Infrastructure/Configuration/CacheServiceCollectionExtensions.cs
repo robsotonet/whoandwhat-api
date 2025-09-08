@@ -26,14 +26,14 @@ public static class CacheServiceCollectionExtensions
         // Bind Redis cache settings
         var cacheSettings = new RedisCacheSettings();
         configuration.GetSection(RedisCacheSettings.SectionName).Bind(cacheSettings);
-        
+
         services.Configure<RedisCacheSettings>(options => configuration.GetSection(RedisCacheSettings.SectionName).Bind(options));
 
         // Configure Redis connection
         services.AddSingleton<IConnectionMultiplexer>(serviceProvider =>
         {
             var logger = serviceProvider.GetRequiredService<ILogger<IConnectionMultiplexer>>();
-            
+
             try
             {
                 var configurationOptions = ConfigurationOptions.Parse(cacheSettings.ConnectionString);
@@ -44,7 +44,7 @@ public static class CacheServiceCollectionExtensions
                 configurationOptions.ReconnectRetryPolicy = new LinearRetry(1000); // 1 second between retries
 
                 var connection = ConnectionMultiplexer.Connect(configurationOptions);
-                
+
                 // Log connection events
                 connection.ConnectionFailed += (sender, e) =>
                 {
@@ -62,21 +62,21 @@ public static class CacheServiceCollectionExtensions
                     logger.LogError("Redis error: {EndPoint} - {Message}", e.EndPoint, e.Message);
                 };
 
-                logger.LogInformation("Redis connection established successfully to {ConnectionString}", 
+                logger.LogInformation("Redis connection established successfully to {ConnectionString}",
                     cacheSettings.ConnectionString);
-                
+
                 return connection;
             }
             catch (Exception ex)
             {
-                logger.LogError(ex, "Failed to connect to Redis at {ConnectionString}. Caching will be disabled.", 
+                logger.LogError(ex, "Failed to connect to Redis at {ConnectionString}. Caching will be disabled.",
                     cacheSettings.ConnectionString);
-                
+
                 if (!cacheSettings.EnableCacheFallback)
                 {
                     throw;
                 }
-                
+
                 // Return a dummy connection that will gracefully fail
                 // This allows the application to start without Redis when fallback is enabled
                 return ConnectionMultiplexer.Connect("localhost:9999", opt => opt.AbortOnConnectFail = false);
@@ -96,7 +96,7 @@ public static class CacheServiceCollectionExtensions
 
         // Add Redis health checks
         services.AddHealthChecks()
-            .AddCheck<RedisHealthCheck>("redis_cache", 
+            .AddCheck<RedisHealthCheck>("redis_cache",
                 failureStatus: HealthStatus.Degraded,
                 tags: new[] { "cache", "redis" });
 
@@ -134,11 +134,11 @@ public class RedisHealthCheck : IHealthCheck
         try
         {
             var database = _connectionMultiplexer.GetDatabase();
-            
+
             // Test basic Redis operations
             var testKey = "health_check_" + Guid.NewGuid().ToString("N")[..8];
             var testValue = DateTime.UtcNow.ToString("O");
-            
+
             // Test write
             var setResult = await database.StringSetAsync(testKey, testValue, TimeSpan.FromMinutes(1));
             if (!setResult)
@@ -159,7 +159,7 @@ public class RedisHealthCheck : IHealthCheck
             // Get connection info
             var endpoints = _connectionMultiplexer.GetEndPoints();
             var serverInfo = new Dictionary<string, object>();
-            
+
             foreach (var endpoint in endpoints)
             {
                 try
@@ -170,7 +170,7 @@ public class RedisHealthCheck : IHealthCheck
                         var info = await server.InfoAsync();
                         var redisVersion = info.FirstOrDefault(group => group.Key == "Server")?.
                             FirstOrDefault(kvp => kvp.Key == "redis_version").Value ?? "Unknown";
-                        
+
                         serverInfo[endpoint.ToString()!] = new
                         {
                             Status = "Connected",
@@ -226,7 +226,7 @@ public class CacheWarmupService : BackgroundService
         {
             using var scope = _serviceProvider.CreateScope();
             var taskCacheService = scope.ServiceProvider.GetRequiredService<ITaskCacheService>();
-            
+
             _logger.LogInformation("Starting cache warmup process");
             var warmedItems = await taskCacheService.WarmCacheAsync(stoppingToken);
             _logger.LogInformation("Cache warmup completed. Warmed {ItemCount} cache items", warmedItems);

@@ -262,7 +262,7 @@ public record Priority : IComparable<Priority>
     /// <param name="dueDate">Task due date</param>
     /// <param name="hasSubtasks">Whether task has subtasks</param>
     /// <returns>Validation result</returns>
-    public ValidationResult ValidatePriorityAssignment(TaskCategory? taskCategory, DateTime? dueDate, bool hasSubtasks = false)
+    public ValidationResult ValidatePriorityAssignment(AppTaskCategory? taskCategory, DateTime? dueDate, bool hasSubtasks = false)
     {
         var warnings = new List<string>();
 
@@ -284,15 +284,15 @@ public record Priority : IComparable<Priority>
                 case "Appointment" when IsLowerThan(High):
                     warnings.Add("Appointments typically should be High or Urgent priority");
                     break;
-                    
+
                 case "BillReminder" when IsLowerThan(Medium):
                     warnings.Add("Bill reminders should typically be Medium priority or higher");
                     break;
-                    
+
                 case "Project" when this == Urgent:
                     warnings.Add("Projects are rarely urgent - consider breaking into smaller tasks");
                     break;
-                    
+
                 case "Idea" when IsHigherThan(Medium):
                     warnings.Add("Ideas are typically Low or Medium priority until developed");
                     break;

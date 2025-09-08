@@ -5,21 +5,21 @@ namespace WhoAndWhat.Domain.ValueObjects;
 /// <summary>
 /// Rich value object representing AppTask category with business rules and validation
 /// </summary>
-public record AppAppTaskCategory
+public record AppTaskCategory
 {
-    public static readonly AppAppTaskCategory ToDo = new("ToDo", 0, "General to-do items", false, false, "#007bff", "task");
-    public static readonly AppAppTaskCategory Idea = new("Idea", 1, "Ideas and inspiration", false, true, "#ffc107", "lightbulb");
-    public static readonly AppAppTaskCategory Appointment = new("Appointment", 2, "Scheduled appointments", true, false, "#dc3545", "calendar");
-    public static readonly AppAppTaskCategory BillReminder = new("BillReminder", 3, "Bill payment reminders", true, false, "#fd7e14", "credit-card");
-    public static readonly AppAppTaskCategory Project = new("Project", 4, "Complex projects with subtasks", false, true, "#6f42c1", "folder");
+    public static readonly AppTaskCategory ToDo = new("ToDo", 0, "General to-do items", false, false, "#007bff", "task");
+    public static readonly AppTaskCategory Idea = new("Idea", 1, "Ideas and inspiration", false, true, "#ffc107", "lightbulb");
+    public static readonly AppTaskCategory Appointment = new("Appointment", 2, "Scheduled appointments", true, false, "#dc3545", "calendar");
+    public static readonly AppTaskCategory BillReminder = new("BillReminder", 3, "Bill payment reminders", true, false, "#fd7e14", "credit-card");
+    public static readonly AppTaskCategory Project = new("Project", 4, "Complex projects with subtasks", false, true, "#6f42c1", "folder");
 
-    private static readonly IReadOnlyList<AppAppTaskCategory> AllCategories = new List<AppAppTaskCategory>
+    private static readonly IReadOnlyList<AppTaskCategory> AllCategories = new List<AppTaskCategory>
     {
         ToDo, Idea, Appointment, BillReminder, Project
     };
 
-    private static readonly IReadOnlyDictionary<int, AppAppTaskCategory> CategoryByValue = AllCategories.ToDictionary(c => c.Value);
-    private static readonly IReadOnlyDictionary<string, AppAppTaskCategory> CategoryByName = AllCategories.ToDictionary(c => c.Name, StringComparer.OrdinalIgnoreCase);
+    private static readonly IReadOnlyDictionary<int, AppTaskCategory> CategoryByValue = AllCategories.ToDictionary(c => c.Value);
+    private static readonly IReadOnlyDictionary<string, AppTaskCategory> CategoryByName = AllCategories.ToDictionary(c => c.Name, StringComparer.OrdinalIgnoreCase);
 
     public string Name { get; }
     public int Value { get; }
@@ -29,7 +29,7 @@ public record AppAppTaskCategory
     public string ColorCode { get; }
     public string IconName { get; }
 
-    private AppAppTaskCategory(string name, int value, string description, bool requiresDueDate, bool allowsSubtasks, string colorCode, string iconName)
+    private AppTaskCategory(string name, int value, string description, bool requiresDueDate, bool allowsSubtasks, string colorCode, string iconName)
     {
         Name = name;
         Value = value;
@@ -44,15 +44,15 @@ public record AppAppTaskCategory
     /// Gets all available task categories
     /// </summary>
     /// <returns>Collection of all task categories</returns>
-    public static IEnumerable<AppAppTaskCategory> GetAll() => AllCategories;
+    public static IEnumerable<AppTaskCategory> GetAll() => AllCategories;
 
     /// <summary>
-    /// Creates AppAppTaskCategory from integer value
+    /// Creates AppTaskCategory from integer value
     /// </summary>
     /// <param name="value">Integer value</param>
-    /// <returns>AppAppTaskCategory instance</returns>
+    /// <returns>AppTaskCategory instance</returns>
     /// <exception cref="ArgumentException">When value is invalid</exception>
-    public static AppAppTaskCategory FromValue(int value)
+    public static AppTaskCategory FromValue(int value)
     {
         if (CategoryByValue.TryGetValue(value, out var category))
         {
@@ -66,7 +66,7 @@ public record AppAppTaskCategory
     /// Creates AppTaskCategory from name string
     /// </summary>
     /// <param name="name">Category name</param>
-    /// <returns>AppAppTaskCategory instance</returns>
+    /// <returns>AppTaskCategory instance</returns>
     /// <exception cref="ArgumentException">When name is invalid</exception>
     public static AppTaskCategory FromName(string name)
     {
@@ -226,7 +226,7 @@ public record AppAppTaskCategory
                 break;
         }
 
-        return errors.Any() 
+        return errors.Any()
             ? ValidationResult.Failure(errors)
             : ValidationResult.Success();
     }

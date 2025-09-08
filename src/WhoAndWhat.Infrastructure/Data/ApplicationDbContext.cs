@@ -1,7 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using WhoAndWhat.Domain.Entities;
 using WhoAndWhat.Domain.ValueObjects;
-using Task = WhoAndWhat.Domain.Entities.Task;
 
 namespace WhoAndWhat.Infrastructure.Data;
 
@@ -14,15 +13,15 @@ public class ApplicationDbContext : DbContext
     }
 
     public DbSet<User> Users { get; set; }
-    public DbSet<Task> Tasks { get; set; }
+    public DbSet<AppTask> Tasks { get; set; }
     public DbSet<Contact> Contacts { get; set; }
     public DbSet<Project> Projects { get; set; }
     public DbSet<Event> Events { get; set; }
     public DbSet<RefreshToken> RefreshTokens { get; set; }
     public DbSet<OAuthAccount> OAuthAccounts { get; set; }
-    
+
     // Archive entities
-    public DbSet<ArchivedTask> ArchivedTasks { get; set; }
+    public DbSet<ArchivedAppTask> ArchivedAppTasks { get; set; }
     public DbSet<ArchivedProject> ArchivedProjects { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -37,13 +36,13 @@ public class ApplicationDbContext : DbContext
             entity.HasIndex(e => e.Email).IsUnique();
             entity.Property(e => e.Username).IsRequired().HasMaxLength(50);
             entity.HasIndex(e => e.Username).IsUnique();
-            
+
             entity.Property(e => e.PasswordHash).HasMaxLength(500);
             entity.Property(e => e.IsEmailVerified).HasDefaultValue(false);
             entity.Property(e => e.IsActive).HasDefaultValue(true);
             entity.Property(e => e.IsLocked).HasDefaultValue(false);
             entity.Property(e => e.FailedLoginAttempts).HasDefaultValue(0);
-            
+
             entity.Property(e => e.PreferredLanguage)
                 .IsRequired()
                 .HasConversion(
@@ -56,13 +55,13 @@ public class ApplicationDbContext : DbContext
         });
 
         // Task Configuration
-        modelBuilder.Entity<Task>(entity =>
+        modelBuilder.Entity<AppTask>(entity =>
         {
             entity.HasKey(e => e.Id);
             entity.Property(e => e.Title).IsRequired().HasMaxLength(200);
             entity.Property(e => e.Description).HasMaxLength(5000);
             entity.Property(e => e.IsDeleted).HasDefaultValue(false);
-            
+
             entity.Property(e => e.Priority).HasConversion<int>();
             entity.Property(e => e.Category).HasConversion<int>();
             entity.Property(e => e.Status).HasConversion<int>();
@@ -110,7 +109,7 @@ public class ApplicationDbContext : DbContext
             entity.HasIndex(e => new { e.UserId, e.IsDeleted });
             entity.HasQueryFilter(e => !e.IsDeleted);
         });
-        
+
         // Event Configuration
         modelBuilder.Entity<Event>(entity =>
         {
@@ -164,16 +163,16 @@ public class ApplicationDbContext : DbContext
             entity.HasIndex(e => e.UserId);
         });
 
-        // ArchivedTask Configuration
-        modelBuilder.Entity<ArchivedTask>(entity =>
+        // ArchivedAppTask Configuration
+        modelBuilder.Entity<ArchivedAppTask>(entity =>
         {
             entity.HasKey(e => e.Id);
             entity.Property(e => e.Title).IsRequired().HasMaxLength(200);
             entity.Property(e => e.Description).HasMaxLength(5000);
             entity.Property(e => e.ArchiveReason).IsRequired().HasMaxLength(50);
             entity.Property(e => e.ProjectName).HasMaxLength(100);
-            entity.Property(e => e.ParentTaskTitle).HasMaxLength(200);
-            
+            entity.Property(e => e.ParentAppTaskTitle).HasMaxLength(200);
+
             // JSON columns for serialized data
             entity.Property(e => e.SubtasksJson).HasColumnType("jsonb");
             entity.Property(e => e.ContactsJson).HasColumnType("jsonb");
@@ -181,7 +180,7 @@ public class ApplicationDbContext : DbContext
 
             // Indexes for efficient querying
             entity.HasIndex(e => e.UserId);
-            entity.HasIndex(e => e.OriginalTaskId).IsUnique();
+            entity.HasIndex(e => e.OriginalAppTaskId).IsUnique();
             entity.HasIndex(e => e.ArchivedAt);
             entity.HasIndex(e => new { e.UserId, e.ArchivedAt });
             entity.HasIndex(e => new { e.UserId, e.Status });
@@ -195,7 +194,7 @@ public class ApplicationDbContext : DbContext
 
             // Self-referential relationships for archived tasks
             entity.HasIndex(e => e.ProjectId).HasFilter("project_id IS NOT NULL");
-            entity.HasIndex(e => e.ParentTaskId).HasFilter("parent_task_id IS NOT NULL");
+            entity.HasIndex(e => e.ParentAppTaskId).HasFilter("parent_app_task_id IS NOT NULL");
         });
 
         // ArchivedProject Configuration
@@ -205,7 +204,7 @@ public class ApplicationDbContext : DbContext
             entity.Property(e => e.Name).IsRequired().HasMaxLength(100);
             entity.Property(e => e.Description).HasMaxLength(2000);
             entity.Property(e => e.ArchiveReason).IsRequired().HasMaxLength(50);
-            
+
             // JSON columns for serialized data
             entity.Property(e => e.TasksJson).HasColumnType("jsonb");
             entity.Property(e => e.ContactsJson).HasColumnType("jsonb");

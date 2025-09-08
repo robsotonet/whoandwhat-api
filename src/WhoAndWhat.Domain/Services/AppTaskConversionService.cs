@@ -16,7 +16,7 @@ public class AppTaskConversionService
     /// <param name="task">AppTask to convert</param>
     /// <param name="subtasks">Existing subtasks to associate with the new project</param>
     /// <returns>Validation result and converted project task</returns>
-    public (ValidationResult ValidationResult, DomainTask? ConvertedProject) ConvertTaskToProject(DomainAppTask task, IEnumerable<DomainTask>? subtasks = null)
+    public (ValidationResult ValidationResult, DomainTask? ConvertedProject) ConvertTaskToProject(DomainTask task, IEnumerable<DomainTask>? subtasks = null)
     {
         var validationResult = ValidateTaskToProjectConversion(task, subtasks);
         if (!validationResult.IsValid)
@@ -42,16 +42,16 @@ public class AppTaskConversionService
             Subtasks = subtasks?.ToList() ?? new List<DomainTask>()
         };
 
-        return (ValidationResult.Success(), convertedTask);
+        return (ValidationResult.Success(), convertedAppTask);
     }
 
     /// <summary>
     /// Validates if a task can be converted to a project
     /// </summary>
-    private ValidationResult ValidateTaskToProjectConversion(DomainAppTask task, IEnumerable<DomainTask>? subtasks = null)
+    private ValidationResult ValidateTaskToProjectConversion(DomainTask task, IEnumerable<DomainTask>? subtasks = null)
     {
         var errors = new List<string>();
-        var currentStatus = DomainAppTaskStatus.FromValue(task.Status);
+        var currentStatus = DomainTaskStatus.FromValue(task.Status);
         var currentCategory = AppTaskCategory.FromValue(task.Category);
 
         // Use the task's own business logic
@@ -76,15 +76,15 @@ public class AppTaskConversionService
         {
             foreach (var subtask in subtasks)
             {
-                var subtaskStatus = DomainAppTaskStatus.FromValue(subtask.Status);
-                if (subtaskStatus == DomainAppTaskStatus.Archived)
+                var subtaskStatus = DomainTaskStatus.FromValue(subtask.Status);
+                if (subtaskStatus == DomainTaskStatus.Archived)
                 {
                     errors.Add($"Cannot include archived subtask '{subtask.Title}' in project conversion");
                 }
             }
         }
 
-        return errors.Any() 
+        return errors.Any()
             ? ValidationResult.Failure(errors.ToArray())
             : ValidationResult.Success();
     }
@@ -95,10 +95,10 @@ public class AppTaskConversionService
     /// <param name="task">AppTask to convert</param>
     /// <param name="targetCategory">Target category</param>
     /// <returns>Validation result and converted task</returns>
-    public (ValidationResult ValidationResult, DomainTask? ConvertedTask) ConvertAppTaskCategory(DomainAppTask task, AppTaskCategory targetCategory)
+    public (ValidationResult ValidationResult, DomainTask? ConvertedTask) ConvertAppTaskCategory(DomainTask task, AppTaskCategory targetCategory)
     {
         var currentCategory = AppTaskCategory.FromValue(task.Category);
-        
+
         // Validate the conversion is allowed
         if (!currentCategory.CanConvertTo(targetCategory))
         {
@@ -114,24 +114,24 @@ public class AppTaskConversionService
 
         // Create converted task
         var convertedAppTask = CreateConvertedTask(task, targetCategory);
-        
-        return (ValidationResult.Success(), convertedTask);
+
+        return (ValidationResult.Success(), convertedAppTask);
     }
 
     /// <summary>
     /// Validates specific category conversion rules
     /// </summary>
-    private ValidationResult ValidateCategoryConversion(DomainAppTask task, AppTaskCategory fromCategory, AppTaskCategory toCategory)
+    private ValidationResult ValidateCategoryConversion(DomainTask task, AppTaskCategory fromCategory, AppTaskCategory toCategory)
     {
         var errors = new List<string>();
 
         // Validate the converted task would be valid for the new category
         var categoryValidation = toCategory.ValidateTaskData(
-            task.Title, 
-            task.Description, 
-            task.DueDate, 
+            task.Title,
+            task.Description,
+            task.DueDate,
             task.Subtasks?.Any() ?? false);
-            
+
         if (!categoryValidation.IsValid)
         {
             errors.AddRange(categoryValidation.Errors);
@@ -163,7 +163,7 @@ public class AppTaskConversionService
             }
         }
 
-        return errors.Any() 
+        return errors.Any()
             ? ValidationResult.Failure(errors.ToArray())
             : ValidationResult.Success();
     }
@@ -171,7 +171,7 @@ public class AppTaskConversionService
     /// <summary>
     /// Creates a converted task with appropriate adjustments for the new category
     /// </summary>
-    private DomainAppTask CreateConvertedTask(DomainAppTask originalTask, AppTaskCategory newCategory)
+    private DomainTask CreateConvertedTask(DomainTask originalTask, AppTaskCategory newCategory)
     {
         var convertedAppTask = new DomainTask
         {
@@ -194,12 +194,12 @@ public class AppTaskConversionService
         if (newCategory == AppTaskCategory.Appointment)
         {
             // Appointments should have higher priority if due soon
-            if (convertedTask.DueDate.HasValue && convertedTask.DueDate.Value <= DateTime.UtcNow.AddDays(1))
+            if (convertedAppTask.DueDate.HasValue && convertedAppTask.DueDate.Value <= DateTime.UtcNow.AddDays(1))
             {
-                var priority = Priority.FromValue(convertedTask.Priority);
+                var priority = Priority.FromValue(convertedAppTask.Priority);
                 if (priority.IsLowerThan(Priority.High))
                 {
-                    convertedTask.Priority = Priority.High.Value;
+                    convertedAppTask.Priority = Priority.High.Value;
                 }
             }
         }
@@ -207,14 +207,14 @@ public class AppTaskConversionService
         if (newCategory == AppTaskCategory.BillReminder)
         {
             // Bill reminders should have at least medium priority
-            var priority = Priority.FromValue(convertedTask.Priority);
+            var priority = Priority.FromValue(convertedAppTask.Priority);
             if (priority.IsLowerThan(Priority.Medium))
             {
-                convertedTask.Priority = Priority.Medium.Value;
+                convertedAppTask.Priority = Priority.Medium.Value;
             }
         }
 
-        return convertedTask;
+        return convertedAppTask;
     }
 
     /// <summary>
@@ -242,11 +242,11 @@ public class AppTaskConversionService
     /// <param name="subtaskTemplates">Templates for creating subtasks</param>
     /// <returns>Validation result and collection of created subtasks</returns>
     public (ValidationResult ValidationResult, IEnumerable<DomainTask>? Subtasks) BreakdownProject(
-        DomainAppTask projectTask, 
+        DomainTask projectTask,
         IEnumerable<(string Title, string? Description, DateTime? DueDate, Priority Priority)> subtaskTemplates)
     {
         var category = AppTaskCategory.FromValue(projectTask.Category);
-        
+
         if (category != AppTaskCategory.Project)
         {
             return (ValidationResult.Failure("Only project tasks can be broken down into subtasks"), null);
@@ -264,7 +264,7 @@ public class AppTaskConversionService
                 continue;
             }
 
-            if (template.DueDate.HasValue && projectTask.DueDate.HasValue && 
+            if (template.DueDate.HasValue && projectTask.DueDate.HasValue &&
                 template.DueDate.Value > projectTask.DueDate.Value)
             {
                 errors.Add($"Subtask '{template.Title}' cannot have due date later than project due date");
@@ -280,7 +280,7 @@ public class AppTaskConversionService
                 DueDate = template.DueDate,
                 Priority = template.Priority.Value,
                 Category = AppTaskCategory.ToDo.Value, // Subtasks are typically ToDo items
-                Status = DomainAppTaskStatus.Pending.Value,
+                Status = DomainTaskStatus.Pending.Value,
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow,
                 IsDeleted = false,
@@ -302,7 +302,7 @@ public class AppTaskConversionService
     /// <summary>
     /// Enhances task description when converting to project
     /// </summary>
-    private string EnhanceDescriptionForProject(string? originalDescription, DomainAppTask originalTask)
+    private string EnhanceDescriptionForProject(string? originalDescription, DomainTask originalTask)
     {
         var enhancedDescription = originalDescription ?? "";
 
@@ -353,7 +353,7 @@ public class AppTaskConversionService
         if (dueDate.HasValue)
         {
             var daysUntilDue = (dueDate.Value - DateTime.UtcNow).TotalDays;
-            
+
             if (daysUntilDue <= 1)
             {
                 scores[AppTaskCategory.Appointment] += 0.4; // Likely an appointment

@@ -14,7 +14,7 @@ public interface IProjectRepository
     /// <param name="userId">The user ID for security filtering</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>The project including if soft deleted, or null if not found</returns>
-    Task<Project?> GetProjectIncludingDeletedAsync(Guid projectId, Guid userId, CancellationToken cancellationToken = default);
+    public Task<Project?> GetProjectIncludingDeletedAsync(Guid projectId, Guid userId, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Gets all soft deleted projects for a user
@@ -22,7 +22,7 @@ public interface IProjectRepository
     /// <param name="userId">The user ID</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>List of soft deleted projects</returns>
-    Task<IEnumerable<Project>> GetDeletedProjectsAsync(Guid userId, CancellationToken cancellationToken = default);
+    public Task<IEnumerable<Project>> GetDeletedProjectsAsync(Guid userId, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Gets a project with all its tasks (including soft deleted if specified)
@@ -32,7 +32,7 @@ public interface IProjectRepository
     /// <param name="includeDeletedTasks">Whether to include soft deleted tasks</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>The project with tasks, or null if not found</returns>
-    Task<Project?> GetProjectWithTasksAsync(Guid projectId, Guid userId, bool includeDeletedTasks = false, CancellationToken cancellationToken = default);
+    public Task<Project?> GetProjectWithTasksAsync(Guid projectId, Guid userId, bool includeDeletedTasks = false, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Soft deletes a project
@@ -41,7 +41,7 @@ public interface IProjectRepository
     /// <param name="userId">The user ID for security filtering</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>True if the project was soft deleted, false if not found or already deleted</returns>
-    Task<bool> SoftDeleteProjectAsync(Guid projectId, Guid userId, CancellationToken cancellationToken = default);
+    public Task<bool> SoftDeleteProjectAsync(Guid projectId, Guid userId, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Restores a soft deleted project
@@ -51,7 +51,7 @@ public interface IProjectRepository
     /// <param name="restoreTasks">Whether to also restore associated tasks</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>True if the project was restored, false if not found or not deleted</returns>
-    Task<bool> RestoreProjectAsync(Guid projectId, Guid userId, bool restoreTasks = false, CancellationToken cancellationToken = default);
+    public Task<bool> RestoreProjectAsync(Guid projectId, Guid userId, bool restoreTasks = false, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Permanently deletes a soft deleted project
@@ -60,7 +60,7 @@ public interface IProjectRepository
     /// <param name="userId">The user ID for security filtering</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>True if the project was permanently deleted, false if not found or not soft deleted</returns>
-    Task<bool> PermanentlyDeleteProjectAsync(Guid projectId, Guid userId, CancellationToken cancellationToken = default);
+    public Task<bool> PermanentlyDeleteProjectAsync(Guid projectId, Guid userId, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Gets projects that can be safely deleted (no active tasks)
@@ -68,7 +68,7 @@ public interface IProjectRepository
     /// <param name="userId">The user ID</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>List of projects that can be safely deleted</returns>
-    Task<IEnumerable<Project>> GetProjectsSafeToDeleteAsync(Guid userId, CancellationToken cancellationToken = default);
+    public Task<IEnumerable<Project>> GetProjectsSafeToDeleteAsync(Guid userId, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Counts active tasks in a project
@@ -77,5 +77,5 @@ public interface IProjectRepository
     /// <param name="userId">The user ID for security filtering</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Count of active tasks in the project</returns>
-    Task<int> CountActiveTasksInProjectAsync(Guid projectId, Guid userId, CancellationToken cancellationToken = default);
+    public Task<int> CountActiveTasksInProjectAsync(Guid projectId, Guid userId, CancellationToken cancellationToken = default);
 }

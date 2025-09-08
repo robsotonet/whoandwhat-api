@@ -1,8 +1,8 @@
 using FluentAssertions;
 using WhoAndWhat.Domain.Entities;
 using WhoAndWhat.Domain.ValueObjects;
-using DomainTask = WhoAndWhat.Domain.Entities.Task;
-using DomainTaskStatus = WhoAndWhat.Domain.ValueObjects.TaskStatus;
+using DomainTask = WhoAndWhat.Domain.Entities.AppTask;
+using DomainTaskStatus = WhoAndWhat.Domain.ValueObjects.AppTaskStatus;
 
 namespace WhoAndWhat.Domain.Tests.Entities;
 
@@ -17,7 +17,7 @@ public class EnhancedTaskEntityTests
             Description = "Test Description",
             DueDate = DateTime.UtcNow.AddDays(7),
             Priority = Priority.Medium.Value,
-            Category = TaskCategory.ToDo.Value,
+            Category = AppTaskCategory.ToDo.Value,
             Status = DomainTaskStatus.Pending.Value,
             CreatedAt = DateTime.UtcNow.AddDays(-1),
             UpdatedAt = DateTime.UtcNow,
@@ -280,7 +280,7 @@ public class EnhancedTaskEntityTests
     public void ValidateDueDate_Should_Pass_For_Valid_Due_Date()
     {
         var task = CreateValidTask();
-        task.Category = TaskCategory.ToDo.Value;
+        task.Category = AppTaskCategory.ToDo.Value;
         task.DueDate = DateTime.UtcNow.AddDays(1);
         
         var result = task.ValidateDueDate();
@@ -292,7 +292,7 @@ public class EnhancedTaskEntityTests
     public void ValidateDueDate_Should_Fail_For_Appointment_Without_Due_Date()
     {
         var task = CreateValidTask();
-        task.Category = TaskCategory.Appointment.Value;
+        task.Category = AppTaskCategory.Appointment.Value;
         task.DueDate = null;
         
         var result = task.ValidateDueDate();
@@ -305,7 +305,7 @@ public class EnhancedTaskEntityTests
     public void ValidateDueDate_Should_Fail_For_BillReminder_Without_Due_Date()
     {
         var task = CreateValidTask();
-        task.Category = TaskCategory.BillReminder.Value;
+        task.Category = AppTaskCategory.BillReminder.Value;
         task.DueDate = null;
         
         var result = task.ValidateDueDate();
@@ -333,7 +333,7 @@ public class EnhancedTaskEntityTests
         var task = CreateValidTask();
         task.Title = null!;
         task.Description = new string('a', DomainTask.MaxDescriptionLength + 1);
-        task.Category = TaskCategory.Appointment.Value;
+        task.Category = AppTaskCategory.Appointment.Value;
         task.DueDate = null;
         
         var result = task.Validate();
@@ -398,7 +398,7 @@ public class EnhancedTaskEntityTests
     public void CanBeCompleted_Should_Return_False_For_Task_With_Active_Subtasks()
     {
         var task = CreateValidTask();
-        task.Category = TaskCategory.ToDo.Value; // Not idea or project
+        task.Category = AppTaskCategory.ToDo.Value; // Not idea or project
         task.Subtasks = new List<DomainTask>
         {
             new() { Status = DomainTaskStatus.InProgress.Value }
@@ -411,7 +411,7 @@ public class EnhancedTaskEntityTests
     public void CanBeCompleted_Should_Return_True_For_Idea_With_Active_Subtasks()
     {
         var task = CreateValidTask();
-        task.Category = TaskCategory.Idea.Value;
+        task.Category = AppTaskCategory.Idea.Value;
         task.Subtasks = new List<DomainTask>
         {
             new() { Status = DomainTaskStatus.InProgress.Value }
@@ -462,7 +462,7 @@ public class EnhancedTaskEntityTests
     public void CanConvertToProject_Should_Return_True_For_Idea_With_Subtasks()
     {
         var task = CreateValidTask();
-        task.Category = TaskCategory.Idea.Value;
+        task.Category = AppTaskCategory.Idea.Value;
         task.Status = DomainTaskStatus.Pending.Value;
         task.Subtasks = new List<DomainTask> { new() };
         
@@ -473,7 +473,7 @@ public class EnhancedTaskEntityTests
     public void CanConvertToProject_Should_Return_True_For_Task_With_Long_Description()
     {
         var task = CreateValidTask();
-        task.Category = TaskCategory.ToDo.Value;
+        task.Category = AppTaskCategory.ToDo.Value;
         task.Status = DomainTaskStatus.Pending.Value;
         task.Description = new string('a', 150);
         
@@ -493,7 +493,7 @@ public class EnhancedTaskEntityTests
     public void CanConvertToProject_Should_Return_False_For_Already_Project()
     {
         var task = CreateValidTask();
-        task.Category = TaskCategory.Project.Value;
+        task.Category = AppTaskCategory.Project.Value;
         
         task.CanConvertToProject().Should().BeFalse();
     }
@@ -723,7 +723,7 @@ public class EnhancedTaskEntityTests
     public void UpdateDueDate_Should_Fail_For_Invalid_Due_Date_And_Rollback()
     {
         var task = CreateValidTask();
-        task.Category = TaskCategory.Appointment.Value;
+        task.Category = AppTaskCategory.Appointment.Value;
         var originalDueDate = task.DueDate;
         
         var result = task.UpdateDueDate(null);

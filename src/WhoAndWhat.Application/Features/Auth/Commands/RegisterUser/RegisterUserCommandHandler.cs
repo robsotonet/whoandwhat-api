@@ -92,10 +92,10 @@ public class RegisterUserCommandHandler : IRequestHandler<RegisterUserCommand, R
             if (requiresEmailVerification && !string.IsNullOrEmpty(verificationToken))
             {
                 var emailSent = await _emailService.SendEmailVerificationAsync(
-                    user.Email, 
-                    user.Username, 
-                    verificationToken, 
-                    user.Id, 
+                    user.Email,
+                    user.Username,
+                    verificationToken,
+                    user.Id,
                     cancellationToken);
 
                 if (emailSent)

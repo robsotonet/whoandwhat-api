@@ -19,16 +19,18 @@ public class CategoryBusinessRuleService
     public ValidationResult ValidateTaskCreation(DomainTask task)
     {
         if (task == null)
+        {
             return ValidationResult.Failure("Task cannot be null");
+        }
 
         var category = AppTaskCategory.FromValue(task.Category);
         var errors = new List<string>();
 
         // Basic category validation using value object
         var categoryValidation = category.ValidateTaskData(
-            task.Title, 
-            task.Description, 
-            task.DueDate, 
+            task.Title,
+            task.Description,
+            task.DueDate,
             task.Subtasks?.Any() == true);
 
         if (!categoryValidation.IsValid)
@@ -43,7 +45,7 @@ public class CategoryBusinessRuleService
         errors.AddRange(ValidateIdeaRules(task, category));
         errors.AddRange(ValidateToDoRules(task, category));
 
-        return errors.Any() 
+        return errors.Any()
             ? ValidationResult.Failure(errors)
             : ValidationResult.Success();
     }
@@ -57,10 +59,14 @@ public class CategoryBusinessRuleService
     public ValidationResult ValidateTaskUpdate(DomainTask existingTask, AppTaskUpdateRequest updates)
     {
         if (existingTask == null)
+        {
             return ValidationResult.Failure("Existing task cannot be null");
+        }
 
         if (updates == null)
+        {
             return ValidationResult.Failure("Updates cannot be null");
+        }
 
         var errors = new List<string>();
         var currentCategory = AppTaskCategory.FromValue(existingTask.Category);
@@ -96,7 +102,7 @@ public class CategoryBusinessRuleService
             }
         }
 
-        return errors.Any() 
+        return errors.Any()
             ? ValidationResult.Failure(errors)
             : ValidationResult.Success();
     }
@@ -106,35 +112,64 @@ public class CategoryBusinessRuleService
     /// </summary>
     /// <param name="task">Task to analyze</param>
     /// <returns>Recommended next status</returns>
-    public DomainAppTaskStatus GetRecommendedNextStatus(DomainTask task)
+    public DomainTaskStatus GetRecommendedNextStatus(DomainTask task)
     {
         var category = AppTaskCategory.FromValue(task.Category);
-        var currentStatus = DomainAppTaskStatus.FromValue(task.Status);
+        var currentStatus = DomainTaskStatus.FromValue(task.Status);
 
         // Use if-else chain instead of switch expression to avoid constant value issues
         if (category.Name == "Appointment")
         {
-            if (currentStatus == DomainAppTaskStatus.Pending) return DomainAppTaskStatus.Confirmed;
-            if (currentStatus == DomainAppTaskStatus.Confirmed) return DomainAppTaskStatus.InProgress;
-            if (currentStatus == DomainAppTaskStatus.InProgress) return DomainAppTaskStatus.Completed;
+            if (currentStatus == DomainTaskStatus.Pending)
+            {
+                return DomainTaskStatus.Confirmed;
+            }
+            if (currentStatus == DomainTaskStatus.Confirmed)
+            {
+                return DomainTaskStatus.InProgress;
+            }
+            if (currentStatus == DomainTaskStatus.InProgress)
+            {
+                return DomainTaskStatus.Completed;
+            }
         }
         else if (category.Name == "BillReminder")
         {
-            if (currentStatus == DomainAppTaskStatus.Pending) return DomainAppTaskStatus.InProgress;
-            if (currentStatus == DomainAppTaskStatus.InProgress) return DomainAppTaskStatus.Completed;
+            if (currentStatus == DomainTaskStatus.Pending)
+            {
+                return DomainTaskStatus.InProgress;
+            }
+            if (currentStatus == DomainTaskStatus.InProgress)
+            {
+                return DomainTaskStatus.Completed;
+            }
         }
         else if (category.Name == "Project")
         {
-            if (currentStatus == DomainAppTaskStatus.Pending) return DomainAppTaskStatus.InProgress;
-            if (currentStatus == DomainAppTaskStatus.InProgress) 
-                return HasInProgressSubtasks(task) ? DomainAppTaskStatus.InProgress : DomainAppTaskStatus.Completed;
+            if (currentStatus == DomainTaskStatus.Pending)
+            {
+                return DomainTaskStatus.InProgress;
+            }
+            if (currentStatus == DomainTaskStatus.InProgress)
+            {
+                return HasInProgressSubtasks(task) ? DomainTaskStatus.InProgress : DomainTaskStatus.Completed;
+            }
         }
         else
         {
             // Standard workflow for ToDo and Idea
-            if (currentStatus == DomainAppTaskStatus.Pending) return DomainAppTaskStatus.InProgress;
-            if (currentStatus == DomainAppTaskStatus.InProgress) return DomainAppTaskStatus.Completed;
-            if (currentStatus == DomainAppTaskStatus.Confirmed) return DomainAppTaskStatus.InProgress;
+            if (currentStatus == DomainTaskStatus.Pending)
+            {
+                return DomainTaskStatus.InProgress;
+            }
+            if (currentStatus == DomainTaskStatus.InProgress)
+            {
+                return DomainTaskStatus.Completed;
+            }
+            if (currentStatus == DomainTaskStatus.Confirmed)
+            {
+                return DomainTaskStatus.InProgress;
+            }
         }
 
         return currentStatus;
@@ -148,16 +183,16 @@ public class CategoryBusinessRuleService
     public IEnumerable<AppTaskAction> GetAvailableActions(DomainTask task)
     {
         var category = AppTaskCategory.FromValue(task.Category);
-        var status = (DomainAppTaskStatus)task.Status;
+        var status = (DomainTaskStatus)task.Status;
         var actions = new List<AppTaskAction>();
 
         // Common actions
-        if (status != DomainAppTaskStatus.Completed)
+        if (status != DomainTaskStatus.Completed)
         {
             actions.Add(new AppTaskAction("Complete", "Mark as completed", "check"));
         }
 
-        if (status == DomainAppTaskStatus.Completed)
+        if (status == DomainTaskStatus.Completed)
         {
             actions.Add(new AppTaskAction("Reopen", "Reopen task", "undo"));
         }
@@ -166,19 +201,19 @@ public class CategoryBusinessRuleService
         switch (category.Name)
         {
             case "Appointment":
-                if (status == DomainAppTaskStatus.Pending)
+                if (status == DomainTaskStatus.Pending)
                 {
                     actions.Add(new AppTaskAction("Confirm", "Confirm appointment", "calendar-check"));
                     actions.Add(new AppTaskAction("Reschedule", "Reschedule appointment", "calendar-edit"));
                 }
-                if (status != DomainAppTaskStatus.Completed)
+                if (status != DomainTaskStatus.Completed)
                 {
                     actions.Add(new AppTaskAction("Cancel", "Cancel appointment", "calendar-x"));
                 }
                 break;
 
             case "BillReminder":
-                if (status != DomainAppTaskStatus.Completed)
+                if (status != DomainTaskStatus.Completed)
                 {
                     actions.Add(new AppTaskAction("MarkPaid", "Mark as paid", "credit-card"));
                     actions.Add(new AppTaskAction("SetRecurring", "Set as recurring", "repeat"));
@@ -190,14 +225,14 @@ public class CategoryBusinessRuleService
                 {
                     actions.Add(new AppTaskAction("AddSubtask", "Add subtask", "plus"));
                 }
-                if (status != DomainAppTaskStatus.Completed)
+                if (status != DomainTaskStatus.Completed)
                 {
                     actions.Add(new AppTaskAction("ViewProgress", "View progress", "bar-chart"));
                 }
                 break;
 
             case "Idea":
-                if (status == DomainAppTaskStatus.Pending)
+                if (status == DomainTaskStatus.Pending)
                 {
                     actions.Add(new AppTaskAction("ConvertToTodo", "Convert to To-Do", "arrow-right"));
                     actions.Add(new AppTaskAction("ConvertToProject", "Convert to Project", "folder"));
@@ -206,7 +241,7 @@ public class CategoryBusinessRuleService
                 break;
 
             case "ToDo":
-                if (status == DomainAppTaskStatus.Pending)
+                if (status == DomainTaskStatus.Pending)
                 {
                     actions.Add(new AppTaskAction("SetPriority", "Set priority", "flag"));
                 }
@@ -230,8 +265,8 @@ public class CategoryBusinessRuleService
         {
             var category = AppTaskCategory.FromValue(categoryGroup.Key);
             var categoryTasks = categoryGroup.ToList();
-            
-            var completedCount = categoryTasks.Count(t => t.Status == (int)DomainAppTaskStatus.Completed);
+
+            var completedCount = categoryTasks.Count(t => t.Status == (int)DomainTaskStatus.Completed);
             var overdueCount = categoryTasks.Count(t => t.IsOverdue);
             var totalCount = categoryTasks.Count;
 
@@ -260,13 +295,13 @@ public class CategoryBusinessRuleService
     public SchedulingSuggestions GetSchedulingSuggestions(IEnumerable<DomainTask> tasks)
     {
         var suggestions = new SchedulingSuggestions();
-        var taskList = tasks.Where(t => t.Status != (int)DomainAppTaskStatus.Completed).ToList();
+        var taskList = tasks.Where(t => t.Status != (int)DomainTaskStatus.Completed).ToList();
 
         foreach (var task in taskList)
         {
             var category = AppTaskCategory.FromValue(task.Category);
             var priority = Priority.FromValue(task.Priority);
-            
+
             var suggestion = new SchedulingSuggestion
             {
                 Task = task,
@@ -289,13 +324,193 @@ public class CategoryBusinessRuleService
         return suggestions;
     }
 
+    /// <summary>
+    /// Processes a task action and returns the result
+    /// </summary>
+    /// <param name="task">Task to process action on</param>
+    /// <param name="action">Action to process</param>
+    /// <returns>Action processing result</returns>
+    public ValidationResult ProcessTaskAction(DomainTask task, AppTaskAction action)
+    {
+        if (task == null)
+        {
+            return ValidationResult.Failure("Task cannot be null");
+        }
+
+        if (action == null)
+        {
+            return ValidationResult.Failure("Action cannot be null");
+        }
+
+        var errors = new List<string>();
+
+        try
+        {
+            switch (action.Id)
+            {
+                case "Complete":
+                    return ValidateTaskCompletion(task);
+
+                case "Reopen":
+                    return ValidateTaskReopen(task);
+
+                case "Confirm":
+                    return ValidateAppointmentConfirmation(task);
+
+                case "Reschedule":
+                    return ValidationResult.Success(); // Validation handled by client
+
+                case "Cancel":
+                    return ValidateTaskCancellation(task);
+
+                case "MarkPaid":
+                    return ValidateBillPayment(task);
+
+                case "SetRecurring":
+                    return ValidationResult.Success(); // Validation handled by client
+
+                case "AddSubtask":
+                    return ValidateSubtaskAddition(task);
+
+                case "ViewProgress":
+                    return ValidationResult.Success(); // Read-only action
+
+                case "ConvertToTodo":
+                    return ValidateCategoryChange(task, AppTaskCategory.FromValue(task.Category), AppTaskCategory.ToDo);
+
+                case "ConvertToProject":
+                    return ValidateCategoryChange(task, AppTaskCategory.FromValue(task.Category), AppTaskCategory.Project);
+
+                case "Archive":
+                    return ValidateTaskArchive(task);
+
+                case "SetPriority":
+                    return ValidationResult.Success(); // Validation handled by client
+
+                default:
+                    errors.Add($"Unknown action: {action.Id}");
+                    break;
+            }
+        }
+        catch (Exception ex)
+        {
+            errors.Add($"Error processing action: {ex.Message}");
+        }
+
+        return errors.Any()
+            ? ValidationResult.Failure(errors)
+            : ValidationResult.Success();
+    }
+
     #region Private Helper Methods
+
+    private ValidationResult ValidateTaskCompletion(DomainTask task)
+    {
+        var errors = new List<string>();
+        var category = AppTaskCategory.FromValue(task.Category);
+
+        if (category.Name == "Project" && HasInProgressSubtasks(task))
+        {
+            errors.Add("Cannot complete project while subtasks are still in progress");
+        }
+
+        if (category.Name == "Appointment" && task.Status == (int)DomainTaskStatus.Pending)
+        {
+            errors.Add("Appointments should be confirmed before completion");
+        }
+
+        return errors.Any() ? ValidationResult.Failure(errors) : ValidationResult.Success();
+    }
+
+    private ValidationResult ValidateTaskReopen(DomainTask task)
+    {
+        if (task.Status != (int)DomainTaskStatus.Completed)
+        {
+            return ValidationResult.Failure("Only completed tasks can be reopened");
+        }
+
+        return ValidationResult.Success();
+    }
+
+    private ValidationResult ValidateAppointmentConfirmation(DomainTask task)
+    {
+        var errors = new List<string>();
+
+        if (task.Category != (int)AppTaskCategory.Appointment)
+        {
+            errors.Add("Only appointments can be confirmed");
+        }
+
+        if (task.DueDate.HasValue && task.DueDate.Value < DateTime.UtcNow)
+        {
+            errors.Add("Cannot confirm past appointments");
+        }
+
+        return errors.Any() ? ValidationResult.Failure(errors) : ValidationResult.Success();
+    }
+
+    private ValidationResult ValidateTaskCancellation(DomainTask task)
+    {
+        if (task.Status == (int)DomainTaskStatus.Completed)
+        {
+            return ValidationResult.Failure("Cannot cancel completed tasks");
+        }
+
+        return ValidationResult.Success();
+    }
+
+    private ValidationResult ValidateBillPayment(DomainTask task)
+    {
+        var errors = new List<string>();
+
+        if (task.Category != (int)AppTaskCategory.BillReminder)
+        {
+            errors.Add("Only bill reminders can be marked as paid");
+        }
+
+        if (task.Status == (int)DomainTaskStatus.Completed)
+        {
+            errors.Add("Bill is already marked as paid");
+        }
+
+        return errors.Any() ? ValidationResult.Failure(errors) : ValidationResult.Success();
+    }
+
+    private ValidationResult ValidateSubtaskAddition(DomainTask task)
+    {
+        var category = AppTaskCategory.FromValue(task.Category);
+
+        if (!category.AllowsSubtasks)
+        {
+            return ValidationResult.Failure($"{category.GetDisplayName()} tasks cannot have subtasks");
+        }
+
+        return ValidationResult.Success();
+    }
+
+    private ValidationResult ValidateTaskArchive(DomainTask task)
+    {
+        if (task.Status != (int)DomainTaskStatus.Completed)
+        {
+            return ValidationResult.Failure("Only completed tasks can be archived");
+        }
+
+        if (task.IsArchived)
+        {
+            return ValidationResult.Failure("Task is already archived");
+        }
+
+        return ValidationResult.Success();
+    }
 
     private List<string> ValidateAppointmentRules(DomainTask task, AppTaskCategory category)
     {
         var errors = new List<string>();
-        
-        if (category.Name != "Appointment") return errors;
+
+        if (category.Name != "Appointment")
+        {
+            return errors;
+        }
 
         // Appointments must have future due dates
         if (task.DueDate.HasValue && task.DueDate.Value <= DateTime.UtcNow.AddMinutes(30))
@@ -304,7 +519,7 @@ public class CategoryBusinessRuleService
         }
 
         // Appointments should have location or meeting details
-        if (string.IsNullOrWhiteSpace(task.Description) || 
+        if (string.IsNullOrWhiteSpace(task.Description) ||
             (!task.Description.Contains("@") && !task.Description.Contains("location", StringComparison.OrdinalIgnoreCase)))
         {
             errors.Add("Appointments should include location or meeting details");
@@ -322,8 +537,11 @@ public class CategoryBusinessRuleService
     private List<string> ValidateBillReminderRules(DomainTask task, AppTaskCategory category)
     {
         var errors = new List<string>();
-        
-        if (category.Name != "BillReminder") return errors;
+
+        if (category.Name != "BillReminder")
+        {
+            return errors;
+        }
 
         // Bill reminders must have due dates
         if (!task.DueDate.HasValue)
@@ -332,7 +550,7 @@ public class CategoryBusinessRuleService
         }
 
         // Description should include amount or payee
-        if (string.IsNullOrWhiteSpace(task.Description) || 
+        if (string.IsNullOrWhiteSpace(task.Description) ||
             (!task.Description.Contains("$") && !task.Description.Contains("amount", StringComparison.OrdinalIgnoreCase)))
         {
             errors.Add("Bill reminders should include payment amount or payee information");
@@ -350,8 +568,11 @@ public class CategoryBusinessRuleService
     private List<string> ValidateProjectRules(DomainTask task, AppTaskCategory category)
     {
         var errors = new List<string>();
-        
-        if (category.Name != "Project") return errors;
+
+        if (category.Name != "Project")
+        {
+            return errors;
+        }
 
         // Projects should have detailed descriptions
         if (string.IsNullOrWhiteSpace(task.Description) || task.Description.Length < 20)
@@ -360,7 +581,7 @@ public class CategoryBusinessRuleService
         }
 
         // Projects should start as pending, not other statuses
-        if (task.Status != (int)DomainAppTaskStatus.Pending && task.CreatedAt == task.UpdatedAt)
+        if (task.Status != (int)DomainTaskStatus.Pending && task.CreatedAt == task.UpdatedAt)
         {
             errors.Add("New projects should start with 'Pending' status");
         }
@@ -377,8 +598,11 @@ public class CategoryBusinessRuleService
     private List<string> ValidateIdeaRules(DomainTask task, AppTaskCategory category)
     {
         var errors = new List<string>();
-        
-        if (category.Name != "Idea") return errors;
+
+        if (category.Name != "Idea")
+        {
+            return errors;
+        }
 
         // Ideas can be very flexible, but provide guidance
         if (string.IsNullOrWhiteSpace(task.Description))
@@ -399,8 +623,11 @@ public class CategoryBusinessRuleService
     private List<string> ValidateToDoRules(DomainTask task, AppTaskCategory category)
     {
         var errors = new List<string>();
-        
-        if (category.Name != "ToDo") return errors;
+
+        if (category.Name != "ToDo")
+        {
+            return errors;
+        }
 
         // Basic validation - To-Dos are most flexible
         if (string.IsNullOrWhiteSpace(task.Title) || task.Title.Length < 3)
@@ -436,46 +663,46 @@ public class CategoryBusinessRuleService
             errors.Add("Converting to Bill Reminder requires adding payment details in description");
         }
 
-        return errors.Any() 
+        return errors.Any()
             ? ValidationResult.Failure(errors)
             : ValidationResult.Success();
     }
 
-    private ValidationResult ValidateStatusChangeForCategory(DomainTask task, DomainAppTaskStatus newStatus, AppTaskCategory category)
+    private ValidationResult ValidateStatusChangeForCategory(DomainTask task, DomainTaskStatus newStatus, AppTaskCategory category)
     {
         var errors = new List<string>();
-        var currentStatus = (DomainAppTaskStatus)task.Status;
+        var currentStatus = (DomainTaskStatus)task.Status;
 
         // Category-specific status change rules
         switch (category.Name)
         {
             case "Appointment":
-                if (currentStatus == DomainAppTaskStatus.Pending && newStatus == DomainAppTaskStatus.Completed)
+                if (currentStatus == DomainTaskStatus.Pending && newStatus == DomainTaskStatus.Completed)
                 {
                     errors.Add("Appointments should be confirmed before marking as completed");
                 }
-                if (newStatus == DomainAppTaskStatus.Confirmed && task.DueDate < DateTime.UtcNow)
+                if (newStatus == DomainTaskStatus.Confirmed && task.DueDate < DateTime.UtcNow)
                 {
                     errors.Add("Cannot confirm past appointments");
                 }
                 break;
 
             case "BillReminder":
-                if (newStatus == DomainAppTaskStatus.Completed && task.DueDate > DateTime.UtcNow.AddDays(7))
+                if (newStatus == DomainTaskStatus.Completed && task.DueDate > DateTime.UtcNow.AddDays(7))
                 {
                     errors.Add("Bill payments should not be marked complete too far in advance");
                 }
                 break;
 
             case "Project":
-                if (newStatus == DomainAppTaskStatus.Completed && HasInProgressSubtasks(task))
+                if (newStatus == DomainTaskStatus.Completed && HasInProgressSubtasks(task))
                 {
                     errors.Add("Cannot complete project while subtasks are still in progress");
                 }
                 break;
         }
 
-        return errors.Any() 
+        return errors.Any()
             ? ValidationResult.Failure(errors)
             : ValidationResult.Success();
     }
@@ -501,20 +728,23 @@ public class CategoryBusinessRuleService
                 break;
         }
 
-        return errors.Any() 
+        return errors.Any()
             ? ValidationResult.Failure(errors)
             : ValidationResult.Success();
     }
 
     private bool HasInProgressSubtasks(DomainTask task)
     {
-        return task.Subtasks?.Any(st => !st.IsDeleted && st.Status == (int)DomainAppTaskStatus.InProgress) == true;
+        return task.Subtasks?.Any(st => !st.IsDeleted && st.Status == (int)DomainTaskStatus.InProgress) == true;
     }
 
     private double CalculateAverageCompletionTime(List<DomainTask> tasks)
     {
-        var completedTasks = tasks.Where(t => t.Status == (int)DomainAppTaskStatus.Completed).ToList();
-        if (!completedTasks.Any()) return 0;
+        var completedTasks = tasks.Where(t => t.Status == (int)DomainTaskStatus.Completed).ToList();
+        if (!completedTasks.Any())
+        {
+            return 0;
+        }
 
         var totalHours = completedTasks.Sum(t => (t.UpdatedAt - t.CreatedAt).TotalHours);
         return totalHours / completedTasks.Count;
@@ -522,10 +752,10 @@ public class CategoryBusinessRuleService
 
     private double CalculateEfficiencyScore(List<DomainTask> tasks, AppTaskCategory category)
     {
-        var completedOnTime = tasks.Count(t => 
-            t.Status == (int)DomainAppTaskStatus.Completed && 
+        var completedOnTime = tasks.Count(t =>
+            t.Status == (int)DomainTaskStatus.Completed &&
             (!t.DueDate.HasValue || t.UpdatedAt <= t.DueDate.Value));
-        
+
         var totalTasks = tasks.Count;
         return totalTasks > 0 ? (double)completedOnTime / totalTasks * 100 : 0;
     }
@@ -600,7 +830,7 @@ public class AppTaskUpdateRequest
     public DateTime? DueDate { get; set; }
     public int? Category { get; set; }
     public int? Priority { get; set; }
-    public DomainAppTaskStatus? Status { get; set; }
+    public DomainTaskStatus? Status { get; set; }
 }
 
 /// <summary>
@@ -611,12 +841,18 @@ public class AppTaskAction
     public string Id { get; }
     public string DisplayName { get; }
     public string Icon { get; }
+    public string Description { get; }
+    public bool RequiresConfirmation { get; }
+    public Dictionary<string, object> Parameters { get; }
 
-    public AppTaskAction(string id, string displayName, string icon)
+    public AppTaskAction(string id, string displayName, string icon, string? description = null, bool requiresConfirmation = false, Dictionary<string, object>? parameters = null)
     {
         Id = id;
         DisplayName = displayName;
         Icon = icon;
+        Description = description ?? displayName;
+        RequiresConfirmation = requiresConfirmation;
+        Parameters = parameters ?? new Dictionary<string, object>();
     }
 }
 
@@ -626,6 +862,8 @@ public class AppTaskAction
 public class CategoryMetrics
 {
     public List<CategoryMetric> Metrics { get; } = new();
+    public DateTime CalculatedAt { get; set; }
+    public int TotalTasksAnalyzed { get; set; }
 }
 
 /// <summary>
@@ -640,6 +878,7 @@ public class CategoryMetric
     public decimal CompletionPercentage { get; set; }
     public double AverageCompletionTime { get; set; }
     public double EfficiencyScore { get; set; }
+    public List<string> CommonPatterns { get; set; } = new();
 }
 
 /// <summary>
@@ -661,4 +900,9 @@ public class SchedulingSuggestion
     public TimeSpan OptimalTimeOfDay { get; set; }
     public TimeSpan BufferTime { get; set; }
     public string Reasoning { get; set; } = null!;
+    public string Reason { get; set; } = null!;
+    public double Priority { get; set; }
+    public int Order { get; set; }
+    public bool IsFlexible { get; set; }
+    public List<string> Dependencies { get; set; } = new();
 }

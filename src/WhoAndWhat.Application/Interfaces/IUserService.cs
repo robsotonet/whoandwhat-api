@@ -18,7 +18,7 @@ public interface IUserService
     /// <param name="language">Preferred language</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Result containing the created user or error message</returns>
-    Task<Result<User>> RegisterUserAsync(string email, string username, string password, Language language, CancellationToken cancellationToken = default);
+    public Task<Result<User>> RegisterUserAsync(string email, string username, string password, Language language, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Authenticate user with email and password
@@ -27,7 +27,7 @@ public interface IUserService
     /// <param name="password">User password</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Result containing the authenticated user or error message</returns>
-    Task<Result<User>> AuthenticateAsync(string email, string password, CancellationToken cancellationToken = default);
+    public Task<Result<User>> AuthenticateAsync(string email, string password, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Change user password (requires current password verification)
@@ -37,7 +37,7 @@ public interface IUserService
     /// <param name="newPassword">New password</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Result indicating success or failure</returns>
-    Task<Result> ChangePasswordAsync(Guid userId, string currentPassword, string newPassword, CancellationToken cancellationToken = default);
+    public Task<Result> ChangePasswordAsync(Guid userId, string currentPassword, string newPassword, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Verify user email with verification token
@@ -46,7 +46,7 @@ public interface IUserService
     /// <param name="verificationToken">Email verification token</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Result indicating success or failure</returns>
-    Task<Result> VerifyEmailAsync(Guid userId, string verificationToken, CancellationToken cancellationToken = default);
+    public Task<Result> VerifyEmailAsync(Guid userId, string verificationToken, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Reset user password with reset token
@@ -56,7 +56,7 @@ public interface IUserService
     /// <param name="newPassword">New password</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Result indicating success or failure</returns>
-    Task<Result> ResetPasswordAsync(string email, string resetToken, string newPassword, CancellationToken cancellationToken = default);
+    public Task<Result> ResetPasswordAsync(string email, string resetToken, string newPassword, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Lock user account (admin function)
@@ -64,7 +64,7 @@ public interface IUserService
     /// <param name="userId">User ID to lock</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Result indicating success or failure</returns>
-    Task<Result> LockUserAccountAsync(Guid userId, CancellationToken cancellationToken = default);
+    public Task<Result> LockUserAccountAsync(Guid userId, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Unlock user account (admin function)
@@ -72,7 +72,7 @@ public interface IUserService
     /// <param name="userId">User ID to unlock</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Result indicating success or failure</returns>
-    Task<Result> UnlockUserAccountAsync(Guid userId, CancellationToken cancellationToken = default);
+    public Task<Result> UnlockUserAccountAsync(Guid userId, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Update user profile information
@@ -82,7 +82,7 @@ public interface IUserService
     /// <param name="preferredLanguage">New preferred language (optional)</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Result containing updated user or error message</returns>
-    Task<Result<User>> UpdateUserProfileAsync(Guid userId, string? username = null, string? preferredLanguage = null, CancellationToken cancellationToken = default);
+    public Task<Result<User>> UpdateUserProfileAsync(Guid userId, string? username = null, string? preferredLanguage = null, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Get user by ID
@@ -90,7 +90,7 @@ public interface IUserService
     /// <param name="userId">User ID</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>User entity or null if not found</returns>
-    Task<User?> GetUserByIdAsync(Guid userId, CancellationToken cancellationToken = default);
+    public Task<User?> GetUserByIdAsync(Guid userId, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Get user by email address
@@ -98,7 +98,7 @@ public interface IUserService
     /// <param name="email">Email address</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>User entity or null if not found</returns>
-    Task<User?> GetUserByEmailAsync(string email, CancellationToken cancellationToken = default);
+    public Task<User?> GetUserByEmailAsync(string email, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Check if email address already exists
@@ -106,7 +106,7 @@ public interface IUserService
     /// <param name="email">Email address to check</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>True if email exists, false otherwise</returns>
-    Task<bool> EmailExistsAsync(string email, CancellationToken cancellationToken = default);
+    public Task<bool> EmailExistsAsync(string email, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Check if username already exists
@@ -114,7 +114,7 @@ public interface IUserService
     /// <param name="username">Username to check</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>True if username exists, false otherwise</returns>
-    Task<bool> UsernameExistsAsync(string username, CancellationToken cancellationToken = default);
+    public Task<bool> UsernameExistsAsync(string username, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Validate user password
@@ -123,7 +123,7 @@ public interface IUserService
     /// <param name="password">Password to validate</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>True if password is valid, false otherwise</returns>
-    Task<bool> ValidatePasswordAsync(Guid userId, string password, CancellationToken cancellationToken = default);
+    public Task<bool> ValidatePasswordAsync(Guid userId, string password, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Deactivate user account
@@ -132,7 +132,15 @@ public interface IUserService
     /// <param name="reason">Reason for deactivation (optional)</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Result indicating success or failure</returns>
-    Task<Result> DeactivateUserAsync(Guid userId, string? reason = null, CancellationToken cancellationToken = default);
+    public Task<Result> DeactivateUserAsync(Guid userId, string? reason = null, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Update user entity (used for internal operations like recording login attempts)
+    /// </summary>
+    /// <param name="user">User entity to update</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Result indicating success or failure</returns>
+    public Task<Result> UpdateUserAsync(User user, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Export user data in specified format
@@ -146,7 +154,7 @@ public interface IUserService
     /// <param name="includeOAuthAccounts">Include OAuth accounts data</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Result containing exported data or error message</returns>
-    Task<Result<ExportData>> ExportUserDataAsync(Guid userId, string format, bool includeProfile, bool includeTasks, bool includeProjects, bool includeContacts, bool includeOAuthAccounts, CancellationToken cancellationToken = default);
+    public Task<Result<ExportData>> ExportUserDataAsync(Guid userId, string format, bool includeProfile, bool includeTasks, bool includeProjects, bool includeContacts, bool includeOAuthAccounts, CancellationToken cancellationToken = default);
 }
 
 /// <summary>

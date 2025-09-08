@@ -47,21 +47,21 @@ public class ValidationBehavior<TRequest, TResponse> : IPipelineBehavior<TReques
         if (failures.Any())
         {
             var requestName = typeof(TRequest).Name;
-            _logger.LogWarning("Validation failed for {RequestName}. Errors: {Errors}", 
+            _logger.LogWarning("Validation failed for {RequestName}. Errors: {Errors}",
                 requestName, string.Join("; ", failures.Select(f => f.ErrorMessage)));
 
             var errorMessages = failures.Select(f => f.ErrorMessage).ToList();
             var errorMessage = string.Join("; ", errorMessages);
 
             // If TResponse is Result<T>, return a failure result
-            if (typeof(TResponse).IsGenericType && 
+            if (typeof(TResponse).IsGenericType &&
                 typeof(TResponse).GetGenericTypeDefinition() == typeof(Result<>))
             {
                 var resultType = typeof(TResponse).GetGenericArguments()[0];
                 var failureMethod = typeof(Result<>)
                     .MakeGenericType(resultType)
                     .GetMethod(nameof(Result<object>.Failure), new[] { typeof(string) });
-                
+
                 if (failureMethod != null)
                 {
                     var result = failureMethod.Invoke(null, new[] { errorMessage });

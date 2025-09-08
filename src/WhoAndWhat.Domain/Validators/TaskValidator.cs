@@ -1,12 +1,12 @@
 using FluentValidation;
 using WhoAndWhat.Domain.Entities;
-using Task = WhoAndWhat.Domain.Entities.Task;
+using AppTask = WhoAndWhat.Domain.Entities.AppTask;
 
 namespace WhoAndWhat.Domain.Validators;
 
-public class TaskValidator : AbstractValidator<Task>
+public class AppTaskValidator : AbstractValidator<AppTask>
 {
-    public TaskValidator()
+    public AppTaskValidator()
     {
         RuleFor(task => task.Title).NotEmpty().MaximumLength(100);
         RuleFor(task => task.Description).MaximumLength(500);

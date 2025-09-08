@@ -10,14 +10,17 @@ public class AppTaskSearchCriteria
     public Guid? UserId { get; init; }
     public string Query { get; init; } = string.Empty;
     public string SearchText { get; init; } = string.Empty;
-    public TaskCategory? Category { get; init; }
+    public string SearchTerm => !string.IsNullOrWhiteSpace(SearchText) ? SearchText : Query;
+    public AppTaskCategory? Category { get; init; }
     public List<int>? Categories { get; init; }
-    public TaskStatus? Status { get; init; }
+    public AppTaskStatus? Status { get; init; }
     public List<int>? Statuses { get; init; }
     public Priority? Priority { get; init; }
     public List<int>? Priorities { get; init; }
     public DateTime? DueDateFrom { get; init; }
     public DateTime? DueDateTo { get; init; }
+    public DateTime? DueDateStart => DueDateFrom;
+    public DateTime? DueDateEnd => DueDateTo;
     public DateTime? CreatedAfter { get; init; }
     public DateTime? CreatedBefore { get; init; }
     public DateTime? CreatedFrom { get; init; }
@@ -27,6 +30,7 @@ public class AppTaskSearchCriteria
     public bool? IsOverdue { get; init; }
     public bool? HasSubtasks { get; init; }
     public Guid? ParentTaskId { get; init; }
+    public Guid? ProjectId { get; init; }
     public TaskSearchSortBy SortBy { get; init; } = TaskSearchSortBy.Relevance;
     public bool SortDescending { get; init; } = true;
     public int PageNumber { get; init; } = 1;
@@ -53,7 +57,7 @@ public class AppTaskSearchCriteria
         var errors = new List<string>();
 
         var searchText = !string.IsNullOrWhiteSpace(SearchText) ? SearchText : Query;
-        
+
         if (!string.IsNullOrWhiteSpace(searchText) && searchText.Length < MinQueryLength)
         {
             errors.Add($"Search query must be at least {MinQueryLength} characters long");
@@ -123,7 +127,7 @@ public class AppTaskSearchCriteria
         {
             normalizedQuery = string.Empty;
         }
-        
+
         var normalizedSearchText = SearchText?.Trim();
         if (string.IsNullOrWhiteSpace(normalizedSearchText))
         {
@@ -167,9 +171,9 @@ public class AppTaskSearchCriteria
     /// <summary>
     /// Determines if this is a full-text search query
     /// </summary>
-    public bool IsFullTextSearch 
+    public bool IsFullTextSearch
     {
-        get 
+        get
         {
             var searchText = !string.IsNullOrWhiteSpace(SearchText) ? SearchText : Query;
             return !string.IsNullOrWhiteSpace(searchText) && searchText.Length >= MinQueryLength;
@@ -202,7 +206,7 @@ public class AppTaskSearchCriteria
     {
         var actualUserId = userId ?? UserId ?? Guid.Empty;
         var searchText = !string.IsNullOrWhiteSpace(SearchText) ? SearchText : Query;
-        
+
         var keyComponents = new[]
         {
             $"search:{actualUserId}",

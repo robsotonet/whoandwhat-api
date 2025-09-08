@@ -9,7 +9,7 @@ public class ValidationResult
     public List<string> Errors { get; set; } = new();
     public List<string> ErrorMessages { get => Errors; set => Errors = value; }
     public string ErrorMessage => string.Join("; ", Errors);
-    
+
     public List<string> Warnings { get; set; } = new();
     public List<string> WarningMessages { get => Warnings; set => Warnings = value; }
     public bool HasWarnings => Warnings.Any();

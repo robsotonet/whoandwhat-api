@@ -8,7 +8,7 @@ public interface IUserRepository : IRepository<User>
     public System.Threading.Tasks.Task<User?> GetUserByEmailAsync(string email, CancellationToken cancellationToken = default);
     public System.Threading.Tasks.Task<User?> GetByEmailAsync(string email, CancellationToken cancellationToken = default);
     public System.Threading.Tasks.Task<User?> GetByUsernameAsync(string username, CancellationToken cancellationToken = default);
-    
+
     /// <summary>
     /// Checks if an email address is already in use by another user
     /// </summary>
@@ -16,7 +16,7 @@ public interface IUserRepository : IRepository<User>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>True if email exists, false otherwise</returns>
     public System.Threading.Tasks.Task<bool> EmailExistsAsync(string email, CancellationToken cancellationToken = default);
-    
+
     /// <summary>
     /// Checks if a username is already in use by another user
     /// </summary>

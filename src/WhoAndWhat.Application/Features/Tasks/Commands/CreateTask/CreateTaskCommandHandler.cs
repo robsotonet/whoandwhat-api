@@ -6,20 +6,20 @@ using WhoAndWhat.Application.Interfaces;
 using WhoAndWhat.Domain.Entities;
 using WhoAndWhat.Domain.Services;
 using WhoAndWhat.Domain.ValueObjects;
-using DomainTask = WhoAndWhat.Domain.Entities.Task;
-using DomainTaskStatus = WhoAndWhat.Domain.ValueObjects.TaskStatus;
+using DomainTask = WhoAndWhat.Domain.Entities.AppTask;
+using DomainTaskStatus = WhoAndWhat.Domain.ValueObjects.AppTaskStatus;
 using SystemTask = System.Threading.Tasks.Task;
 
 namespace WhoAndWhat.Application.Features.Tasks.Commands.CreateTask;
 
 public class CreateTaskCommandHandler : IRequestHandler<CreateTaskCommand, Result<TaskDto>>
 {
-    private readonly ITaskRepository _taskRepository;
+    private readonly IAppTaskRepository _taskRepository;
     private readonly CategoryBusinessRuleService _categoryBusinessRuleService;
     private readonly ILogger<CreateTaskCommandHandler> _logger;
 
     public CreateTaskCommandHandler(
-        ITaskRepository taskRepository,
+        IAppTaskRepository taskRepository,
         CategoryBusinessRuleService categoryBusinessRuleService,
         ILogger<CreateTaskCommandHandler> logger)
     {
@@ -32,9 +32,9 @@ public class CreateTaskCommandHandler : IRequestHandler<CreateTaskCommand, Resul
     {
         try
         {
-            var category = TaskCategory.FromValue(request.Category);
+            var category = AppTaskCategory.FromValue(request.Category);
             var priority = Priority.FromValue(request.Priority);
-            
+
             var task = new DomainTask
             {
                 Id = Guid.NewGuid(),
@@ -62,7 +62,7 @@ public class CreateTaskCommandHandler : IRequestHandler<CreateTaskCommand, Resul
             // Log warnings if any
             if (validationResult.HasWarnings)
             {
-                _logger.LogWarning("Task creation warnings for task {TaskId}: {Warnings}", 
+                _logger.LogWarning("Task creation warnings for task {TaskId}: {Warnings}",
                     task.Id, string.Join(", ", validationResult.WarningMessages));
             }
 
@@ -85,7 +85,7 @@ public class CreateTaskCommandHandler : IRequestHandler<CreateTaskCommand, Resul
             await _taskRepository.AddAsync(task);
             await _taskRepository.SaveChangesAsync();
 
-            _logger.LogInformation("Created task {TaskId} with title '{Title}' for user {UserId}", 
+            _logger.LogInformation("Created task {TaskId} with title '{Title}' for user {UserId}",
                 task.Id, task.Title, request.UserId);
 
             // Map to DTO
@@ -101,7 +101,7 @@ public class CreateTaskCommandHandler : IRequestHandler<CreateTaskCommand, Resul
 
     private static TaskDto MapToDto(DomainTask task)
     {
-        var category = TaskCategory.FromValue(task.Category);
+        var category = AppTaskCategory.FromValue(task.Category);
         var status = DomainTaskStatus.FromValue(task.Status);
         var priority = Priority.FromValue(task.Priority);
 

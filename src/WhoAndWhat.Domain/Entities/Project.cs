@@ -25,13 +25,15 @@ public class Project : BaseEntity
     public override bool CanSoftDelete()
     {
         if (!base.CanSoftDelete())
+        {
             return false;
+        }
 
         // Cannot delete project if it has active tasks
-        var activeTasks = Tasks?.Where(t => !t.IsDeleted && 
-            t.Status != (int)AppTaskStatus.Completed && 
+        var activeTasks = Tasks?.Where(t => !t.IsDeleted &&
+            t.Status != (int)AppTaskStatus.Completed &&
             t.Status != (int)AppTaskStatus.Archived).ToList();
-            
+
         return activeTasks?.Count == 0;
     }
 
@@ -41,7 +43,9 @@ public class Project : BaseEntity
     public override void SoftDelete()
     {
         if (!CanSoftDelete())
+        {
             return;
+        }
 
         base.SoftDelete();
 
@@ -62,7 +66,9 @@ public class Project : BaseEntity
     public void Restore(bool restoreTasks = false)
     {
         if (!CanRestore())
+        {
             return;
+        }
 
         base.Restore();
 

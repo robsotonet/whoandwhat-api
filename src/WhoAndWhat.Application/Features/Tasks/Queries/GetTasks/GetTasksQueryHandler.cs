@@ -6,19 +6,19 @@ using WhoAndWhat.Application.DTOs.Tasks;
 using WhoAndWhat.Application.Interfaces;
 using WhoAndWhat.Domain.Common;
 using WhoAndWhat.Domain.ValueObjects;
-using DomainTask = WhoAndWhat.Domain.Entities.Task;
-using DomainTaskStatus = WhoAndWhat.Domain.ValueObjects.TaskStatus;
+using DomainTask = WhoAndWhat.Domain.Entities.AppTask;
+using DomainTaskStatus = WhoAndWhat.Domain.ValueObjects.AppTaskStatus;
 using SystemTask = System.Threading.Tasks.Task;
 
 namespace WhoAndWhat.Application.Features.Tasks.Queries.GetTasks;
 
 public class GetTasksQueryHandler : IRequestHandler<GetTasksQuery, Result<PagedResult<TaskDto>>>
 {
-    private readonly ITaskRepository _taskRepository;
+    private readonly IAppTaskRepository _taskRepository;
     private readonly ILogger<GetTasksQueryHandler> _logger;
 
     public GetTasksQueryHandler(
-        ITaskRepository taskRepository,
+        IAppTaskRepository taskRepository,
         ILogger<GetTasksQueryHandler> logger)
     {
         _taskRepository = taskRepository;
@@ -29,10 +29,10 @@ public class GetTasksQueryHandler : IRequestHandler<GetTasksQuery, Result<PagedR
     {
         try
         {
-            var searchCriteria = new TaskSearchCriteria
+            var searchCriteria = new AppTaskSearchCriteria
             {
                 UserId = request.UserId,
-                SearchText = request.Search,
+                SearchText = request.Search ?? string.Empty,
                 Categories = request.Categories,
                 Statuses = request.Statuses,
                 Priorities = request.Priorities,
@@ -49,10 +49,10 @@ public class GetTasksQueryHandler : IRequestHandler<GetTasksQuery, Result<PagedR
             };
 
             var pagedTasks = await _taskRepository.SearchAsync(
-                searchCriteria, 
-                request.PageNumber, 
-                request.PageSize, 
-                request.SortBy ?? "UpdatedAt", 
+                searchCriteria,
+                request.PageNumber,
+                request.PageSize,
+                request.SortBy ?? "UpdatedAt",
                 request.SortDescending);
 
             var taskDtos = pagedTasks.Items.Select(MapToDto).ToList();
@@ -60,7 +60,7 @@ public class GetTasksQueryHandler : IRequestHandler<GetTasksQuery, Result<PagedR
             var result = PagedResult<TaskDto>.Create(
                 taskDtos,
                 pagedTasks.TotalCount,
-                pagedTasks.PageNumber,
+                pagedTasks.Page,
                 pagedTasks.PageSize);
 
             return Result<PagedResult<TaskDto>>.Success(result);
@@ -74,7 +74,7 @@ public class GetTasksQueryHandler : IRequestHandler<GetTasksQuery, Result<PagedR
 
     private static TaskDto MapToDto(DomainTask task)
     {
-        var category = TaskCategory.FromValue(task.Category);
+        var category = AppTaskCategory.FromValue(task.Category);
         var status = DomainTaskStatus.FromValue(task.Status);
         var priority = Priority.FromValue(task.Priority);
 

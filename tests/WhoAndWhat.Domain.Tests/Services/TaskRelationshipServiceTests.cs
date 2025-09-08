@@ -2,21 +2,21 @@ using FluentAssertions;
 using WhoAndWhat.Domain.Services;
 using WhoAndWhat.Domain.ValueObjects;
 using WhoAndWhat.Domain.Common;
-using DomainTask = WhoAndWhat.Domain.Entities.Task;
-using DomainTaskStatus = WhoAndWhat.Domain.ValueObjects.TaskStatus;
+using DomainTask = WhoAndWhat.Domain.Entities.AppTask;
+using DomainTaskStatus = WhoAndWhat.Domain.ValueObjects.AppTaskStatus;
 
 namespace WhoAndWhat.Domain.Tests.Services;
 
-public class TaskRelationshipServiceTests
+public class AppTaskRelationshipServiceTests
 {
-    private readonly TaskRelationshipService _service;
+    private readonly AppTaskRelationshipService _service;
 
-    public TaskRelationshipServiceTests()
+    public AppTaskRelationshipServiceTests()
     {
-        _service = new TaskRelationshipService();
+        _service = new AppTaskRelationshipService();
     }
 
-    private DomainTask CreateValidTask(TaskCategory? category = null, DomainTaskStatus? status = null, Guid? userId = null)
+    private DomainTask CreateValidTask(AppTaskCategory? category = null, DomainTaskStatus? status = null, Guid? userId = null)
     {
         return new DomainTask
         {
@@ -25,7 +25,7 @@ public class TaskRelationshipServiceTests
             Description = "Test Description",
             DueDate = DateTime.UtcNow.AddDays(7),
             Priority = Priority.Medium.Value,
-            Category = (category ?? TaskCategory.ToDo).Value,
+            Category = (category ?? AppTaskCategory.ToDo).Value,
             Status = (status ?? DomainTaskStatus.Pending).Value,
             CreatedAt = DateTime.UtcNow.AddDays(-1),
             UpdatedAt = DateTime.UtcNow,
@@ -39,8 +39,8 @@ public class TaskRelationshipServiceTests
     public void EstablishParentChildRelationship_Should_Succeed_For_Valid_Project_And_Subtask()
     {
         var userId = Guid.NewGuid();
-        var parentTask = CreateValidTask(TaskCategory.Project, userId: userId);
-        var childTask = CreateValidTask(TaskCategory.ToDo, userId: userId);
+        var parentTask = CreateValidTask(AppTaskCategory.Project, userId: userId);
+        var childTask = CreateValidTask(AppTaskCategory.ToDo, userId: userId);
         
         var result = _service.EstablishParentChildRelationship(parentTask, childTask);
         
@@ -52,8 +52,8 @@ public class TaskRelationshipServiceTests
     public void EstablishParentChildRelationship_Should_Fail_For_Category_Not_Allowing_Subtasks()
     {
         var userId = Guid.NewGuid();
-        var parentTask = CreateValidTask(TaskCategory.Appointment, userId: userId);
-        var childTask = CreateValidTask(TaskCategory.ToDo, userId: userId);
+        var parentTask = CreateValidTask(AppTaskCategory.Appointment, userId: userId);
+        var childTask = CreateValidTask(AppTaskCategory.ToDo, userId: userId);
         
         var result = _service.EstablishParentChildRelationship(parentTask, childTask);
         
@@ -65,8 +65,8 @@ public class TaskRelationshipServiceTests
     public void EstablishParentChildRelationship_Should_Fail_For_Child_Already_In_Project()
     {
         var userId = Guid.NewGuid();
-        var parentTask = CreateValidTask(TaskCategory.Project, userId: userId);
-        var childTask = CreateValidTask(TaskCategory.ToDo, userId: userId);
+        var parentTask = CreateValidTask(AppTaskCategory.Project, userId: userId);
+        var childTask = CreateValidTask(AppTaskCategory.ToDo, userId: userId);
         childTask.ProjectId = Guid.NewGuid();
         
         var result = _service.EstablishParentChildRelationship(parentTask, childTask);
@@ -79,8 +79,8 @@ public class TaskRelationshipServiceTests
     public void EstablishParentChildRelationship_Should_Fail_For_Project_As_Child()
     {
         var userId = Guid.NewGuid();
-        var parentTask = CreateValidTask(TaskCategory.Project, userId: userId);
-        var childTask = CreateValidTask(TaskCategory.Project, userId: userId);
+        var parentTask = CreateValidTask(AppTaskCategory.Project, userId: userId);
+        var childTask = CreateValidTask(AppTaskCategory.Project, userId: userId);
         
         var result = _service.EstablishParentChildRelationship(parentTask, childTask);
         
@@ -92,8 +92,8 @@ public class TaskRelationshipServiceTests
     public void EstablishParentChildRelationship_Should_Fail_For_Circular_Dependency()
     {
         var userId = Guid.NewGuid();
-        var parentTask = CreateValidTask(TaskCategory.Project, userId: userId);
-        var childTask = CreateValidTask(TaskCategory.Project, userId: userId);
+        var parentTask = CreateValidTask(AppTaskCategory.Project, userId: userId);
+        var childTask = CreateValidTask(AppTaskCategory.Project, userId: userId);
         
         // Set up circular dependency
         parentTask.ProjectId = childTask.Id;
@@ -107,8 +107,8 @@ public class TaskRelationshipServiceTests
     [Fact]
     public void EstablishParentChildRelationship_Should_Fail_For_Different_Users()
     {
-        var parentTask = CreateValidTask(TaskCategory.Project, userId: Guid.NewGuid());
-        var childTask = CreateValidTask(TaskCategory.ToDo, userId: Guid.NewGuid());
+        var parentTask = CreateValidTask(AppTaskCategory.Project, userId: Guid.NewGuid());
+        var childTask = CreateValidTask(AppTaskCategory.ToDo, userId: Guid.NewGuid());
         
         var result = _service.EstablishParentChildRelationship(parentTask, childTask);
         
@@ -120,10 +120,10 @@ public class TaskRelationshipServiceTests
     public void EstablishParentChildRelationship_Should_Fail_For_Child_Due_After_Parent()
     {
         var userId = Guid.NewGuid();
-        var parentTask = CreateValidTask(TaskCategory.Project, userId: userId);
+        var parentTask = CreateValidTask(AppTaskCategory.Project, userId: userId);
         parentTask.DueDate = DateTime.UtcNow.AddDays(5);
         
-        var childTask = CreateValidTask(TaskCategory.ToDo, userId: userId);
+        var childTask = CreateValidTask(AppTaskCategory.ToDo, userId: userId);
         childTask.DueDate = DateTime.UtcNow.AddDays(10);
         
         var result = _service.EstablishParentChildRelationship(parentTask, childTask);
@@ -140,8 +140,8 @@ public class TaskRelationshipServiceTests
     public void RemoveParentChildRelationship_Should_Succeed_For_Valid_Removal()
     {
         var userId = Guid.NewGuid();
-        var parentTask = CreateValidTask(TaskCategory.Project, DomainTaskStatus.InProgress, userId);
-        var childTask = CreateValidTask(TaskCategory.ToDo, DomainTaskStatus.Pending, userId);
+        var parentTask = CreateValidTask(AppTaskCategory.Project, DomainTaskStatus.InProgress, userId);
+        var childTask = CreateValidTask(AppTaskCategory.ToDo, DomainTaskStatus.Pending, userId);
         childTask.ProjectId = parentTask.Id;
         
         var result = _service.RemoveParentChildRelationship(parentTask, childTask);
@@ -153,8 +153,8 @@ public class TaskRelationshipServiceTests
     public void RemoveParentChildRelationship_Should_Fail_For_Removing_Active_Child_From_Completed_Parent()
     {
         var userId = Guid.NewGuid();
-        var parentTask = CreateValidTask(TaskCategory.Project, DomainTaskStatus.Completed, userId);
-        var childTask = CreateValidTask(TaskCategory.ToDo, DomainTaskStatus.InProgress, userId);
+        var parentTask = CreateValidTask(AppTaskCategory.Project, DomainTaskStatus.Completed, userId);
+        var childTask = CreateValidTask(AppTaskCategory.ToDo, DomainTaskStatus.InProgress, userId);
         
         var result = _service.RemoveParentChildRelationship(parentTask, childTask);
         
@@ -169,12 +169,12 @@ public class TaskRelationshipServiceTests
     [Fact]
     public void BuildTaskHierarchy_Should_Build_Correct_Hierarchy()
     {
-        var rootTask = CreateValidTask(TaskCategory.Project);
-        var child1 = CreateValidTask(TaskCategory.ToDo);
+        var rootTask = CreateValidTask(AppTaskCategory.Project);
+        var child1 = CreateValidTask(AppTaskCategory.ToDo);
         child1.ProjectId = rootTask.Id;
-        var child2 = CreateValidTask(TaskCategory.ToDo);
+        var child2 = CreateValidTask(AppTaskCategory.ToDo);
         child2.ProjectId = rootTask.Id;
-        var grandchild = CreateValidTask(TaskCategory.ToDo);
+        var grandchild = CreateValidTask(AppTaskCategory.ToDo);
         grandchild.ProjectId = child1.Id;
         
         var allTasks = new[] { rootTask, child1, child2, grandchild };
@@ -194,10 +194,10 @@ public class TaskRelationshipServiceTests
     [Fact]
     public void TaskHierarchy_Depth_Should_Calculate_Correctly()
     {
-        var rootTask = CreateValidTask(TaskCategory.Project);
-        var child = CreateValidTask(TaskCategory.ToDo);
+        var rootTask = CreateValidTask(AppTaskCategory.Project);
+        var child = CreateValidTask(AppTaskCategory.ToDo);
         child.ProjectId = rootTask.Id;
-        var grandchild = CreateValidTask(TaskCategory.ToDo);
+        var grandchild = CreateValidTask(AppTaskCategory.ToDo);
         grandchild.ProjectId = child.Id;
         
         var allTasks = new[] { rootTask, child, grandchild };
@@ -209,8 +209,8 @@ public class TaskRelationshipServiceTests
     [Fact]
     public void TaskHierarchy_AllTasks_Should_Return_All_Tasks_Flattened()
     {
-        var rootTask = CreateValidTask(TaskCategory.Project);
-        var child = CreateValidTask(TaskCategory.ToDo);
+        var rootTask = CreateValidTask(AppTaskCategory.Project);
+        var child = CreateValidTask(AppTaskCategory.ToDo);
         child.ProjectId = rootTask.Id;
         
         var allTasks = new[] { rootTask, child };
@@ -229,15 +229,15 @@ public class TaskRelationshipServiceTests
     [Fact]
     public void CalculateHierarchyMetrics_Should_Calculate_Correct_Metrics()
     {
-        var rootTask = CreateValidTask(TaskCategory.Project, DomainTaskStatus.InProgress);
+        var rootTask = CreateValidTask(AppTaskCategory.Project, DomainTaskStatus.InProgress);
         rootTask.Priority = Priority.High.Value;
         rootTask.DueDate = DateTime.UtcNow.AddDays(10);
         
-        var child1 = CreateValidTask(TaskCategory.ToDo, DomainTaskStatus.Completed);
+        var child1 = CreateValidTask(AppTaskCategory.ToDo, DomainTaskStatus.Completed);
         child1.Priority = Priority.Medium.Value;
         child1.DueDate = DateTime.UtcNow.AddDays(5);
         
-        var child2 = CreateValidTask(TaskCategory.ToDo, DomainTaskStatus.Pending);
+        var child2 = CreateValidTask(AppTaskCategory.ToDo, DomainTaskStatus.Pending);
         child2.Priority = Priority.Urgent.Value;
         child2.DueDate = DateTime.UtcNow.AddDays(-1); // Overdue
         
@@ -269,7 +269,7 @@ public class TaskRelationshipServiceTests
     [Fact]
     public void CalculateHierarchyMetrics_Should_Handle_Empty_Hierarchy()
     {
-        var rootTask = CreateValidTask(TaskCategory.Project, DomainTaskStatus.Pending);
+        var rootTask = CreateValidTask(AppTaskCategory.Project, DomainTaskStatus.Pending);
         var hierarchy = new TaskHierarchy
         {
             Root = rootTask,
@@ -290,7 +290,7 @@ public class TaskRelationshipServiceTests
     [Fact]
     public void ReorderSubtasks_Should_Order_By_Status_Then_Priority()
     {
-        var parentTask = CreateValidTask(TaskCategory.Project);
+        var parentTask = CreateValidTask(AppTaskCategory.Project);
         var subtasks = new List<DomainTask>
         {
             new() { Status = DomainTaskStatus.Completed.Value, Priority = Priority.High.Value, CreatedAt = DateTime.UtcNow.AddDays(-1) },
@@ -317,7 +317,7 @@ public class TaskRelationshipServiceTests
     [Fact]
     public void ReorderSubtasks_Should_Order_By_Due_Date_When_Same_Status_And_Priority()
     {
-        var parentTask = CreateValidTask(TaskCategory.Project);
+        var parentTask = CreateValidTask(AppTaskCategory.Project);
         var subtasks = new List<DomainTask>
         {
             new() 
@@ -349,7 +349,7 @@ public class TaskRelationshipServiceTests
     [Fact]
     public void SuggestTaskBreakdown_Should_Suggest_Standard_Project_Phases()
     {
-        var projectTask = CreateValidTask(TaskCategory.Project);
+        var projectTask = CreateValidTask(AppTaskCategory.Project);
         
         var suggestions = _service.SuggestTaskBreakdown(projectTask).ToList();
         
@@ -364,7 +364,7 @@ public class TaskRelationshipServiceTests
     [Fact]
     public void SuggestTaskBreakdown_Should_Set_Due_Dates_For_Project_With_Due_Date()
     {
-        var projectTask = CreateValidTask(TaskCategory.Project);
+        var projectTask = CreateValidTask(AppTaskCategory.Project);
         projectTask.DueDate = DateTime.UtcNow.AddDays(25);
         
         var suggestions = _service.SuggestTaskBreakdown(projectTask).ToList();
@@ -377,7 +377,7 @@ public class TaskRelationshipServiceTests
     [Fact]
     public void SuggestTaskBreakdown_Should_Suggest_Idea_Breakdown_For_Complex_Idea()
     {
-        var ideaTask = CreateValidTask(TaskCategory.Idea);
+        var ideaTask = CreateValidTask(AppTaskCategory.Idea);
         ideaTask.Description = new string('a', 150); // Long description
         
         var suggestions = _service.SuggestTaskBreakdown(ideaTask).ToList();
@@ -391,7 +391,7 @@ public class TaskRelationshipServiceTests
     [Fact]
     public void SuggestTaskBreakdown_Should_Not_Suggest_For_Simple_Idea()
     {
-        var ideaTask = CreateValidTask(TaskCategory.Idea);
+        var ideaTask = CreateValidTask(AppTaskCategory.Idea);
         ideaTask.Description = "Simple idea";
         
         var suggestions = _service.SuggestTaskBreakdown(ideaTask).ToList();
@@ -402,7 +402,7 @@ public class TaskRelationshipServiceTests
     [Fact]
     public void SuggestTaskBreakdown_Should_Break_Complex_ToDo_By_And_Separator()
     {
-        var todoTask = CreateValidTask(TaskCategory.ToDo);
+        var todoTask = CreateValidTask(AppTaskCategory.ToDo);
         todoTask.Description = "Buy groceries and cook dinner, clean the house and do laundry";
         
         var suggestions = _service.SuggestTaskBreakdown(todoTask).ToList();
@@ -415,7 +415,7 @@ public class TaskRelationshipServiceTests
     [Fact]
     public void SuggestTaskBreakdown_Should_Not_Suggest_For_Simple_ToDo()
     {
-        var todoTask = CreateValidTask(TaskCategory.ToDo);
+        var todoTask = CreateValidTask(AppTaskCategory.ToDo);
         todoTask.Description = "Simple task";
         
         var suggestions = _service.SuggestTaskBreakdown(todoTask).ToList();
@@ -426,8 +426,8 @@ public class TaskRelationshipServiceTests
     [Fact]
     public void SuggestTaskBreakdown_Should_Not_Suggest_For_Non_Breakdown_Categories()
     {
-        var appointmentTask = CreateValidTask(TaskCategory.Appointment);
-        var billTask = CreateValidTask(TaskCategory.BillReminder);
+        var appointmentTask = CreateValidTask(AppTaskCategory.Appointment);
+        var billTask = CreateValidTask(AppTaskCategory.BillReminder);
         
         var appointmentSuggestions = _service.SuggestTaskBreakdown(appointmentTask).ToList();
         var billSuggestions = _service.SuggestTaskBreakdown(billTask).ToList();

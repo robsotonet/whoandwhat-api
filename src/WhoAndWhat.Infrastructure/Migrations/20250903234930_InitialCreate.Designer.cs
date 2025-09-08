@@ -176,7 +176,7 @@ namespace WhoAndWhat.Infrastructure.Migrations
                     b.ToTable("Projects");
                 });
 
-            modelBuilder.Entity("WhoAndWhat.Domain.Entities.Task", b =>
+            modelBuilder.Entity("WhoAndWhat.Domain.Entities.AppTask", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -282,7 +282,7 @@ namespace WhoAndWhat.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("WhoAndWhat.Domain.Entities.Task", null)
+                    b.HasOne("WhoAndWhat.Domain.Entities.AppTask", null)
                         .WithMany()
                         .HasForeignKey("TasksId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -297,7 +297,7 @@ namespace WhoAndWhat.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("WhoAndWhat.Domain.Entities.Task", null)
+                    b.HasOne("WhoAndWhat.Domain.Entities.AppTask", null)
                         .WithMany()
                         .HasForeignKey("TasksId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -337,9 +337,9 @@ namespace WhoAndWhat.Infrastructure.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("WhoAndWhat.Domain.Entities.Task", b =>
+            modelBuilder.Entity("WhoAndWhat.Domain.Entities.AppTask", b =>
                 {
-                    b.HasOne("WhoAndWhat.Domain.Entities.Task", null)
+                    b.HasOne("WhoAndWhat.Domain.Entities.AppTask", null)
                         .WithMany("Subtasks")
                         .HasForeignKey("ParentTaskId");
 
@@ -363,7 +363,7 @@ namespace WhoAndWhat.Infrastructure.Migrations
                     b.Navigation("Tasks");
                 });
 
-            modelBuilder.Entity("WhoAndWhat.Domain.Entities.Task", b =>
+            modelBuilder.Entity("WhoAndWhat.Domain.Entities.AppTask", b =>
                 {
                     b.Navigation("Subtasks");
                 });

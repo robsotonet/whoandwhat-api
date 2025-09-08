@@ -4,19 +4,19 @@ using WhoAndWhat.Application.Common;
 using WhoAndWhat.Application.DTOs.Tasks;
 using WhoAndWhat.Application.Interfaces;
 using WhoAndWhat.Domain.ValueObjects;
-using DomainTask = WhoAndWhat.Domain.Entities.Task;
-using DomainTaskStatus = WhoAndWhat.Domain.ValueObjects.TaskStatus;
+using DomainTask = WhoAndWhat.Domain.Entities.AppTask;
+using DomainTaskStatus = WhoAndWhat.Domain.ValueObjects.AppTaskStatus;
 using SystemTask = System.Threading.Tasks.Task;
 
 namespace WhoAndWhat.Application.Features.Tasks.Queries.GetTask;
 
 public class GetTaskQueryHandler : IRequestHandler<GetTaskQuery, Result<TaskDto>>
 {
-    private readonly ITaskRepository _taskRepository;
+    private readonly IAppTaskRepository _taskRepository;
     private readonly ILogger<GetTaskQueryHandler> _logger;
 
     public GetTaskQueryHandler(
-        ITaskRepository taskRepository,
+        IAppTaskRepository taskRepository,
         ILogger<GetTaskQueryHandler> logger)
     {
         _taskRepository = taskRepository;
@@ -27,7 +27,7 @@ public class GetTaskQueryHandler : IRequestHandler<GetTaskQuery, Result<TaskDto>
     {
         try
         {
-            var task = request.IncludeSubtasks 
+            var task = request.IncludeSubtasks
                 ? await _taskRepository.GetByIdWithSubtasksAsync(request.TaskId)
                 : await _taskRepository.GetByIdAsync(request.TaskId);
 
@@ -48,7 +48,7 @@ public class GetTaskQueryHandler : IRequestHandler<GetTaskQuery, Result<TaskDto>
 
     private static TaskDto MapToDto(DomainTask task)
     {
-        var category = TaskCategory.FromValue(task.Category);
+        var category = AppTaskCategory.FromValue(task.Category);
         var status = DomainTaskStatus.FromValue(task.Status);
         var priority = Priority.FromValue(task.Priority);
 

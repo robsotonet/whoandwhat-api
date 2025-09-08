@@ -1,8 +1,8 @@
 using FluentAssertions;
 using WhoAndWhat.Domain.ValueObjects;
 using Xunit;
-using DomainTask = WhoAndWhat.Domain.Entities.Task;
-using DomainTaskStatus = WhoAndWhat.Domain.ValueObjects.TaskStatus;
+using DomainTask = WhoAndWhat.Domain.Entities.AppTask;
+using DomainTaskStatus = WhoAndWhat.Domain.ValueObjects.AppTaskStatus;
 
 namespace WhoAndWhat.Domain.Tests.ValueObjects;
 

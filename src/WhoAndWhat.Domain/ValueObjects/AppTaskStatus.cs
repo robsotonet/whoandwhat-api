@@ -163,7 +163,7 @@ public record AppTaskStatus
     public string GetDisplayName() => Name switch
     {
         "Pending" => "Pending",
-        "InProgress" => "In Progress", 
+        "InProgress" => "In Progress",
         "Completed" => "Completed",
         "Archived" => "Archived",
         "Confirmed" => "Confirmed",
@@ -179,7 +179,7 @@ public record AppTaskStatus
     {
         "Pending" => "status-pending",
         "InProgress" => "status-in-progress",
-        "Completed" => "status-completed", 
+        "Completed" => "status-completed",
         "Archived" => "status-archived",
         "Confirmed" => "status-confirmed",
         "Cancelled" => "status-cancelled",
@@ -208,7 +208,7 @@ public record AppTaskStatus
     /// <param name="hasActiveSubtasks">Whether the task has active subtasks</param>
     /// <param name="taskCategory">Task category</param>
     /// <returns>Validation result</returns>
-    public ValidationResult ValidateTransition(AppTaskStatus targetStatus, bool hasActiveSubtasks = false, TaskCategory? taskCategory = null)
+    public ValidationResult ValidateTransition(AppTaskStatus targetStatus, bool hasActiveSubtasks = false, AppTaskCategory? taskCategory = null)
     {
         var errors = new List<string>();
 

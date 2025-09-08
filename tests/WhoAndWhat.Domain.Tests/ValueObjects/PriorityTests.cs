@@ -297,7 +297,7 @@ public class PriorityTests
     [Fact]
     public void Priority_ValidatePriorityAssignment_Should_Pass_For_Valid_Assignment()
     {
-        var validation = Priority.High.ValidatePriorityAssignment(TaskCategory.Appointment, DateTime.UtcNow.AddDays(1));
+        var validation = Priority.High.ValidatePriorityAssignment(AppTaskCategory.Appointment, DateTime.UtcNow.AddDays(1));
         
         validation.IsValid.Should().BeTrue();
     }
@@ -305,7 +305,7 @@ public class PriorityTests
     [Fact]
     public void Priority_ValidatePriorityAssignment_Should_Warn_For_Low_Priority_Appointment()
     {
-        var validation = Priority.Low.ValidatePriorityAssignment(TaskCategory.Appointment, DateTime.UtcNow.AddDays(1));
+        var validation = Priority.Low.ValidatePriorityAssignment(AppTaskCategory.Appointment, DateTime.UtcNow.AddDays(1));
         
         validation.IsValid.Should().BeTrue(); // Warnings don't make it invalid
         validation.Errors.Should().Contain("Appointments typically should be High or Urgent priority");

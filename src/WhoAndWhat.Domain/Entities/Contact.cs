@@ -22,7 +22,9 @@ public class Contact : BaseEntity
     public override bool CanSoftDelete()
     {
         if (!base.CanSoftDelete())
+        {
             return false;
+        }
 
         // Cannot delete contact if it has active task associations
         var activeTasks = Tasks?.Where(t => !t.IsDeleted).ToList();
@@ -35,7 +37,9 @@ public class Contact : BaseEntity
     public override void SoftDelete()
     {
         if (!CanSoftDelete())
+        {
             return;
+        }
 
         base.SoftDelete();
 

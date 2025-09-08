@@ -28,7 +28,19 @@
       "Bash(do sed -i 's/&lt;/</g; s/&gt;/>/g' \"$file\")",
       "Bash(done)",
       "Bash(git checkout:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(where dotnet)",
+      "Read(/C:\\Program Files\\dotnet/**)",
+      "Read(/C:\\Program Files\\dotnet\\sdk\\9.0.304/**)",
+      "Read(/C:\\Program Files\\dotnet\\sdk\\9.0.304/**)",
+      "Bash(dotnet clean:*)",
+      "Bash(sed:*)",
+      "Bash(for file in src/WhoAndWhat.Application/DTOs/*.cs src/WhoAndWhat.Application/Validators/Tasks/*.cs)",
+      "Bash(do if grep -l \"WhoAndWhat.Domain.Entities.Task\\|WhoAndWhat.Domain.ValueObjects.TaskStatus\\|TaskSearchCriteria\\|TaskCategory\" \"$file\")",
+      "Bash(then echo \"NEEDS FIX: $file\")",
+      "Bash(fi)",
+      "Bash(rg:*)",
+      "Bash(dotnet format:*)"
     ],
     "deny": [],
     "ask": []

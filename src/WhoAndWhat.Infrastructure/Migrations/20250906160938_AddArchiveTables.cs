@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
@@ -49,7 +49,7 @@ namespace WhoAndWhat.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "ArchivedTasks",
+                name: "ArchivedAppTasks",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
@@ -77,9 +77,9 @@ namespace WhoAndWhat.Infrastructure.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_ArchivedTasks", x => x.Id);
+                    table.PrimaryKey("PK_ArchivedAppTasks", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_ArchivedTasks_Users_UserId",
+                        name: "FK_ArchivedAppTasks_Users_UserId",
                         column: x => x.UserId,
                         principalTable: "Users",
                         principalColumn: "Id",
@@ -113,46 +113,46 @@ namespace WhoAndWhat.Infrastructure.Migrations
                 columns: new[] { "UserId", "Status" });
 
             migrationBuilder.CreateIndex(
-                name: "IX_ArchivedTasks_ArchivedAt",
-                table: "ArchivedTasks",
+                name: "IX_ArchivedAppTasks_ArchivedAt",
+                table: "ArchivedAppTasks",
                 column: "ArchivedAt");
 
             migrationBuilder.CreateIndex(
-                name: "IX_ArchivedTasks_OriginalTaskId",
-                table: "ArchivedTasks",
+                name: "IX_ArchivedAppTasks_OriginalTaskId",
+                table: "ArchivedAppTasks",
                 column: "OriginalTaskId",
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_ArchivedTasks_ParentTaskId",
-                table: "ArchivedTasks",
+                name: "IX_ArchivedAppTasks_ParentTaskId",
+                table: "ArchivedAppTasks",
                 column: "ParentTaskId",
                 filter: "parent_task_id IS NOT NULL");
 
             migrationBuilder.CreateIndex(
-                name: "IX_ArchivedTasks_ProjectId",
-                table: "ArchivedTasks",
+                name: "IX_ArchivedAppTasks_ProjectId",
+                table: "ArchivedAppTasks",
                 column: "ProjectId",
                 filter: "project_id IS NOT NULL");
 
             migrationBuilder.CreateIndex(
-                name: "IX_ArchivedTasks_UserId",
-                table: "ArchivedTasks",
+                name: "IX_ArchivedAppTasks_UserId",
+                table: "ArchivedAppTasks",
                 column: "UserId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_ArchivedTasks_UserId_ArchivedAt",
-                table: "ArchivedTasks",
+                name: "IX_ArchivedAppTasks_UserId_ArchivedAt",
+                table: "ArchivedAppTasks",
                 columns: new[] { "UserId", "ArchivedAt" });
 
             migrationBuilder.CreateIndex(
-                name: "IX_ArchivedTasks_UserId_Category",
-                table: "ArchivedTasks",
+                name: "IX_ArchivedAppTasks_UserId_Category",
+                table: "ArchivedAppTasks",
                 columns: new[] { "UserId", "Category" });
 
             migrationBuilder.CreateIndex(
-                name: "IX_ArchivedTasks_UserId_Status",
-                table: "ArchivedTasks",
+                name: "IX_ArchivedAppTasks_UserId_Status",
+                table: "ArchivedAppTasks",
                 columns: new[] { "UserId", "Status" });
         }
 
@@ -163,7 +163,7 @@ namespace WhoAndWhat.Infrastructure.Migrations
                 name: "ArchivedProjects");
 
             migrationBuilder.DropTable(
-                name: "ArchivedTasks");
+                name: "ArchivedAppTasks");
         }
     }
 }

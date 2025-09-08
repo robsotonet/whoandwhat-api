@@ -12,8 +12,8 @@ using WhoAndWhat.Infrastructure.Data;
 using WhoAndWhat.Infrastructure.Repositories;
 using Xunit;
 using Task = System.Threading.Tasks.Task;
-using DomainTask = WhoAndWhat.Domain.Entities.Task;
-using DomainTaskStatus = WhoAndWhat.Domain.ValueObjects.TaskStatus;
+using DomainTask = WhoAndWhat.Domain.Entities.AppTask;
+using DomainTaskStatus = WhoAndWhat.Domain.ValueObjects.AppTaskStatus;
 
 namespace WhoAndWhat.Infrastructure.Tests;
 

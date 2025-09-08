@@ -9,10 +9,10 @@ using WhoAndWhat.Domain.Entities;
 using WhoAndWhat.Domain.ValueObjects;
 using WhoAndWhat.Infrastructure.Configuration;
 using WhoAndWhat.Infrastructure.Data;
-using Task = WhoAndWhat.Domain.Entities.Task;
-using TaskStatus = WhoAndWhat.Domain.ValueObjects.TaskStatus;
-using TaskCategory = WhoAndWhat.Domain.ValueObjects.TaskCategory;
+using AppTaskCategory = WhoAndWhat.Domain.ValueObjects.AppTaskCategory;
 using Priority = WhoAndWhat.Domain.ValueObjects.Priority;
+using Task = WhoAndWhat.Domain.Entities.AppTask;
+using TaskStatus = WhoAndWhat.Domain.ValueObjects.AppTaskStatus;
 
 namespace WhoAndWhat.Infrastructure.Services;
 
@@ -69,7 +69,7 @@ public class TaskArchiveService : ITaskArchiveService
 
             // Get eligible tasks
             var eligibleTasks = await GetEligibleTasksForArchivingAsync(criteria, cancellationToken);
-            
+
             if (!eligibleTasks.Any())
             {
                 _logger.LogInformation("No tasks found matching archive criteria");
@@ -109,9 +109,9 @@ public class TaskArchiveService : ITaskArchiveService
                 await transaction.CommitAsync(cancellationToken);
 
                 _logger.LogInformation("Successfully archived {TasksArchived} tasks in {Duration}ms", tasksArchived, stopwatch.ElapsedMilliseconds);
-                
+
                 stopwatch.Stop();
-                
+
                 if (errors.Any())
                 {
                     return ArchiveOperationResult.Partial(tasksArchived, errors.Count, 0, stopwatch.Elapsed, errors);
@@ -149,7 +149,7 @@ public class TaskArchiveService : ITaskArchiveService
             {
                 TasksToArchive = eligibleTasks.Count,
                 EstimatedDataSize = CalculateEstimatedDataSize(eligibleTasks),
-                TasksByCategory = eligibleTasks.GroupBy(t => ((TaskCategory)t.Category).ToString())
+                TasksByCategory = eligibleTasks.GroupBy(t => ((AppTaskCategory)t.Category).ToString())
                                              .ToDictionary(g => g.Key, g => g.Count()),
                 TasksByStatus = eligibleTasks.GroupBy(t => ((TaskStatus)t.Status).ToString())
                                            .ToDictionary(g => g.Key, g => g.Count()),
@@ -184,11 +184,11 @@ public class TaskArchiveService : ITaskArchiveService
         }
     }
 
-    public async Task<RestoreOperationResult> RestoreArchivedTaskAsync(Guid archivedTaskId, Guid userId, CancellationToken cancellationToken = default)
+    public async Task<RestoreOperationResult> RestoreArchivedAppTaskAsync(Guid archivedTaskId, Guid userId, CancellationToken cancellationToken = default)
     {
         try
         {
-            var archivedTask = await _context.ArchivedTasks
+            var archivedTask = await _context.ArchivedAppTasks
                 .FirstOrDefaultAsync(at => at.Id == archivedTaskId && at.UserId == userId, cancellationToken);
 
             if (archivedTask == null)
@@ -224,12 +224,12 @@ public class TaskArchiveService : ITaskArchiveService
                 _context.Tasks.Add(restoredTask);
 
                 // Remove from archives
-                _context.ArchivedTasks.Remove(archivedTask);
+                _context.ArchivedAppTasks.Remove(archivedTask);
 
                 await _context.SaveChangesAsync(cancellationToken);
                 await transaction.CommitAsync(cancellationToken);
 
-                _logger.LogInformation("Successfully restored archived task {ArchivedTaskId} as new task {TaskId} for user {UserId}", 
+                _logger.LogInformation("Successfully restored archived task {ArchivedAppTaskId} as new task {TaskId} for user {UserId}",
                     archivedTaskId, restoredTask.Id, userId);
 
                 return RestoreOperationResult.Success(restoredTask.Id);
@@ -242,18 +242,18 @@ public class TaskArchiveService : ITaskArchiveService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to restore archived task {ArchivedTaskId}: {Error}", archivedTaskId, ex.Message);
+            _logger.LogError(ex, "Failed to restore archived task {ArchivedAppTaskId}: {Error}", archivedTaskId, ex.Message);
             return RestoreOperationResult.Failure($"Restore failed: {ex.Message}");
         }
     }
 
-    public async Task<PagedResult<ArchivedTaskDto>> GetArchivedTasksAsync(Guid userId, ArchivedTaskFilter? filter = null, CancellationToken cancellationToken = default)
+    public async Task<PagedResult<ArchivedAppTaskDto>> GetArchivedAppTasksAsync(Guid userId, ArchivedAppTaskFilter? filter = null, CancellationToken cancellationToken = default)
     {
-        filter ??= new ArchivedTaskFilter();
+        filter ??= new ArchivedAppTaskFilter();
 
         try
         {
-            var query = _context.ArchivedTasks.Where(at => at.UserId == userId);
+            var query = _context.ArchivedAppTasks.Where(at => at.UserId == userId);
 
             // Apply filters
             query = ApplyFilters(query, filter);
@@ -267,14 +267,14 @@ public class TaskArchiveService : ITaskArchiveService
 
             // Execute query and map to DTOs
             var archivedTasks = await query.ToListAsync(cancellationToken);
-            var items = archivedTasks.Select(ArchivedTaskDto.FromEntity);
+            var items = archivedTasks.Select(ArchivedAppTaskDto.FromEntity);
 
-            return PagedResult<ArchivedTaskDto>.Create(items, totalCount, filter.Page, filter.PageSize);
+            return PagedResult<ArchivedAppTaskDto>.Create(items, totalCount, filter.Page, filter.PageSize);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to get archived tasks for user {UserId}: {Error}", userId, ex.Message);
-            return PagedResult<ArchivedTaskDto>.Empty(filter.Page, filter.PageSize);
+            return PagedResult<ArchivedAppTaskDto>.Empty(filter.Page, filter.PageSize);
         }
     }
 
@@ -282,9 +282,9 @@ public class TaskArchiveService : ITaskArchiveService
     {
         try
         {
-            var taskQuery = userId.HasValue 
-                ? _context.ArchivedTasks.Where(at => at.UserId == userId.Value)
-                : _context.ArchivedTasks;
+            var taskQuery = userId.HasValue
+                ? _context.ArchivedAppTasks.Where(at => at.UserId == userId.Value)
+                : _context.ArchivedAppTasks;
 
             var projectQuery = userId.HasValue
                 ? _context.ArchivedProjects.Where(ap => ap.UserId == userId.Value)
@@ -300,7 +300,7 @@ public class TaskArchiveService : ITaskArchiveService
 
             var categories = await taskQuery
                 .GroupBy(at => at.Category)
-                .ToDictionaryAsync(g => ((TaskCategory)g.Key).ToString(), g => g.Count(), cancellationToken);
+                .ToDictionaryAsync(g => ((AppTaskCategory)g.Key).ToString(), g => g.Count(), cancellationToken);
 
             var monthlyStats = await taskQuery
                 .Where(at => at.ArchivedAt > DateTime.UtcNow.AddYears(-1))
@@ -312,9 +312,9 @@ public class TaskArchiveService : ITaskArchiveService
 
             return new ArchiveStatistics
             {
-                TotalArchivedTasks = totalTasks,
+                TotalArchivedAppTasks = totalTasks,
                 TotalArchivedProjects = totalProjects,
-                RecentlyArchivedTasks = recentlyArchived,
+                RecentlyArchivedAppTasks = recentlyArchived,
                 ArchiveReasonBreakdown = archiveReasons,
                 CategoryBreakdown = categories,
                 MonthlyArchiveCount = monthlyStats,
@@ -369,11 +369,11 @@ public class TaskArchiveService : ITaskArchiveService
                 await transaction.CommitAsync(cancellationToken);
 
                 stopwatch.Stop();
-                
-                _logger.LogInformation("Successfully archived project {ProjectId} with {TaskCount} tasks", 
+
+                _logger.LogInformation("Successfully archived project {ProjectId} with {TaskCount} tasks",
                     projectId, tasksArchived);
 
-                return ArchiveOperationResult.Success(tasksArchived, 1, stopwatch.Elapsed, 
+                return ArchiveOperationResult.Success(tasksArchived, 1, stopwatch.Elapsed,
                     archivedTaskIds, new List<Guid> { archivedProject.Id });
             }
             catch (Exception)
@@ -397,8 +397,8 @@ public class TaskArchiveService : ITaskArchiveService
         try
         {
             var cutoffDate = DateTime.UtcNow - retentionPeriod;
-            
-            var expiredTasks = await _context.ArchivedTasks
+
+            var expiredTasks = await _context.ArchivedAppTasks
                 .Where(at => at.ArchivedAt < cutoffDate)
                 .ToListAsync(cancellationToken);
 
@@ -418,7 +418,7 @@ public class TaskArchiveService : ITaskArchiveService
 
             try
             {
-                _context.ArchivedTasks.RemoveRange(expiredTasks);
+                _context.ArchivedAppTasks.RemoveRange(expiredTasks);
                 _context.ArchivedProjects.RemoveRange(expiredProjects);
 
                 await _context.SaveChangesAsync(cancellationToken);
@@ -426,7 +426,7 @@ public class TaskArchiveService : ITaskArchiveService
 
                 stopwatch.Stop();
 
-                _logger.LogInformation("Cleaned up {TaskCount} expired tasks and {ProjectCount} expired projects, freed ~{SpaceFreed} bytes", 
+                _logger.LogInformation("Cleaned up {TaskCount} expired tasks and {ProjectCount} expired projects, freed ~{SpaceFreed} bytes",
                     expiredTasks.Count, expiredProjects.Count, estimatedSpaceFreed);
 
                 return CleanupOperationResult.Success(expiredTasks.Count, expiredProjects.Count, estimatedSpaceFreed, stopwatch.Elapsed);
@@ -485,7 +485,7 @@ public class TaskArchiveService : ITaskArchiveService
             warnings.Add("Large batch sizes may impact performance");
         }
 
-        return errors.Any() 
+        return errors.Any()
             ? ArchiveValidationResult.Invalid(errors, warnings)
             : ArchiveValidationResult.Valid() with { Warnings = warnings };
     }
@@ -493,7 +493,7 @@ public class TaskArchiveService : ITaskArchiveService
     private async Task<List<Task>> GetEligibleTasksForArchivingAsync(ArchiveCriteria criteria, CancellationToken cancellationToken)
     {
         var currentTime = DateTime.UtcNow;
-        
+
         var query = _context.Tasks.AsQueryable();
 
         // Apply user filter if specified
@@ -509,14 +509,14 @@ public class TaskArchiveService : ITaskArchiveService
         var completedCutoff = currentTime - criteria.MinimumCompletedAge;
         var canceledCutoff = currentTime - criteria.MinimumCanceledAge;
 
-        query = query.Where(t => 
+        query = query.Where(t =>
             (t.Status == (int)TaskStatus.Completed && t.UpdatedAt < completedCutoff) ||
             (t.Status == (int)TaskStatus.Archived && t.UpdatedAt < canceledCutoff));
 
         // Apply priority filter if specified
-        if (criteria.MaxPriorityToArchive.HasValue)
+        if (criteria.MaxPriorityToArchive != null)
         {
-            query = query.Where(t => t.Priority <= (int)criteria.MaxPriorityToArchive.Value);
+            query = query.Where(t => t.Priority <= (int)criteria.MaxPriorityToArchive);
         }
 
         // Include navigation properties for related data
@@ -542,12 +542,12 @@ public class TaskArchiveService : ITaskArchiveService
         return eligibleTasks;
     }
 
-    private Task<ArchivedTask> ArchiveTaskAsync(Task task, string reason, CancellationToken cancellationToken)
+    private Task<ArchivedAppTask> ArchiveTaskAsync(Task task, string reason, CancellationToken cancellationToken)
     {
-        var archivedTask = new ArchivedTask
+        var archivedTask = new ArchivedAppTask
         {
             Id = Guid.NewGuid(),
-            OriginalTaskId = task.Id,
+            OriginalAppTaskId = task.Id,
             UserId = task.UserId,
             Title = task.Title,
             Description = task.Description,
@@ -590,7 +590,7 @@ public class TaskArchiveService : ITaskArchiveService
             archivedTask.ContactsJson = JsonSerializer.Serialize(contactsData, _jsonOptions);
         }
 
-        _context.ArchivedTasks.Add(archivedTask);
+        _context.ArchivedAppTasks.Add(archivedTask);
         return System.Threading.Tasks.Task.FromResult(archivedTask);
     }
 
@@ -640,11 +640,11 @@ public class TaskArchiveService : ITaskArchiveService
         return System.Threading.Tasks.Task.FromResult(archivedProject);
     }
 
-    private IQueryable<ArchivedTask> ApplyFilters(IQueryable<ArchivedTask> query, ArchivedTaskFilter filter)
+    private IQueryable<ArchivedAppTask> ApplyFilters(IQueryable<ArchivedAppTask> query, ArchivedAppTaskFilter filter)
     {
         if (!string.IsNullOrEmpty(filter.Category))
         {
-            if (Enum.TryParse<TaskCategory>(filter.Category, true, out var category))
+            if (AppTaskCategory.TryFromName(filter.Category, out var category) && category != null)
             {
                 query = query.Where(at => at.Category == (int)category);
             }
@@ -652,7 +652,7 @@ public class TaskArchiveService : ITaskArchiveService
 
         if (!string.IsNullOrEmpty(filter.Status))
         {
-            if (Enum.TryParse<TaskStatus>(filter.Status, true, out var status))
+            if (AppTaskStatus.TryFromName(filter.Status, out var status) && status != null)
             {
                 query = query.Where(at => at.Status == (int)status);
             }
@@ -660,7 +660,7 @@ public class TaskArchiveService : ITaskArchiveService
 
         if (!string.IsNullOrEmpty(filter.Priority))
         {
-            if (Enum.TryParse<Priority>(filter.Priority, true, out var priority))
+            if (Priority.TryFromName(filter.Priority, out var priority) && priority != null)
             {
                 query = query.Where(at => at.Priority == (int)priority);
             }
@@ -711,30 +711,30 @@ public class TaskArchiveService : ITaskArchiveService
         return query;
     }
 
-    private IQueryable<ArchivedTask> ApplySorting(IQueryable<ArchivedTask> query, ArchivedTaskFilter filter)
+    private IQueryable<ArchivedAppTask> ApplySorting(IQueryable<ArchivedAppTask> query, ArchivedAppTaskFilter filter)
     {
         return filter.SortBy switch
         {
-            ArchivedTaskSortBy.Title => filter.SortDirection == SortDirection.Ascending 
-                ? query.OrderBy(at => at.Title) 
+            ArchivedAppTaskSortBy.Title => filter.SortDirection == SortDirection.Ascending
+                ? query.OrderBy(at => at.Title)
                 : query.OrderByDescending(at => at.Title),
-            ArchivedTaskSortBy.CreatedAt => filter.SortDirection == SortDirection.Ascending 
-                ? query.OrderBy(at => at.CreatedAt) 
+            ArchivedAppTaskSortBy.CreatedAt => filter.SortDirection == SortDirection.Ascending
+                ? query.OrderBy(at => at.CreatedAt)
                 : query.OrderByDescending(at => at.CreatedAt),
-            ArchivedTaskSortBy.UpdatedAt => filter.SortDirection == SortDirection.Ascending 
-                ? query.OrderBy(at => at.UpdatedAt) 
+            ArchivedAppTaskSortBy.UpdatedAt => filter.SortDirection == SortDirection.Ascending
+                ? query.OrderBy(at => at.UpdatedAt)
                 : query.OrderByDescending(at => at.UpdatedAt),
-            ArchivedTaskSortBy.ArchivedAt => filter.SortDirection == SortDirection.Ascending 
-                ? query.OrderBy(at => at.ArchivedAt) 
+            ArchivedAppTaskSortBy.ArchivedAt => filter.SortDirection == SortDirection.Ascending
+                ? query.OrderBy(at => at.ArchivedAt)
                 : query.OrderByDescending(at => at.ArchivedAt),
-            ArchivedTaskSortBy.DueDate => filter.SortDirection == SortDirection.Ascending 
-                ? query.OrderBy(at => at.DueDate ?? DateTime.MaxValue) 
+            ArchivedAppTaskSortBy.DueDate => filter.SortDirection == SortDirection.Ascending
+                ? query.OrderBy(at => at.DueDate ?? DateTime.MaxValue)
                 : query.OrderByDescending(at => at.DueDate ?? DateTime.MinValue),
-            ArchivedTaskSortBy.Priority => filter.SortDirection == SortDirection.Ascending 
-                ? query.OrderBy(at => at.Priority) 
+            ArchivedAppTaskSortBy.Priority => filter.SortDirection == SortDirection.Ascending
+                ? query.OrderBy(at => at.Priority)
                 : query.OrderByDescending(at => at.Priority),
-            ArchivedTaskSortBy.Category => filter.SortDirection == SortDirection.Ascending 
-                ? query.OrderBy(at => at.Category) 
+            ArchivedAppTaskSortBy.Category => filter.SortDirection == SortDirection.Ascending
+                ? query.OrderBy(at => at.Category)
                 : query.OrderByDescending(at => at.Category),
             _ => query.OrderByDescending(at => at.ArchivedAt)
         };
@@ -743,19 +743,19 @@ public class TaskArchiveService : ITaskArchiveService
     private long CalculateEstimatedDataSize(IEnumerable<Task> tasks)
     {
         // Rough estimation: base task size + JSON data
-        return tasks.Sum(t => 
-            (t.Title?.Length ?? 0) + 
-            (t.Description?.Length ?? 0) + 
+        return tasks.Sum(t =>
+            (t.Title?.Length ?? 0) +
+            (t.Description?.Length ?? 0) +
             500 + // Base entity size estimate
             (t.Subtasks.Count * 200) + // Estimated subtask JSON size
             (t.Contacts.Count * 150)); // Estimated contact JSON size
     }
 
-    private long CalculateEstimatedDataSize(IEnumerable<ArchivedTask> tasks)
+    private long CalculateEstimatedDataSize(IEnumerable<ArchivedAppTask> tasks)
     {
-        return tasks.Sum(at => 
-            (at.Title?.Length ?? 0) + 
-            (at.Description?.Length ?? 0) + 
+        return tasks.Sum(at =>
+            (at.Title?.Length ?? 0) +
+            (at.Description?.Length ?? 0) +
             (at.SubtasksJson?.Length ?? 0) +
             (at.ContactsJson?.Length ?? 0) +
             (at.AttachmentsJson?.Length ?? 0) +
@@ -764,21 +764,21 @@ public class TaskArchiveService : ITaskArchiveService
 
     private long CalculateEstimatedDataSize(IEnumerable<ArchivedProject> projects)
     {
-        return projects.Sum(ap => 
-            (ap.Name?.Length ?? 0) + 
-            (ap.Description?.Length ?? 0) + 
+        return projects.Sum(ap =>
+            (ap.Name?.Length ?? 0) +
+            (ap.Description?.Length ?? 0) +
             (ap.TasksJson?.Length ?? 0) +
             (ap.ContactsJson?.Length ?? 0) +
             (ap.MetadataJson?.Length ?? 0) +
             1000); // Base archived project size estimate
     }
 
-    private async Task<long> CalculateStorageUsageAsync(IQueryable<ArchivedTask> taskQuery, IQueryable<ArchivedProject> projectQuery, CancellationToken cancellationToken)
+    private async Task<long> CalculateStorageUsageAsync(IQueryable<ArchivedAppTask> taskQuery, IQueryable<ArchivedProject> projectQuery, CancellationToken cancellationToken)
     {
         // This is a rough estimate - in production you might want more accurate calculations
         var taskCount = await taskQuery.CountAsync(cancellationToken);
         var projectCount = await projectQuery.CountAsync(cancellationToken);
-        
+
         return (taskCount * 2000L) + (projectCount * 5000L); // Estimated average sizes
     }
 }

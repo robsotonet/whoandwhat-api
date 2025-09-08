@@ -15,7 +15,7 @@ public interface ITaskSearchRepository
     /// <param name="criteria">Search criteria including query, filters, and pagination</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Search results with relevance scoring and pagination metadata</returns>
-    public Task<TaskSearchResult> SearchTasksAsync(Guid userId, TaskSearchCriteria criteria, CancellationToken cancellationToken = default);
+    public Task<TaskSearchResult> SearchTasksAsync(Guid userId, AppTaskSearchCriteria criteria, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Gets search suggestions and auto-completion for a partial query
@@ -53,7 +53,7 @@ public interface ITaskSearchRepository
     /// <param name="fromCache">Whether results came from cache</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Task representing the async operation</returns>
-    public Task RecordSearchQueryAsync(Guid userId, TaskSearchCriteria criteria, int resultCount, TimeSpan duration, bool fromCache, CancellationToken cancellationToken = default);
+    public Task RecordSearchQueryAsync(Guid userId, AppTaskSearchCriteria criteria, int resultCount, TimeSpan duration, bool fromCache, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Validates that the search infrastructure is properly configured

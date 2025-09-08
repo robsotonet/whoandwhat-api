@@ -17,17 +17,17 @@ public class AppTaskWorkflowService
     /// <param name="targetStatus">Target status</param>
     /// <param name="subtasks">Collection of subtasks for validation</param>
     /// <returns>Validation result indicating success or failure</returns>
-    public ValidationResult TransitionAppTaskStatus(DomainAppTask task, DomainAppTaskStatus targetStatus, IEnumerable<DomainTask>? subtasks = null)
+    public ValidationResult TransitionAppTaskStatus(DomainTask task, DomainTaskStatus targetStatus, IEnumerable<DomainTask>? subtasks = null)
     {
-        var currentStatus = DomainAppTaskStatus.FromValue(task.Status);
+        var currentStatus = DomainTaskStatus.FromValue(task.Status);
         var category = AppTaskCategory.FromValue(task.Category);
-        
+
         // Check if basic transition is allowed
         var transitionValidation = currentStatus.ValidateTransition(
-            targetStatus, 
-            subtasks?.Any(s => DomainAppTaskStatus.FromValue(s.Status).IsActive()) ?? false,
+            targetStatus,
+            subtasks?.Any(s => DomainTaskStatus.FromValue(s.Status).IsActive()) ?? false,
             category);
-            
+
         if (!transitionValidation.IsValid)
         {
             return transitionValidation;
@@ -37,7 +37,7 @@ public class AppTaskWorkflowService
         var errors = new List<string>();
 
         // Validate completion requirements
-        if (targetStatus == DomainAppTaskStatus.Completed)
+        if (targetStatus == DomainTaskStatus.Completed)
         {
             var completionValidation = ValidateTaskCompletion(task, category, subtasks);
             if (!completionValidation.IsValid)
@@ -47,7 +47,7 @@ public class AppTaskWorkflowService
         }
 
         // Validate archival requirements
-        if (targetStatus == DomainAppTaskStatus.Archived)
+        if (targetStatus == DomainTaskStatus.Archived)
         {
             var archivalValidation = ValidateTaskArchival(task, currentStatus);
             if (!archivalValidation.IsValid)
@@ -56,7 +56,7 @@ public class AppTaskWorkflowService
             }
         }
 
-        return errors.Any() 
+        return errors.Any()
             ? ValidationResult.Failure(errors.ToArray())
             : ValidationResult.Success();
     }
@@ -64,7 +64,7 @@ public class AppTaskWorkflowService
     /// <summary>
     /// Validates if a task can be completed based on business rules
     /// </summary>
-    private ValidationResult ValidateTaskCompletion(DomainAppTask task, AppTaskCategory category, IEnumerable<DomainTask>? subtasks = null)
+    private ValidationResult ValidateTaskCompletion(DomainTask task, AppTaskCategory category, IEnumerable<DomainTask>? subtasks = null)
     {
         var errors = new List<string>();
 
@@ -89,14 +89,14 @@ public class AppTaskWorkflowService
         // Project completion rules
         if (category == AppTaskCategory.Project && subtasks != null)
         {
-            var activeSubtasks = subtasks.Where(s => DomainAppTaskStatus.FromValue(s.Status).IsActive()).ToList();
+            var activeSubtasks = subtasks.Where(s => DomainTaskStatus.FromValue(s.Status).IsActive()).ToList();
             if (activeSubtasks.Any())
             {
                 errors.Add($"Cannot complete project while {activeSubtasks.Count} subtasks are still active");
             }
         }
 
-        return errors.Any() 
+        return errors.Any()
             ? ValidationResult.Failure(errors.ToArray())
             : ValidationResult.Success();
     }
@@ -104,14 +104,14 @@ public class AppTaskWorkflowService
     /// <summary>
     /// Validates if a task can be archived based on business rules
     /// </summary>
-    private ValidationResult ValidateTaskArchival(DomainAppTask task, DomainAppTaskStatus currentStatus)
+    private ValidationResult ValidateTaskArchival(DomainTask task, DomainTaskStatus currentStatus)
     {
         var errors = new List<string>();
 
-        if (currentStatus != DomainAppTaskStatus.Completed)
+        if (currentStatus != DomainTaskStatus.Completed)
         {
             // Allow archiving of very old pending tasks
-            if (currentStatus == DomainAppTaskStatus.Pending && task.CreatedAt < DateTime.UtcNow.AddMonths(-6))
+            if (currentStatus == DomainTaskStatus.Pending && task.CreatedAt < DateTime.UtcNow.AddMonths(-6))
             {
                 // This is acceptable - old pending tasks can be archived
             }
@@ -121,7 +121,7 @@ public class AppTaskWorkflowService
             }
         }
 
-        return errors.Any() 
+        return errors.Any()
             ? ValidationResult.Failure(errors.ToArray())
             : ValidationResult.Success();
     }
@@ -131,13 +131,13 @@ public class AppTaskWorkflowService
     /// </summary>
     /// <param name="tasks">Collection of tasks to evaluate</param>
     /// <returns>Collection of tasks that should be updated with their new status</returns>
-    public IEnumerable<(DomainAppTask Task, DomainAppTaskStatus NewStatus)> AutoManageAppTaskStatuses(IEnumerable<DomainTask> tasks)
+    public IEnumerable<(DomainTask Task, DomainTaskStatus NewStatus)> AutoManageAppTaskStatuses(IEnumerable<DomainTask> tasks)
     {
-        var updates = new List<(DomainTask, DomainAppTaskStatus)>();
+        var updates = new List<(DomainTask, DomainTaskStatus)>();
 
         foreach (var task in tasks)
         {
-            var currentStatus = DomainAppTaskStatus.FromValue(task.Status);
+            var currentStatus = DomainTaskStatus.FromValue(task.Status);
             var category = AppTaskCategory.FromValue(task.Category);
 
             // Skip if already completed or archived
@@ -147,22 +147,22 @@ public class AppTaskWorkflowService
             }
 
             // Auto-complete appointments that have passed
-            if (category == AppTaskCategory.Appointment && 
-                task.DueDate.HasValue && 
+            if (category == AppTaskCategory.Appointment &&
+                task.DueDate.HasValue &&
                 task.DueDate.Value.AddHours(2) < DateTime.UtcNow) // 2-hour grace period
             {
-                updates.Add((task, DomainAppTaskStatus.Completed));
+                updates.Add((task, DomainTaskStatus.Completed));
             }
-            
+
             // Auto-archive old completed tasks based on category
-            if (currentStatus == DomainAppTaskStatus.Completed && category.ShouldAutoArchive())
+            if (currentStatus == DomainTaskStatus.Completed && category.ShouldAutoArchive())
             {
                 var daysSinceCompletion = (DateTime.UtcNow - task.UpdatedAt).TotalDays;
                 var autoArchiveDays = GetAutoArchiveDays(category);
-                
+
                 if (daysSinceCompletion > autoArchiveDays)
                 {
-                    updates.Add((task, DomainAppTaskStatus.Archived));
+                    updates.Add((task, DomainTaskStatus.Archived));
                 }
             }
         }
@@ -185,7 +185,7 @@ public class AppTaskWorkflowService
     /// </summary>
     /// <param name="tasks">Tasks to evaluate for priority escalation</param>
     /// <returns>Collection of tasks with suggested priority escalations</returns>
-    public IEnumerable<(DomainAppTask Task, Priority SuggestedPriority)> SuggestPriorityEscalations(IEnumerable<DomainTask> tasks)
+    public IEnumerable<(DomainTask Task, Priority SuggestedPriority)> SuggestPriorityEscalations(IEnumerable<DomainTask> tasks)
     {
         var escalations = new List<(DomainTask, Priority)>();
 
@@ -223,7 +223,7 @@ public class AppTaskWorkflowService
     /// <param name="parentTask">Parent task</param>
     /// <param name="subtasks">Collection of subtasks</param>
     /// <returns>Validation result for task dependencies</returns>
-    public ValidationResult ValidateTaskDependencies(DomainAppTask parentTask, IEnumerable<DomainTask> subtasks)
+    public ValidationResult ValidateTaskDependencies(DomainTask parentTask, IEnumerable<DomainTask> subtasks)
     {
         var errors = new List<string>();
         var parentCategory = AppTaskCategory.FromValue(parentTask.Category);
@@ -252,7 +252,7 @@ public class AppTaskWorkflowService
             errors.Add("Subtasks should not have higher priority than their parent task");
         }
 
-        return errors.Any() 
+        return errors.Any()
             ? ValidationResult.Failure(errors.ToArray())
             : ValidationResult.Success();
     }
@@ -263,16 +263,16 @@ public class AppTaskWorkflowService
     /// <param name="task">AppTask to score</param>
     /// <param name="subtasks">Optional subtasks for calculation</param>
     /// <returns>Completion score between 0 and 100</returns>
-    public double CalculateTaskCompletionScore(DomainAppTask task, IEnumerable<DomainTask>? subtasks = null)
+    public double CalculateTaskCompletionScore(DomainTask task, IEnumerable<DomainTask>? subtasks = null)
     {
-        var status = DomainAppTaskStatus.FromValue(task.Status);
-        
-        if (status == DomainAppTaskStatus.Completed)
+        var status = DomainTaskStatus.FromValue(task.Status);
+
+        if (status == DomainTaskStatus.Completed)
         {
             return 100.0;
         }
-            
-        if (status == DomainAppTaskStatus.Archived)
+
+        if (status == DomainTaskStatus.Archived)
         {
             return 100.0;
         }
@@ -280,7 +280,7 @@ public class AppTaskWorkflowService
         var score = 0.0;
 
         // Base score from status
-        score += status == DomainAppTaskStatus.InProgress ? 50.0 : 0.0;
+        score += status == DomainTaskStatus.InProgress ? 50.0 : 0.0;
 
         // Score from subtask completion
         if (subtasks?.Any() == true)
@@ -296,12 +296,34 @@ public class AppTaskWorkflowService
         }
 
         // Adjust for task age (older in-progress tasks get higher scores)
-        if (status == DomainAppTaskStatus.InProgress)
+        if (status == DomainTaskStatus.InProgress)
         {
             var daysInProgress = (DateTime.UtcNow - task.UpdatedAt).TotalDays;
             score += Math.Min(daysInProgress * 2, 20); // Up to 20 points for age
         }
 
         return Math.Min(score, 100.0);
+    }
+
+    /// <summary>
+    /// Transitions a task status (alias for TransitionAppTaskStatus for backwards compatibility)
+    /// </summary>
+    /// <param name="task">Task to transition</param>
+    /// <param name="targetStatus">Target status</param>
+    /// <param name="subtasks">Collection of subtasks for validation</param>
+    /// <returns>Validation result indicating success or failure</returns>
+    public ValidationResult TransitionTaskStatus(DomainTask task, DomainTaskStatus targetStatus, IEnumerable<DomainTask>? subtasks = null)
+    {
+        return TransitionAppTaskStatus(task, targetStatus, subtasks);
+    }
+
+    /// <summary>
+    /// Auto-manages task statuses (alias for AutoManageAppTaskStatuses for backwards compatibility)
+    /// </summary>
+    /// <param name="tasks">Collection of tasks to evaluate</param>
+    /// <returns>Collection of tasks that should be updated with their new status</returns>
+    public IEnumerable<(DomainTask Task, DomainTaskStatus NewStatus)> AutoManageTaskStatuses(IEnumerable<DomainTask> tasks)
+    {
+        return AutoManageAppTaskStatuses(tasks);
     }
 }

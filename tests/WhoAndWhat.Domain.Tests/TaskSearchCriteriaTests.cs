@@ -5,15 +5,15 @@ using Xunit;
 namespace WhoAndWhat.Domain.Tests;
 
 /// <summary>
-/// Unit tests for TaskSearchCriteria value object
+/// Unit tests for AppTaskSearchCriteria value object
 /// </summary>
-public class TaskSearchCriteriaTests
+public class AppTaskSearchCriteriaTests
 {
     [Fact]
-    public void TaskSearchCriteria_WithValidDefaults_ShouldHaveCorrectValues()
+    public void AppTaskSearchCriteria_WithValidDefaults_ShouldHaveCorrectValues()
     {
         // Arrange & Act
-        var criteria = new TaskSearchCriteria();
+        var criteria = new AppTaskSearchCriteria();
 
         // Assert
         criteria.Query.Should().BeEmpty();
@@ -29,10 +29,10 @@ public class TaskSearchCriteriaTests
     [InlineData("")]
     [InlineData(" ")]
     [InlineData("a")] // Too short
-    public void TaskSearchCriteria_WithInvalidQuery_ShouldFailValidation(string query)
+    public void AppTaskSearchCriteria_WithInvalidQuery_ShouldFailValidation(string query)
     {
         // Arrange
-        var criteria = new TaskSearchCriteria { Query = query };
+        var criteria = new AppTaskSearchCriteria { Query = query };
 
         // Act
         var errors = criteria.Validate();
@@ -42,11 +42,11 @@ public class TaskSearchCriteriaTests
     }
 
     [Fact]
-    public void TaskSearchCriteria_WithTooLongQuery_ShouldFailValidation()
+    public void AppTaskSearchCriteria_WithTooLongQuery_ShouldFailValidation()
     {
         // Arrange
         var longQuery = new string('a', 201); // Exceeds 200 character limit
-        var criteria = new TaskSearchCriteria { Query = longQuery };
+        var criteria = new AppTaskSearchCriteria { Query = longQuery };
 
         // Act
         var errors = criteria.Validate();
@@ -58,10 +58,10 @@ public class TaskSearchCriteriaTests
     [Theory]
     [InlineData(0)]
     [InlineData(-1)]
-    public void TaskSearchCriteria_WithInvalidPageNumber_ShouldFailValidation(int pageNumber)
+    public void AppTaskSearchCriteria_WithInvalidPageNumber_ShouldFailValidation(int pageNumber)
     {
         // Arrange
-        var criteria = new TaskSearchCriteria { PageNumber = pageNumber };
+        var criteria = new AppTaskSearchCriteria { PageNumber = pageNumber };
 
         // Act
         var errors = criteria.Validate();
@@ -73,23 +73,23 @@ public class TaskSearchCriteriaTests
     [Theory]
     [InlineData(0)]
     [InlineData(101)] // Exceeds max page size
-    public void TaskSearchCriteria_WithInvalidPageSize_ShouldFailValidation(int pageSize)
+    public void AppTaskSearchCriteria_WithInvalidPageSize_ShouldFailValidation(int pageSize)
     {
         // Arrange
-        var criteria = new TaskSearchCriteria { PageSize = pageSize };
+        var criteria = new AppTaskSearchCriteria { PageSize = pageSize };
 
         // Act
         var errors = criteria.Validate();
 
         // Assert
-        errors.Should().Contain(e => e.Contains($"Page size must be between 1 and {TaskSearchCriteria.MaxPageSize}"));
+        errors.Should().Contain(e => e.Contains($"Page size must be between 1 and {AppTaskSearchCriteria.MaxPageSize}"));
     }
 
     [Fact]
-    public void TaskSearchCriteria_WithInvalidDateRange_ShouldFailValidation()
+    public void AppTaskSearchCriteria_WithInvalidDateRange_ShouldFailValidation()
     {
         // Arrange
-        var criteria = new TaskSearchCriteria
+        var criteria = new AppTaskSearchCriteria
         {
             DueDateFrom = DateTime.Today.AddDays(1),
             DueDateTo = DateTime.Today
@@ -103,10 +103,10 @@ public class TaskSearchCriteriaTests
     }
 
     [Fact]
-    public void TaskSearchCriteria_WithInvalidCreatedDateRange_ShouldFailValidation()
+    public void AppTaskSearchCriteria_WithInvalidCreatedDateRange_ShouldFailValidation()
     {
         // Arrange
-        var criteria = new TaskSearchCriteria
+        var criteria = new AppTaskSearchCriteria
         {
             CreatedAfter = DateTime.Today.AddDays(1),
             CreatedBefore = DateTime.Today
@@ -120,10 +120,10 @@ public class TaskSearchCriteriaTests
     }
 
     [Fact]
-    public void TaskSearchCriteria_Normalize_ShouldClampValues()
+    public void AppTaskSearchCriteria_Normalize_ShouldClampValues()
     {
         // Arrange
-        var criteria = new TaskSearchCriteria
+        var criteria = new AppTaskSearchCriteria
         {
             Query = "  test query  ",
             PageNumber = 0,
@@ -136,7 +136,7 @@ public class TaskSearchCriteriaTests
         // Assert
         normalized.Query.Should().Be("test query");
         normalized.PageNumber.Should().Be(1);
-        normalized.PageSize.Should().Be(TaskSearchCriteria.MaxPageSize);
+        normalized.PageSize.Should().Be(AppTaskSearchCriteria.MaxPageSize);
     }
 
     [Theory]
@@ -145,54 +145,54 @@ public class TaskSearchCriteriaTests
     [InlineData("a", false)]
     [InlineData("", false)]
     [InlineData(" ", false)]
-    public void TaskSearchCriteria_IsFullTextSearch_ShouldReturnCorrectValue(string query, bool expected)
+    public void AppTaskSearchCriteria_IsFullTextSearch_ShouldReturnCorrectValue(string query, bool expected)
     {
         // Arrange
-        var criteria = new TaskSearchCriteria { Query = query };
+        var criteria = new AppTaskSearchCriteria { Query = query };
 
         // Act & Assert
         criteria.IsFullTextSearch.Should().Be(expected);
     }
 
     [Fact]
-    public void TaskSearchCriteria_HasFilters_WithNoFilters_ShouldReturnFalse()
+    public void AppTaskSearchCriteria_HasFilters_WithNoFilters_ShouldReturnFalse()
     {
         // Arrange
-        var criteria = new TaskSearchCriteria();
+        var criteria = new AppTaskSearchCriteria();
 
         // Act & Assert
         criteria.HasFilters.Should().BeFalse();
     }
 
     [Fact]
-    public void TaskSearchCriteria_HasFilters_WithFilters_ShouldReturnTrue()
+    public void AppTaskSearchCriteria_HasFilters_WithFilters_ShouldReturnTrue()
     {
         // Arrange
-        var criteria = new TaskSearchCriteria { Category = TaskCategory.ToDo };
+        var criteria = new AppTaskSearchCriteria { Category = AppTaskCategory.ToDo };
 
         // Act & Assert
         criteria.HasFilters.Should().BeTrue();
     }
 
     [Fact]
-    public void TaskSearchCriteria_Offset_ShouldCalculateCorrectly()
+    public void AppTaskSearchCriteria_Offset_ShouldCalculateCorrectly()
     {
         // Arrange
-        var criteria = new TaskSearchCriteria { PageNumber = 3, PageSize = 10 };
+        var criteria = new AppTaskSearchCriteria { PageNumber = 3, PageSize = 10 };
 
         // Act & Assert
         criteria.Offset.Should().Be(20); // (3-1) * 10
     }
 
     [Fact]
-    public void TaskSearchCriteria_GetCacheKey_ShouldGenerateConsistentKey()
+    public void AppTaskSearchCriteria_GetCacheKey_ShouldGenerateConsistentKey()
     {
         // Arrange
         var userId = Guid.NewGuid();
-        var criteria = new TaskSearchCriteria
+        var criteria = new AppTaskSearchCriteria
         {
             Query = "test",
-            Category = TaskCategory.ToDo,
+            Category = AppTaskCategory.ToDo,
             PageNumber = 1,
             PageSize = 20
         };
@@ -207,12 +207,12 @@ public class TaskSearchCriteriaTests
     }
 
     [Fact]
-    public void TaskSearchCriteria_GetCacheKey_ShouldGenerateDifferentKeysForDifferentCriteria()
+    public void AppTaskSearchCriteria_GetCacheKey_ShouldGenerateDifferentKeysForDifferentCriteria()
     {
         // Arrange
         var userId = Guid.NewGuid();
-        var criteria1 = new TaskSearchCriteria { Query = "test1" };
-        var criteria2 = new TaskSearchCriteria { Query = "test2" };
+        var criteria1 = new AppTaskSearchCriteria { Query = "test1" };
+        var criteria2 = new AppTaskSearchCriteria { Query = "test2" };
 
         // Act
         var key1 = criteria1.GetCacheKey(userId);

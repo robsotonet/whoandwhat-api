@@ -13,7 +13,7 @@ public interface IEmailService
     /// <param name="resetToken">Password reset token</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>True if email was sent successfully</returns>
-    Task<bool> SendPasswordResetEmailAsync(string email, string username, string resetToken, CancellationToken cancellationToken = default);
+    public Task<bool> SendPasswordResetEmailAsync(string email, string username, string resetToken, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Send email verification email with verification token
@@ -24,7 +24,7 @@ public interface IEmailService
     /// <param name="userId">User ID for verification link</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>True if email was sent successfully</returns>
-    Task<bool> SendEmailVerificationAsync(string email, string username, string verificationToken, Guid userId, CancellationToken cancellationToken = default);
+    public Task<bool> SendEmailVerificationAsync(string email, string username, string verificationToken, Guid userId, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Send welcome email to new users
@@ -33,7 +33,7 @@ public interface IEmailService
     /// <param name="username">Username for personalization</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>True if email was sent successfully</returns>
-    Task<bool> SendWelcomeEmailAsync(string email, string username, CancellationToken cancellationToken = default);
+    public Task<bool> SendWelcomeEmailAsync(string email, string username, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Send account locked notification email
@@ -43,7 +43,7 @@ public interface IEmailService
     /// <param name="lockedUntil">When the account will be unlocked</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>True if email was sent successfully</returns>
-    Task<bool> SendAccountLockedEmailAsync(string email, string username, DateTime lockedUntil, CancellationToken cancellationToken = default);
+    public Task<bool> SendAccountLockedEmailAsync(string email, string username, DateTime lockedUntil, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Send password changed notification email
@@ -52,7 +52,7 @@ public interface IEmailService
     /// <param name="username">Username for personalization</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>True if email was sent successfully</returns>
-    Task<bool> SendPasswordChangedEmailAsync(string email, string username, CancellationToken cancellationToken = default);
+    public Task<bool> SendPasswordChangedEmailAsync(string email, string username, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Send generic email with custom content
@@ -63,12 +63,12 @@ public interface IEmailService
     /// <param name="plainTextContent">Plain text email content (optional)</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>True if email was sent successfully</returns>
-    Task<bool> SendEmailAsync(string to, string subject, string htmlContent, string? plainTextContent = null, CancellationToken cancellationToken = default);
+    public Task<bool> SendEmailAsync(string to, string subject, string htmlContent, string? plainTextContent = null, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Check if email service is properly configured and available
     /// </summary>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>True if email service is ready to send emails</returns>
-    Task<bool> IsEmailServiceAvailableAsync(CancellationToken cancellationToken = default);
+    public Task<bool> IsEmailServiceAvailableAsync(CancellationToken cancellationToken = default);
 }

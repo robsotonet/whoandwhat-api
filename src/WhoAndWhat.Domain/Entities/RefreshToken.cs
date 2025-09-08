@@ -14,8 +14,8 @@ public class RefreshToken : BaseEntity
     // Navigation property
     public User User { get; set; } = null!;
 
-    private RefreshToken() 
-    { 
+    private RefreshToken()
+    {
         Token = string.Empty;
         CreatedByIp = string.Empty;
     }
