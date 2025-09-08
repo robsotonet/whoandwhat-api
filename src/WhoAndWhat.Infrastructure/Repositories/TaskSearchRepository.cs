@@ -53,8 +53,8 @@ public class TaskSearchRepository : ITaskSearchRepository
             // Apply full-text search if query is provided
             if (normalizedCriteria.IsFullTextSearch)
             {
-                var language = GetSearchLanguage(normalizedCriteria.Query);
-                query = ApplyFullTextSearch(query, normalizedCriteria.Query, language);
+                var language = GetSearchLanguage(normalizedCriteria.SearchTerm);
+                query = ApplyFullTextSearch(query, normalizedCriteria.SearchTerm, language);
             }
 
             // Apply filters
@@ -73,7 +73,7 @@ public class TaskSearchRepository : ITaskSearchRepository
             List<TaskSearchItem> searchItems;
             if (normalizedCriteria.IsFullTextSearch)
             {
-                searchItems = await ExecuteFullTextSearchQuery(paginatedQuery, normalizedCriteria.Query, cancellationToken);
+                searchItems = await ExecuteFullTextSearchQuery(paginatedQuery, normalizedCriteria.SearchTerm, cancellationToken);
             }
             else
             {
@@ -92,7 +92,7 @@ public class TaskSearchRepository : ITaskSearchRepository
                 normalizedCriteria.PageNumber,
                 normalizedCriteria.PageSize,
                 stopwatch.Elapsed,
-                normalizedCriteria.Query,
+                normalizedCriteria.SearchTerm,
                 new SearchResultMetadata
                 {
                     FromCache = false,
@@ -109,8 +109,8 @@ public class TaskSearchRepository : ITaskSearchRepository
         catch (Exception ex)
         {
             stopwatch.Stop();
-            _logger.LogError(ex, "Error executing task search for user {UserId} with query: {Query}", userId, normalizedCriteria.Query);
-            return TaskSearchResult.Empty(normalizedCriteria.Query, stopwatch.Elapsed);
+            _logger.LogError(ex, "Error executing task search for user {UserId} with query: {Query}", userId, normalizedCriteria.SearchTerm);
+            return TaskSearchResult.Empty(normalizedCriteria.SearchTerm, stopwatch.Elapsed);
         }
     }
 
