@@ -5,6 +5,8 @@ using WhoAndWhat.Application.DTOs.Tasks;
 using WhoAndWhat.Application.Interfaces;
 using WhoAndWhat.Domain.ValueObjects;
 using DomainTask = WhoAndWhat.Domain.Entities.Task;
+using DomainTaskStatus = WhoAndWhat.Domain.ValueObjects.TaskStatus;
+using SystemTask = System.Threading.Tasks.Task;
 
 namespace WhoAndWhat.Application.Features.Tasks.Queries.GetTask;
 
@@ -47,7 +49,7 @@ public class GetTaskQueryHandler : IRequestHandler<GetTaskQuery, Result<TaskDto>
     private static TaskDto MapToDto(DomainTask task)
     {
         var category = TaskCategory.FromValue(task.Category);
-        var status = TaskStatus.FromValue(task.Status);
+        var status = DomainTaskStatus.FromValue(task.Status);
         var priority = Priority.FromValue(task.Priority);
 
         return new TaskDto

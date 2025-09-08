@@ -501,9 +501,6 @@ public static class CategorySpecificValidators
 /// </summary>
 public class ValidationResult : WhoAndWhat.Domain.Common.ValidationResult
 {
-    public List<string> WarningMessages { get; set; } = new();
-
-    public bool HasWarnings => WarningMessages.Any();
 
     public string GetAllMessages()
     {

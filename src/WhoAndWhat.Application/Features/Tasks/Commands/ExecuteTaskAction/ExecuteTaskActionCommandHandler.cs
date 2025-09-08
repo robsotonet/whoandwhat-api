@@ -6,6 +6,8 @@ using WhoAndWhat.Application.Interfaces;
 using WhoAndWhat.Domain.Services;
 using WhoAndWhat.Domain.ValueObjects;
 using DomainTask = WhoAndWhat.Domain.Entities.Task;
+using DomainTaskStatus = WhoAndWhat.Domain.ValueObjects.TaskStatus;
+using SystemTask = System.Threading.Tasks.Task;
 
 namespace WhoAndWhat.Application.Features.Tasks.Commands.ExecuteTaskAction;
 
@@ -72,7 +74,7 @@ public class ExecuteTaskActionCommandHandler : IRequestHandler<ExecuteTaskAction
             {
                 foreach (var createdTask in workflowResult.CreatedTasks)
                 {
-                    await _taskRepository.CreateAsync(createdTask);
+                    await _taskRepository.AddAsync(createdTask);
                 }
                 await _taskRepository.SaveChangesAsync();
             }
@@ -95,7 +97,7 @@ public class ExecuteTaskActionCommandHandler : IRequestHandler<ExecuteTaskAction
     private static TaskDto MapToDto(DomainTask task)
     {
         var category = TaskCategory.FromValue(task.Category);
-        var status = TaskStatus.FromValue(task.Status);
+        var status = DomainTaskStatus.FromValue(task.Status);
         var priority = Priority.FromValue(task.Priority);
 
         return new TaskDto

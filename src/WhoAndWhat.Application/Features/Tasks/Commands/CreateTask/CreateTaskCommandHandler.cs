@@ -7,6 +7,8 @@ using WhoAndWhat.Domain.Entities;
 using WhoAndWhat.Domain.Services;
 using WhoAndWhat.Domain.ValueObjects;
 using DomainTask = WhoAndWhat.Domain.Entities.Task;
+using DomainTaskStatus = WhoAndWhat.Domain.ValueObjects.TaskStatus;
+using SystemTask = System.Threading.Tasks.Task;
 
 namespace WhoAndWhat.Application.Features.Tasks.Commands.CreateTask;
 
@@ -41,7 +43,7 @@ public class CreateTaskCommandHandler : IRequestHandler<CreateTaskCommand, Resul
                 Description = request.Description,
                 Category = request.Category,
                 Priority = request.Priority,
-                Status = (int)TaskStatus.Pending,
+                Status = (int)DomainTaskStatus.Pending,
                 DueDate = request.DueDate,
                 ParentTaskId = request.ParentTaskId,
                 CreatedAt = DateTime.UtcNow,
@@ -80,7 +82,7 @@ public class CreateTaskCommandHandler : IRequestHandler<CreateTaskCommand, Resul
             }
 
             // Save task
-            await _taskRepository.CreateAsync(task);
+            await _taskRepository.AddAsync(task);
             await _taskRepository.SaveChangesAsync();
 
             _logger.LogInformation("Created task {TaskId} with title '{Title}' for user {UserId}", 
@@ -100,7 +102,7 @@ public class CreateTaskCommandHandler : IRequestHandler<CreateTaskCommand, Resul
     private static TaskDto MapToDto(DomainTask task)
     {
         var category = TaskCategory.FromValue(task.Category);
-        var status = TaskStatus.FromValue(task.Status);
+        var status = DomainTaskStatus.FromValue(task.Status);
         var priority = Priority.FromValue(task.Priority);
 
         return new TaskDto

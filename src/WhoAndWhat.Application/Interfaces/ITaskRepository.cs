@@ -24,6 +24,14 @@ public interface ITaskRepository : IRepository<DomainTask>
     Task<DomainTask?> GetTaskWithSubtasksAsync(Guid taskId, Guid userId, CancellationToken cancellationToken = default);
     
     /// <summary>
+    /// Gets a task by ID with subtasks loaded (alternative method name for compatibility)
+    /// </summary>
+    /// <param name="taskId">The task ID</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Task with subtasks or null if not found</returns>
+    Task<DomainTask?> GetByIdWithSubtasksAsync(Guid taskId, CancellationToken cancellationToken = default);
+    
+    /// <summary>
     /// Gets all tasks belonging to a specific project
     /// </summary>
     /// <param name="projectId">The project ID</param>
@@ -175,6 +183,18 @@ public interface ITaskRepository : IRepository<DomainTask>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Matching tasks</returns>
     Task<IEnumerable<DomainTask>> SearchTasksAsync(Guid userId, string searchTerm, int maxResults = 50, CancellationToken cancellationToken = default);
+    
+    /// <summary>
+    /// Searches tasks using advanced criteria with pagination
+    /// </summary>
+    /// <param name="searchCriteria">Search criteria</param>
+    /// <param name="pageNumber">Page number (1-based)</param>
+    /// <param name="pageSize">Page size</param>
+    /// <param name="sortBy">Sort field name</param>
+    /// <param name="sortDescending">Sort direction</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Paged search results</returns>
+    Task<PagedResult<DomainTask>> SearchAsync(TaskSearchCriteria searchCriteria, int pageNumber, int pageSize, string sortBy, bool sortDescending, CancellationToken cancellationToken = default);
     
     #endregion
     

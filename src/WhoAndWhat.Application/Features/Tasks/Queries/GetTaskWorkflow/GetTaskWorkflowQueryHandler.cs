@@ -5,6 +5,9 @@ using WhoAndWhat.Application.DTOs.Tasks;
 using WhoAndWhat.Application.Interfaces;
 using WhoAndWhat.Domain.Services;
 using WhoAndWhat.Domain.ValueObjects;
+using DomainTask = WhoAndWhat.Domain.Entities.Task;
+using DomainTaskStatus = WhoAndWhat.Domain.ValueObjects.TaskStatus;
+using SystemTask = System.Threading.Tasks.Task;
 
 namespace WhoAndWhat.Application.Features.Tasks.Queries.GetTaskWorkflow;
 
@@ -37,7 +40,7 @@ public class GetTaskWorkflowQueryHandler : IRequestHandler<GetTaskWorkflowQuery,
                 return Result<TaskWorkflowStateDto>.Failure("Task not found");
             }
 
-            var currentStatus = TaskStatus.FromValue(task.Status);
+            var currentStatus = DomainTaskStatus.FromValue(task.Status);
             var recommendedStatus = _categoryBusinessRuleService.GetRecommendedNextStatus(task);
             var availableActions = _categoryBusinessRuleService.GetAvailableActions(task);
             var workflowState = _categoryWorkflowService.GetWorkflowState(task);

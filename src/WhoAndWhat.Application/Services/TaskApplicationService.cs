@@ -174,8 +174,8 @@ public class TaskApplicationService : ITaskApplicationService
                     Name = cm.Category.Name,
                     DisplayName = cm.Category.GetDisplayName(),
                     Description = cm.Category.Description,
-                    RequiresDueDate = cm.Category.RequiresDueDate(),
-                    AllowsSubtasks = cm.Category.AllowsSubtasks()
+                    RequiresDueDate = cm.Category.RequiresDueDate,
+                    AllowsSubtasks = cm.Category.AllowsSubtasks
                 },
                 TotalTasks = cm.TotalTasks,
                 CompletedTasks = cm.CompletedTasks,

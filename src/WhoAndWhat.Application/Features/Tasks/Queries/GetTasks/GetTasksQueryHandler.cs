@@ -7,6 +7,8 @@ using WhoAndWhat.Application.Interfaces;
 using WhoAndWhat.Domain.Common;
 using WhoAndWhat.Domain.ValueObjects;
 using DomainTask = WhoAndWhat.Domain.Entities.Task;
+using DomainTaskStatus = WhoAndWhat.Domain.ValueObjects.TaskStatus;
+using SystemTask = System.Threading.Tasks.Task;
 
 namespace WhoAndWhat.Application.Features.Tasks.Queries.GetTasks;
 
@@ -55,14 +57,11 @@ public class GetTasksQueryHandler : IRequestHandler<GetTasksQuery, Result<PagedR
 
             var taskDtos = pagedTasks.Items.Select(MapToDto).ToList();
 
-            var result = new PagedResult<TaskDto>
-            {
-                Items = taskDtos,
-                TotalCount = pagedTasks.TotalCount,
-                PageNumber = pagedTasks.PageNumber,
-                PageSize = pagedTasks.PageSize,
-                TotalPages = pagedTasks.TotalPages
-            };
+            var result = PagedResult<TaskDto>.Create(
+                taskDtos,
+                pagedTasks.TotalCount,
+                pagedTasks.PageNumber,
+                pagedTasks.PageSize);
 
             return Result<PagedResult<TaskDto>>.Success(result);
         }
@@ -76,7 +75,7 @@ public class GetTasksQueryHandler : IRequestHandler<GetTasksQuery, Result<PagedR
     private static TaskDto MapToDto(DomainTask task)
     {
         var category = TaskCategory.FromValue(task.Category);
-        var status = TaskStatus.FromValue(task.Status);
+        var status = DomainTaskStatus.FromValue(task.Status);
         var priority = Priority.FromValue(task.Priority);
 
         return new TaskDto

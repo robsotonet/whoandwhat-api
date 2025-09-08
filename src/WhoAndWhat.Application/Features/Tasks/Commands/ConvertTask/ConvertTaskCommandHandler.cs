@@ -6,6 +6,8 @@ using WhoAndWhat.Application.Interfaces;
 using WhoAndWhat.Domain.Services;
 using WhoAndWhat.Domain.ValueObjects;
 using DomainTask = WhoAndWhat.Domain.Entities.Task;
+using DomainTaskStatus = WhoAndWhat.Domain.ValueObjects.TaskStatus;
+using SystemTask = System.Threading.Tasks.Task;
 
 namespace WhoAndWhat.Application.Features.Tasks.Commands.ConvertTask;
 
@@ -91,9 +93,9 @@ public class ConvertTaskCommandHandler : IRequestHandler<ConvertTaskCommand, Res
     private void ApplyCategorySpecificChanges(DomainTask task, TaskCategory fromCategory, TaskCategory toCategory, bool createSubtasks)
     {
         // Reset status to Pending for most conversions
-        if (task.Status == (int)TaskStatus.Completed)
+        if (task.Status == (int)DomainTaskStatus.Completed)
         {
-            task.Status = (int)TaskStatus.Pending;
+            task.Status = (int)DomainTaskStatus.Pending;
         }
 
         // Category-specific adjustments
@@ -185,20 +187,20 @@ public class ConvertTaskCommandHandler : IRequestHandler<ConvertTaskCommand, Res
                 Title = taskTitle,
                 Category = (int)TaskCategory.ToDo,
                 Priority = (int)Priority.Medium,
-                Status = (int)TaskStatus.Pending,
+                Status = (int)DomainTaskStatus.Pending,
                 ParentTaskId = parentTask.Id,
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow
             };
 
-            await _taskRepository.CreateAsync(subtask);
+            await _taskRepository.AddAsync(subtask);
         }
     }
 
     private static TaskDto MapToDto(DomainTask task)
     {
         var category = TaskCategory.FromValue(task.Category);
-        var status = TaskStatus.FromValue(task.Status);
+        var status = DomainTaskStatus.FromValue(task.Status);
         var priority = Priority.FromValue(task.Priority);
 
         return new TaskDto

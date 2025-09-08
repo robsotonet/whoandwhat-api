@@ -2,6 +2,8 @@ using MediatR;
 using Microsoft.Extensions.Logging;
 using WhoAndWhat.Application.Common;
 using WhoAndWhat.Application.Interfaces;
+using DomainTask = WhoAndWhat.Domain.Entities.Task;
+using SystemTask = System.Threading.Tasks.Task;
 
 namespace WhoAndWhat.Application.Features.Tasks.Commands.DeleteTask;
 
@@ -31,7 +33,7 @@ public class DeleteTaskCommandHandler : IRequestHandler<DeleteTaskCommand, Resul
             if (request.HardDelete)
             {
                 // Hard delete - permanently remove from database
-                await _taskRepository.DeleteAsync(task.Id);
+                await _taskRepository.DeleteAsync(task);
                 _logger.LogInformation("Hard deleted task {TaskId} for user {UserId}", request.TaskId, request.UserId);
             }
             else

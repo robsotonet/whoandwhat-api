@@ -1,6 +1,7 @@
 using FluentValidation;
 using WhoAndWhat.Application.Features.Tasks.Commands.UpdateTask;
 using WhoAndWhat.Domain.ValueObjects;
+using DomainTaskStatus = WhoAndWhat.Domain.ValueObjects.TaskStatus;
 
 namespace WhoAndWhat.Application.Validators.Tasks;
 
@@ -73,7 +74,7 @@ public class UpdateTaskCommandValidator : AbstractValidator<UpdateTaskCommand>
         
         try
         {
-            TaskStatus.FromValue(status.Value);
+            DomainTaskStatus.FromValue(status.Value);
             return true;
         }
         catch

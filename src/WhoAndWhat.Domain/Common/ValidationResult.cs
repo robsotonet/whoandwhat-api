@@ -9,6 +9,11 @@ public class ValidationResult
     public List<string> Errors { get; set; } = new();
     public List<string> ErrorMessages { get => Errors; set => Errors = value; }
     public string ErrorMessage => string.Join("; ", Errors);
+    
+    public List<string> Warnings { get; set; } = new();
+    public List<string> WarningMessages { get => Warnings; set => Warnings = value; }
+    public bool HasWarnings => Warnings.Any();
+    public string WarningMessage => string.Join("; ", Warnings);
 
     /// <summary>
     /// Creates a successful validation result
@@ -31,5 +36,33 @@ public class ValidationResult
     {
         IsValid = false,
         Errors = errors.ToList()
+    };
+
+    /// <summary>
+    /// Creates a successful validation result with warnings
+    /// </summary>
+    public static ValidationResult SuccessWithWarnings(params string[] warnings) => new()
+    {
+        IsValid = true,
+        Warnings = warnings.ToList()
+    };
+
+    /// <summary>
+    /// Creates a successful validation result with warning collection
+    /// </summary>
+    public static ValidationResult SuccessWithWarnings(IEnumerable<string> warnings) => new()
+    {
+        IsValid = true,
+        Warnings = warnings.ToList()
+    };
+
+    /// <summary>
+    /// Creates a failed validation result with both errors and warnings
+    /// </summary>
+    public static ValidationResult FailureWithWarnings(IEnumerable<string> errors, IEnumerable<string> warnings) => new()
+    {
+        IsValid = false,
+        Errors = errors.ToList(),
+        Warnings = warnings.ToList()
     };
 }
