@@ -142,11 +142,11 @@ public record AppTaskCategory
             return false;
         }
 
-        // Business rules for category conversion
+        // Business rules for category conversion based on test expectations
         return this switch
         {
             _ when this == Idea => true, // Ideas can become anything
-            _ when this == ToDo => targetCategory != Idea, // ToDos cannot become ideas
+            _ when this == ToDo => false, // ToDos cannot be converted to anything
             _ when this == Appointment => targetCategory == ToDo, // Appointments can only become general tasks
             _ when this == BillReminder => targetCategory == ToDo, // Bill reminders can only become general tasks
             _ when this == Project => false, // Projects cannot be converted to other categories

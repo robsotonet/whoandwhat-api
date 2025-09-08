@@ -8,9 +8,9 @@ namespace WhoAndWhat.Domain.ValueObjects;
 public class AppTaskSearchCriteria
 {
     public Guid? UserId { get; init; }
-    public string Query { get; init; } = string.Empty;
-    public string SearchText { get; init; } = string.Empty;
-    public string SearchTerm => !string.IsNullOrWhiteSpace(SearchText) ? SearchText : Query;
+    public string? Query { get; init; }
+    public string? SearchText { get; init; }
+    public string SearchTerm => !string.IsNullOrWhiteSpace(SearchText) ? SearchText : Query ?? string.Empty;
     public AppTaskCategory? Category { get; init; }
     public List<int>? Categories { get; init; }
     public AppTaskStatus? Status { get; init; }
@@ -56,9 +56,15 @@ public class AppTaskSearchCriteria
     {
         var errors = new List<string>();
 
-        var searchText = !string.IsNullOrWhiteSpace(SearchText) ? SearchText : Query;
+        var searchText = !string.IsNullOrWhiteSpace(SearchText) ? SearchText : Query ?? string.Empty;
 
-        if (!string.IsNullOrWhiteSpace(searchText) && searchText.Length < MinQueryLength)
+        // Validate search queries when they are explicitly provided
+        if (Query != null && (string.IsNullOrWhiteSpace(Query) || Query.Trim().Length < MinQueryLength))
+        {
+            errors.Add($"Search query must be at least {MinQueryLength} characters long");
+        }
+        
+        if (SearchText != null && (string.IsNullOrWhiteSpace(SearchText) || SearchText.Trim().Length < MinQueryLength))
         {
             errors.Add($"Search query must be at least {MinQueryLength} characters long");
         }
@@ -125,13 +131,13 @@ public class AppTaskSearchCriteria
         var normalizedQuery = Query?.Trim();
         if (string.IsNullOrWhiteSpace(normalizedQuery))
         {
-            normalizedQuery = string.Empty;
+            normalizedQuery = null;
         }
 
         var normalizedSearchText = SearchText?.Trim();
         if (string.IsNullOrWhiteSpace(normalizedSearchText))
         {
-            normalizedSearchText = string.Empty;
+            normalizedSearchText = null;
         }
 
         var clampedPageSize = Math.Min(Math.Max(PageSize, 1), MaxPageSize);
@@ -175,7 +181,7 @@ public class AppTaskSearchCriteria
     {
         get
         {
-            var searchText = !string.IsNullOrWhiteSpace(SearchText) ? SearchText : Query;
+            var searchText = !string.IsNullOrWhiteSpace(SearchText) ? SearchText : Query ?? string.Empty;
             return !string.IsNullOrWhiteSpace(searchText) && searchText.Length >= MinQueryLength;
         }
     }
@@ -205,7 +211,7 @@ public class AppTaskSearchCriteria
     public string GetCacheKey(Guid? userId = null)
     {
         var actualUserId = userId ?? UserId ?? Guid.Empty;
-        var searchText = !string.IsNullOrWhiteSpace(SearchText) ? SearchText : Query;
+        var searchText = !string.IsNullOrWhiteSpace(SearchText) ? SearchText : Query ?? string.Empty;
 
         var keyComponents = new[]
         {

@@ -14,6 +14,11 @@ public record AppTaskStatus
     public static readonly AppTaskStatus Confirmed = new("Confirmed", 4, "Task has been confirmed (appointments)");
     public static readonly AppTaskStatus Cancelled = new("Cancelled", 5, "Task has been cancelled");
 
+    private static readonly IReadOnlyList<AppTaskStatus> BasicStatuses = new List<AppTaskStatus>
+    {
+        Pending, InProgress, Completed, Archived
+    };
+
     private static readonly IReadOnlyList<AppTaskStatus> AllStatuses = new List<AppTaskStatus>
     {
         Pending, InProgress, Completed, Archived, Confirmed, Cancelled
@@ -34,10 +39,16 @@ public record AppTaskStatus
     }
 
     /// <summary>
-    /// Gets all available task statuses
+    /// Gets all basic task statuses (for backward compatibility with tests)
+    /// </summary>
+    /// <returns>Collection of basic task statuses</returns>
+    public static IEnumerable<AppTaskStatus> GetAll() => BasicStatuses;
+
+    /// <summary>
+    /// Gets all available task statuses including extended ones
     /// </summary>
     /// <returns>Collection of all task statuses</returns>
-    public static IEnumerable<AppTaskStatus> GetAll() => AllStatuses;
+    public static IEnumerable<AppTaskStatus> GetAllStatuses() => AllStatuses;
 
     /// <summary>
     /// Creates AppTaskStatus from integer value

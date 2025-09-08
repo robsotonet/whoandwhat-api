@@ -6,7 +6,7 @@ namespace WhoAndWhat.Domain.ValueObjects;
 /// Value object defining criteria for when tasks should be archived
 /// Encapsulates business rules for automatic archiving decisions
 /// </summary>
-public record ArchiveCriteria
+public record ArchiveCriteria : IEquatable<ArchiveCriteria>
 {
     /// <summary>
     /// Minimum age for completed tasks to be eligible for archiving
@@ -124,4 +124,49 @@ public record ArchiveCriteria
     public ArchiveCriteria WithUserId(Guid userId) => this with { UserId = userId };
 
     public ArchiveCriteria WithBatchSize(int batchSize) => this with { MaxArchiveBatchSize = batchSize };
+
+    /// <summary>
+    /// Custom equality implementation to handle array comparison
+    /// </summary>
+    public virtual bool Equals(ArchiveCriteria? other)
+    {
+        if (other is null)
+        {
+            return false;
+        }
+        
+        if (ReferenceEquals(this, other))
+        {
+            return true;
+        }
+        
+        return MinimumCompletedAge == other.MinimumCompletedAge &&
+               MinimumCanceledAge == other.MinimumCanceledAge &&
+               IncludeActiveProjectTasks == other.IncludeActiveProjectTasks &&
+               IncludeParentTasks == other.IncludeParentTasks &&
+               MaxArchiveBatchSize == other.MaxArchiveBatchSize &&
+               UserId == other.UserId &&
+               Equals(MaxPriorityToArchive, other.MaxPriorityToArchive) &&
+               ArchivableStatuses.SequenceEqual(other.ArchivableStatuses);
+    }
+
+    public override int GetHashCode()
+    {
+        var hash = new HashCode();
+        hash.Add(MinimumCompletedAge);
+        hash.Add(MinimumCanceledAge);
+        hash.Add(IncludeActiveProjectTasks);
+        hash.Add(IncludeParentTasks);
+        hash.Add(MaxArchiveBatchSize);
+        hash.Add(UserId);
+        hash.Add(MaxPriorityToArchive);
+        
+        // Hash array contents
+        foreach (var status in ArchivableStatuses)
+        {
+            hash.Add(status);
+        }
+        
+        return hash.ToHashCode();
+    }
 }

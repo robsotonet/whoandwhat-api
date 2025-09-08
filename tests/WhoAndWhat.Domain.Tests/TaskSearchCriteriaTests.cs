@@ -16,7 +16,7 @@ public class AppTaskSearchCriteriaTests
         var criteria = new AppTaskSearchCriteria();
 
         // Assert
-        criteria.Query.Should().BeEmpty();
+        criteria.Query.Should().BeNull();
         criteria.SortBy.Should().Be(TaskSearchSortBy.Relevance);
         criteria.SortDescending.Should().BeTrue();
         criteria.PageNumber.Should().Be(1);
