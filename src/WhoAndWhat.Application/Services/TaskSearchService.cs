@@ -61,7 +61,7 @@ public class TaskSearchService : ITaskSearchService
             {
                 _logger.LogWarning("Invalid search criteria for user {UserId}: {Errors}",
                     userId, string.Join(", ", validation.Errors));
-                return TaskSearchResult.Empty(criteria.Query, stopwatch.Elapsed);
+                return TaskSearchResult.Empty(criteria.SearchTerm, stopwatch.Elapsed);
             }
 
             var normalizedCriteria = validation.NormalizedCriteria!;
@@ -96,8 +96,8 @@ public class TaskSearchService : ITaskSearchService
         catch (Exception ex)
         {
             stopwatch.Stop();
-            _logger.LogError(ex, "Error executing search for user {UserId} with query: {Query}", userId, criteria.Query);
-            return TaskSearchResult.Empty(criteria.Query, stopwatch.Elapsed);
+            _logger.LogError(ex, "Error executing search for user {UserId} with query: {Query}", userId, criteria.SearchTerm);
+            return TaskSearchResult.Empty(criteria.SearchTerm, stopwatch.Elapsed);
         }
     }
 
