@@ -9,4 +9,4 @@ public record ExecuteTaskActionCommand(
     string ActionId,
     Dictionary<string, object> Parameters,
     Guid UserId
-) : IRequest&lt;Result&lt;TaskDto&gt;&gt;;
+) : IRequest<Result<TaskDto>>;

@@ -570,7 +570,7 @@ public class SoftDeleteServiceTests
             Description = $"Description for {title}",
             Status = (int)DomainTaskStatus.Pending,
             Priority = (int)Priority.Medium,
-            Category = (int)TaskCategory.ToDos,
+            Category = (int)TaskCategory.ToDo,
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow,
             Subtasks = new List<DomainTask>()

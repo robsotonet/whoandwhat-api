@@ -14,4 +14,4 @@ public record CreateTaskCommand(
     List<Guid> ContactIds,
     TaskMetadataRequest? Metadata,
     Guid UserId
-) : IRequest&lt;Result&lt;TaskDto&gt;&gt;;
+) : IRequest<Result<TaskDto>>;

@@ -8,4 +8,4 @@ public record GetTaskSchedulingQuery(
     Guid UserId,
     DateTime? TargetDate = null,
     int MaxSuggestions = 20
-) : IRequest&lt;Result&lt;TaskSchedulingResponse&gt;&gt;;
+) : IRequest<Result<TaskSchedulingResponse>>;

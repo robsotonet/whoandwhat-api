@@ -23,7 +23,10 @@
       "Bash(dotnet restore:*)",
       "Bash(dotnet --info)",
       "Bash(grep:*)",
-      "WebSearch"
+      "WebSearch",
+      "Bash(for file in src/WhoAndWhat.Application/Features/Tasks/Queries/*/*.cs)",
+      "Bash(do sed -i 's/&lt;/</g; s/&gt;/>/g' \"$file\")",
+      "Bash(done)"
     ],
     "deny": [],
     "ask": []

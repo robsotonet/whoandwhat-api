@@ -7,4 +7,4 @@ public record DeleteTaskCommand(
     Guid TaskId,
     Guid UserId,
     bool HardDelete = false
-) : IRequest&lt;Result&gt;;
+) : IRequest<Result>;

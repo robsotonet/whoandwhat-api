@@ -10,4 +10,4 @@ public record ConvertTaskCommand(
     string? Reason,
     bool CreateSubtasks,
     Guid UserId
-) : IRequest&lt;Result&lt;TaskDto&gt;&gt;;
+) : IRequest<Result<TaskDto>>;
