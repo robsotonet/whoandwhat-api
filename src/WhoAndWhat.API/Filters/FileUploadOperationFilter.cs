@@ -88,11 +88,15 @@ public class FileUploadOperationFilter : IOperationFilter
     private static string GetFileDescription(Type parameterType)
     {
         if (parameterType == typeof(IFormFile))
+        {
             return "Single file upload";
+        }
         
         if (parameterType == typeof(IFormFileCollection) || 
             parameterType.IsAssignableFrom(typeof(IEnumerable<IFormFile>)))
+        {
             return "Multiple file upload";
+        }
         
         return "File upload";
     }

@@ -140,14 +140,11 @@ public class OAuthController : ControllerBase
                 RefreshToken = tokenResult.RefreshToken,
                 ExpiresIn = tokenResult.ExpiresIn,
                 TokenType = tokenResult.TokenType,
-                User = new UserResponse
-                {
-                    Id = user.Id,
-                    Email = user.Email,
-                    Username = user.Username,
-                    IsEmailVerified = user.IsEmailVerified,
-                    PreferredLanguage = user.PreferredLanguage.ToString()
-                }
+                UserId = user.Id,
+                Email = user.Email,
+                Username = user.Username,
+                IsEmailVerified = user.IsEmailVerified,
+                PreferredLanguage = user.PreferredLanguage.ToString()
             };
 
             // If returnUrl is provided, redirect to it with tokens
@@ -278,14 +275,11 @@ public class OAuthController : ControllerBase
                 RefreshToken = tokenResult.RefreshToken,
                 ExpiresIn = tokenResult.ExpiresIn,
                 TokenType = tokenResult.TokenType,
-                User = new UserResponse
-                {
-                    Id = user.Id,
-                    Email = user.Email,
-                    Username = user.Username,
-                    IsEmailVerified = user.IsEmailVerified,
-                    PreferredLanguage = user.PreferredLanguage.ToString()
-                }
+                UserId = user.Id,
+                Email = user.Email,
+                Username = user.Username,
+                IsEmailVerified = user.IsEmailVerified,
+                PreferredLanguage = user.PreferredLanguage.ToString()
             };
 
             // If returnUrl is provided, redirect to it with tokens
@@ -416,14 +410,11 @@ public class OAuthController : ControllerBase
                 RefreshToken = tokenResult.RefreshToken,
                 ExpiresIn = tokenResult.ExpiresIn,
                 TokenType = tokenResult.TokenType,
-                User = new UserResponse
-                {
-                    Id = user.Id,
-                    Email = user.Email,
-                    Username = user.Username,
-                    IsEmailVerified = user.IsEmailVerified,
-                    PreferredLanguage = user.PreferredLanguage.ToString()
-                }
+                UserId = user.Id,
+                Email = user.Email,
+                Username = user.Username,
+                IsEmailVerified = user.IsEmailVerified,
+                PreferredLanguage = user.PreferredLanguage.ToString()
             };
 
             // If returnUrl is provided, redirect to it with tokens

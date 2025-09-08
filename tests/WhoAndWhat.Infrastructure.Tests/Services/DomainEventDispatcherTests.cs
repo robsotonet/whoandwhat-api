@@ -91,7 +91,7 @@ public class DomainEventDispatcherTests
     {
         // Arrange
         var userCreatedEvent = new UserCreatedEvent(Guid.NewGuid(), "test@example.com", "Test User");
-        var userDeactivatedEvent = new UserDeactivatedEvent(Guid.NewGuid(), DateTime.UtcNow, "Account closed");
+        var userDeactivatedEvent = new UserDeactivatedEvent(Guid.NewGuid());
 
         _mockMediator.Setup(x => x.Publish(It.IsAny<object>(), It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
@@ -131,5 +131,15 @@ public class DomainEventDispatcherTests
     /// <summary>
     /// Test domain event for testing purposes
     /// </summary>
-    private record TestDomainEvent(Guid Id, string Message) : DomainEvent;
+    private class TestDomainEvent : DomainEvent
+    {
+        public Guid Id { get; }
+        public string Message { get; }
+
+        public TestDomainEvent(Guid id, string message)
+        {
+            Id = id;
+            Message = message;
+        }
+    }
 }

@@ -13,9 +13,9 @@ public class AuthResponseOperationFilter : IOperationFilter
     {
         var hasAuthorizeAttribute = context.MethodInfo.GetCustomAttributes(true)
             .OfType<AuthorizeAttribute>()
-            .Any() || context.MethodInfo.DeclaringType?.GetCustomAttributes(true)
+            .Any() || (context.MethodInfo.DeclaringType?.GetCustomAttributes(true)
             .OfType<AuthorizeAttribute>()
-            .Any();
+            .Any() ?? false);
 
         if (hasAuthorizeAttribute)
         {
