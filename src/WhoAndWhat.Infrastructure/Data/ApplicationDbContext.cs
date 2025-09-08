@@ -20,6 +20,10 @@ public class ApplicationDbContext : DbContext
     public DbSet<Event> Events { get; set; }
     public DbSet<RefreshToken> RefreshTokens { get; set; }
     public DbSet<OAuthAccount> OAuthAccounts { get; set; }
+    
+    // Archive entities
+    public DbSet<ArchivedTask> ArchivedTasks { get; set; }
+    public DbSet<ArchivedProject> ArchivedProjects { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -55,7 +59,9 @@ public class ApplicationDbContext : DbContext
         modelBuilder.Entity<Task>(entity =>
         {
             entity.HasKey(e => e.Id);
-            entity.Property(e => e.Title).IsRequired();
+            entity.Property(e => e.Title).IsRequired().HasMaxLength(200);
+            entity.Property(e => e.Description).HasMaxLength(5000);
+            entity.Property(e => e.IsDeleted).HasDefaultValue(false);
             
             entity.Property(e => e.Priority).HasConversion<int>();
             entity.Property(e => e.Category).HasConversion<int>();
@@ -64,6 +70,15 @@ public class ApplicationDbContext : DbContext
             entity.HasOne(e => e.User).WithMany(u => u.Tasks).HasForeignKey(e => e.UserId).OnDelete(DeleteBehavior.Restrict);
             entity.HasOne(e => e.Project).WithMany(p => p.Tasks).HasForeignKey(e => e.ProjectId).IsRequired(false);
             entity.HasMany(e => e.Subtasks).WithOne().HasForeignKey("ParentTaskId").IsRequired(false);
+
+            // Indexes for performance
+            entity.HasIndex(e => new { e.UserId, e.IsDeleted });
+            entity.HasIndex(e => new { e.UserId, e.Status, e.IsDeleted });
+            entity.HasIndex(e => new { e.UserId, e.Category, e.IsDeleted });
+            entity.HasIndex(e => new { e.UserId, e.DueDate, e.IsDeleted });
+
+            // Global query filter for soft delete
+            entity.HasQueryFilter(e => !e.IsDeleted);
         });
 
         // Contact Configuration
@@ -75,6 +90,10 @@ public class ApplicationDbContext : DbContext
 
             entity.HasOne(e => e.User).WithMany(u => u.Contacts).HasForeignKey(e => e.UserId).OnDelete(DeleteBehavior.Restrict);
             entity.HasMany(e => e.Tasks).WithMany(t => t.Contacts);
+
+            // Soft delete configuration
+            entity.HasIndex(e => e.IsDeleted);
+            entity.HasQueryFilter(e => !e.IsDeleted);
         });
 
         // Project Configuration
@@ -85,6 +104,11 @@ public class ApplicationDbContext : DbContext
 
             entity.HasOne(e => e.User).WithMany(u => u.Projects).HasForeignKey(e => e.UserId).OnDelete(DeleteBehavior.Restrict);
             entity.HasMany(e => e.Contacts).WithMany();
+
+            // Soft delete configuration
+            entity.HasIndex(e => e.IsDeleted);
+            entity.HasIndex(e => new { e.UserId, e.IsDeleted });
+            entity.HasQueryFilter(e => !e.IsDeleted);
         });
         
         // Event Configuration
@@ -138,6 +162,67 @@ public class ApplicationDbContext : DbContext
             entity.HasIndex(e => new { e.Provider, e.ExternalId }).IsUnique();
             // Index for efficient user queries
             entity.HasIndex(e => e.UserId);
+        });
+
+        // ArchivedTask Configuration
+        modelBuilder.Entity<ArchivedTask>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Title).IsRequired().HasMaxLength(200);
+            entity.Property(e => e.Description).HasMaxLength(5000);
+            entity.Property(e => e.ArchiveReason).IsRequired().HasMaxLength(50);
+            entity.Property(e => e.ProjectName).HasMaxLength(100);
+            entity.Property(e => e.ParentTaskTitle).HasMaxLength(200);
+            
+            // JSON columns for serialized data
+            entity.Property(e => e.SubtasksJson).HasColumnType("jsonb");
+            entity.Property(e => e.ContactsJson).HasColumnType("jsonb");
+            entity.Property(e => e.AttachmentsJson).HasColumnType("jsonb");
+
+            // Indexes for efficient querying
+            entity.HasIndex(e => e.UserId);
+            entity.HasIndex(e => e.OriginalTaskId).IsUnique();
+            entity.HasIndex(e => e.ArchivedAt);
+            entity.HasIndex(e => new { e.UserId, e.ArchivedAt });
+            entity.HasIndex(e => new { e.UserId, e.Status });
+            entity.HasIndex(e => new { e.UserId, e.Category });
+
+            // Foreign key relationships
+            entity.HasOne(e => e.User)
+                .WithMany()
+                .HasForeignKey(e => e.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Self-referential relationships for archived tasks
+            entity.HasIndex(e => e.ProjectId).HasFilter("project_id IS NOT NULL");
+            entity.HasIndex(e => e.ParentTaskId).HasFilter("parent_task_id IS NOT NULL");
+        });
+
+        // ArchivedProject Configuration
+        modelBuilder.Entity<ArchivedProject>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Name).IsRequired().HasMaxLength(100);
+            entity.Property(e => e.Description).HasMaxLength(2000);
+            entity.Property(e => e.ArchiveReason).IsRequired().HasMaxLength(50);
+            
+            // JSON columns for serialized data
+            entity.Property(e => e.TasksJson).HasColumnType("jsonb");
+            entity.Property(e => e.ContactsJson).HasColumnType("jsonb");
+            entity.Property(e => e.MetadataJson).HasColumnType("jsonb");
+
+            // Indexes for efficient querying
+            entity.HasIndex(e => e.UserId);
+            entity.HasIndex(e => e.OriginalProjectId).IsUnique();
+            entity.HasIndex(e => e.ArchivedAt);
+            entity.HasIndex(e => new { e.UserId, e.ArchivedAt });
+            entity.HasIndex(e => new { e.UserId, e.Status });
+
+            // Foreign key relationships
+            entity.HasOne(e => e.User)
+                .WithMany()
+                .HasForeignKey(e => e.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
         });
     }
 }

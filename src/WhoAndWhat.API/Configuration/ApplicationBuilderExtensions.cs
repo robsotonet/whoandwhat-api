@@ -4,6 +4,7 @@ using WhoAndWhat.API.Middleware;
 using AspNetCoreRateLimit;
 using WhoAndWhat.Infrastructure.Configuration;
 using Microsoft.Extensions.Options;
+using Hangfire;
 
 namespace WhoAndWhat.API.Configuration;
 
@@ -165,6 +166,21 @@ public static class ApplicationBuilderExtensions
             // Custom CSS for Swagger UI should be placed in wwwroot/swagger-ui/custom.css
             app.UseStaticFiles();
         }
+
+        return app;
+    }
+
+    /// <summary>
+    /// Configure Hangfire dashboard and background job services
+    /// </summary>
+    public static IApplicationBuilder UseHangfireConfiguration(this IApplicationBuilder app, IConfiguration configuration, IWebHostEnvironment env)
+    {
+        // Configure Hangfire Dashboard
+        var dashboardOptions = HangfireConfiguration.GetDashboardOptions(configuration);
+        app.UseHangfireDashboard("/hangfire", dashboardOptions);
+
+        // Initialize job scheduler
+        app.ApplicationServices.UseHangfireServices();
 
         return app;
     }

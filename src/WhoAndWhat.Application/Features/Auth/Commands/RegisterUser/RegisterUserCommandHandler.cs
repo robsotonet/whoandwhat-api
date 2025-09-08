@@ -13,23 +13,23 @@ namespace WhoAndWhat.Application.Features.Auth.Commands.RegisterUser;
 /// </summary>
 public class RegisterUserCommandHandler : IRequestHandler<RegisterUserCommand, Result<RegisterResponse>>
 {
-    private readonly IUserDomainService _userDomainService;
-    private readonly IUserRepository _userRepository;
+    private readonly IUserService _userService;
     private readonly IAccountVerificationService _accountVerificationService;
     private readonly IJwtTokenService _jwtTokenService;
+    private readonly IEmailService _emailService;
     private readonly ILogger<RegisterUserCommandHandler> _logger;
 
     public RegisterUserCommandHandler(
-        IUserDomainService userDomainService,
-        IUserRepository userRepository,
+        IUserService userService,
         IAccountVerificationService accountVerificationService,
         IJwtTokenService jwtTokenService,
+        IEmailService emailService,
         ILogger<RegisterUserCommandHandler> logger)
     {
-        _userDomainService = userDomainService;
-        _userRepository = userRepository;
+        _userService = userService;
         _accountVerificationService = accountVerificationService;
         _jwtTokenService = jwtTokenService;
+        _emailService = emailService;
         _logger = logger;
     }
 
@@ -44,22 +44,6 @@ public class RegisterUserCommandHandler : IRequestHandler<RegisterUserCommand, R
                 return Result<RegisterResponse>.Failure("You must accept the terms and conditions to register");
             }
 
-            // Check if user already exists
-            var existingUser = await _userRepository.GetByEmailAsync(request.Email, cancellationToken);
-            if (existingUser != null)
-            {
-                _logger.LogWarning("Registration attempt with existing email: {Email}", request.Email);
-                return Result<RegisterResponse>.Failure("User with this email already exists");
-            }
-
-            // Check if username is taken
-            var existingUsername = await _userRepository.GetByUsernameAsync(request.Username, cancellationToken);
-            if (existingUsername != null)
-            {
-                _logger.LogWarning("Registration attempt with existing username: {Username}", request.Username);
-                return Result<RegisterResponse>.Failure("Username is already taken");
-            }
-
             // Parse and validate language
             if (!Enum.TryParse<Language>(request.PreferredLanguage, true, out var language))
             {
@@ -67,22 +51,20 @@ public class RegisterUserCommandHandler : IRequestHandler<RegisterUserCommand, R
                 return Result<RegisterResponse>.Failure("Invalid language. Supported languages are: en, es");
             }
 
-            // Create user using domain service
-            var user = _userDomainService.CreateUser(
+            // Use UserService for registration logic
+            var registrationResult = await _userService.RegisterUserAsync(
                 request.Email,
                 request.Username,
                 request.Password,
-                language);
+                language,
+                cancellationToken);
 
-            // Save user to database
-            await _userRepository.AddAsync(user, cancellationToken);
-            var saveResult = await _userRepository.SaveChangesAsync(cancellationToken);
-            
-            if (saveResult <= 0)
+            if (!registrationResult.IsSuccess)
             {
-                _logger.LogError("Failed to save user to database: {Email}", request.Email);
-                return Result<RegisterResponse>.Failure("Failed to save user to database");
+                return Result<RegisterResponse>.Failure(registrationResult.Error);
             }
+
+            var user = registrationResult.Value;
 
             // Generate email verification token
             var verificationToken = await _accountVerificationService.GenerateVerificationTokenAsync(user.Id, cancellationToken);
@@ -106,10 +88,24 @@ public class RegisterUserCommandHandler : IRequestHandler<RegisterUserCommand, R
                 Message = "User registered successfully. Please check your email for verification instructions."
             };
 
-            // TODO: Send verification email (implement email service)
-            if (requiresEmailVerification)
+            // Send verification email if token was generated
+            if (requiresEmailVerification && !string.IsNullOrEmpty(verificationToken))
             {
-                _logger.LogInformation("Email verification required for user: {UserId}, Token: {Token}", user.Id, verificationToken);
+                var emailSent = await _emailService.SendEmailVerificationAsync(
+                    user.Email, 
+                    user.Username, 
+                    verificationToken, 
+                    user.Id, 
+                    cancellationToken);
+
+                if (emailSent)
+                {
+                    _logger.LogInformation("Email verification sent successfully for user: {UserId}", user.Id);
+                }
+                else
+                {
+                    _logger.LogWarning("Failed to send verification email for user: {UserId}", user.Id);
+                }
             }
 
             return Result<RegisterResponse>.Success(response);

@@ -12,6 +12,7 @@ using WhoAndWhat.Infrastructure.Configuration;
 using WhoAndWhat.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using Microsoft.AspNetCore.Http;
 
 namespace WhoAndWhat.Infrastructure.Services;
 
@@ -21,13 +22,19 @@ public class JwtTokenService : IJwtTokenService
     private readonly ApplicationDbContext _context;
     private readonly JwtSecurityTokenHandler _tokenHandler;
     private readonly ILogger<JwtTokenService> _logger;
+    private readonly IHttpContextAccessor _httpContextAccessor;
 
-    public JwtTokenService(IOptions<JwtSettings> jwtSettings, ApplicationDbContext context, ILogger<JwtTokenService> logger)
+    public JwtTokenService(
+        IOptions<JwtSettings> jwtSettings, 
+        ApplicationDbContext context, 
+        ILogger<JwtTokenService> logger,
+        IHttpContextAccessor httpContextAccessor)
     {
         _jwtSettings = jwtSettings.Value;
         _context = context;
         _tokenHandler = new JwtSecurityTokenHandler();
         _logger = logger;
+        _httpContextAccessor = httpContextAccessor;
     }
 
     public async Task<TokenResult> GenerateTokensAsync(User user)
@@ -233,10 +240,34 @@ public class JwtTokenService : IJwtTokenService
         }
     }
 
-    private static string GetClientIpAddress()
+    private string GetClientIpAddress()
     {
-        // TODO: In a real application, this should get the actual client IP
-        // This would typically be injected via IHttpContextAccessor
-        return "127.0.0.1";
+        var context = _httpContextAccessor.HttpContext;
+        if (context == null)
+        {
+            return "127.0.0.1";
+        }
+
+        // Check for forwarded IP first (load balancers, proxies)
+        var forwardedFor = context.Request.Headers["X-Forwarded-For"].FirstOrDefault();
+        if (!string.IsNullOrEmpty(forwardedFor))
+        {
+            // X-Forwarded-For can contain multiple IPs, take the first one
+            var firstIp = forwardedFor.Split(',').FirstOrDefault()?.Trim();
+            if (!string.IsNullOrEmpty(firstIp))
+            {
+                return firstIp;
+            }
+        }
+
+        // Check for other common proxy headers
+        var realIp = context.Request.Headers["X-Real-IP"].FirstOrDefault();
+        if (!string.IsNullOrEmpty(realIp))
+        {
+            return realIp;
+        }
+
+        // Fall back to direct connection IP
+        return context.Connection.RemoteIpAddress?.ToString() ?? "127.0.0.1";
     }
 }

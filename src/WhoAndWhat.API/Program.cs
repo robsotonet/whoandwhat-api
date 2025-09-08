@@ -4,10 +4,13 @@ using WhoAndWhat.API.Configuration;
 using WhoAndWhat.Application;
 using WhoAndWhat.Application.Interfaces;
 using WhoAndWhat.Application.DependencyInjection;
+using WhoAndWhat.Application.Services;
 using WhoAndWhat.Domain.Services;
 using WhoAndWhat.Infrastructure;
+using WhoAndWhat.Infrastructure.Configuration;
 using WhoAndWhat.Infrastructure.Data;
 using WhoAndWhat.Infrastructure.Repositories;
+using WhoAndWhat.Infrastructure.Services;
 using WhoAndWhat.Application.Features.Auth;
 using Azure.Extensions.AspNetCore.Configuration.Secrets;
 using Azure.Identity;
@@ -65,11 +68,19 @@ try
     builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
     builder.Services.AddScoped<IUserDomainService, UserDomainService>();
     builder.Services.AddScoped<IUserRepository, UserRepository>();
+    builder.Services.AddScoped<IUserService, UserService>();
+    builder.Services.AddScoped<IEmailService, EmailService>();
     builder.Services.AddScoped<IAccountVerificationService, AccountVerificationService>();
     builder.Services.AddScoped<IPasswordResetService, PasswordResetService>();
 
     // Application services (MediatR, FluentValidation, Pipeline Behaviors)
     builder.Services.AddApplicationServices();
+
+    // Redis Caching Infrastructure
+    builder.Services.AddRedisCachingConfiguration(builder.Configuration);
+
+    // Task Search Infrastructure
+    builder.Services.AddTaskSearchConfiguration(builder.Configuration);
 
     // API Foundation Services
     builder.Services.AddApiVersioningConfiguration();
@@ -78,6 +89,9 @@ try
     builder.Services.AddCorsConfiguration();
     builder.Services.AddResponseCompressionConfiguration();
     builder.Services.AddApplicationInsightsConfiguration(builder.Configuration);
+    
+    // Email Service Configuration
+    builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection(EmailSettings.SectionName));
     
     // JWT Authentication
     builder.Services.AddJwtAuthenticationConfiguration(builder.Configuration);

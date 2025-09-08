@@ -3,6 +3,8 @@ using MediatR;
 using Microsoft.Extensions.DependencyInjection;
 using System.Reflection;
 using WhoAndWhat.Application.Behaviors;
+using WhoAndWhat.Application.Services;
+using WhoAndWhat.Domain.Services;
 
 namespace WhoAndWhat.Application.DependencyInjection;
 
@@ -31,6 +33,13 @@ public static class ApplicationServiceCollectionExtensions
 
         // Register pipeline behaviors
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
+
+        // Register application services
+        services.AddScoped<ITaskApplicationService, TaskApplicationService>();
+
+        // Register domain services
+        services.AddScoped<CategoryBusinessRuleService>();
+        services.AddScoped<CategoryWorkflowService>();
 
         return services;
     }
