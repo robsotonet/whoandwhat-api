@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using Npgsql;
 using WhoAndWhat.Application.DTOs;
 using WhoAndWhat.Application.Interfaces;
 using WhoAndWhat.Domain.ValueObjects;
@@ -251,18 +252,20 @@ public class TaskRepository : Repository<DomainTask>, ITaskRepository
             var sql = @"
                 WITH RECURSIVE task_hierarchy AS (
                     SELECT * FROM ""Tasks"" 
-                    WHERE ""ProjectId"" = {0} AND ""UserId"" = {1} AND NOT ""IsDeleted""
+                    WHERE ""ProjectId"" = @taskId AND ""UserId"" = @userId AND NOT ""IsDeleted""
                     
                     UNION ALL
                     
                     SELECT t.* FROM ""Tasks"" t
                     INNER JOIN task_hierarchy th ON t.""ProjectId"" = th.""Id""
-                    WHERE t.""UserId"" = {1} AND NOT t.""IsDeleted""
+                    WHERE t.""UserId"" = @userId AND NOT t.""IsDeleted""
                 )
                 SELECT * FROM task_hierarchy";
 
             return await _context.Tasks
-                .FromSqlRaw(sql, taskId, userId)
+                .FromSqlRaw(sql, 
+                    new NpgsqlParameter("@taskId", taskId),
+                    new NpgsqlParameter("@userId", userId))
                 .ToListAsync(cancellationToken);
         }
         catch (Exception ex)

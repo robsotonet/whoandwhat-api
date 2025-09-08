@@ -270,9 +270,9 @@ public class TaskStatusTests
     }
 
     [Fact]
-    public void TaskStatus_Should_Support_Implicit_Conversion_To_Int()
+    public void TaskStatus_Should_Support_Explicit_Conversion_To_Int()
     {
-        int statusValue = DomainTaskStatus.InProgress;
+        int statusValue = (int)DomainTaskStatus.InProgress;
         
         statusValue.Should().Be(1);
     }

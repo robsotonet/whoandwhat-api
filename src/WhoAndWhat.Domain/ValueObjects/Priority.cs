@@ -375,8 +375,8 @@ public record Priority : IComparable<Priority>
         };
     }
 
-    // Implicit conversion from Priority to int for database storage
-    public static implicit operator int(Priority priority) => priority.Value;
+    // Explicit conversion from Priority to int for database storage
+    public static explicit operator int(Priority priority) => priority.Value;
 
     // Explicit conversion from int to Priority
     public static explicit operator Priority(int value) => FromValue(value);

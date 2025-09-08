@@ -238,8 +238,8 @@ public record TaskStatus
         };
     }
 
-    // Implicit conversion from TaskStatus to int for database storage
-    public static implicit operator int(TaskStatus status) => status.Value;
+    // Explicit conversion from TaskStatus to int for database storage
+    public static explicit operator int(TaskStatus status) => status.Value;
 
     // Explicit conversion from int to TaskStatus
     public static explicit operator TaskStatus(int value) => FromValue(value);

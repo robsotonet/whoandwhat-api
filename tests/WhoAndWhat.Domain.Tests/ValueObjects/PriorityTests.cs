@@ -377,9 +377,9 @@ public class PriorityTests
     }
 
     [Fact]
-    public void Priority_Should_Support_Implicit_Conversion_To_Int()
+    public void Priority_Should_Support_Explicit_Conversion_To_Int()
     {
-        int priorityValue = Priority.High;
+        int priorityValue = (int)Priority.High;
         
         priorityValue.Should().Be(2);
     }

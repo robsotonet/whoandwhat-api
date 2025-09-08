@@ -31,17 +31,16 @@ public static class HangfireConfiguration
                 .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
                 .UseSimpleAssemblyNameTypeSerializer()
                 .UseRecommendedSerializerSettings()
-#pragma warning disable CS0618 // UsePostgreSqlStorage is deprecated but still functional
-                .UsePostgreSqlStorage(connectionString, new PostgreSqlStorageOptions
+                .UsePostgreSqlStorage(options =>
                 {
-                    QueuePollInterval = TimeSpan.FromSeconds(15),
-                    JobExpirationCheckInterval = TimeSpan.FromHours(1),
-                    CountersAggregateInterval = TimeSpan.FromMinutes(5),
-                    PrepareSchemaIfNecessary = true,
-                    TransactionSynchronisationTimeout = TimeSpan.FromMinutes(5),
-                    SchemaName = "hangfire"
+                    options.UseNpgsqlConnection(connectionString);
+                    options.QueuePollInterval = TimeSpan.FromSeconds(15);
+                    options.JobExpirationCheckInterval = TimeSpan.FromHours(1);
+                    options.CountersAggregateInterval = TimeSpan.FromMinutes(5);
+                    options.PrepareSchemaIfNecessary = true;
+                    options.TransactionSynchronisationTimeout = TimeSpan.FromMinutes(5);
+                    options.SchemaName = "hangfire";
                 })
-#pragma warning restore CS0618
                 .UseSerilogLogProvider();
         });
 
