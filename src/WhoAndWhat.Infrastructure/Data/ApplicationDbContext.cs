@@ -223,5 +223,19 @@ public class ApplicationDbContext : DbContext
                 .HasForeignKey(e => e.UserId)
                 .OnDelete(DeleteBehavior.Restrict);
         });
+
+        // Explicitly ignore any type named 'Task' to prevent EF auto-discovery conflicts
+        try
+        {
+            var taskType = Type.GetType("WhoAndWhat.Domain.Entities.Task");
+            if (taskType != null)
+            {
+                modelBuilder.Ignore(taskType);
+            }
+        }
+        catch
+        {
+            // Ignore any errors - the type might not exist
+        }
     }
 }
