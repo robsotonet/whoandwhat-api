@@ -11,7 +11,7 @@ using WhoAndWhat.Infrastructure.Configuration;
 using WhoAndWhat.Infrastructure.Data;
 using AppTaskCategory = WhoAndWhat.Domain.ValueObjects.AppTaskCategory;
 using Priority = WhoAndWhat.Domain.ValueObjects.Priority;
-using Task = WhoAndWhat.Domain.Entities.AppTask;
+using DomainTask = WhoAndWhat.Domain.Entities.AppTask;
 using TaskStatus = WhoAndWhat.Domain.ValueObjects.AppTaskStatus;
 
 namespace WhoAndWhat.Infrastructure.Services;
@@ -206,7 +206,7 @@ public class TaskArchiveService : ITaskArchiveService
             try
             {
                 // Create restored task
-                var restoredTask = new Task
+                var restoredTask = new DomainTask
                 {
                     Id = Guid.NewGuid(), // New ID to avoid conflicts
                     Title = archivedTask.Title,
@@ -490,7 +490,7 @@ public class TaskArchiveService : ITaskArchiveService
             : ArchiveValidationResult.Valid() with { Warnings = warnings };
     }
 
-    private async Task<List<Task>> GetEligibleTasksForArchivingAsync(ArchiveCriteria criteria, CancellationToken cancellationToken)
+    private async Task<List<DomainTask>> GetEligibleTasksForArchivingAsync(ArchiveCriteria criteria, CancellationToken cancellationToken)
     {
         var currentTime = DateTime.UtcNow;
 
@@ -530,7 +530,7 @@ public class TaskArchiveService : ITaskArchiveService
         var tasks = await query.ToListAsync(cancellationToken);
 
         // Apply additional business rule filters that can't be done in SQL
-        var eligibleTasks = new List<Task>();
+        var eligibleTasks = new List<DomainTask>();
         foreach (var task in tasks)
         {
             if (criteria.ShouldArchiveTask(task, currentTime))
@@ -542,7 +542,7 @@ public class TaskArchiveService : ITaskArchiveService
         return eligibleTasks;
     }
 
-    private Task<ArchivedAppTask> ArchiveTaskAsync(Task task, string reason, CancellationToken cancellationToken)
+    private Task<ArchivedAppTask> ArchiveTaskAsync(DomainTask task, string reason, CancellationToken cancellationToken)
     {
         var archivedTask = new ArchivedAppTask
         {
@@ -740,7 +740,7 @@ public class TaskArchiveService : ITaskArchiveService
         };
     }
 
-    private long CalculateEstimatedDataSize(IEnumerable<Task> tasks)
+    private long CalculateEstimatedDataSize(IEnumerable<DomainTask> tasks)
     {
         // Rough estimation: base task size + JSON data
         return tasks.Sum(t =>
