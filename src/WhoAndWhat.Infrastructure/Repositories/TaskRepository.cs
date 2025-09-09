@@ -1268,10 +1268,10 @@ public class TaskRepository : Repository<DomainTask>, IAppTaskRepository
         // Basic transition validation
         return newStatus.Value switch
         {
-            0 => currentStatus == DomainTaskStatus.InProgress, // Pending
-            1 => currentStatus != DomainTaskStatus.Archived,   // InProgress
-            2 => task.CanBeCompleted(),                        // Completed
-            3 => task.CanBeArchived(),                         // Archived
+            var val when val == DomainTaskStatus.Pending.Value => currentStatus == DomainTaskStatus.InProgress,
+            var val when val == DomainTaskStatus.InProgress.Value => currentStatus != DomainTaskStatus.Archived,
+            var val when val == DomainTaskStatus.Completed.Value => task.CanBeCompleted(),
+            var val when val == DomainTaskStatus.Archived.Value => task.CanBeArchived(),
             _ => false
         };
     }

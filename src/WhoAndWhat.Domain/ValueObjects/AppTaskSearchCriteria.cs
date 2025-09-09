@@ -10,7 +10,7 @@ public class AppTaskSearchCriteria
     public Guid? UserId { get; init; }
     public string? Query { get; init; }
     public string? SearchText { get; init; }
-    public string SearchTerm => !string.IsNullOrWhiteSpace(SearchText) ? SearchText : Query ?? string.Empty;
+    public string SearchTerm => GetEffectiveSearchTerm();
     public AppTaskCategory? Category { get; init; }
     public List<int>? Categories { get; init; }
     public AppTaskStatus? Status { get; init; }
@@ -49,6 +49,11 @@ public class AppTaskSearchCriteria
     public static int MinQueryLength => 2;
 
     /// <summary>
+    /// Gets the effective search term, prioritizing SearchText over Query
+    /// </summary>
+    private string GetEffectiveSearchTerm() => !string.IsNullOrWhiteSpace(SearchText) ? SearchText : Query ?? string.Empty;
+
+    /// <summary>
     /// Validates the search criteria and returns validation errors
     /// </summary>
     /// <returns>Collection of validation error messages</returns>
@@ -56,7 +61,7 @@ public class AppTaskSearchCriteria
     {
         var errors = new List<string>();
 
-        var searchText = !string.IsNullOrWhiteSpace(SearchText) ? SearchText : Query ?? string.Empty;
+        var searchText = GetEffectiveSearchTerm();
 
         // Validate search queries when they are explicitly provided
         if (Query != null && (string.IsNullOrWhiteSpace(Query) || Query.Trim().Length < MinQueryLength))
@@ -181,7 +186,7 @@ public class AppTaskSearchCriteria
     {
         get
         {
-            var searchText = !string.IsNullOrWhiteSpace(SearchText) ? SearchText : Query ?? string.Empty;
+            var searchText = GetEffectiveSearchTerm();
             return !string.IsNullOrWhiteSpace(searchText) && searchText.Length >= MinQueryLength;
         }
     }
@@ -211,7 +216,7 @@ public class AppTaskSearchCriteria
     public string GetCacheKey(Guid? userId = null)
     {
         var actualUserId = userId ?? UserId ?? Guid.Empty;
-        var searchText = !string.IsNullOrWhiteSpace(SearchText) ? SearchText : Query ?? string.Empty;
+        var searchText = GetEffectiveSearchTerm();
 
         var keyComponents = new[]
         {
