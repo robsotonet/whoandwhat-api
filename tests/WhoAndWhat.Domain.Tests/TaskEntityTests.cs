@@ -1,8 +1,8 @@
 using FluentAssertions;
 using WhoAndWhat.Domain.Entities;
 using WhoAndWhat.Domain.ValueObjects;
-using Task = WhoAndWhat.Domain.Entities.Task;
-using DomainTaskStatus = WhoAndWhat.Domain.ValueObjects.TaskStatus;
+using Task = WhoAndWhat.Domain.Entities.AppTask;
+using DomainTaskStatus = WhoAndWhat.Domain.ValueObjects.AppTaskStatus;
 
 namespace WhoAndWhat.Domain.Tests;
 
@@ -13,15 +13,15 @@ public class TaskEntityTests
     {
         var task = new Task();
         
-        task.Id.Should().Be(Guid.Empty);
+        task.Id.Should().NotBe(Guid.Empty); // BaseEntity auto-generates ID
         task.Title.Should().BeNull();
         task.Description.Should().BeNull();
         task.DueDate.Should().BeNull();
         task.Priority.Should().Be(0);
         task.Category.Should().Be(0);
         task.Status.Should().Be(0);
-        task.CreatedAt.Should().Be(DateTime.MinValue);
-        task.UpdatedAt.Should().Be(DateTime.MinValue);
+        task.CreatedAt.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(1)); // BaseEntity auto-sets timestamps
+        task.UpdatedAt.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(1));
         task.UserId.Should().Be(Guid.Empty);
         task.ProjectId.Should().BeNull();
         task.Contacts.Should().NotBeNull().And.BeEmpty();
@@ -38,7 +38,7 @@ public class TaskEntityTests
         var description = "Test Description";
         var dueDate = DateTime.UtcNow.AddDays(7);
         var priority = (int)Priority.High;
-        var category = (int)TaskCategory.ToDo;
+        var category = (int)AppTaskCategory.ToDo;
         var status = (int)DomainTaskStatus.InProgress;
         var createdAt = DateTime.UtcNow;
         var updatedAt = DateTime.UtcNow.AddMinutes(30);

@@ -62,7 +62,7 @@ public class TaskSearchServiceTests
     {
         // Arrange
         var userId = Guid.NewGuid();
-        var criteria = new TaskSearchCriteria { Query = "test", PageSize = 10 };
+        var criteria = new AppTaskSearchCriteria { Query = "test", PageSize = 10 };
         var expectedResult = CreateSampleSearchResult();
 
         _mockDistributedCache
@@ -70,7 +70,7 @@ public class TaskSearchServiceTests
             .ReturnsAsync((byte[]?)null); // Cache miss
 
         _mockSearchRepository
-            .Setup(x => x.SearchTasksAsync(userId, It.IsAny<TaskSearchCriteria>(), It.IsAny<CancellationToken>()))
+            .Setup(x => x.SearchTasksAsync(userId, It.IsAny<AppTaskSearchCriteria>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(expectedResult);
 
         _mockDistributedCache
@@ -86,7 +86,7 @@ public class TaskSearchServiceTests
         result.Tasks.Should().HaveCount(expectedResult.Tasks.Count());
         result.Metadata.FromCache.Should().BeFalse();
 
-        _mockSearchRepository.Verify(x => x.SearchTasksAsync(userId, It.IsAny<TaskSearchCriteria>(), It.IsAny<CancellationToken>()), Times.Once);
+        _mockSearchRepository.Verify(x => x.SearchTasksAsync(userId, It.IsAny<AppTaskSearchCriteria>(), It.IsAny<CancellationToken>()), Times.Once);
         _mockDistributedCache.Verify(x => x.SetAsync(It.IsAny<string>(), It.IsAny<byte[]>(), It.IsAny<DistributedCacheEntryOptions>(), It.IsAny<CancellationToken>()), Times.Once);
     }
 
@@ -95,7 +95,7 @@ public class TaskSearchServiceTests
     {
         // Arrange
         var userId = Guid.NewGuid();
-        var criteria = new TaskSearchCriteria { Query = "test", PageSize = 10 };
+        var criteria = new AppTaskSearchCriteria { Query = "test", PageSize = 10 };
         var cachedResult = CreateSampleSearchResult();
         var serializedResult = JsonSerializer.Serialize(cachedResult, _jsonOptions);
 
@@ -104,7 +104,7 @@ public class TaskSearchServiceTests
             .ReturnsAsync(serializedResult);
 
         _mockSearchRepository
-            .Setup(x => x.RecordSearchQueryAsync(It.IsAny<Guid>(), It.IsAny<TaskSearchCriteria>(), It.IsAny<int>(), It.IsAny<TimeSpan>(), true, It.IsAny<CancellationToken>()))
+            .Setup(x => x.RecordSearchQueryAsync(It.IsAny<Guid>(), It.IsAny<AppTaskSearchCriteria>(), It.IsAny<int>(), It.IsAny<TimeSpan>(), true, It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
 
         // Act
@@ -115,8 +115,8 @@ public class TaskSearchServiceTests
         result.TotalCount.Should().Be(cachedResult.TotalCount);
         result.Metadata.FromCache.Should().BeTrue();
 
-        _mockSearchRepository.Verify(x => x.SearchTasksAsync(It.IsAny<Guid>(), It.IsAny<TaskSearchCriteria>(), It.IsAny<CancellationToken>()), Times.Never);
-        _mockSearchRepository.Verify(x => x.RecordSearchQueryAsync(userId, It.IsAny<TaskSearchCriteria>(), cachedResult.TotalCount, It.IsAny<TimeSpan>(), true, It.IsAny<CancellationToken>()), Times.Once);
+        _mockSearchRepository.Verify(x => x.SearchTasksAsync(It.IsAny<Guid>(), It.IsAny<AppTaskSearchCriteria>(), It.IsAny<CancellationToken>()), Times.Never);
+        _mockSearchRepository.Verify(x => x.RecordSearchQueryAsync(userId, It.IsAny<AppTaskSearchCriteria>(), cachedResult.TotalCount, It.IsAny<TimeSpan>(), true, It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
@@ -124,7 +124,7 @@ public class TaskSearchServiceTests
     {
         // Arrange
         var userId = Guid.NewGuid();
-        var invalidCriteria = new TaskSearchCriteria { PageSize = 0 }; // Invalid
+        var invalidCriteria = new AppTaskSearchCriteria { PageSize = 0 }; // Invalid
 
         // Act
         var result = await _searchService.SearchTasksAsync(userId, invalidCriteria);
@@ -134,7 +134,7 @@ public class TaskSearchServiceTests
         result.TotalCount.Should().Be(0);
         result.Tasks.Should().BeEmpty();
 
-        _mockSearchRepository.Verify(x => x.SearchTasksAsync(It.IsAny<Guid>(), It.IsAny<TaskSearchCriteria>(), It.IsAny<CancellationToken>()), Times.Never);
+        _mockSearchRepository.Verify(x => x.SearchTasksAsync(It.IsAny<Guid>(), It.IsAny<AppTaskSearchCriteria>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]
@@ -189,7 +189,7 @@ public class TaskSearchServiceTests
     public void ValidateSearchCriteria_WithValidCriteria_ShouldReturnValid()
     {
         // Arrange
-        var validCriteria = new TaskSearchCriteria { Query = "test", PageSize = 20 };
+        var validCriteria = new AppTaskSearchCriteria { Query = "test", PageSize = 20 };
 
         // Act
         var result = _searchService.ValidateSearchCriteria(validCriteria);
@@ -204,7 +204,7 @@ public class TaskSearchServiceTests
     public void ValidateSearchCriteria_WithInvalidCriteria_ShouldReturnInvalid()
     {
         // Arrange
-        var invalidCriteria = new TaskSearchCriteria { PageSize = 0 };
+        var invalidCriteria = new AppTaskSearchCriteria { PageSize = 0 };
 
         // Act
         var result = _searchService.ValidateSearchCriteria(invalidCriteria);
@@ -227,7 +227,7 @@ public class TaskSearchServiceTests
             .ReturnsAsync((string?)null); // Always cache miss for warming
 
         _mockSearchRepository
-            .Setup(x => x.SearchTasksAsync(userId, It.IsAny<TaskSearchCriteria>(), It.IsAny<CancellationToken>()))
+            .Setup(x => x.SearchTasksAsync(userId, It.IsAny<AppTaskSearchCriteria>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(searchResult);
 
         // Act
@@ -235,7 +235,7 @@ public class TaskSearchServiceTests
 
         // Assert
         warmedCount.Should().BeGreaterThan(0);
-        _mockSearchRepository.Verify(x => x.SearchTasksAsync(userId, It.IsAny<TaskSearchCriteria>(), It.IsAny<CancellationToken>()), Times.AtLeastOnce);
+        _mockSearchRepository.Verify(x => x.SearchTasksAsync(userId, It.IsAny<AppTaskSearchCriteria>(), It.IsAny<CancellationToken>()), Times.AtLeastOnce);
     }
 
     private TaskSearchResult CreateSampleSearchResult()

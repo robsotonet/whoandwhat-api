@@ -5,6 +5,7 @@ using System.Text.Json;
 using WhoAndWhat.Application.Common;
 using WhoAndWhat.Application.Interfaces;
 using WhoAndWhat.Application.Services;
+using WhoAndWhat.Domain.Common;
 using WhoAndWhat.Domain.Entities;
 using WhoAndWhat.Domain.Services;
 using WhoAndWhat.Domain.ValueObjects;
@@ -41,8 +42,8 @@ public class UserServiceTests
 
         _userRepositoryMock.Setup(x => x.GetByIdAsync(_userId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(user);
-        _userDomainServiceMock.Setup(x => x.ValidatePassword(user, password))
-            .Returns(true);
+        _userDomainServiceMock.Setup(x => x.ValidatePassword(password))
+            .Returns(ValidationResult.Success());
 
         // Act
         var result = await _userService.ValidatePasswordAsync(_userId, password);
@@ -76,8 +77,8 @@ public class UserServiceTests
 
         _userRepositoryMock.Setup(x => x.GetByIdAsync(_userId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(user);
-        _userDomainServiceMock.Setup(x => x.ValidatePassword(user, password))
-            .Returns(false);
+        _userDomainServiceMock.Setup(x => x.ValidatePassword(password))
+            .Returns(new ValidationResult { IsValid = false, Errors = new List<string> { "Invalid password" } });
 
         // Act
         var result = await _userService.ValidatePasswordAsync(_userId, password);

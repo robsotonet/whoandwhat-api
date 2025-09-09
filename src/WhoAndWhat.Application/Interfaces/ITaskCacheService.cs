@@ -14,7 +14,7 @@ public interface ITaskCacheService
     /// <param name="task">Task to cache</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>True if cached successfully</returns>
-    public Task<bool> CacheTaskAsync(Domain.Entities.Task task, CancellationToken cancellationToken = default);
+    public Task<bool> CacheTaskAsync(AppTask task, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Get a cached task by ID
@@ -22,7 +22,7 @@ public interface ITaskCacheService
     /// <param name="taskId">Task identifier</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Cached task or null if not found</returns>
-    public Task<Domain.Entities.Task?> GetCachedTaskAsync(Guid taskId, CancellationToken cancellationToken = default);
+    public Task<AppTask?> GetCachedTaskAsync(Guid taskId, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Cache a list of tasks for a user
@@ -32,7 +32,7 @@ public interface ITaskCacheService
     /// <param name="filterKey">Optional filter identifier for cached lists</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>True if cached successfully</returns>
-    public Task<bool> CacheUserTasksAsync(Guid userId, IEnumerable<Domain.Entities.Task> tasks, string? filterKey = null, CancellationToken cancellationToken = default);
+    public Task<bool> CacheUserTasksAsync(Guid userId, IEnumerable<AppTask> tasks, string? filterKey = null, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Get cached task list for a user
@@ -41,7 +41,7 @@ public interface ITaskCacheService
     /// <param name="filterKey">Optional filter identifier for cached lists</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Cached task list or null if not found</returns>
-    public Task<IEnumerable<Domain.Entities.Task>?> GetCachedUserTasksAsync(Guid userId, string? filterKey = null, CancellationToken cancellationToken = default);
+    public Task<IEnumerable<AppTask>?> GetCachedUserTasksAsync(Guid userId, string? filterKey = null, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Cache user task summary statistics

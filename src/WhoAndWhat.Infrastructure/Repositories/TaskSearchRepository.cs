@@ -6,8 +6,8 @@ using Microsoft.Extensions.Logging;
 using WhoAndWhat.Application.DTOs;
 using WhoAndWhat.Application.Interfaces;
 using WhoAndWhat.Domain.ValueObjects;
-using TaskStatus = WhoAndWhat.Domain.ValueObjects.TaskStatus;
 using WhoAndWhat.Infrastructure.Data;
+using TaskStatus = WhoAndWhat.Domain.ValueObjects.AppTaskStatus;
 
 namespace WhoAndWhat.Infrastructure.Repositories;
 
@@ -18,7 +18,7 @@ public class TaskSearchRepository : ITaskSearchRepository
 {
     private readonly ApplicationDbContext _context;
     private readonly ILogger<TaskSearchRepository> _logger;
-    
+
     // Performance tracking
     private long _totalSearchRequests = 0;
     private long _cachedSearchHits = 0;
@@ -38,23 +38,23 @@ public class TaskSearchRepository : ITaskSearchRepository
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
-    public async Task<TaskSearchResult> SearchTasksAsync(Guid userId, TaskSearchCriteria criteria, CancellationToken cancellationToken = default)
+    public async Task<TaskSearchResult> SearchTasksAsync(Guid userId, AppTaskSearchCriteria criteria, CancellationToken cancellationToken = default)
     {
         var stopwatch = Stopwatch.StartNew();
         var normalizedCriteria = criteria.Normalize();
-        
+
         try
         {
             _logger.LogDebug("Starting task search for user {UserId} with query: {Query}", userId, normalizedCriteria.Query);
-            
+
             // Build the base query
             var query = _context.Tasks.Where(t => t.UserId == userId);
 
             // Apply full-text search if query is provided
             if (normalizedCriteria.IsFullTextSearch)
             {
-                var language = GetSearchLanguage(normalizedCriteria.Query);
-                query = ApplyFullTextSearch(query, normalizedCriteria.Query, language);
+                var language = GetSearchLanguage(normalizedCriteria.SearchTerm);
+                query = ApplyFullTextSearch(query, normalizedCriteria.SearchTerm, language);
             }
 
             // Apply filters
@@ -73,7 +73,7 @@ public class TaskSearchRepository : ITaskSearchRepository
             List<TaskSearchItem> searchItems;
             if (normalizedCriteria.IsFullTextSearch)
             {
-                searchItems = await ExecuteFullTextSearchQuery(paginatedQuery, normalizedCriteria.Query, cancellationToken);
+                searchItems = await ExecuteFullTextSearchQuery(paginatedQuery, normalizedCriteria.SearchTerm, cancellationToken);
             }
             else
             {
@@ -82,7 +82,7 @@ public class TaskSearchRepository : ITaskSearchRepository
             }
 
             stopwatch.Stop();
-            
+
             // Record analytics
             await RecordSearchQueryAsync(userId, normalizedCriteria, totalCount, stopwatch.Elapsed, false, cancellationToken);
 
@@ -92,7 +92,7 @@ public class TaskSearchRepository : ITaskSearchRepository
                 normalizedCriteria.PageNumber,
                 normalizedCriteria.PageSize,
                 stopwatch.Elapsed,
-                normalizedCriteria.Query,
+                normalizedCriteria.SearchTerm,
                 new SearchResultMetadata
                 {
                     FromCache = false,
@@ -101,7 +101,7 @@ public class TaskSearchRepository : ITaskSearchRepository
                     SearchExecutedAt = DateTime.UtcNow
                 });
 
-            _logger.LogDebug("Task search completed for user {UserId}. Found {TotalCount} results in {Duration}ms", 
+            _logger.LogDebug("Task search completed for user {UserId}. Found {TotalCount} results in {Duration}ms",
                 userId, totalCount, stopwatch.ElapsedMilliseconds);
 
             return result;
@@ -109,8 +109,8 @@ public class TaskSearchRepository : ITaskSearchRepository
         catch (Exception ex)
         {
             stopwatch.Stop();
-            _logger.LogError(ex, "Error executing task search for user {UserId} with query: {Query}", userId, normalizedCriteria.Query);
-            return TaskSearchResult.Empty(normalizedCriteria.Query, stopwatch.Elapsed);
+            _logger.LogError(ex, "Error executing task search for user {UserId} with query: {Query}", userId, normalizedCriteria.SearchTerm);
+            return TaskSearchResult.Empty(normalizedCriteria.SearchTerm, stopwatch.Elapsed);
         }
     }
 
@@ -124,7 +124,7 @@ public class TaskSearchRepository : ITaskSearchRepository
         try
         {
             var sanitizedQuery = query.Trim().ToLowerInvariant();
-            
+
             // Use trigram similarity search for suggestions
             var suggestions = await _context.Database
                 .SqlQuery<string>($@"
@@ -166,7 +166,7 @@ public class TaskSearchRepository : ITaskSearchRepository
     public async Task<SearchPerformanceMetrics> GetSearchMetricsAsync(CancellationToken cancellationToken = default)
     {
         await Task.CompletedTask; // Async method for future extensibility
-        
+
         return new SearchPerformanceMetrics
         {
             TotalSearchRequests = Interlocked.Read(ref _totalSearchRequests),
@@ -188,7 +188,7 @@ public class TaskSearchRepository : ITaskSearchRepository
         // This would typically query a search analytics table
         // For now, return basic analytics
         await Task.CompletedTask;
-        
+
         return new SearchAnalytics
         {
             UserId = userId,
@@ -200,13 +200,13 @@ public class TaskSearchRepository : ITaskSearchRepository
         };
     }
 
-    public async Task RecordSearchQueryAsync(Guid userId, TaskSearchCriteria criteria, int resultCount, TimeSpan duration, bool fromCache, CancellationToken cancellationToken = default)
+    public async Task RecordSearchQueryAsync(Guid userId, AppTaskSearchCriteria criteria, int resultCount, TimeSpan duration, bool fromCache, CancellationToken cancellationToken = default)
     {
         await Task.CompletedTask; // Async for future database logging
 
         // Increment counters
         Interlocked.Increment(ref _totalSearchRequests);
-        
+
         if (fromCache)
         {
             Interlocked.Increment(ref _cachedSearchHits);
@@ -269,10 +269,10 @@ public class TaskSearchRepository : ITaskSearchRepository
                 .FirstOrDefaultAsync(cancellationToken);
 
             var isValid = trgmCheck && indexCheck >= 2;
-            
-            _logger.LogInformation("Search configuration validation: pg_trgm={PgTrgm}, Indexes={IndexCount}, Valid={IsValid}", 
+
+            _logger.LogInformation("Search configuration validation: pg_trgm={PgTrgm}, Indexes={IndexCount}, Valid={IsValid}",
                 trgmCheck, indexCheck, isValid);
-                
+
             return isValid;
         }
         catch (Exception ex)
@@ -282,31 +282,31 @@ public class TaskSearchRepository : ITaskSearchRepository
         }
     }
 
-    private IQueryable<Domain.Entities.Task> ApplyFullTextSearch(IQueryable<Domain.Entities.Task> query, string searchQuery, string language)
+    private IQueryable<Domain.Entities.AppTask> ApplyFullTextSearch(IQueryable<Domain.Entities.AppTask> query, string searchQuery, string language)
     {
         var sanitizedQuery = searchQuery.Replace("'", "''"); // Basic SQL injection protection
-        
+
         // Use raw SQL for full-text search with ranking
-        return query.Where(t => 
+        return query.Where(t =>
             EF.Functions.ToTsVector(language, t.Title + " " + (t.Description ?? ""))
                 .Matches(EF.Functions.ToTsQuery(language, sanitizedQuery)));
     }
 
-    private IQueryable<Domain.Entities.Task> ApplyFilters(IQueryable<Domain.Entities.Task> query, TaskSearchCriteria criteria)
+    private IQueryable<Domain.Entities.AppTask> ApplyFilters(IQueryable<Domain.Entities.AppTask> query, AppTaskSearchCriteria criteria)
     {
-        if (criteria.Category.HasValue)
+        if (criteria.Category != null)
         {
-            query = query.Where(t => t.Category == (int)criteria.Category.Value);
+            query = query.Where(t => t.Category == (int)criteria.Category);
         }
 
-        if (criteria.Status.HasValue)
+        if (criteria.Status != null)
         {
-            query = query.Where(t => t.Status == (int)criteria.Status.Value);
+            query = query.Where(t => t.Status == (int)criteria.Status);
         }
 
-        if (criteria.Priority.HasValue)
+        if (criteria.Priority != null)
         {
-            query = query.Where(t => t.Priority == (int)criteria.Priority.Value);
+            query = query.Where(t => t.Priority == (int)criteria.Priority);
         }
 
         if (criteria.DueDateFrom.HasValue)
@@ -339,7 +339,7 @@ public class TaskSearchRepository : ITaskSearchRepository
         return query;
     }
 
-    private IQueryable<Domain.Entities.Task> ApplySorting(IQueryable<Domain.Entities.Task> query, TaskSearchCriteria criteria)
+    private IQueryable<Domain.Entities.AppTask> ApplySorting(IQueryable<Domain.Entities.AppTask> query, AppTaskSearchCriteria criteria)
     {
         return criteria.SortBy switch
         {
@@ -365,16 +365,16 @@ public class TaskSearchRepository : ITaskSearchRepository
         };
     }
 
-    private async Task<List<TaskSearchItem>> ExecuteFullTextSearchQuery(IQueryable<Domain.Entities.Task> query, string searchQuery, CancellationToken cancellationToken)
+    private async Task<List<TaskSearchItem>> ExecuteFullTextSearchQuery(IQueryable<Domain.Entities.AppTask> query, string searchQuery, CancellationToken cancellationToken)
     {
         var tasks = await query.ToListAsync(cancellationToken);
-        
+
         // For now, return with default relevance score
         // In a more advanced implementation, we'd extract the ts_rank from the query
         return tasks.Select(t => TaskSearchItem.FromTask(t, 1.0, ExtractMatchedTerms(t, searchQuery))).ToList();
     }
 
-    private IEnumerable<string> ExtractMatchedTerms(Domain.Entities.Task task, string searchQuery)
+    private IEnumerable<string> ExtractMatchedTerms(Domain.Entities.AppTask task, string searchQuery)
     {
         var searchTerms = searchQuery.ToLowerInvariant().Split(' ', StringSplitOptions.RemoveEmptyEntries);
         var matchedTerms = new List<string>();
@@ -396,10 +396,10 @@ public class TaskSearchRepository : ITaskSearchRepository
         // Simple language detection - in a real implementation, you might use a more sophisticated approach
         var spanishWords = new[] { "el", "la", "de", "que", "y", "en", "un", "es", "se", "no", "te", "lo", "le", "da", "su", "por", "son", "con", "para", "al", "una", "del", "todo", "está", "muy", "fue", "han", "era", "sobre", "ser", "tiene", "hasta", "sin", "entre", "está" };
         var words = query.ToLowerInvariant().Split(' ', StringSplitOptions.RemoveEmptyEntries);
-        
+
         var spanishMatches = words.Count(word => spanishWords.Contains(word));
         var spanishRatio = words.Length > 0 ? (double)spanishMatches / words.Length : 0;
-        
+
         return spanishRatio > 0.3 ? "spanish" : "english";
     }
 
@@ -429,11 +429,11 @@ public class TaskSearchRepository : ITaskSearchRepository
         };
     }
 
-    private void TrackFilterUsage(TaskSearchCriteria criteria)
+    private void TrackFilterUsage(AppTaskSearchCriteria criteria)
     {
-        if (criteria.Category.HasValue)
+        if (criteria.Category != null)
         {
-            var category = criteria.Category.Value.ToString();
+            var category = criteria.Category.ToString();
             lock (_categoryFilterUsage)
             {
                 _categoryFilterUsage.TryGetValue(category, out var count);
@@ -441,9 +441,9 @@ public class TaskSearchRepository : ITaskSearchRepository
             }
         }
 
-        if (criteria.Status.HasValue)
+        if (criteria.Status != null)
         {
-            var status = criteria.Status.Value.ToString();
+            var status = criteria.Status.ToString();
             lock (_statusFilterUsage)
             {
                 _statusFilterUsage.TryGetValue(status, out var count);
@@ -451,9 +451,9 @@ public class TaskSearchRepository : ITaskSearchRepository
             }
         }
 
-        if (criteria.Priority.HasValue)
+        if (criteria.Priority != null)
         {
-            var priority = criteria.Priority.Value.ToString();
+            var priority = criteria.Priority.ToString();
             lock (_priorityFilterUsage)
             {
                 _priorityFilterUsage.TryGetValue(priority, out var count);

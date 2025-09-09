@@ -7,8 +7,8 @@ using WhoAndWhat.Domain.Entities;
 using WhoAndWhat.Domain.Services;
 using WhoAndWhat.Domain.ValueObjects;
 using Xunit;
-using DomainTask = WhoAndWhat.Domain.Entities.Task;
-using DomainTaskStatus = WhoAndWhat.Domain.ValueObjects.TaskStatus;
+using DomainTask = WhoAndWhat.Domain.Entities.AppTask;
+using DomainTaskStatus = WhoAndWhat.Domain.ValueObjects.AppTaskStatus;
 
 namespace WhoAndWhat.Domain.Tests.Services;
 
@@ -570,7 +570,7 @@ public class SoftDeleteServiceTests
             Description = $"Description for {title}",
             Status = (int)DomainTaskStatus.Pending,
             Priority = (int)Priority.Medium,
-            Category = (int)TaskCategory.ToDos,
+            Category = (int)AppTaskCategory.ToDo,
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow,
             Subtasks = new List<DomainTask>()

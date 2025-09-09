@@ -34,7 +34,7 @@ public class EmailService : IEmailService
 
         var resetUrl = $"{_emailSettings.BaseUrl}/reset-password?token={resetToken}&email={email}";
         var subject = "Reset Your Password - WhoAndWhat";
-        
+
         var htmlContent = GeneratePasswordResetEmailHtml(username, resetUrl, _emailSettings.Templates.PasswordResetExpirationHours);
         var plainTextContent = GeneratePasswordResetEmailPlainText(username, resetUrl, _emailSettings.Templates.PasswordResetExpirationHours);
 
@@ -52,7 +52,7 @@ public class EmailService : IEmailService
 
         var verificationUrl = $"{_emailSettings.BaseUrl}/verify-email?token={verificationToken}&userId={userId}";
         var subject = "Verify Your Email Address - WhoAndWhat";
-        
+
         var htmlContent = GenerateEmailVerificationEmailHtml(username, verificationUrl, _emailSettings.Templates.EmailVerificationExpirationHours);
         var plainTextContent = GenerateEmailVerificationEmailPlainText(username, verificationUrl, _emailSettings.Templates.EmailVerificationExpirationHours);
 
@@ -69,7 +69,7 @@ public class EmailService : IEmailService
         }
 
         var subject = $"Welcome to WhoAndWhat, {username}!";
-        
+
         var htmlContent = GenerateWelcomeEmailHtml(username);
         var plainTextContent = GenerateWelcomeEmailPlainText(username);
 
@@ -86,7 +86,7 @@ public class EmailService : IEmailService
         }
 
         var subject = "Account Security Alert - WhoAndWhat";
-        
+
         var htmlContent = GenerateAccountLockedEmailHtml(username, lockedUntil);
         var plainTextContent = GenerateAccountLockedEmailPlainText(username, lockedUntil);
 
@@ -103,7 +103,7 @@ public class EmailService : IEmailService
         }
 
         var subject = "Password Changed - WhoAndWhat";
-        
+
         var htmlContent = GeneratePasswordChangedEmailHtml(username);
         var plainTextContent = GeneratePasswordChangedEmailPlainText(username);
 
@@ -128,16 +128,16 @@ public class EmailService : IEmailService
 
             var bodyBuilder = new BodyBuilder();
             bodyBuilder.HtmlBody = htmlContent;
-            
+
             if (!string.IsNullOrEmpty(plainTextContent))
             {
                 bodyBuilder.TextBody = plainTextContent;
             }
-            
+
             message.Body = bodyBuilder.ToMessageBody();
 
             using var client = new SmtpClient();
-            
+
             // Set timeout
             client.Timeout = _emailSettings.TimeoutMs;
 

@@ -1,5 +1,5 @@
-using Microsoft.Extensions.Logging;
 using System.Text.Json;
+using Microsoft.Extensions.Logging;
 using WhoAndWhat.Application.Common;
 using WhoAndWhat.Application.Interfaces;
 using WhoAndWhat.Domain.Entities;
@@ -35,13 +35,19 @@ public class UserService : IUserService
         {
             // Validate input
             if (string.IsNullOrWhiteSpace(email))
+            {
                 return Result<User>.Failure("Email is required");
+            }
 
             if (string.IsNullOrWhiteSpace(username))
+            {
                 return Result<User>.Failure("Username is required");
+            }
 
             if (string.IsNullOrWhiteSpace(password))
+            {
                 return Result<User>.Failure("Password is required");
+            }
 
             // Check if email already exists
             var existingEmailUser = await _userRepository.GetByEmailAsync(email, cancellationToken);
@@ -83,13 +89,17 @@ public class UserService : IUserService
         {
             // Validate input
             if (string.IsNullOrWhiteSpace(email))
+            {
                 return Result<User>.Failure("Email is required");
+            }
 
             if (string.IsNullOrWhiteSpace(password))
+            {
                 return Result<User>.Failure("Password is required");
+            }
 
             var user = await _userRepository.GetByEmailAsync(email, cancellationToken);
-            
+
             // Timing attack protection - always hash password even if user doesn't exist
             if (user == null)
             {
@@ -102,7 +112,7 @@ public class UserService : IUserService
             // Check if account is locked
             if (user.IsLocked && user.LockedUntil > DateTime.UtcNow)
             {
-                _logger.LogWarning("Authentication attempt on locked account: {UserId} - locked until {LockedUntil}", 
+                _logger.LogWarning("Authentication attempt on locked account: {UserId} - locked until {LockedUntil}",
                     user.Id, user.LockedUntil);
                 return Result<User>.Failure($"Account is locked until {user.LockedUntil:yyyy-MM-dd HH:mm:ss} UTC");
             }
@@ -116,14 +126,14 @@ public class UserService : IUserService
 
             // Verify password
             var isValidPassword = user.VerifyPassword(password);
-            
+
             // Record login attempt (will handle locking if needed)
             user.RecordLoginAttempt(isValidPassword);
             await _userRepository.UpdateAsync(user, cancellationToken);
 
             if (!isValidPassword)
             {
-                _logger.LogWarning("Failed authentication attempt for user: {UserId} - attempt #{FailedAttempts}", 
+                _logger.LogWarning("Failed authentication attempt for user: {UserId} - attempt #{FailedAttempts}",
                     user.Id, user.FailedLoginAttempts);
                 return Result<User>.Failure("Invalid email or password");
             }
@@ -152,10 +162,14 @@ public class UserService : IUserService
         try
         {
             if (string.IsNullOrWhiteSpace(currentPassword))
+            {
                 return Result.Failure("Current password is required");
+            }
 
             if (string.IsNullOrWhiteSpace(newPassword))
+            {
                 return Result.Failure("New password is required");
+            }
 
             var user = await _userRepository.GetByIdAsync(userId, cancellationToken);
             if (user == null)
@@ -196,7 +210,9 @@ public class UserService : IUserService
         try
         {
             if (string.IsNullOrWhiteSpace(verificationToken))
+            {
                 return Result.Failure("Verification token is required");
+            }
 
             var user = await _userRepository.GetByIdAsync(userId, cancellationToken);
             if (user == null)
@@ -237,13 +253,19 @@ public class UserService : IUserService
         try
         {
             if (string.IsNullOrWhiteSpace(email))
+            {
                 return Result.Failure("Email is required");
+            }
 
             if (string.IsNullOrWhiteSpace(resetToken))
+            {
                 return Result.Failure("Reset token is required");
+            }
 
             if (string.IsNullOrWhiteSpace(newPassword))
+            {
                 return Result.Failure("New password is required");
+            }
 
             var user = await _userRepository.GetByEmailAsync(email, cancellationToken);
             if (user == null)
@@ -267,10 +289,10 @@ public class UserService : IUserService
             // Set new password and clear reset token
             user.SetPassword(newPassword);
             user.ClearPasswordResetToken();
-            
+
             // Clear failed login attempts and unlock account
             user.UnlockAccount();
-            
+
             await _userRepository.UpdateAsync(user, cancellationToken);
 
             _logger.LogInformation("Password reset successfully for user: {UserId}", user.Id);
@@ -415,7 +437,9 @@ public class UserService : IUserService
         try
         {
             if (string.IsNullOrWhiteSpace(email))
+            {
                 return null;
+            }
 
             return await _userRepository.GetByEmailAsync(email, cancellationToken);
         }
@@ -432,7 +456,9 @@ public class UserService : IUserService
         try
         {
             if (string.IsNullOrWhiteSpace(email))
+            {
                 return false;
+            }
 
             return await _userRepository.EmailExistsAsync(email, cancellationToken);
         }
@@ -449,7 +475,9 @@ public class UserService : IUserService
         try
         {
             if (string.IsNullOrWhiteSpace(username))
+            {
                 return false;
+            }
 
             return await _userRepository.UsernameExistsAsync(username, cancellationToken);
         }
@@ -466,7 +494,9 @@ public class UserService : IUserService
         try
         {
             if (string.IsNullOrWhiteSpace(password))
+            {
                 return false;
+            }
 
             var user = await _userRepository.GetByIdAsync(userId, cancellationToken);
             if (user == null)
@@ -476,12 +506,31 @@ public class UserService : IUserService
             }
 
             // Use domain service to validate password
-            return _userDomainService.ValidatePassword(user, password);
+            var validationResult = _userDomainService.ValidatePassword(password);
+            return validationResult.IsValid && BCrypt.Net.BCrypt.Verify(password, user.PasswordHash);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error validating password for user: {UserId}", userId);
             return false;
+        }
+    }
+
+    /// <inheritdoc />
+    public async Task<Result> UpdateUserAsync(User user, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            Guard.Against.Null(user, nameof(user));
+
+            await _userRepository.UpdateAsync(user, cancellationToken);
+            _logger.LogDebug("User updated successfully: {UserId}", user.Id);
+            return Result.Success();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error updating user: {UserId}", user.Id);
+            return Result.Failure("Failed to update user");
         }
     }
 
@@ -569,7 +618,7 @@ public class UserService : IUserService
             // Convert to requested format
             byte[] data;
             string contentType;
-            
+
             switch (format.ToLowerInvariant())
             {
                 case "json":
@@ -585,13 +634,13 @@ public class UserService : IUserService
                 case "csv":
                     // For CSV, we'll create a simple format with profile data only for now
                     var csvLines = new List<string>();
-                    
+
                     if (includeProfile)
                     {
                         csvLines.Add("Type,Id,Email,Username,PreferredLanguage,IsEmailVerified,IsActive,CreatedAt,UpdatedAt,LastLoginAt");
                         csvLines.Add($"Profile,{user.Id},{user.Email},{user.Username},{user.PreferredLanguage},{user.IsEmailVerified},{user.IsActive},{user.CreatedAt:yyyy-MM-dd HH:mm:ss},{user.UpdatedAt:yyyy-MM-dd HH:mm:ss},{user.LastLoginAt:yyyy-MM-dd HH:mm:ss}");
                     }
-                    
+
                     var csvContent = string.Join(Environment.NewLine, csvLines);
                     data = System.Text.Encoding.UTF8.GetBytes(csvContent);
                     contentType = "text/csv";

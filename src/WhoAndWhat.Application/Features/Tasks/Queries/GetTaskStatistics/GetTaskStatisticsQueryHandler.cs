@@ -10,11 +10,11 @@ namespace WhoAndWhat.Application.Features.Tasks.Queries.GetTaskStatistics;
 
 public class GetTaskStatisticsQueryHandler : IRequestHandler<GetTaskStatisticsQuery, Result<TaskStatisticsResponse>>
 {
-    private readonly ITaskRepository _taskRepository;
+    private readonly IAppTaskRepository _taskRepository;
     private readonly ILogger<GetTaskStatisticsQueryHandler> _logger;
 
     public GetTaskStatisticsQueryHandler(
-        ITaskRepository taskRepository,
+        IAppTaskRepository taskRepository,
         ILogger<GetTaskStatisticsQueryHandler> logger)
     {
         _taskRepository = taskRepository;
@@ -25,7 +25,7 @@ public class GetTaskStatisticsQueryHandler : IRequestHandler<GetTaskStatisticsQu
     {
         try
         {
-            var searchCriteria = new TaskSearchCriteria
+            var searchCriteria = new AppTaskSearchCriteria
             {
                 UserId = request.UserId,
                 CreatedFrom = request.From,
@@ -37,9 +37,9 @@ public class GetTaskStatisticsQueryHandler : IRequestHandler<GetTaskStatisticsQu
 
             // Get category-specific statistics
             var categoryStats = new List<CategoryStatistics>();
-            foreach (var category in TaskCategory.GetAll())
+            foreach (var category in AppTaskCategory.GetAll())
             {
-                var categorySearchCriteria = new TaskSearchCriteria
+                var categorySearchCriteria = new AppTaskSearchCriteria
                 {
                     UserId = request.UserId,
                     Categories = new List<int> { category.Value },
@@ -56,7 +56,7 @@ public class GetTaskStatisticsQueryHandler : IRequestHandler<GetTaskStatisticsQu
                     TotalTasks = categoryStatistics.TotalTasks,
                     CompletedTasks = categoryStatistics.CompletedTasks,
                     OverdueTasks = categoryStatistics.OverdueTasks,
-                    CompletionPercentage = categoryStatistics.TotalTasks > 0 
+                    CompletionPercentage = categoryStatistics.TotalTasks > 0
                         ? Math.Round((decimal)categoryStatistics.CompletedTasks / categoryStatistics.TotalTasks * 100, 2)
                         : 0,
                     AverageCompletionTime = categoryStatistics.AverageCompletionTime
@@ -67,7 +67,7 @@ public class GetTaskStatisticsQueryHandler : IRequestHandler<GetTaskStatisticsQu
             var priorityStats = new List<PriorityStatistics>();
             foreach (var priority in Priority.GetAll())
             {
-                var prioritySearchCriteria = new TaskSearchCriteria
+                var prioritySearchCriteria = new AppTaskSearchCriteria
                 {
                     UserId = request.UserId,
                     Priorities = new List<int> { priority.Value },
@@ -96,7 +96,7 @@ public class GetTaskStatisticsQueryHandler : IRequestHandler<GetTaskStatisticsQu
                 TasksDueThisWeek = statistics.TasksDueThisWeek,
                 CategoryStats = categoryStats.ToArray(),
                 PriorityStats = priorityStats.ToArray(),
-                CompletionRate = statistics.TotalTasks > 0 
+                CompletionRate = statistics.TotalTasks > 0
                     ? Math.Round((decimal)statistics.CompletedTasks / statistics.TotalTasks * 100, 2)
                     : 0,
                 AverageCompletionTime = statistics.AverageCompletionTime

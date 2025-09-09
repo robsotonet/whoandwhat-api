@@ -10,7 +10,7 @@ public class ProjectEntityTests
     {
         var project = new Project();
         
-        project.Id.Should().Be(Guid.Empty);
+        project.Id.Should().NotBe(Guid.Empty); // BaseEntity auto-generates ID
         project.Name.Should().BeNull();
         project.Description.Should().BeNull();
         project.StartDate.Should().BeNull();
@@ -60,8 +60,8 @@ public class ProjectEntityTests
     public void Project_Should_Allow_Adding_Tasks()
     {
         var project = new Project();
-        var task1 = new WhoAndWhat.Domain.Entities.Task { Title = "Task 1" };
-        var task2 = new WhoAndWhat.Domain.Entities.Task { Title = "Task 2" };
+        var task1 = new WhoAndWhat.Domain.Entities.AppTask { Title = "Task 1" };
+        var task2 = new WhoAndWhat.Domain.Entities.AppTask { Title = "Task 2" };
 
         project.Tasks.Add(task1);
         project.Tasks.Add(task2);

@@ -1,8 +1,8 @@
+using System.Text.Json;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using StackExchange.Redis;
-using System.Text.Json;
 using WhoAndWhat.Application.Interfaces;
 using WhoAndWhat.Domain.Entities;
 using WhoAndWhat.Infrastructure.Configuration;
@@ -21,7 +21,7 @@ public class TaskCacheService : ITaskCacheService
     private readonly ILogger<TaskCacheService> _logger;
     private readonly JsonSerializerOptions _jsonOptions;
     private readonly SemaphoreSlim _semaphore;
-    
+
     // Performance tracking
     private long _totalRequests = 0;
     private long _cacheHits = 0;
@@ -40,10 +40,10 @@ public class TaskCacheService : ITaskCacheService
         _distributedCache = distributedCache ?? throw new ArgumentNullException(nameof(distributedCache));
         _cacheSettings = cacheSettings.Value ?? throw new ArgumentNullException(nameof(cacheSettings));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-        
+
         _database = _redis.GetDatabase(_cacheSettings.DatabaseIndex);
         _semaphore = new SemaphoreSlim(100, 100); // Limit concurrent operations
-        
+
         _jsonOptions = new JsonSerializerOptions
         {
             PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
@@ -54,13 +54,13 @@ public class TaskCacheService : ITaskCacheService
         _logger.LogInformation("TaskCacheService initialized with Redis database {DatabaseIndex}", _cacheSettings.DatabaseIndex);
     }
 
-    public async Task<bool> CacheTaskAsync(Domain.Entities.Task task, CancellationToken cancellationToken = default)
+    public async Task<bool> CacheTaskAsync(Domain.Entities.AppTask task, CancellationToken cancellationToken = default)
     {
         var startTime = DateTime.UtcNow;
         try
         {
             await _semaphore.WaitAsync(cancellationToken);
-            
+
             var cacheKey = GetTaskCacheKey(task.Id);
             var serializedTask = JsonSerializer.Serialize(task, _jsonOptions);
             var expiration = TimeSpan.FromMinutes(_cacheSettings.TaskCacheExpirationMinutes);
@@ -71,7 +71,7 @@ public class TaskCacheService : ITaskCacheService
             };
 
             await _distributedCache.SetStringAsync(cacheKey, serializedTask, options, cancellationToken);
-            
+
             _logger.LogDebug("Cached task {TaskId} with expiration {Expiration}", task.Id, expiration);
             return true;
         }
@@ -87,22 +87,22 @@ public class TaskCacheService : ITaskCacheService
         }
     }
 
-    public async Task<Domain.Entities.Task?> GetCachedTaskAsync(Guid taskId, CancellationToken cancellationToken = default)
+    public async Task<Domain.Entities.AppTask?> GetCachedTaskAsync(Guid taskId, CancellationToken cancellationToken = default)
     {
         var startTime = DateTime.UtcNow;
         Interlocked.Increment(ref _totalRequests);
-        
+
         try
         {
             await _semaphore.WaitAsync(cancellationToken);
-            
+
             var cacheKey = GetTaskCacheKey(taskId);
             var cachedData = await _distributedCache.GetStringAsync(cacheKey, cancellationToken);
 
             if (cachedData != null)
             {
                 Interlocked.Increment(ref _cacheHits);
-                var task = JsonSerializer.Deserialize<Domain.Entities.Task>(cachedData, _jsonOptions);
+                var task = JsonSerializer.Deserialize<Domain.Entities.AppTask>(cachedData, _jsonOptions);
                 _logger.LogDebug("Cache hit for task {TaskId}", taskId);
                 return task;
             }
@@ -124,13 +124,13 @@ public class TaskCacheService : ITaskCacheService
         }
     }
 
-    public async Task<bool> CacheUserTasksAsync(Guid userId, IEnumerable<Domain.Entities.Task> tasks, string? filterKey = null, CancellationToken cancellationToken = default)
+    public async Task<bool> CacheUserTasksAsync(Guid userId, IEnumerable<Domain.Entities.AppTask> tasks, string? filterKey = null, CancellationToken cancellationToken = default)
     {
         var startTime = DateTime.UtcNow;
         try
         {
             await _semaphore.WaitAsync(cancellationToken);
-            
+
             var cacheKey = GetUserTasksCacheKey(userId, filterKey);
             var taskList = tasks.ToList();
             var serializedTasks = JsonSerializer.Serialize(taskList, _jsonOptions);
@@ -142,8 +142,8 @@ public class TaskCacheService : ITaskCacheService
             };
 
             await _distributedCache.SetStringAsync(cacheKey, serializedTasks, options, cancellationToken);
-            
-            _logger.LogDebug("Cached {TaskCount} tasks for user {UserId} with filter '{FilterKey}'", 
+
+            _logger.LogDebug("Cached {TaskCount} tasks for user {UserId} with filter '{FilterKey}'",
                 taskList.Count, userId, filterKey ?? "none");
             return true;
         }
@@ -159,22 +159,22 @@ public class TaskCacheService : ITaskCacheService
         }
     }
 
-    public async Task<IEnumerable<Domain.Entities.Task>?> GetCachedUserTasksAsync(Guid userId, string? filterKey = null, CancellationToken cancellationToken = default)
+    public async Task<IEnumerable<Domain.Entities.AppTask>?> GetCachedUserTasksAsync(Guid userId, string? filterKey = null, CancellationToken cancellationToken = default)
     {
         var startTime = DateTime.UtcNow;
         Interlocked.Increment(ref _totalRequests);
-        
+
         try
         {
             await _semaphore.WaitAsync(cancellationToken);
-            
+
             var cacheKey = GetUserTasksCacheKey(userId, filterKey);
             var cachedData = await _distributedCache.GetStringAsync(cacheKey, cancellationToken);
 
             if (cachedData != null)
             {
                 Interlocked.Increment(ref _cacheHits);
-                var tasks = JsonSerializer.Deserialize<List<Domain.Entities.Task>>(cachedData, _jsonOptions);
+                var tasks = JsonSerializer.Deserialize<List<Domain.Entities.AppTask>>(cachedData, _jsonOptions);
                 _logger.LogDebug("Cache hit for user {UserId} tasks with filter '{FilterKey}'", userId, filterKey ?? "none");
                 return tasks;
             }
@@ -202,7 +202,7 @@ public class TaskCacheService : ITaskCacheService
         try
         {
             await _semaphore.WaitAsync(cancellationToken);
-            
+
             var summary = new UserTaskSummary
             {
                 TotalTasks = totalTasks,
@@ -222,7 +222,7 @@ public class TaskCacheService : ITaskCacheService
             };
 
             await _distributedCache.SetStringAsync(cacheKey, serializedSummary, options, cancellationToken);
-            
+
             _logger.LogDebug("Cached task summary for user {UserId}: Total={Total}, Completed={Completed}, Overdue={Overdue}, Today={Today}",
                 userId, totalTasks, completedTasks, overdueTasks, todayTasks);
             return true;
@@ -243,11 +243,11 @@ public class TaskCacheService : ITaskCacheService
     {
         var startTime = DateTime.UtcNow;
         Interlocked.Increment(ref _totalRequests);
-        
+
         try
         {
             await _semaphore.WaitAsync(cancellationToken);
-            
+
             var cacheKey = GetUserSummaryCacheKey(userId);
             var cachedData = await _distributedCache.GetStringAsync(cacheKey, cancellationToken);
 
@@ -293,7 +293,7 @@ public class TaskCacheService : ITaskCacheService
             };
 
             await System.Threading.Tasks.Task.WhenAll(tasks);
-            
+
             _logger.LogDebug("Invalidated cache for task {TaskId} and user {UserId} related data", taskId, userId);
             return true;
         }
@@ -318,7 +318,7 @@ public class TaskCacheService : ITaskCacheService
             };
 
             await System.Threading.Tasks.Task.WhenAll(tasks);
-            
+
             _logger.LogDebug("Invalidated all task cache for user {UserId}", userId);
             return true;
         }
@@ -340,13 +340,13 @@ public class TaskCacheService : ITaskCacheService
         try
         {
             _logger.LogInformation("Starting cache warming process");
-            
+
             // This would be implemented to warm cache with frequently accessed tasks
             // For now, we'll return 0 as this requires coordination with the repository layer
             // This will be implemented when DevB provides the task repository implementation
-            
+
             await System.Threading.Tasks.Task.CompletedTask; // Placeholder for actual implementation
-            
+
             _logger.LogInformation("Cache warming completed - 0 items warmed (awaiting repository implementation)");
             return 0;
         }
@@ -360,7 +360,7 @@ public class TaskCacheService : ITaskCacheService
     public async Task<CachePerformanceMetrics> GetCacheMetricsAsync(CancellationToken cancellationToken = default)
     {
         await System.Threading.Tasks.Task.CompletedTask; // Async method for future extensibility
-        
+
         var metrics = new CachePerformanceMetrics
         {
             TotalRequests = Interlocked.Read(ref _totalRequests),
@@ -430,7 +430,7 @@ public class TaskCacheService : ITaskCacheService
         lock (_responseTimes)
         {
             _responseTimes.Add(responseTime);
-            
+
             // Keep only recent response times (last 1000 requests)
             if (_responseTimes.Count > 1000)
             {

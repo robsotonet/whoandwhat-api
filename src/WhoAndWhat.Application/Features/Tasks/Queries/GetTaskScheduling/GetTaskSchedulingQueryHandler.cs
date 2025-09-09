@@ -6,17 +6,20 @@ using WhoAndWhat.Application.Interfaces;
 using WhoAndWhat.Domain.Common;
 using WhoAndWhat.Domain.Services;
 using WhoAndWhat.Domain.ValueObjects;
+using DomainTask = WhoAndWhat.Domain.Entities.AppTask;
+using DomainTaskStatus = WhoAndWhat.Domain.ValueObjects.AppTaskStatus;
+using SystemTask = System.Threading.Tasks.Task;
 
 namespace WhoAndWhat.Application.Features.Tasks.Queries.GetTaskScheduling;
 
 public class GetTaskSchedulingQueryHandler : IRequestHandler<GetTaskSchedulingQuery, Result<TaskSchedulingResponse>>
 {
-    private readonly ITaskRepository _taskRepository;
+    private readonly IAppTaskRepository _taskRepository;
     private readonly CategoryBusinessRuleService _categoryBusinessRuleService;
     private readonly ILogger<GetTaskSchedulingQueryHandler> _logger;
 
     public GetTaskSchedulingQueryHandler(
-        ITaskRepository taskRepository,
+        IAppTaskRepository taskRepository,
         CategoryBusinessRuleService categoryBusinessRuleService,
         ILogger<GetTaskSchedulingQueryHandler> logger)
     {
@@ -30,19 +33,19 @@ public class GetTaskSchedulingQueryHandler : IRequestHandler<GetTaskSchedulingQu
         try
         {
             // Get incomplete tasks for the user
-            var searchCriteria = new TaskSearchCriteria
+            var searchCriteria = new AppTaskSearchCriteria
             {
                 UserId = request.UserId,
-                Statuses = new List<int> 
-                { 
-                    (int)TaskStatus.Pending, 
-                    (int)TaskStatus.InProgress, 
-                    (int)TaskStatus.Confirmed 
+                Statuses = new List<int>
+                {
+                    (int)DomainTaskStatus.Pending,
+                    (int)DomainTaskStatus.InProgress,
+                    (int)DomainTaskStatus.Confirmed
                 },
                 IncludeArchived = false
             };
 
-            var pagedTasks = await _taskRepository.SearchAsync(searchCriteria, 1, request.MaxSuggestions * 2);
+            var pagedTasks = await _taskRepository.SearchAsync(searchCriteria, 1, request.MaxSuggestions * 2, "DueDate", false);
             var tasks = pagedTasks.Items.ToList();
 
             if (!tasks.Any())

@@ -157,7 +157,7 @@ namespace WhoAndWhat.Infrastructure.Migrations
                     b.ToTable("ArchivedProjects");
                 });
 
-            modelBuilder.Entity("WhoAndWhat.Domain.Entities.ArchivedTask", b =>
+            modelBuilder.Entity("WhoAndWhat.Domain.Entities.ArchivedAppTask", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -254,7 +254,7 @@ namespace WhoAndWhat.Infrastructure.Migrations
 
                     b.HasIndex("UserId", "Status");
 
-                    b.ToTable("ArchivedTasks");
+                    b.ToTable("ArchivedAppTasks");
                 });
 
             modelBuilder.Entity("WhoAndWhat.Domain.Entities.Contact", b =>
@@ -472,7 +472,7 @@ namespace WhoAndWhat.Infrastructure.Migrations
                     b.ToTable("RefreshTokens");
                 });
 
-            modelBuilder.Entity("WhoAndWhat.Domain.Entities.Task", b =>
+            modelBuilder.Entity("WhoAndWhat.Domain.Entities.AppTask", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -629,7 +629,7 @@ namespace WhoAndWhat.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("WhoAndWhat.Domain.Entities.Task", null)
+                    b.HasOne("WhoAndWhat.Domain.Entities.AppTask", null)
                         .WithMany()
                         .HasForeignKey("TasksId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -644,7 +644,7 @@ namespace WhoAndWhat.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("WhoAndWhat.Domain.Entities.Task", null)
+                    b.HasOne("WhoAndWhat.Domain.Entities.AppTask", null)
                         .WithMany()
                         .HasForeignKey("TasksId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -662,7 +662,7 @@ namespace WhoAndWhat.Infrastructure.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("WhoAndWhat.Domain.Entities.ArchivedTask", b =>
+            modelBuilder.Entity("WhoAndWhat.Domain.Entities.ArchivedAppTask", b =>
                 {
                     b.HasOne("WhoAndWhat.Domain.Entities.User", "User")
                         .WithMany()
@@ -728,9 +728,9 @@ namespace WhoAndWhat.Infrastructure.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("WhoAndWhat.Domain.Entities.Task", b =>
+            modelBuilder.Entity("WhoAndWhat.Domain.Entities.AppTask", b =>
                 {
-                    b.HasOne("WhoAndWhat.Domain.Entities.Task", null)
+                    b.HasOne("WhoAndWhat.Domain.Entities.AppTask", null)
                         .WithMany("Subtasks")
                         .HasForeignKey("ParentTaskId");
 
@@ -754,7 +754,7 @@ namespace WhoAndWhat.Infrastructure.Migrations
                     b.Navigation("Tasks");
                 });
 
-            modelBuilder.Entity("WhoAndWhat.Domain.Entities.Task", b =>
+            modelBuilder.Entity("WhoAndWhat.Domain.Entities.AppTask", b =>
                 {
                     b.Navigation("Subtasks");
                 });

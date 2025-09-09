@@ -8,4 +8,4 @@ public record GetTaskStatisticsQuery(
     Guid UserId,
     DateTime? From = null,
     DateTime? To = null
-) : IRequest&lt;Result&lt;TaskStatisticsResponse&gt;&gt;;
+) : IRequest<Result<TaskStatisticsResponse>>;

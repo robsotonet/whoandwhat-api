@@ -1,19 +1,18 @@
-using WhoAndWhat.Domain.ValueObjects;
 using WhoAndWhat.Domain.Common;
-using TaskStatus = WhoAndWhat.Domain.ValueObjects.TaskStatus;
+using WhoAndWhat.Domain.ValueObjects;
 
 namespace WhoAndWhat.Domain.Entities;
 
 /// <summary>
-/// Task entity with rich domain behavior and business rules
+/// AppTask entity with rich domain behavior and business rules
 /// </summary>
-public class Task : BaseEntity
+public class AppTask : BaseEntity
 {
     /// <summary>
     /// Maximum allowed title length
     /// </summary>
     public const int MaxTitleLength = 200;
-    
+
     /// <summary>
     /// Maximum allowed description length
     /// </summary>
@@ -23,8 +22,8 @@ public class Task : BaseEntity
     public string? Description { get; set; }
     public DateTime? DueDate { get; set; }
     public int Priority { get; set; } // Mapped from Priority value object
-    public int Category { get; set; } // Mapped from TaskCategory value object
-    public int Status { get; set; } // Mapped from TaskStatus value object
+    public int Category { get; set; } // Mapped from AppTaskCategory value object
+    public int Status { get; set; } // Mapped from AppTaskStatus value object
 
     public Guid UserId { get; set; }
     public User User { get; set; } = null!;
@@ -32,11 +31,18 @@ public class Task : BaseEntity
     public Guid? ProjectId { get; set; }
     public Project? Project { get; set; }
 
+    public Guid? ParentTaskId { get; set; }
+    public AppTask? ParentTask { get; set; }
+
+    public bool IsArchived { get; set; }
+    public DateTime? ArchivedAt { get; set; }
+
     public ICollection<Contact> Contacts { get; set; } = new List<Contact>();
-    public ICollection<Task> Subtasks { get; set; } = new List<Task>();
+    public ICollection<TaskContact> TaskContacts { get; set; } = new List<TaskContact>();
+    public ICollection<AppTask> Subtasks { get; set; } = new List<AppTask>();
 
     // Calculated Properties
-    
+
     /// <summary>
     /// Gets whether the task is overdue (past due date and not completed)
     /// </summary>
@@ -44,7 +50,7 @@ public class Task : BaseEntity
     {
         get
         {
-            if (!DueDate.HasValue || Status == (int)TaskStatus.Completed || Status == (int)TaskStatus.Archived)
+            if (!DueDate.HasValue || Status == (int)AppTaskStatus.Completed || Status == (int)AppTaskStatus.Archived)
             {
                 return false;
             }
@@ -74,17 +80,17 @@ public class Task : BaseEntity
     {
         get
         {
-            if (Status == (int)TaskStatus.Completed)
+            if (Status == (int)AppTaskStatus.Completed)
             {
                 return 100m;
             }
-            
+
             if (!Subtasks.Any())
             {
-                return Status == (int)TaskStatus.InProgress ? 50m : 0m;
+                return Status == (int)AppTaskStatus.InProgress ? 50m : 0m;
             }
 
-            var completedSubtasks = Subtasks.Count(s => s.Status == (int)TaskStatus.Completed);
+            var completedSubtasks = Subtasks.Count(s => s.Status == (int)AppTaskStatus.Completed);
             return (decimal)completedSubtasks / Subtasks.Count * 100m;
         }
     }
@@ -92,7 +98,7 @@ public class Task : BaseEntity
     /// <summary>
     /// Gets whether the task has active (non-completed) subtasks
     /// </summary>
-    public bool HasActiveSubtasks => Subtasks.Any(s => s.Status != (int)TaskStatus.Completed && s.Status != (int)TaskStatus.Archived);
+    public bool HasActiveSubtasks => Subtasks.Any(s => s.Status != (int)AppTaskStatus.Completed && s.Status != (int)AppTaskStatus.Archived);
 
     /// <summary>
     /// Gets whether the task is a standalone task (not part of a project)
@@ -148,16 +154,16 @@ public class Task : BaseEntity
     public ValidationResult ValidateDueDate()
     {
         var errors = new List<string>();
-        var category = (TaskCategory)Category;
+        var category = (AppTaskCategory)Category;
 
         // Appointments must have a due date
-        if (category == TaskCategory.Appointment && !DueDate.HasValue)
+        if (category == AppTaskCategory.Appointment && !DueDate.HasValue)
         {
             errors.Add("Appointments must have a due date");
         }
 
         // Bill reminders must have a due date
-        if (category == TaskCategory.BillReminder && !DueDate.HasValue)
+        if (category == AppTaskCategory.BillReminder && !DueDate.HasValue)
         {
             errors.Add("Bill reminders must have a due date");
         }
@@ -197,23 +203,23 @@ public class Task : BaseEntity
     /// <returns>True if the task can be completed</returns>
     public bool CanBeCompleted()
     {
-        var currentStatus = (TaskStatus)Status;
-        
+        var currentStatus = (AppTaskStatus)Status;
+
         // Cannot complete archived or deleted tasks
-        if (currentStatus == TaskStatus.Archived || IsDeleted)
+        if (currentStatus == AppTaskStatus.Archived || IsDeleted)
         {
             return false;
         }
 
         // Task is already completed
-        if (currentStatus == TaskStatus.Completed)
+        if (currentStatus == AppTaskStatus.Completed)
         {
             return false;
         }
 
         // Cannot complete parent task if it has active subtasks (except for Ideas and Projects)
-        var category = (TaskCategory)Category;
-        if (HasActiveSubtasks && category != TaskCategory.Idea && category != TaskCategory.Project)
+        var category = (AppTaskCategory)Category;
+        if (HasActiveSubtasks && category != AppTaskCategory.Idea && category != AppTaskCategory.Project)
         {
             return false;
         }
@@ -227,17 +233,17 @@ public class Task : BaseEntity
     /// <returns>True if the task can be archived</returns>
     public bool CanBeArchived()
     {
-        var currentStatus = (TaskStatus)Status;
-        
+        var currentStatus = (AppTaskStatus)Status;
+
         // Can only archive completed tasks or very old pending tasks
-        if (currentStatus != TaskStatus.Completed && 
-            !(currentStatus == TaskStatus.Pending && CreatedAt < DateTime.UtcNow.AddMonths(-6)))
+        if (currentStatus != AppTaskStatus.Completed &&
+            !(currentStatus == AppTaskStatus.Pending && CreatedAt < DateTime.UtcNow.AddMonths(-6)))
         {
             return false;
         }
 
         // Cannot archive if already archived or deleted
-        if (currentStatus == TaskStatus.Archived || IsDeleted)
+        if (currentStatus == AppTaskStatus.Archived || IsDeleted)
         {
             return false;
         }
@@ -251,17 +257,17 @@ public class Task : BaseEntity
     /// <returns>True if the task can be converted to a project</returns>
     public bool CanConvertToProject()
     {
-        var currentStatus = (TaskStatus)Status;
-        var currentCategory = (TaskCategory)Category;
-        
+        var currentStatus = (AppTaskStatus)Status;
+        var currentCategory = (AppTaskCategory)Category;
+
         // Cannot convert completed, archived, or deleted tasks
-        if (currentStatus == TaskStatus.Completed || currentStatus == TaskStatus.Archived || IsDeleted)
+        if (currentStatus == AppTaskStatus.Completed || currentStatus == AppTaskStatus.Archived || IsDeleted)
         {
             return false;
         }
 
         // Cannot convert if already a project
-        if (currentCategory == TaskCategory.Project)
+        if (currentCategory == AppTaskCategory.Project)
         {
             return false;
         }
@@ -273,7 +279,7 @@ public class Task : BaseEntity
         }
 
         // Only convert tasks that have subtasks or are complex enough
-        return Subtasks.Any() || (Description?.Length ?? 0) > 100 || currentCategory == TaskCategory.Idea;
+        return Subtasks.Any() || (Description?.Length ?? 0) > 100 || currentCategory == AppTaskCategory.Idea;
     }
 
     // State Transition Methods
@@ -284,11 +290,11 @@ public class Task : BaseEntity
     /// <returns>True if the status was changed successfully</returns>
     public bool MarkInProgress()
     {
-        var currentStatus = (TaskStatus)Status;
-        
-        if (currentStatus == TaskStatus.Pending || currentStatus == TaskStatus.InProgress)
+        var currentStatus = (AppTaskStatus)Status;
+
+        if (currentStatus == AppTaskStatus.Pending || currentStatus == AppTaskStatus.InProgress)
         {
-            Status = (int)TaskStatus.InProgress;
+            Status = (int)AppTaskStatus.InProgress;
             UpdatedAt = DateTime.UtcNow;
             return true;
         }
@@ -304,7 +310,7 @@ public class Task : BaseEntity
     {
         if (CanBeCompleted())
         {
-            Status = (int)TaskStatus.Completed;
+            Status = (int)AppTaskStatus.Completed;
             UpdatedAt = DateTime.UtcNow;
             return true;
         }
@@ -320,7 +326,7 @@ public class Task : BaseEntity
     {
         if (CanBeArchived())
         {
-            Status = (int)TaskStatus.Archived;
+            Status = (int)AppTaskStatus.Archived;
             UpdatedAt = DateTime.UtcNow;
             return true;
         }
@@ -336,10 +342,12 @@ public class Task : BaseEntity
     public override bool CanSoftDelete()
     {
         if (!base.CanSoftDelete())
+        {
             return false;
+        }
 
-        var currentStatus = (TaskStatus)Status;
-        
+        var currentStatus = (AppTaskStatus)Status;
+
         // Any task can be soft deleted regardless of status
         // Business rules may restrict this in higher layers
         return true;
@@ -351,7 +359,9 @@ public class Task : BaseEntity
     public override void SoftDelete()
     {
         if (!CanSoftDelete())
+        {
             return;
+        }
 
         base.SoftDelete();
 
@@ -372,7 +382,9 @@ public class Task : BaseEntity
     public void Restore(bool restoreSubtasks = false)
     {
         if (!CanRestore())
+        {
             return;
+        }
 
         base.Restore();
 
@@ -394,7 +406,7 @@ public class Task : BaseEntity
     {
         var originalTitle = Title;
         Title = newTitle?.Trim() ?? string.Empty;
-        
+
         var validation = ValidateTitle();
         if (!validation.IsValid)
         {
@@ -415,7 +427,7 @@ public class Task : BaseEntity
     {
         var originalDescription = Description;
         Description = newDescription?.Trim();
-        
+
         var validation = ValidateDescription();
         if (!validation.IsValid)
         {
@@ -436,7 +448,7 @@ public class Task : BaseEntity
     {
         var originalDueDate = DueDate;
         DueDate = newDueDate;
-        
+
         var validation = ValidateDueDate();
         if (!validation.IsValid)
         {

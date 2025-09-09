@@ -7,6 +7,7 @@ using System.Security.Claims;
 using WhoAndWhat.API.Controllers.v1;
 using WhoAndWhat.Application.Common;
 using WhoAndWhat.Application.DTOs.Authentication;
+using WhoAndWhat.Application.Features.Auth;
 using WhoAndWhat.Application.Interfaces;
 using WhoAndWhat.Domain.Entities;
 using WhoAndWhat.Domain.ValueObjects;
@@ -32,7 +33,6 @@ public class PasswordControllerTests
         
         _controller = new PasswordController(
             _userServiceMock.Object,
-            _passwordResetServiceMock.Object,
             _emailServiceMock.Object,
             _loggerMock.Object);
 
@@ -66,10 +66,8 @@ public class PasswordControllerTests
 
         _userServiceMock.Setup(x => x.GetUserByEmailAsync(request.Email, It.IsAny<CancellationToken>()))
             .ReturnsAsync(user);
-        _passwordResetServiceMock.Setup(x => x.GeneratePasswordResetTokenAsync(user.Id, It.IsAny<CancellationToken>()))
-            .ReturnsAsync("reset-token");
         _emailServiceMock.Setup(x => x.SendPasswordResetEmailAsync(
-            request.Email, user.Username, "reset-token", It.IsAny<CancellationToken>()))
+            request.Email, user.Username, It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(true);
 
         // Act
@@ -284,7 +282,6 @@ public class PasswordControllerTests
         // Arrange
         var controllerWithoutAuth = new PasswordController(
             _userServiceMock.Object,
-            _passwordResetServiceMock.Object,
             _emailServiceMock.Object,
             _loggerMock.Object);
         

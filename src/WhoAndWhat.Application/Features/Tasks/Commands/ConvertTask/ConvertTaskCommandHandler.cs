@@ -5,18 +5,21 @@ using WhoAndWhat.Application.DTOs.Tasks;
 using WhoAndWhat.Application.Interfaces;
 using WhoAndWhat.Domain.Services;
 using WhoAndWhat.Domain.ValueObjects;
-using DomainTask = WhoAndWhat.Domain.Entities.Task;
+using AppTaskUpdateRequest = WhoAndWhat.Domain.Services.AppTaskUpdateRequest;
+using DomainTask = WhoAndWhat.Domain.Entities.AppTask;
+using DomainTaskStatus = WhoAndWhat.Domain.ValueObjects.AppTaskStatus;
+using SystemTask = System.Threading.Tasks.Task;
 
 namespace WhoAndWhat.Application.Features.Tasks.Commands.ConvertTask;
 
 public class ConvertTaskCommandHandler : IRequestHandler<ConvertTaskCommand, Result<TaskDto>>
 {
-    private readonly ITaskRepository _taskRepository;
+    private readonly IAppTaskRepository _taskRepository;
     private readonly CategoryBusinessRuleService _categoryBusinessRuleService;
     private readonly ILogger<ConvertTaskCommandHandler> _logger;
 
     public ConvertTaskCommandHandler(
-        ITaskRepository taskRepository,
+        IAppTaskRepository taskRepository,
         CategoryBusinessRuleService categoryBusinessRuleService,
         ILogger<ConvertTaskCommandHandler> logger)
     {
@@ -35,11 +38,11 @@ public class ConvertTaskCommandHandler : IRequestHandler<ConvertTaskCommand, Res
                 return Result<TaskDto>.Failure("Task not found");
             }
 
-            var fromCategory = TaskCategory.FromValue(task.Category);
-            var toCategory = TaskCategory.FromValue(request.ToCategory);
+            var fromCategory = AppTaskCategory.FromValue(task.Category);
+            var toCategory = AppTaskCategory.FromValue(request.ToCategory);
 
             // Validate category transition using business rules
-            var validationResult = _categoryBusinessRuleService.ValidateTaskUpdate(task, new TaskUpdateRequest
+            var validationResult = _categoryBusinessRuleService.ValidateTaskUpdate(task, new AppTaskUpdateRequest
             {
                 Category = request.ToCategory
             });
@@ -52,7 +55,7 @@ public class ConvertTaskCommandHandler : IRequestHandler<ConvertTaskCommand, Res
             // Log warnings if any
             if (validationResult.HasWarnings)
             {
-                _logger.LogWarning("Task conversion warnings for task {TaskId}: {Warnings}", 
+                _logger.LogWarning("Task conversion warnings for task {TaskId}: {Warnings}",
                     task.Id, string.Join(", ", validationResult.WarningMessages));
             }
 
@@ -88,12 +91,12 @@ public class ConvertTaskCommandHandler : IRequestHandler<ConvertTaskCommand, Res
         }
     }
 
-    private void ApplyCategorySpecificChanges(DomainTask task, TaskCategory fromCategory, TaskCategory toCategory, bool createSubtasks)
+    private void ApplyCategorySpecificChanges(DomainTask task, AppTaskCategory fromCategory, AppTaskCategory toCategory, bool createSubtasks)
     {
         // Reset status to Pending for most conversions
-        if (task.Status == (int)TaskStatus.Completed)
+        if (task.Status == (int)DomainTaskStatus.Completed)
         {
-            task.Status = (int)TaskStatus.Pending;
+            task.Status = (int)DomainTaskStatus.Pending;
         }
 
         // Category-specific adjustments
@@ -152,13 +155,13 @@ public class ConvertTaskCommandHandler : IRequestHandler<ConvertTaskCommand, Res
         foreach (var line in lines)
         {
             var trimmedLine = line.Trim();
-            if (trimmedLine.StartsWith("- ") || trimmedLine.StartsWith("• ") || 
+            if (trimmedLine.StartsWith("- ") || trimmedLine.StartsWith("• ") ||
                 char.IsDigit(trimmedLine.FirstOrDefault()) && trimmedLine.Contains('.'))
             {
                 var taskTitle = trimmedLine
                     .TrimStart('-', '•', ' ')
                     .Trim();
-                
+
                 if (char.IsDigit(taskTitle.FirstOrDefault()))
                 {
                     var dotIndex = taskTitle.IndexOf('.');
@@ -183,22 +186,22 @@ public class ConvertTaskCommandHandler : IRequestHandler<ConvertTaskCommand, Res
                 Id = Guid.NewGuid(),
                 UserId = parentTask.UserId,
                 Title = taskTitle,
-                Category = (int)TaskCategory.ToDo,
+                Category = (int)AppTaskCategory.ToDo,
                 Priority = (int)Priority.Medium,
-                Status = (int)TaskStatus.Pending,
+                Status = (int)DomainTaskStatus.Pending,
                 ParentTaskId = parentTask.Id,
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow
             };
 
-            await _taskRepository.CreateAsync(subtask);
+            await _taskRepository.AddAsync(subtask);
         }
     }
 
     private static TaskDto MapToDto(DomainTask task)
     {
-        var category = TaskCategory.FromValue(task.Category);
-        var status = TaskStatus.FromValue(task.Status);
+        var category = AppTaskCategory.FromValue(task.Category);
+        var status = DomainTaskStatus.FromValue(task.Status);
         var priority = Priority.FromValue(task.Priority);
 
         return new TaskDto

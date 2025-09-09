@@ -1,18 +1,18 @@
-using Microsoft.Extensions.Options;
-using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
+using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+using Microsoft.IdentityModel.Tokens;
 using WhoAndWhat.Application.Common;
 using WhoAndWhat.Application.DTOs.Authentication;
 using WhoAndWhat.Application.Interfaces;
 using WhoAndWhat.Domain.Entities;
 using WhoAndWhat.Infrastructure.Configuration;
 using WhoAndWhat.Infrastructure.Data;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
-using Microsoft.AspNetCore.Http;
 
 namespace WhoAndWhat.Infrastructure.Services;
 
@@ -25,8 +25,8 @@ public class JwtTokenService : IJwtTokenService
     private readonly IHttpContextAccessor _httpContextAccessor;
 
     public JwtTokenService(
-        IOptions<JwtSettings> jwtSettings, 
-        ApplicationDbContext context, 
+        IOptions<JwtSettings> jwtSettings,
+        ApplicationDbContext context,
         ILogger<JwtTokenService> logger,
         IHttpContextAccessor httpContextAccessor)
     {
@@ -41,11 +41,11 @@ public class JwtTokenService : IJwtTokenService
     {
         var accessToken = await GenerateAccessTokenAsync(user);
         var refreshToken = await GenerateRefreshTokenAsync();
-        
+
         // Store refresh token
         var refreshTokenEntity = new RefreshToken(
-            user.Id, 
-            refreshToken, 
+            user.Id,
+            refreshToken,
             DateTime.UtcNow.AddDays(_jwtSettings.RefreshTokenExpiryDays),
             GetClientIpAddress());
 
@@ -93,26 +93,26 @@ public class JwtTokenService : IJwtTokenService
         const int maxRetries = 10;
         var randomBytes = new byte[64];
         using var rng = RandomNumberGenerator.Create();
-        
+
         for (int attempt = 0; attempt < maxRetries; attempt++)
         {
             rng.GetBytes(randomBytes);
             var refreshToken = Convert.ToBase64String(randomBytes);
-            
+
             // Check uniqueness
             var exists = await _context.RefreshTokens.AnyAsync(rt => rt.Token == refreshToken);
             if (!exists)
             {
                 return refreshToken;
             }
-            
+
             // If this was the last attempt, log a warning
             if (attempt == maxRetries - 1)
             {
                 _logger.LogWarning("Failed to generate unique refresh token after {MaxRetries} attempts", maxRetries);
             }
         }
-        
+
         // This should be extremely unlikely, but throw an exception if we can't generate a unique token
         throw new InvalidOperationException($"Failed to generate a unique refresh token after {maxRetries} attempts");
     }

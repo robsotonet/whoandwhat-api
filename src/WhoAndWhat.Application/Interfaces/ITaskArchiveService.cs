@@ -42,7 +42,7 @@ public interface ITaskArchiveService
     /// <param name="userId">User ID for authorization</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Restore operation result</returns>
-    public Task<RestoreOperationResult> RestoreArchivedTaskAsync(Guid archivedTaskId, Guid userId, CancellationToken cancellationToken = default);
+    public Task<RestoreOperationResult> RestoreArchivedAppTaskAsync(Guid archivedTaskId, Guid userId, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Gets archived tasks for a specific user with filtering and pagination
@@ -51,7 +51,7 @@ public interface ITaskArchiveService
     /// <param name="filter">Optional filter criteria</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Paginated list of archived tasks</returns>
-    public Task<PagedResult<ArchivedTaskDto>> GetArchivedTasksAsync(Guid userId, ArchivedTaskFilter? filter = null, CancellationToken cancellationToken = default);
+    public Task<PagedResult<ArchivedAppTaskDto>> GetArchivedAppTasksAsync(Guid userId, ArchivedAppTaskFilter? filter = null, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Gets archive statistics for a specific user or system-wide

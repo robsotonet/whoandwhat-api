@@ -1,7 +1,7 @@
 using WhoAndWhat.Domain.Entities;
 using WhoAndWhat.Domain.ValueObjects;
-using DomainTask = WhoAndWhat.Domain.Entities.Task;
-using DomainTaskStatus = WhoAndWhat.Domain.ValueObjects.TaskStatus;
+using DomainTask = WhoAndWhat.Domain.Entities.AppTask;
+using DomainTaskStatus = WhoAndWhat.Domain.ValueObjects.AppTaskStatus;
 
 namespace WhoAndWhat.Domain.Services;
 
@@ -19,15 +19,21 @@ public class SoftDeleteService
     public SoftDeleteResult SoftDeleteTask(DomainTask task, bool deleteSubtasks = true)
     {
         if (task == null)
+        {
             return SoftDeleteResult.Failed("Task not found");
+        }
 
         if (!task.CanSoftDelete())
+        {
             return SoftDeleteResult.Failed("Task cannot be deleted in its current state");
+        }
 
         // Validate business rules
         var validationResult = ValidateTaskDeletion(task);
         if (!validationResult.IsSuccess)
+        {
             return validationResult;
+        }
 
         try
         {
@@ -58,10 +64,14 @@ public class SoftDeleteService
     public SoftDeleteResult SoftDeleteProject(Project project, bool deleteTasks = true)
     {
         if (project == null)
+        {
             return SoftDeleteResult.Failed("Project not found");
+        }
 
         if (!project.CanSoftDelete())
+        {
             return SoftDeleteResult.Failed("Project cannot be deleted - it contains active tasks");
+        }
 
         try
         {
@@ -101,7 +111,9 @@ public class SoftDeleteService
     public SoftDeleteResult SoftDeleteContact(Contact contact, bool removeFromTasks = true)
     {
         if (contact == null)
+        {
             return SoftDeleteResult.Failed("Contact not found");
+        }
 
         if (!contact.CanSoftDelete())
         {
@@ -122,7 +134,7 @@ public class SoftDeleteService
                 {
                     return SoftDeleteResult.Failed("Contact has active task associations. Use removeFromTasks=true to handle associations.");
                 }
-                
+
                 contact.SoftDelete();
             }
 
@@ -144,10 +156,14 @@ public class SoftDeleteService
     public SoftDeleteResult RestoreTask(DomainTask task, bool restoreSubtasks = false, bool restoreProject = false)
     {
         if (task == null)
+        {
             return SoftDeleteResult.Failed("Task not found");
+        }
 
         if (!task.CanRestore())
+        {
             return SoftDeleteResult.Failed("Task is not deleted or cannot be restored");
+        }
 
         try
         {
@@ -161,9 +177,13 @@ public class SoftDeleteService
 
             var message = $"Task '{task.Title}' has been restored";
             if (restoreSubtasks)
+            {
                 message += " with its subtasks";
+            }
             if (restoreProject && task.Project != null)
+            {
                 message += $" and its parent project '{task.Project.Name}'";
+            }
 
             return SoftDeleteResult.Success(message);
         }
@@ -182,10 +202,14 @@ public class SoftDeleteService
     public SoftDeleteResult RestoreProject(Project project, bool restoreTasks = false)
     {
         if (project == null)
+        {
             return SoftDeleteResult.Failed("Project not found");
+        }
 
         if (!project.CanRestore())
+        {
             return SoftDeleteResult.Failed("Project is not deleted or cannot be restored");
+        }
 
         try
         {
@@ -214,10 +238,14 @@ public class SoftDeleteService
     public SoftDeleteResult RestoreContact(Contact contact)
     {
         if (contact == null)
+        {
             return SoftDeleteResult.Failed("Contact not found");
+        }
 
         if (!contact.CanRestore())
+        {
             return SoftDeleteResult.Failed("Contact is not deleted or cannot be restored");
+        }
 
         try
         {

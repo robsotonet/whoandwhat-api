@@ -5,18 +5,20 @@ using WhoAndWhat.Application.DTOs.Tasks;
 using WhoAndWhat.Application.Interfaces;
 using WhoAndWhat.Domain.Services;
 using WhoAndWhat.Domain.ValueObjects;
-using DomainTask = WhoAndWhat.Domain.Entities.Task;
+using DomainTask = WhoAndWhat.Domain.Entities.AppTask;
+using DomainTaskStatus = WhoAndWhat.Domain.ValueObjects.AppTaskStatus;
+using SystemTask = System.Threading.Tasks.Task;
 
 namespace WhoAndWhat.Application.Features.Tasks.Commands.ExecuteTaskAction;
 
 public class ExecuteTaskActionCommandHandler : IRequestHandler<ExecuteTaskActionCommand, Result<TaskDto>>
 {
-    private readonly ITaskRepository _taskRepository;
+    private readonly IAppTaskRepository _taskRepository;
     private readonly CategoryWorkflowService _categoryWorkflowService;
     private readonly ILogger<ExecuteTaskActionCommandHandler> _logger;
 
     public ExecuteTaskActionCommandHandler(
-        ITaskRepository taskRepository,
+        IAppTaskRepository taskRepository,
         CategoryWorkflowService categoryWorkflowService,
         ILogger<ExecuteTaskActionCommandHandler> logger)
     {
@@ -46,7 +48,7 @@ public class ExecuteTaskActionCommandHandler : IRequestHandler<ExecuteTaskAction
 
             // Process the action using workflow service
             var workflowResult = _categoryWorkflowService.ProcessTaskAction(task, workflowAction);
-            
+
             if (!workflowResult.IsSuccess)
             {
                 return Result<TaskDto>.Failure($"Action execution failed: {string.Join(", ", workflowResult.ErrorMessages)}");
@@ -55,7 +57,7 @@ public class ExecuteTaskActionCommandHandler : IRequestHandler<ExecuteTaskAction
             // Log warnings if any
             if (workflowResult.HasWarnings)
             {
-                _logger.LogWarning("Task action warnings for task {TaskId}: {Warnings}", 
+                _logger.LogWarning("Task action warnings for task {TaskId}: {Warnings}",
                     task.Id, string.Join(", ", workflowResult.WarningMessages));
             }
 
@@ -72,7 +74,7 @@ public class ExecuteTaskActionCommandHandler : IRequestHandler<ExecuteTaskAction
             {
                 foreach (var createdTask in workflowResult.CreatedTasks)
                 {
-                    await _taskRepository.CreateAsync(createdTask);
+                    await _taskRepository.AddAsync(createdTask);
                 }
                 await _taskRepository.SaveChangesAsync();
             }
@@ -94,8 +96,8 @@ public class ExecuteTaskActionCommandHandler : IRequestHandler<ExecuteTaskAction
 
     private static TaskDto MapToDto(DomainTask task)
     {
-        var category = TaskCategory.FromValue(task.Category);
-        var status = TaskStatus.FromValue(task.Status);
+        var category = AppTaskCategory.FromValue(task.Category);
+        var status = DomainTaskStatus.FromValue(task.Status);
         var priority = Priority.FromValue(task.Priority);
 
         return new TaskDto

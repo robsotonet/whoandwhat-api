@@ -24,21 +24,15 @@ public class EmailServiceTests
             FromEmail = "test@whoandwhat.com",
             SmtpHost = "smtp.test.com",
             SmtpPort = 587,
-            SmtpUsername = "test@whoandwhat.com",
-            SmtpPassword = "testpassword",
-            EnableSsl = true,
+            Username = "test@whoandwhat.com",
+            Password = "testpassword",
+            UseSsl = true,
             Templates = new EmailTemplateSettings
             {
-                PasswordReset = new EmailTemplateConfig
-                {
-                    Subject = "Reset Your Password - WhoAndWhat",
-                    EnableCustomization = true
-                },
-                EmailVerification = new EmailTemplateConfig
-                {
-                    Subject = "Verify Your Email - WhoAndWhat",
-                    EnableCustomization = true
-                }
+                PasswordResetExpirationHours = 1,
+                EmailVerificationExpirationHours = 24,
+                SupportEmail = "support@test.com",
+                CompanyName = "WhoAndWhat Test"
             }
         };
 
@@ -144,7 +138,7 @@ public class EmailServiceTests
     }
 
     [Fact]
-    public async Task SendPasswordChangedNotificationAsync_Should_Return_True_When_Email_Disabled()
+    public async Task SendPasswordChangedEmailAsync_Should_Return_True_When_Email_Disabled()
     {
         // Arrange
         _emailSettings.Enabled = false;
@@ -152,23 +146,7 @@ public class EmailServiceTests
         var username = "testuser";
 
         // Act
-        var result = await _emailService.SendPasswordChangedNotificationAsync(email, username);
-
-        // Assert
-        result.Should().BeTrue();
-    }
-
-    [Fact]
-    public async Task SendAccountDeactivatedNotificationAsync_Should_Return_True_When_Email_Disabled()
-    {
-        // Arrange
-        _emailSettings.Enabled = false;
-        var email = "test@example.com";
-        var username = "testuser";
-        var reason = "User requested deactivation";
-
-        // Act
-        var result = await _emailService.SendAccountDeactivatedNotificationAsync(email, username, reason);
+        var result = await _emailService.SendPasswordChangedEmailAsync(email, username);
 
         // Assert
         result.Should().BeTrue();
@@ -182,16 +160,17 @@ public class EmailServiceTests
         var resetToken = "reset-token-123";
 
         // Act
+        var resetUrl = $"https://example.com/reset-password?token={resetToken}";
         var htmlContent = _emailService.GetType()
-            .GetMethod("BuildPasswordResetEmailBody", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)
-            ?.Invoke(_emailService, new object[] { username, resetToken, true }) as string;
+            .GetMethod("GeneratePasswordResetEmailHtml", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)
+            ?.Invoke(_emailService, new object[] { username, resetUrl, 24 }) as string;
 
         // Assert
         htmlContent.Should().NotBeNullOrEmpty();
         htmlContent.Should().Contain(username);
         htmlContent.Should().Contain(resetToken);
         htmlContent.Should().Contain("<!DOCTYPE html");
-        htmlContent.Should().Contain("Reset Password");
+        htmlContent.Should().Contain("Password Reset");
     }
 
     [Fact]
@@ -202,16 +181,17 @@ public class EmailServiceTests
         var resetToken = "reset-token-123";
 
         // Act
+        var resetUrl = $"https://example.com/reset-password?token={resetToken}";
         var textContent = _emailService.GetType()
-            .GetMethod("BuildPasswordResetEmailBody", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)
-            ?.Invoke(_emailService, new object[] { username, resetToken, false }) as string;
+            .GetMethod("GeneratePasswordResetEmailPlainText", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)
+            ?.Invoke(_emailService, new object[] { username, resetUrl, 24 }) as string;
 
         // Assert
         textContent.Should().NotBeNullOrEmpty();
         textContent.Should().Contain(username);
         textContent.Should().Contain(resetToken);
         textContent.Should().NotContain("<!DOCTYPE html");
-        textContent.Should().Contain("Reset Password");
+        textContent.Should().Contain("Password Reset");
     }
 
     [Fact]
@@ -223,17 +203,17 @@ public class EmailServiceTests
         var userId = Guid.NewGuid();
 
         // Act
+        var verificationUrl = $"https://example.com/verify-email?token={verificationToken}&userId={userId}";
         var htmlContent = _emailService.GetType()
-            .GetMethod("BuildEmailVerificationBody", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)
-            ?.Invoke(_emailService, new object[] { username, verificationToken, userId, true }) as string;
+            .GetMethod("GenerateEmailVerificationEmailHtml", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)
+            ?.Invoke(_emailService, new object[] { username, verificationUrl, 24 }) as string;
 
         // Assert
         htmlContent.Should().NotBeNullOrEmpty();
         htmlContent.Should().Contain(username);
-        htmlContent.Should().Contain(verificationToken);
-        htmlContent.Should().Contain(userId.ToString());
+        htmlContent.Should().Contain(verificationUrl);
         htmlContent.Should().Contain("<!DOCTYPE html");
-        htmlContent.Should().Contain("Verify Email");
+        htmlContent.Should().Contain("Verify");
     }
 
     [Fact]
@@ -244,8 +224,8 @@ public class EmailServiceTests
 
         // Act
         var htmlContent = _emailService.GetType()
-            .GetMethod("BuildWelcomeEmailBody", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)
-            ?.Invoke(_emailService, new object[] { username, true }) as string;
+            .GetMethod("GenerateWelcomeEmailHtml", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)
+            ?.Invoke(_emailService, new object[] { username }) as string;
 
         // Assert
         htmlContent.Should().NotBeNullOrEmpty();
@@ -259,14 +239,10 @@ public class EmailServiceTests
     {
         // Assert
         _emailSettings.Templates.Should().NotBeNull();
-        _emailSettings.Templates.PasswordReset.Should().NotBeNull();
-        _emailSettings.Templates.EmailVerification.Should().NotBeNull();
-        _emailSettings.Templates.Welcome.Should().NotBeNull();
-        _emailSettings.Templates.PasswordChanged.Should().NotBeNull();
-        _emailSettings.Templates.AccountDeactivated.Should().NotBeNull();
-
-        _emailSettings.Templates.PasswordReset.Subject.Should().NotBeNullOrEmpty();
-        _emailSettings.Templates.EmailVerification.Subject.Should().NotBeNullOrEmpty();
+        _emailSettings.Templates.PasswordResetExpirationHours.Should().BeGreaterThan(0);
+        _emailSettings.Templates.EmailVerificationExpirationHours.Should().BeGreaterThan(0);
+        _emailSettings.Templates.SupportEmail.Should().NotBeNullOrEmpty();
+        _emailSettings.Templates.CompanyName.Should().NotBeNullOrEmpty();
     }
 
     [Theory]

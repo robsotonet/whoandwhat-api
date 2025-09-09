@@ -1,14 +1,14 @@
 using FluentAssertions;
 using WhoAndWhat.Domain.ValueObjects;
 using WhoAndWhat.Domain.Common;
-using DomainTaskStatus = WhoAndWhat.Domain.ValueObjects.TaskStatus;
+using DomainTaskStatus = WhoAndWhat.Domain.ValueObjects.AppTaskStatus;
 
 namespace WhoAndWhat.Domain.Tests.ValueObjects;
 
-public class TaskStatusTests
+public class AppTaskStatusTests
 {
     [Fact]
-    public void TaskStatus_Should_Have_All_Predefined_Statuses()
+    public void AppTaskStatus_Should_Have_All_Predefined_Statuses()
     {
         var allStatuses = DomainTaskStatus.GetAll().ToList();
         
@@ -20,7 +20,7 @@ public class TaskStatusTests
     }
 
     [Fact]
-    public void TaskStatus_Should_Create_From_Valid_Value()
+    public void AppTaskStatus_Should_Create_From_Valid_Value()
     {
         var status = DomainTaskStatus.FromValue(1);
         
@@ -31,7 +31,7 @@ public class TaskStatusTests
     }
 
     [Fact]
-    public void TaskStatus_Should_Throw_Exception_For_Invalid_Value()
+    public void AppTaskStatus_Should_Throw_Exception_For_Invalid_Value()
     {
         Action act = () => DomainTaskStatus.FromValue(999);
         
@@ -40,7 +40,7 @@ public class TaskStatusTests
     }
 
     [Fact]
-    public void TaskStatus_Should_Create_From_Valid_Name()
+    public void AppTaskStatus_Should_Create_From_Valid_Name()
     {
         var status = DomainTaskStatus.FromName("Completed");
         
@@ -50,7 +50,7 @@ public class TaskStatusTests
     }
 
     [Fact]
-    public void TaskStatus_Should_Create_From_Valid_Name_Case_Insensitive()
+    public void AppTaskStatus_Should_Create_From_Valid_Name_Case_Insensitive()
     {
         var status = DomainTaskStatus.FromName("completed");
         
@@ -58,7 +58,7 @@ public class TaskStatusTests
     }
 
     [Fact]
-    public void TaskStatus_Should_Throw_Exception_For_Invalid_Name()
+    public void AppTaskStatus_Should_Throw_Exception_For_Invalid_Name()
     {
         Action act = () => DomainTaskStatus.FromName("InvalidStatus");
         
@@ -67,7 +67,7 @@ public class TaskStatusTests
     }
 
     [Fact]
-    public void TaskStatus_Should_Throw_Exception_For_Null_Or_Empty_Name()
+    public void AppTaskStatus_Should_Throw_Exception_For_Null_Or_Empty_Name()
     {
         Action actNull = () => DomainTaskStatus.FromName(null!);
         Action actEmpty = () => DomainTaskStatus.FromName("");
@@ -79,7 +79,7 @@ public class TaskStatusTests
     }
 
     [Fact]
-    public void TaskStatus_TryFromValue_Should_Return_True_For_Valid_Value()
+    public void AppTaskStatus_TryFromValue_Should_Return_True_For_Valid_Value()
     {
         var result = DomainTaskStatus.TryFromValue(0, out var status);
         
@@ -88,7 +88,7 @@ public class TaskStatusTests
     }
 
     [Fact]
-    public void TaskStatus_TryFromValue_Should_Return_False_For_Invalid_Value()
+    public void AppTaskStatus_TryFromValue_Should_Return_False_For_Invalid_Value()
     {
         var result = DomainTaskStatus.TryFromValue(999, out var status);
         
@@ -97,7 +97,7 @@ public class TaskStatusTests
     }
 
     [Fact]
-    public void TaskStatus_TryFromName_Should_Return_True_For_Valid_Name()
+    public void AppTaskStatus_TryFromName_Should_Return_True_For_Valid_Name()
     {
         var result = DomainTaskStatus.TryFromName("InProgress", out var status);
         
@@ -106,7 +106,7 @@ public class TaskStatusTests
     }
 
     [Fact]
-    public void TaskStatus_TryFromName_Should_Return_False_For_Invalid_Name()
+    public void AppTaskStatus_TryFromName_Should_Return_False_For_Invalid_Name()
     {
         var result = DomainTaskStatus.TryFromName("InvalidStatus", out var status);
         
@@ -124,7 +124,7 @@ public class TaskStatusTests
     [InlineData("Completed", "Pending", false)]
     [InlineData("Archived", "Completed", false)]
     [InlineData("Pending", "Pending", false)]
-    public void TaskStatus_CanTransitionTo_Should_Follow_Business_Rules(string fromStatus, string toStatus, bool expectedResult)
+    public void AppTaskStatus_CanTransitionTo_Should_Follow_Business_Rules(string fromStatus, string toStatus, bool expectedResult)
     {
         var from = DomainTaskStatus.FromName(fromStatus);
         var to = DomainTaskStatus.FromName(toStatus);
@@ -135,7 +135,7 @@ public class TaskStatusTests
     }
 
     [Fact]
-    public void TaskStatus_GetValidTransitions_Should_Return_Correct_Transitions()
+    public void AppTaskStatus_GetValidTransitions_Should_Return_Correct_Transitions()
     {
         var pendingTransitions = DomainTaskStatus.Pending.GetValidTransitions().ToList();
         var inProgressTransitions = DomainTaskStatus.InProgress.GetValidTransitions().ToList();
@@ -158,7 +158,7 @@ public class TaskStatusTests
     [InlineData("InProgress", false)]
     [InlineData("Completed", false)]
     [InlineData("Archived", true)]
-    public void TaskStatus_IsTerminal_Should_Return_Correct_Value(string statusName, bool expectedResult)
+    public void AppTaskStatus_IsTerminal_Should_Return_Correct_Value(string statusName, bool expectedResult)
     {
         var status = DomainTaskStatus.FromName(statusName);
         
@@ -170,7 +170,7 @@ public class TaskStatusTests
     [InlineData("InProgress", true)]
     [InlineData("Completed", false)]
     [InlineData("Archived", false)]
-    public void TaskStatus_IsActive_Should_Return_Correct_Value(string statusName, bool expectedResult)
+    public void AppTaskStatus_IsActive_Should_Return_Correct_Value(string statusName, bool expectedResult)
     {
         var status = DomainTaskStatus.FromName(statusName);
         
@@ -182,7 +182,7 @@ public class TaskStatusTests
     [InlineData("InProgress", false)]
     [InlineData("Completed", true)]
     [InlineData("Archived", false)]
-    public void TaskStatus_IsCompleted_Should_Return_Correct_Value(string statusName, bool expectedResult)
+    public void AppTaskStatus_IsCompleted_Should_Return_Correct_Value(string statusName, bool expectedResult)
     {
         var status = DomainTaskStatus.FromName(statusName);
         
@@ -194,7 +194,7 @@ public class TaskStatusTests
     [InlineData("InProgress", "In Progress")]
     [InlineData("Completed", "Completed")]
     [InlineData("Archived", "Archived")]
-    public void TaskStatus_GetDisplayName_Should_Return_Correct_Display_Name(string statusName, string expectedDisplayName)
+    public void AppTaskStatus_GetDisplayName_Should_Return_Correct_Display_Name(string statusName, string expectedDisplayName)
     {
         var status = DomainTaskStatus.FromName(statusName);
         
@@ -206,7 +206,7 @@ public class TaskStatusTests
     [InlineData("InProgress", "status-in-progress")]
     [InlineData("Completed", "status-completed")]
     [InlineData("Archived", "status-archived")]
-    public void TaskStatus_GetCssClass_Should_Return_Correct_CSS_Class(string statusName, string expectedCssClass)
+    public void AppTaskStatus_GetCssClass_Should_Return_Correct_CSS_Class(string statusName, string expectedCssClass)
     {
         var status = DomainTaskStatus.FromName(statusName);
         
@@ -218,7 +218,7 @@ public class TaskStatusTests
     [InlineData("InProgress", "#007bff")]
     [InlineData("Completed", "#28a745")]
     [InlineData("Archived", "#17a2b8")]
-    public void TaskStatus_GetColorCode_Should_Return_Correct_Color(string statusName, string expectedColor)
+    public void AppTaskStatus_GetColorCode_Should_Return_Correct_Color(string statusName, string expectedColor)
     {
         var status = DomainTaskStatus.FromName(statusName);
         
@@ -226,7 +226,7 @@ public class TaskStatusTests
     }
 
     [Fact]
-    public void TaskStatus_ValidateTransition_Should_Validate_Basic_Rules()
+    public void AppTaskStatus_ValidateTransition_Should_Validate_Basic_Rules()
     {
         var validation = DomainTaskStatus.Pending.ValidateTransition(DomainTaskStatus.InProgress, false, null);
         
@@ -235,7 +235,7 @@ public class TaskStatusTests
     }
 
     [Fact]
-    public void TaskStatus_ValidateTransition_Should_Prevent_Invalid_Transition()
+    public void AppTaskStatus_ValidateTransition_Should_Prevent_Invalid_Transition()
     {
         var validation = DomainTaskStatus.Completed.ValidateTransition(DomainTaskStatus.Pending, false, null);
         
@@ -244,24 +244,24 @@ public class TaskStatusTests
     }
 
     [Fact]
-    public void TaskStatus_ValidateTransition_Should_Prevent_Completing_With_Active_Subtasks()
+    public void AppTaskStatus_ValidateTransition_Should_Prevent_Completing_With_Active_Subtasks()
     {
-        var validation = DomainTaskStatus.InProgress.ValidateTransition(DomainTaskStatus.Completed, true, TaskCategory.ToDo);
+        var validation = DomainTaskStatus.InProgress.ValidateTransition(DomainTaskStatus.Completed, true, AppTaskCategory.ToDo);
         
         validation.IsValid.Should().BeFalse();
         validation.Errors.Should().Contain("Cannot complete task while it has active subtasks");
     }
 
     [Fact]
-    public void TaskStatus_ValidateTransition_Should_Allow_Completing_Project_With_Active_Subtasks()
+    public void AppTaskStatus_ValidateTransition_Should_Allow_Completing_Project_With_Active_Subtasks()
     {
-        var validation = DomainTaskStatus.InProgress.ValidateTransition(DomainTaskStatus.Completed, true, TaskCategory.Project);
+        var validation = DomainTaskStatus.InProgress.ValidateTransition(DomainTaskStatus.Completed, true, AppTaskCategory.Project);
         
         validation.IsValid.Should().BeTrue();
     }
 
     [Fact]
-    public void TaskStatus_ValidateTransition_Should_Prevent_Archiving_Non_Completed_Task()
+    public void AppTaskStatus_ValidateTransition_Should_Prevent_Archiving_Non_Completed_Task()
     {
         var validation = DomainTaskStatus.InProgress.ValidateTransition(DomainTaskStatus.Archived, false, null);
         
@@ -270,7 +270,7 @@ public class TaskStatusTests
     }
 
     [Fact]
-    public void TaskStatus_Should_Support_Explicit_Conversion_To_Int()
+    public void AppTaskStatus_Should_Support_Explicit_Conversion_To_Int()
     {
         int statusValue = (int)DomainTaskStatus.InProgress;
         
@@ -278,7 +278,7 @@ public class TaskStatusTests
     }
 
     [Fact]
-    public void TaskStatus_Should_Support_Explicit_Conversion_From_Int()
+    public void AppTaskStatus_Should_Support_Explicit_Conversion_From_Int()
     {
         var status = (DomainTaskStatus)2;
         
@@ -286,7 +286,7 @@ public class TaskStatusTests
     }
 
     [Fact]
-    public void TaskStatus_ToString_Should_Return_Name()
+    public void AppTaskStatus_ToString_Should_Return_Name()
     {
         DomainTaskStatus.InProgress.ToString().Should().Be("InProgress");
     }

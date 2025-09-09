@@ -1,5 +1,5 @@
 using WhoAndWhat.Domain.ValueObjects;
-using DomainTaskStatus = WhoAndWhat.Domain.ValueObjects.TaskStatus;
+using DomainTaskStatus = WhoAndWhat.Domain.ValueObjects.AppTaskStatus;
 
 namespace WhoAndWhat.Application.DTOs;
 
@@ -12,22 +12,22 @@ public class TaskFilter
     /// Filter by specific task status
     /// </summary>
     public DomainTaskStatus? Status { get; set; }
-    
+
     /// <summary>
     /// Filter by multiple task statuses
     /// </summary>
     public IEnumerable<DomainTaskStatus>? Statuses { get; set; }
-    
+
     /// <summary>
     /// Exclude completed tasks from results
     /// </summary>
     public bool ExcludeCompleted { get; set; } = false;
-    
+
     /// <summary>
     /// Exclude archived tasks from results
     /// </summary>
     public bool ExcludeArchived { get; set; } = true;
-    
+
     /// <summary>
     /// Include soft-deleted tasks in results
     /// </summary>
@@ -36,23 +36,23 @@ public class TaskFilter
     /// <summary>
     /// Filter by specific task category
     /// </summary>
-    public TaskCategory? Category { get; set; }
-    
+    public AppTaskCategory? Category { get; set; }
+
     /// <summary>
     /// Filter by multiple task categories
     /// </summary>
-    public IEnumerable<TaskCategory>? Categories { get; set; }
-    
+    public IEnumerable<AppTaskCategory>? Categories { get; set; }
+
     /// <summary>
     /// Filter by specific priority
     /// </summary>
     public Priority? Priority { get; set; }
-    
+
     /// <summary>
     /// Filter by minimum priority level
     /// </summary>
     public Priority? MinPriority { get; set; }
-    
+
     /// <summary>
     /// Filter by maximum priority level
     /// </summary>
@@ -62,37 +62,37 @@ public class TaskFilter
     /// Filter tasks due from this date
     /// </summary>
     public DateTime? DueDateFrom { get; set; }
-    
+
     /// <summary>
     /// Filter tasks due until this date
     /// </summary>
     public DateTime? DueDateTo { get; set; }
-    
+
     /// <summary>
     /// Filter tasks created after this date
     /// </summary>
     public DateTime? CreatedAfter { get; set; }
-    
+
     /// <summary>
     /// Filter tasks created before this date
     /// </summary>
     public DateTime? CreatedBefore { get; set; }
-    
+
     /// <summary>
     /// Filter tasks updated after this date
     /// </summary>
     public DateTime? UpdatedAfter { get; set; }
-    
+
     /// <summary>
     /// Filter tasks updated before this date
     /// </summary>
     public DateTime? UpdatedBefore { get; set; }
-    
+
     /// <summary>
     /// Include only overdue tasks
     /// </summary>
     public bool OverdueOnly { get; set; } = false;
-    
+
     /// <summary>
     /// Include only tasks due today
     /// </summary>
@@ -102,17 +102,17 @@ public class TaskFilter
     /// Include only parent tasks (tasks that are not subtasks)
     /// </summary>
     public bool ParentTasksOnly { get; set; } = false;
-    
+
     /// <summary>
     /// Include only subtasks (tasks that belong to a project)
     /// </summary>
     public bool SubtasksOnly { get; set; } = false;
-    
+
     /// <summary>
     /// Filter tasks by specific project
     /// </summary>
     public Guid? ProjectId { get; set; }
-    
+
     /// <summary>
     /// Include only standalone tasks (not part of any project)
     /// </summary>
@@ -122,7 +122,7 @@ public class TaskFilter
     /// Filter tasks by title containing this text
     /// </summary>
     public string? TitleContains { get; set; }
-    
+
     /// <summary>
     /// Filter tasks by description containing this text
     /// </summary>
@@ -132,17 +132,17 @@ public class TaskFilter
     /// Page number for pagination (1-based)
     /// </summary>
     public int PageNumber { get; set; } = 1;
-    
+
     /// <summary>
     /// Number of items per page
     /// </summary>
     public int PageSize { get; set; } = 50;
-    
+
     /// <summary>
     /// How to sort the results
     /// </summary>
     public TaskSortBy SortBy { get; set; } = TaskSortBy.UpdatedAt;
-    
+
     /// <summary>
     /// Sort in descending order
     /// </summary>
@@ -152,12 +152,12 @@ public class TaskFilter
     /// Include subtasks in the results
     /// </summary>
     public bool IncludeSubtasks { get; set; } = false;
-    
+
     /// <summary>
     /// Include related contacts in the results
     /// </summary>
     public bool IncludeContacts { get; set; } = false;
-    
+
     /// <summary>
     /// Include project information in the results
     /// </summary>
@@ -284,32 +284,32 @@ public enum TaskSortBy
     /// Sort by creation date
     /// </summary>
     CreatedAt,
-    
+
     /// <summary>
     /// Sort by last update date
     /// </summary>
     UpdatedAt,
-    
+
     /// <summary>
     /// Sort by due date
     /// </summary>
     DueDate,
-    
+
     /// <summary>
     /// Sort by priority
     /// </summary>
     Priority,
-    
+
     /// <summary>
     /// Sort by title alphabetically
     /// </summary>
     Title,
-    
+
     /// <summary>
     /// Sort by task status
     /// </summary>
     Status,
-    
+
     /// <summary>
     /// Sort by task category
     /// </summary>

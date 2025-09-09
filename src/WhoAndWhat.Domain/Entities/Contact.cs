@@ -12,7 +12,7 @@ public class Contact : BaseEntity
     public Guid UserId { get; set; }
     public User User { get; set; } = null!;
 
-    public ICollection<Task> Tasks { get; set; } = new List<Task>();
+    public ICollection<AppTask> Tasks { get; set; } = new List<AppTask>();
 
     /// <summary>
     /// Checks if the contact can be soft deleted
@@ -22,7 +22,9 @@ public class Contact : BaseEntity
     public override bool CanSoftDelete()
     {
         if (!base.CanSoftDelete())
+        {
             return false;
+        }
 
         // Cannot delete contact if it has active task associations
         var activeTasks = Tasks?.Where(t => !t.IsDeleted).ToList();
@@ -35,7 +37,9 @@ public class Contact : BaseEntity
     public override void SoftDelete()
     {
         if (!CanSoftDelete())
+        {
             return;
+        }
 
         base.SoftDelete();
 

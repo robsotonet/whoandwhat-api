@@ -4,6 +4,7 @@ using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.IdentityModel.Tokens;
 using Serilog;
 using Swashbuckle.AspNetCore.SwaggerGen;
+using Swashbuckle.AspNetCore.Annotations;
 using System.Reflection;
 using System.Security.Claims;
 using System.Text;
@@ -20,7 +21,6 @@ using AspNetCoreRateLimit;
 using Azure.Extensions.AspNetCore.Configuration.Secrets;
 using Azure.Identity;
 using Azure.Security.KeyVault.Secrets;
-using WhoAndWhat.Infrastructure.Configuration;
 
 namespace WhoAndWhat.API.Configuration;
 
@@ -205,7 +205,7 @@ Users can export their data in JSON or CSV format including:
             });
 
             // Configure response examples and schemas
-            options.EnableAnnotations();
+            // Note: EnableAnnotations requires Swashbuckle.AspNetCore.Annotations package
             
             // Add servers for different environments
             options.AddServer(new Microsoft.OpenApi.Models.OpenApiServer
@@ -647,7 +647,8 @@ Users can export their data in JSON or CSV format including:
                 options.ClientId = oauthSettings.Apple.ClientId;
                 options.TeamId = oauthSettings.Apple.TeamId;
                 options.KeyId = oauthSettings.Apple.KeyId;
-                options.PrivateKey = oauthSettings.Apple.PrivateKey;
+                options.PrivateKey = (keyId, cancellationToken) => 
+                    Task.FromResult<ReadOnlyMemory<char>>(oauthSettings.Apple.PrivateKey.AsMemory());
                 options.CallbackPath = oauthSettings.CallbackUrl.Apple;
                 options.SaveTokens = true;
 

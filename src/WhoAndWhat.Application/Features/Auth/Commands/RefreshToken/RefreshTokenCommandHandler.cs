@@ -27,7 +27,7 @@ public class RefreshTokenCommandHandler : IRequestHandler<RefreshTokenCommand, R
         try
         {
             var result = await _jwtTokenService.RefreshTokensAsync(request.RefreshToken);
-            
+
             if (!result.IsSuccess)
             {
                 _logger.LogWarning("Failed to refresh token: {Error}", result.Error);

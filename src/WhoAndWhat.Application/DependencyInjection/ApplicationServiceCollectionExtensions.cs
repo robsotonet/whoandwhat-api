@@ -1,7 +1,7 @@
+using System.Reflection;
 using FluentValidation;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
-using System.Reflection;
 using WhoAndWhat.Application.Behaviors;
 using WhoAndWhat.Application.Services;
 using WhoAndWhat.Domain.Services;

@@ -15,8 +15,8 @@ using WhoAndWhat.Infrastructure.Data;
 using WhoAndWhat.Infrastructure.Repositories;
 using Xunit;
 using Task = System.Threading.Tasks.Task;
-using DomainTask = WhoAndWhat.Domain.Entities.Task;
-using DomainTaskStatus = WhoAndWhat.Domain.ValueObjects.TaskStatus;
+using DomainTask = WhoAndWhat.Domain.Entities.AppTask;
+using DomainTaskStatus = WhoAndWhat.Domain.ValueObjects.AppTaskStatus;
 
 namespace WhoAndWhat.Infrastructure.Tests;
 
@@ -28,8 +28,8 @@ public class ProjectRepositoryIntegrationTests : IDisposable
     private readonly ApplicationDbContext _context;
     private readonly IRepository<Project> _baseRepository;
     private readonly SoftDeleteService _softDeleteService;
-    private readonly User _testUser;
-    private readonly User _otherUser;
+    private User _testUser = null!;
+    private User _otherUser = null!;
 
     public ProjectRepositoryIntegrationTests()
     {
@@ -499,7 +499,7 @@ public class ProjectRepositoryIntegrationTests : IDisposable
             ProjectId = projectId,
             Status = (int)DomainTaskStatus.Pending,
             Priority = (int)Priority.Medium,
-            Category = (int)TaskCategory.ToDos,
+            Category = (int)AppTaskCategory.ToDo,
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
         };

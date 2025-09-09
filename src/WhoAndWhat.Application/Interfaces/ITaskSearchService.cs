@@ -15,7 +15,7 @@ public interface ITaskSearchService
     /// <param name="criteria">Search criteria including query, filters, and pagination</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Search results with caching metadata and performance information</returns>
-    public Task<TaskSearchResult> SearchTasksAsync(Guid userId, TaskSearchCriteria criteria, CancellationToken cancellationToken = default);
+    public Task<TaskSearchResult> SearchTasksAsync(Guid userId, AppTaskSearchCriteria criteria, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Gets cached search suggestions with auto-completion
@@ -56,7 +56,7 @@ public interface ITaskSearchService
     /// </summary>
     /// <param name="criteria">Search criteria to validate</param>
     /// <returns>Validation result with any errors</returns>
-    public SearchValidationResult ValidateSearchCriteria(TaskSearchCriteria criteria);
+    public SearchValidationResult ValidateSearchCriteria(AppTaskSearchCriteria criteria);
 
     /// <summary>
     /// Preloads search cache with popular queries for a user
@@ -74,9 +74,9 @@ public class SearchValidationResult
 {
     public bool IsValid { get; init; }
     public IEnumerable<string> Errors { get; init; } = new List<string>();
-    public TaskSearchCriteria? NormalizedCriteria { get; init; }
+    public AppTaskSearchCriteria? NormalizedCriteria { get; init; }
 
-    public static SearchValidationResult Valid(TaskSearchCriteria normalizedCriteria)
+    public static SearchValidationResult Valid(AppTaskSearchCriteria normalizedCriteria)
     {
         return new SearchValidationResult
         {

@@ -16,4 +16,4 @@ public record UpdateTaskCommand(
     TaskMetadataRequest? Metadata,
     List<Guid>? ContactIds,
     Guid UserId
-) : IRequest&lt;Result&lt;TaskDto&gt;&gt;;
+) : IRequest<Result<TaskDto>>;

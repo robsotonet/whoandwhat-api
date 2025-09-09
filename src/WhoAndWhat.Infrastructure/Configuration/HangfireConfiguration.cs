@@ -31,15 +31,14 @@ public static class HangfireConfiguration
                 .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
                 .UseSimpleAssemblyNameTypeSerializer()
                 .UseRecommendedSerializerSettings()
-                .UsePostgreSqlStorage(options =>
+                .UsePostgreSqlStorage(connectionString, new PostgreSqlStorageOptions
                 {
-                    options.UseNpgsqlConnection(connectionString);
-                    options.QueuePollInterval = TimeSpan.FromSeconds(15);
-                    options.JobExpirationCheckInterval = TimeSpan.FromHours(1);
-                    options.CountersAggregateInterval = TimeSpan.FromMinutes(5);
-                    options.PrepareSchemaIfNecessary = true;
-                    options.TransactionSynchronisationTimeout = TimeSpan.FromMinutes(5);
-                    options.SchemaName = "hangfire";
+                    QueuePollInterval = TimeSpan.FromSeconds(15),
+                    JobExpirationCheckInterval = TimeSpan.FromHours(1),
+                    CountersAggregateInterval = TimeSpan.FromMinutes(5),
+                    PrepareSchemaIfNecessary = true,
+                    TransactionSynchronisationTimeout = TimeSpan.FromMinutes(5),
+                    SchemaName = "hangfire"
                 })
                 .UseSerilogLogProvider();
         });
@@ -77,12 +76,12 @@ public static class HangfireConfiguration
     public static DashboardOptions GetDashboardOptions(IConfiguration configuration)
     {
         var isDevelopment = configuration.GetValue<bool>("IsDevelopment");
-        
+
         return new DashboardOptions
         {
             DashboardTitle = "WhoAndWhat - Background Jobs",
-            Authorization = isDevelopment 
-                ? new[] { new AllowAllDashboardAuthorizationFilter() } 
+            Authorization = isDevelopment
+                ? new[] { new AllowAllDashboardAuthorizationFilter() }
                 : new[] { new RestrictedDashboardAuthorizationFilter() },
             IsReadOnlyFunc = _ => false, // Allow job management in dashboard
             IgnoreAntiforgeryToken = isDevelopment,
@@ -108,7 +107,7 @@ public class RestrictedDashboardAuthorizationFilter : IDashboardAuthorizationFil
     public bool Authorize(DashboardContext context)
     {
         var httpContext = context.GetHttpContext();
-        
+
         // Check if user is authenticated
         if (!httpContext.User.Identity?.IsAuthenticated ?? true)
         {
@@ -116,7 +115,7 @@ public class RestrictedDashboardAuthorizationFilter : IDashboardAuthorizationFil
         }
 
         // Check if user has admin role or specific claim
-        return httpContext.User.IsInRole("Admin") || 
+        return httpContext.User.IsInRole("Admin") ||
                httpContext.User.HasClaim("permission", "hangfire-dashboard");
     }
 }

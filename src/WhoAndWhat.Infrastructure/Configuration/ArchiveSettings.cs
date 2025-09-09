@@ -130,8 +130,8 @@ public class ArchiveSettings
             MaxArchiveBatchSize = MaxArchiveBatchSize,
             UserId = userId,
             ArchivableStatuses = GetArchivableStatuses().ToArray(),
-            MaxPriorityToArchive = MaxPriorityToArchive.HasValue 
-                ? (Domain.ValueObjects.Priority)MaxPriorityToArchive.Value 
+            MaxPriorityToArchive = MaxPriorityToArchive.HasValue
+                ? (Domain.ValueObjects.Priority)MaxPriorityToArchive.Value
                 : null,
             IncludeActiveProjectTasks = IncludeActiveProjectTasks,
             IncludeParentTasks = IncludeParentTasks
@@ -141,12 +141,12 @@ public class ArchiveSettings
     /// <summary>
     /// Gets the default set of archivable task statuses
     /// </summary>
-    public ISet<Domain.ValueObjects.TaskStatus> GetArchivableStatuses()
+    public ISet<Domain.ValueObjects.AppTaskStatus> GetArchivableStatuses()
     {
-        return new HashSet<Domain.ValueObjects.TaskStatus>
+        return new HashSet<Domain.ValueObjects.AppTaskStatus>
         {
-            Domain.ValueObjects.TaskStatus.Completed,
-            Domain.ValueObjects.TaskStatus.Archived
+            Domain.ValueObjects.AppTaskStatus.Completed,
+            Domain.ValueObjects.AppTaskStatus.Archived
         };
     }
 
@@ -161,7 +161,7 @@ public class ArchiveSettings
                MaxArchiveBatchSize > 0 &&
                ArchiveRetentionDays > 0 &&
                ArchiveTimeoutMinutes > 0 &&
-               (!MaxPriorityToArchive.HasValue || 
+               (!MaxPriorityToArchive.HasValue ||
                 (MaxPriorityToArchive.Value >= 0 && MaxPriorityToArchive.Value <= 3));
     }
 

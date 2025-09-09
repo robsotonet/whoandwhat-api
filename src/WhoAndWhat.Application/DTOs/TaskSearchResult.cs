@@ -39,7 +39,7 @@ public class TaskSearchResult
         SearchResultMetadata? metadata = null)
     {
         var totalPages = (int)Math.Ceiling((double)totalCount / pageSize);
-        
+
         return new TaskSearchResult
         {
             Tasks = tasks,
@@ -108,8 +108,8 @@ public class TaskSearchItem
     /// <param name="matchInfo">Detailed match information</param>
     /// <returns>Configured TaskSearchItem</returns>
     public static TaskSearchItem FromTask(
-        Domain.Entities.Task task, 
-        double relevanceScore = 0.0, 
+        Domain.Entities.AppTask task,
+        double relevanceScore = 0.0,
         IEnumerable<string>? matchedTerms = null,
         SearchMatchInfo? matchInfo = null)
     {

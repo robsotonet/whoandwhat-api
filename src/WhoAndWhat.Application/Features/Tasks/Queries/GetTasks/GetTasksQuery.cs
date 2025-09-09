@@ -1,5 +1,6 @@
 using MediatR;
 using WhoAndWhat.Application.Common;
+using WhoAndWhat.Application.DTOs;
 using WhoAndWhat.Application.DTOs.Tasks;
 
 namespace WhoAndWhat.Application.Features.Tasks.Queries.GetTasks;
@@ -24,4 +25,4 @@ public record GetTasksQuery(
     int PageSize = 20,
     int PageNumber = 1,
     bool IncludeArchived = false
-) : IRequest&lt;Result&lt;PagedResult&lt;TaskDto&gt;&gt;&gt;;
+) : IRequest<Result<PagedResult<TaskDto>>>;

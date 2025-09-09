@@ -54,7 +54,7 @@ public class LoginUserCommandHandler : IRequestHandler<LoginUserCommand, Result<
 
             // Reset failed login attempts on successful login
             user.RecordLoginAttempt(true);
-            await _userRepository.UpdateAsync(user, cancellationToken);
+            await _userService.UpdateUserAsync(user, cancellationToken);
 
             // Generate JWT tokens
             var tokenResult = await _jwtTokenService.GenerateTokensAsync(user);

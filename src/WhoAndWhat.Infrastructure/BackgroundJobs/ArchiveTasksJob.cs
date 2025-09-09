@@ -165,7 +165,7 @@ public class ArchiveTasksJob
             }
 
             var result = await _archiveService.CleanupExpiredArchivesAsync(
-                _archiveSettings.RetentionPeriod, 
+                _archiveSettings.RetentionPeriod,
                 cancellationToken);
 
             if (result.IsSuccess)
@@ -183,7 +183,7 @@ public class ArchiveTasksJob
             }
             else
             {
-                _logger.LogError("Archive cleanup failed with errors: {Errors}", 
+                _logger.LogError("Archive cleanup failed with errors: {Errors}",
                     string.Join("; ", result.Errors));
             }
         }

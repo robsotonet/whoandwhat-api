@@ -10,7 +10,7 @@ using WhoAndWhat.Infrastructure.Data;
 using WhoAndWhat.Infrastructure.Repositories;
 using Xunit;
 using Task = System.Threading.Tasks.Task;
-using DomainTask = WhoAndWhat.Domain.Entities.Task;
+using DomainTask = WhoAndWhat.Domain.Entities.AppTask;
 
 namespace WhoAndWhat.Infrastructure.Tests;
 

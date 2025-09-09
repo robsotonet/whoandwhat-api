@@ -1,6 +1,7 @@
 using FluentValidation;
 using WhoAndWhat.Application.Features.Tasks.Commands.UpdateTask;
 using WhoAndWhat.Domain.ValueObjects;
+using DomainTaskStatus = WhoAndWhat.Domain.ValueObjects.AppTaskStatus;
 
 namespace WhoAndWhat.Application.Validators.Tasks;
 
@@ -54,11 +55,14 @@ public class UpdateTaskCommandValidator : AbstractValidator<UpdateTaskCommand>
 
     private static bool BeValidCategory(int? category)
     {
-        if (!category.HasValue) return true;
-        
+        if (!category.HasValue)
+        {
+            return true;
+        }
+
         try
         {
-            TaskCategory.FromValue(category.Value);
+            AppTaskCategory.FromValue(category.Value);
             return true;
         }
         catch
@@ -69,11 +73,14 @@ public class UpdateTaskCommandValidator : AbstractValidator<UpdateTaskCommand>
 
     private static bool BeValidStatus(int? status)
     {
-        if (!status.HasValue) return true;
-        
+        if (!status.HasValue)
+        {
+            return true;
+        }
+
         try
         {
-            TaskStatus.FromValue(status.Value);
+            DomainTaskStatus.FromValue(status.Value);
             return true;
         }
         catch
@@ -84,8 +91,11 @@ public class UpdateTaskCommandValidator : AbstractValidator<UpdateTaskCommand>
 
     private static bool BeValidPriority(int? priority)
     {
-        if (!priority.HasValue) return true;
-        
+        if (!priority.HasValue)
+        {
+            return true;
+        }
+
         try
         {
             Priority.FromValue(priority.Value);

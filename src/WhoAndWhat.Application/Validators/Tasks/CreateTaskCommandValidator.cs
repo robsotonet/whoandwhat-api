@@ -44,19 +44,19 @@ public class CreateTaskCommandValidator : AbstractValidator<CreateTaskCommand>
         RuleFor(x => x)
             .Must(HaveDueDateForAppointments)
             .WithMessage("Appointments must have a due date")
-            .When(x => x.Category == (int)TaskCategory.Appointment);
+            .When(x => x.Category == (int)AppTaskCategory.Appointment);
 
         RuleFor(x => x)
             .Must(HaveDueDateForBillReminders)
             .WithMessage("Bill reminders must have a due date")
-            .When(x => x.Category == (int)TaskCategory.BillReminder);
+            .When(x => x.Category == (int)AppTaskCategory.BillReminder);
     }
 
     private static bool BeValidCategory(int category)
     {
         try
         {
-            TaskCategory.FromValue(category);
+            AppTaskCategory.FromValue(category);
             return true;
         }
         catch
@@ -85,11 +85,11 @@ public class CreateTaskCommandValidator : AbstractValidator<CreateTaskCommand>
 
     private static bool HaveDueDateForAppointments(CreateTaskCommand command)
     {
-        return command.Category != (int)TaskCategory.Appointment || command.DueDate.HasValue;
+        return command.Category != (int)AppTaskCategory.Appointment || command.DueDate.HasValue;
     }
 
     private static bool HaveDueDateForBillReminders(CreateTaskCommand command)
     {
-        return command.Category != (int)TaskCategory.BillReminder || command.DueDate.HasValue;
+        return command.Category != (int)AppTaskCategory.BillReminder || command.DueDate.HasValue;
     }
 }

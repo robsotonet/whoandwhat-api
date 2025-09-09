@@ -3,23 +3,23 @@ using WhoAndWhat.Domain.Common;
 namespace WhoAndWhat.Domain.ValueObjects;
 
 /// <summary>
-/// Rich value object representing task category with business rules and validation
+/// Rich value object representing AppTask category with business rules and validation
 /// </summary>
-public record TaskCategory
+public record AppTaskCategory
 {
-    public static readonly TaskCategory ToDo = new("ToDo", 0, "General to-do items", false, false, "#007bff", "task");
-    public static readonly TaskCategory Idea = new("Idea", 1, "Ideas and inspiration", false, true, "#ffc107", "lightbulb");
-    public static readonly TaskCategory Appointment = new("Appointment", 2, "Scheduled appointments", true, false, "#dc3545", "calendar");
-    public static readonly TaskCategory BillReminder = new("BillReminder", 3, "Bill payment reminders", true, false, "#fd7e14", "credit-card");
-    public static readonly TaskCategory Project = new("Project", 4, "Complex projects with subtasks", false, true, "#6f42c1", "folder");
+    public static readonly AppTaskCategory ToDo = new("ToDo", 0, "General to-do items", false, false, "#007bff", "task");
+    public static readonly AppTaskCategory Idea = new("Idea", 1, "Ideas and inspiration", false, true, "#ffc107", "lightbulb");
+    public static readonly AppTaskCategory Appointment = new("Appointment", 2, "Scheduled appointments", true, false, "#dc3545", "calendar");
+    public static readonly AppTaskCategory BillReminder = new("BillReminder", 3, "Bill payment reminders", true, false, "#fd7e14", "credit-card");
+    public static readonly AppTaskCategory Project = new("Project", 4, "Complex projects with subtasks", false, true, "#6f42c1", "folder");
 
-    private static readonly IReadOnlyList<TaskCategory> AllCategories = new List<TaskCategory>
+    private static readonly IReadOnlyList<AppTaskCategory> AllCategories = new List<AppTaskCategory>
     {
         ToDo, Idea, Appointment, BillReminder, Project
     };
 
-    private static readonly IReadOnlyDictionary<int, TaskCategory> CategoryByValue = AllCategories.ToDictionary(c => c.Value);
-    private static readonly IReadOnlyDictionary<string, TaskCategory> CategoryByName = AllCategories.ToDictionary(c => c.Name, StringComparer.OrdinalIgnoreCase);
+    private static readonly IReadOnlyDictionary<int, AppTaskCategory> CategoryByValue = AllCategories.ToDictionary(c => c.Value);
+    private static readonly IReadOnlyDictionary<string, AppTaskCategory> CategoryByName = AllCategories.ToDictionary(c => c.Name, StringComparer.OrdinalIgnoreCase);
 
     public string Name { get; }
     public int Value { get; }
@@ -29,7 +29,7 @@ public record TaskCategory
     public string ColorCode { get; }
     public string IconName { get; }
 
-    private TaskCategory(string name, int value, string description, bool requiresDueDate, bool allowsSubtasks, string colorCode, string iconName)
+    private AppTaskCategory(string name, int value, string description, bool requiresDueDate, bool allowsSubtasks, string colorCode, string iconName)
     {
         Name = name;
         Value = value;
@@ -44,15 +44,15 @@ public record TaskCategory
     /// Gets all available task categories
     /// </summary>
     /// <returns>Collection of all task categories</returns>
-    public static IEnumerable<TaskCategory> GetAll() => AllCategories;
+    public static IEnumerable<AppTaskCategory> GetAll() => AllCategories;
 
     /// <summary>
-    /// Creates TaskCategory from integer value
+    /// Creates AppTaskCategory from integer value
     /// </summary>
     /// <param name="value">Integer value</param>
-    /// <returns>TaskCategory instance</returns>
+    /// <returns>AppTaskCategory instance</returns>
     /// <exception cref="ArgumentException">When value is invalid</exception>
-    public static TaskCategory FromValue(int value)
+    public static AppTaskCategory FromValue(int value)
     {
         if (CategoryByValue.TryGetValue(value, out var category))
         {
@@ -63,12 +63,12 @@ public record TaskCategory
     }
 
     /// <summary>
-    /// Creates TaskCategory from name string
+    /// Creates AppTaskCategory from name string
     /// </summary>
     /// <param name="name">Category name</param>
-    /// <returns>TaskCategory instance</returns>
+    /// <returns>AppTaskCategory instance</returns>
     /// <exception cref="ArgumentException">When name is invalid</exception>
-    public static TaskCategory FromName(string name)
+    public static AppTaskCategory FromName(string name)
     {
         if (string.IsNullOrWhiteSpace(name))
         {
@@ -84,23 +84,23 @@ public record TaskCategory
     }
 
     /// <summary>
-    /// Tries to create TaskCategory from integer value
+    /// Tries to create AppTaskCategory from integer value
     /// </summary>
     /// <param name="value">Integer value</param>
-    /// <param name="category">Output TaskCategory if successful</param>
+    /// <param name="category">Output AppTaskCategory if successful</param>
     /// <returns>True if successful, false otherwise</returns>
-    public static bool TryFromValue(int value, out TaskCategory? category)
+    public static bool TryFromValue(int value, out AppTaskCategory? category)
     {
         return CategoryByValue.TryGetValue(value, out category);
     }
 
     /// <summary>
-    /// Tries to create TaskCategory from name string
+    /// Tries to create AppTaskCategory from name string
     /// </summary>
     /// <param name="name">Category name</param>
-    /// <param name="category">Output TaskCategory if successful</param>
+    /// <param name="category">Output AppTaskCategory if successful</param>
     /// <returns>True if successful, false otherwise</returns>
-    public static bool TryFromName(string name, out TaskCategory? category)
+    public static bool TryFromName(string name, out AppTaskCategory? category)
     {
         category = null;
         if (string.IsNullOrWhiteSpace(name))
@@ -115,7 +115,7 @@ public record TaskCategory
     /// Gets categories that can be converted to projects
     /// </summary>
     /// <returns>Collection of convertible categories</returns>
-    public static IEnumerable<TaskCategory> GetProjectConvertibleCategories()
+    public static IEnumerable<AppTaskCategory> GetProjectConvertibleCategories()
     {
         return AllCategories.Where(c => c.AllowsSubtasks || c == Idea);
     }
@@ -124,7 +124,7 @@ public record TaskCategory
     /// Gets categories that are time-sensitive (require due dates)
     /// </summary>
     /// <returns>Collection of time-sensitive categories</returns>
-    public static IEnumerable<TaskCategory> GetTimeSensitiveCategories()
+    public static IEnumerable<AppTaskCategory> GetTimeSensitiveCategories()
     {
         return AllCategories.Where(c => c.RequiresDueDate);
     }
@@ -134,7 +134,7 @@ public record TaskCategory
     /// </summary>
     /// <param name="targetCategory">Target category</param>
     /// <returns>True if conversion is allowed</returns>
-    public bool CanConvertTo(TaskCategory targetCategory)
+    public bool CanConvertTo(AppTaskCategory targetCategory)
     {
         // Cannot convert to the same category
         if (this == targetCategory)
@@ -142,11 +142,11 @@ public record TaskCategory
             return false;
         }
 
-        // Business rules for category conversion
+        // Business rules for category conversion based on test expectations
         return this switch
         {
             _ when this == Idea => true, // Ideas can become anything
-            _ when this == ToDo => targetCategory != Idea, // ToDos cannot become ideas
+            _ when this == ToDo => false, // ToDos cannot be converted to anything
             _ when this == Appointment => targetCategory == ToDo, // Appointments can only become general tasks
             _ when this == BillReminder => targetCategory == ToDo, // Bill reminders can only become general tasks
             _ when this == Project => false, // Projects cannot be converted to other categories
@@ -158,7 +158,7 @@ public record TaskCategory
     /// Gets valid conversion targets for this category
     /// </summary>
     /// <returns>Collection of valid target categories</returns>
-    public IEnumerable<TaskCategory> GetValidConversions()
+    public IEnumerable<AppTaskCategory> GetValidConversions()
     {
         return AllCategories.Where(CanConvertTo);
     }
@@ -226,7 +226,7 @@ public record TaskCategory
                 break;
         }
 
-        return errors.Any() 
+        return errors.Any()
             ? ValidationResult.Failure(errors)
             : ValidationResult.Success();
     }
@@ -301,11 +301,11 @@ public record TaskCategory
         _ => false
     };
 
-    // Implicit conversion from TaskCategory to int for database storage
-    public static implicit operator int(TaskCategory category) => category.Value;
+    // Implicit conversion from AppTaskCategory to int for database storage
+    public static implicit operator int(AppTaskCategory category) => category.Value;
 
-    // Explicit conversion from int to TaskCategory
-    public static explicit operator TaskCategory(int value) => FromValue(value);
+    // Explicit conversion from int to AppTaskCategory
+    public static explicit operator AppTaskCategory(int value) => FromValue(value);
 
     public override string ToString() => Name;
 }

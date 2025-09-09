@@ -7,7 +7,7 @@ using WhoAndWhat.Application.Configuration;
 using WhoAndWhat.Application.DTOs;
 using WhoAndWhat.Application.Interfaces;
 using WhoAndWhat.Domain.ValueObjects;
-using TaskStatus = WhoAndWhat.Domain.ValueObjects.TaskStatus;
+using TaskStatus = WhoAndWhat.Domain.ValueObjects.AppTaskStatus;
 
 namespace WhoAndWhat.Application.Services;
 
@@ -49,19 +49,19 @@ public class TaskSearchService : ITaskSearchService
         };
     }
 
-    public async Task<TaskSearchResult> SearchTasksAsync(Guid userId, TaskSearchCriteria criteria, CancellationToken cancellationToken = default)
+    public async Task<TaskSearchResult> SearchTasksAsync(Guid userId, AppTaskSearchCriteria criteria, CancellationToken cancellationToken = default)
     {
         var stopwatch = Stopwatch.StartNew();
-        
+
         try
         {
             // Validate criteria
             var validation = ValidateSearchCriteria(criteria);
             if (!validation.IsValid)
             {
-                _logger.LogWarning("Invalid search criteria for user {UserId}: {Errors}", 
+                _logger.LogWarning("Invalid search criteria for user {UserId}: {Errors}",
                     userId, string.Join(", ", validation.Errors));
-                return TaskSearchResult.Empty(criteria.Query, stopwatch.Elapsed);
+                return TaskSearchResult.Empty(criteria.SearchTerm, stopwatch.Elapsed);
             }
 
             var normalizedCriteria = validation.NormalizedCriteria!;
@@ -73,9 +73,9 @@ public class TaskSearchService : ITaskSearchService
             {
                 stopwatch.Stop();
                 _logger.LogDebug("Search cache hit for user {UserId}, key: {CacheKey}", userId, cacheKey);
-                
+
                 // Record cache hit in analytics
-                await _searchRepository.RecordSearchQueryAsync(userId, normalizedCriteria, 
+                await _searchRepository.RecordSearchQueryAsync(userId, normalizedCriteria,
                     cachedResult.TotalCount, stopwatch.Elapsed, true, cancellationToken);
 
                 // Update metadata
@@ -96,8 +96,8 @@ public class TaskSearchService : ITaskSearchService
         catch (Exception ex)
         {
             stopwatch.Stop();
-            _logger.LogError(ex, "Error executing search for user {UserId} with query: {Query}", userId, criteria.Query);
-            return TaskSearchResult.Empty(criteria.Query, stopwatch.Elapsed);
+            _logger.LogError(ex, "Error executing search for user {UserId} with query: {Query}", userId, criteria.SearchTerm);
+            return TaskSearchResult.Empty(criteria.SearchTerm, stopwatch.Elapsed);
         }
     }
 
@@ -111,7 +111,7 @@ public class TaskSearchService : ITaskSearchService
         try
         {
             var cacheKey = GetSearchSuggestionsCacheKey(userId, query, maxSuggestions);
-            
+
             // Try to get from cache
             var cachedSuggestions = await GetCachedSuggestionsAsync(cacheKey, cancellationToken);
             if (cachedSuggestions != null)
@@ -139,11 +139,11 @@ public class TaskSearchService : ITaskSearchService
     public async Task<SearchAnalytics> GetSearchAnalyticsAsync(Guid userId, TimeSpan? period = null, CancellationToken cancellationToken = default)
     {
         var analyticsPeriod = period ?? TimeSpan.FromDays(30);
-        
+
         try
         {
             var cacheKey = GetSearchAnalyticsCacheKey(userId, analyticsPeriod);
-            
+
             // Try to get from cache (analytics can be cached longer)
             var cachedAnalytics = await GetCachedAnalyticsAsync(cacheKey, cancellationToken);
             if (cachedAnalytics != null)
@@ -189,14 +189,14 @@ public class TaskSearchService : ITaskSearchService
         try
         {
             var pattern = $"{_cacheSettings.KeyPrefix}:{SearchResultsCachePrefix}:{userId}:*";
-            
+
             // Note: This is a simplified implementation. In a production system,
             // you'd want to use Redis SCAN with pattern matching to find and delete keys
             _logger.LogInformation("Clearing search cache for user {UserId}", userId);
-            
+
             // For now, we'll rely on cache expiration
             // In a full implementation, you'd iterate through matching keys and delete them
-            
+
             return Task.FromResult(true);
         }
         catch (Exception ex)
@@ -206,10 +206,10 @@ public class TaskSearchService : ITaskSearchService
         }
     }
 
-    public SearchValidationResult ValidateSearchCriteria(TaskSearchCriteria criteria)
+    public SearchValidationResult ValidateSearchCriteria(AppTaskSearchCriteria criteria)
     {
         var errors = criteria.Validate().ToList();
-        
+
         if (errors.Any())
         {
             return SearchValidationResult.Invalid(errors);
@@ -223,16 +223,16 @@ public class TaskSearchService : ITaskSearchService
         try
         {
             _logger.LogInformation("Starting search cache warming for user {UserId}", userId);
-            
+
             // Common search patterns to warm up
             var commonSearches = new[]
             {
-                new TaskSearchCriteria { PageSize = 20, SortBy = TaskSearchSortBy.UpdatedAt },
-                new TaskSearchCriteria { PageSize = 20, SortBy = TaskSearchSortBy.DueDate },
-                new TaskSearchCriteria { Status = TaskStatus.InProgress, PageSize = 20 },
-                new TaskSearchCriteria { Status = TaskStatus.Pending, PageSize = 20 },
-                new TaskSearchCriteria { Priority = Priority.High, PageSize = 20 },
-                new TaskSearchCriteria { Priority = Priority.Urgent, PageSize = 20 }
+                new AppTaskSearchCriteria { PageSize = 20, SortBy = TaskSearchSortBy.UpdatedAt },
+                new AppTaskSearchCriteria { PageSize = 20, SortBy = TaskSearchSortBy.DueDate },
+                new AppTaskSearchCriteria { Status = TaskStatus.InProgress, PageSize = 20 },
+                new AppTaskSearchCriteria { Status = TaskStatus.Pending, PageSize = 20 },
+                new AppTaskSearchCriteria { Priority = Priority.High, PageSize = 20 },
+                new AppTaskSearchCriteria { Priority = Priority.Urgent, PageSize = 20 }
             };
 
             var warmedCount = 0;
@@ -259,7 +259,7 @@ public class TaskSearchService : ITaskSearchService
         }
     }
 
-    private string GetSearchResultsCacheKey(Guid userId, TaskSearchCriteria criteria)
+    private string GetSearchResultsCacheKey(Guid userId, AppTaskSearchCriteria criteria)
     {
         return $"{_cacheSettings.KeyPrefix}:{SearchResultsCachePrefix}:{criteria.GetCacheKey(userId)}";
     }
@@ -289,7 +289,7 @@ public class TaskSearchService : ITaskSearchService
         {
             _logger.LogWarning(ex, "Error retrieving cached search result for key: {CacheKey}", cacheKey);
         }
-        
+
         return null;
     }
 
@@ -325,7 +325,7 @@ public class TaskSearchService : ITaskSearchService
         {
             _logger.LogWarning(ex, "Error retrieving cached suggestions for key: {CacheKey}", cacheKey);
         }
-        
+
         return null;
     }
 
@@ -361,7 +361,7 @@ public class TaskSearchService : ITaskSearchService
         {
             _logger.LogWarning(ex, "Error retrieving cached analytics for key: {CacheKey}", cacheKey);
         }
-        
+
         return null;
     }
 

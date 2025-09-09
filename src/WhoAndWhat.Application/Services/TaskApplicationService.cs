@@ -147,12 +147,12 @@ public class TaskApplicationService : ITaskApplicationService
     {
         // This would typically get tasks and calculate metrics using the category business rule service
         // For now, return a simple implementation
-        
+
         // Get user's tasks (last 90 days)
         var from = DateTime.UtcNow.AddDays(-90);
         var tasksQuery = new GetTasksQuery(userId, IncludeArchived: true);
         var tasksResult = await _mediator.Send(tasksQuery);
-        
+
         if (!tasksResult.IsSuccess)
         {
             return Result<TaskMetricsDto>.Failure(tasksResult.Error);
@@ -160,10 +160,10 @@ public class TaskApplicationService : ITaskApplicationService
 
         // Convert DTOs back to domain objects for metrics calculation
         // In a real implementation, this should be optimized
-        var tasks = new List<Domain.Entities.Task>(); // This would need proper mapping
-        
-        var metrics = _categoryBusinessRuleService.CalculateCategoryMetrics(tasks);
-        
+        var tasks = new List<Domain.Entities.AppTask>(); // This would need proper mapping
+
+        var metrics = _categoryBusinessRuleService.CalculateCategoryMetrics((IEnumerable<Domain.Entities.AppTask>)tasks);
+
         var metricsDto = new TaskMetricsDto
         {
             CategoryMetrics = metrics.Metrics.Select(cm => new CategoryMetricsDto
@@ -174,14 +174,14 @@ public class TaskApplicationService : ITaskApplicationService
                     Name = cm.Category.Name,
                     DisplayName = cm.Category.GetDisplayName(),
                     Description = cm.Category.Description,
-                    RequiresDueDate = cm.Category.RequiresDueDate(),
-                    AllowsSubtasks = cm.Category.AllowsSubtasks()
+                    RequiresDueDate = cm.Category.RequiresDueDate,
+                    AllowsSubtasks = cm.Category.AllowsSubtasks
                 },
                 TotalTasks = cm.TotalTasks,
                 CompletedTasks = cm.CompletedTasks,
                 OverdueTasks = cm.OverdueTasks,
                 CompletionPercentage = cm.CompletionPercentage,
-                AverageCompletionTime = cm.AverageCompletionTime,
+                AverageCompletionTime = TimeSpan.FromHours(cm.AverageCompletionTime),
                 CommonPatterns = cm.CommonPatterns
             }).ToList(),
             CalculatedAt = metrics.CalculatedAt,

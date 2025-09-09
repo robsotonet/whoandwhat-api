@@ -8,4 +8,4 @@ public record GetTaskQuery(
     Guid TaskId,
     Guid UserId,
     bool IncludeSubtasks = true
-) : IRequest&lt;Result&lt;TaskDto&gt;&gt;;
+) : IRequest<Result<TaskDto>>;

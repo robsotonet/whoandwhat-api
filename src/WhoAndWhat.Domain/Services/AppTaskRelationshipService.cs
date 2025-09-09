@@ -1,14 +1,14 @@
 using WhoAndWhat.Domain.Common;
 using WhoAndWhat.Domain.ValueObjects;
-using DomainTask = WhoAndWhat.Domain.Entities.Task;
-using DomainTaskStatus = WhoAndWhat.Domain.ValueObjects.TaskStatus;
+using DomainTask = WhoAndWhat.Domain.Entities.AppTask;
+using DomainTaskStatus = WhoAndWhat.Domain.ValueObjects.AppTaskStatus;
 
 namespace WhoAndWhat.Domain.Services;
 
 /// <summary>
 /// Domain service for managing task relationships, hierarchies, and dependencies
 /// </summary>
-public class TaskRelationshipService
+public class AppTaskRelationshipService
 {
     /// <summary>
     /// Establishes parent-child relationship between tasks with validation
@@ -19,8 +19,8 @@ public class TaskRelationshipService
     public ValidationResult EstablishParentChildRelationship(DomainTask parentTask, DomainTask childTask)
     {
         var errors = new List<string>();
-        var parentCategory = TaskCategory.FromValue(parentTask.Category);
-        var childCategory = TaskCategory.FromValue(childTask.Category);
+        var parentCategory = AppTaskCategory.FromValue(parentTask.Category);
+        var childCategory = AppTaskCategory.FromValue(childTask.Category);
 
         // Validate parent can have subtasks
         if (!parentCategory.AllowsSubtasks)
@@ -31,11 +31,11 @@ public class TaskRelationshipService
         // Validate child is not already part of a project
         if (childTask.ProjectId.HasValue)
         {
-            errors.Add("Task is already part of another project");
+            errors.Add("AppTask is already part of another project");
         }
 
         // Validate child is not a project itself (projects cannot be nested)
-        if (childCategory == TaskCategory.Project)
+        if (childCategory == AppTaskCategory.Project)
         {
             errors.Add("Projects cannot be subtasks of other tasks");
         }
@@ -53,7 +53,7 @@ public class TaskRelationshipService
             errors.AddRange(consistencyValidation.Errors);
         }
 
-        return errors.Any() 
+        return errors.Any()
             ? ValidationResult.Failure(errors.ToArray())
             : ValidationResult.Success();
     }
@@ -84,14 +84,14 @@ public class TaskRelationshipService
         if (childTask.ProjectId == parentTask.Id)
         {
             // Child will become standalone - validate this is acceptable
-            var childCategory = TaskCategory.FromValue(childTask.Category);
-            if (childCategory == TaskCategory.Project)
+            var childCategory = AppTaskCategory.FromValue(childTask.Category);
+            if (childCategory == AppTaskCategory.Project)
             {
                 errors.Add("Project subtasks cannot become standalone tasks");
             }
         }
 
-        return errors.Any() 
+        return errors.Any()
             ? ValidationResult.Failure(errors.ToArray())
             : ValidationResult.Success();
     }
@@ -131,7 +131,7 @@ public class TaskRelationshipService
             errors.Add("Parent and child tasks must belong to the same user");
         }
 
-        return errors.Any() 
+        return errors.Any()
             ? ValidationResult.Failure(errors.ToArray())
             : ValidationResult.Success();
     }
@@ -154,7 +154,7 @@ public class TaskRelationshipService
     public TaskHierarchy BuildTaskHierarchy(DomainTask rootTask, IEnumerable<DomainTask> allTasks)
     {
         var taskLookup = allTasks.ToLookup(t => t.ProjectId);
-        
+
         return new TaskHierarchy
         {
             Root = rootTask,
@@ -168,7 +168,7 @@ public class TaskRelationshipService
     private List<TaskHierarchy> BuildChildHierarchies(Guid parentId, ILookup<Guid?, DomainTask> taskLookup)
     {
         var children = new List<TaskHierarchy>();
-        
+
         foreach (var childTask in taskLookup[parentId])
         {
             children.Add(new TaskHierarchy
@@ -184,24 +184,24 @@ public class TaskRelationshipService
     /// <summary>
     /// Calculates aggregate metrics for a task hierarchy
     /// </summary>
-    /// <param name="hierarchy">Task hierarchy</param>
+    /// <param name="hierarchy">AppTask hierarchy</param>
     /// <returns>Aggregate metrics</returns>
     public TaskHierarchyMetrics CalculateHierarchyMetrics(TaskHierarchy hierarchy)
     {
         var metrics = new TaskHierarchyMetrics();
-        
+
         CollectMetrics(hierarchy, metrics);
-        
+
         // Calculate derived metrics
-        metrics.CompletionPercentage = metrics.TotalTasks > 0 
-            ? (decimal)metrics.CompletedTasks / metrics.TotalTasks * 100 
+        metrics.CompletionPercentage = metrics.TotalTasks > 0
+            ? (decimal)metrics.CompletedTasks / metrics.TotalTasks * 100
             : 0;
-            
+
         metrics.IsOverdue = metrics.OverdueTasks > 0;
-        metrics.HighestPriority = metrics.Priorities.Any() 
+        metrics.HighestPriority = metrics.Priorities.Any()
             ? metrics.Priorities.OrderBy(p => p.SortOrder).First()
             : Priority.Low;
-            
+
         return metrics;
     }
 
@@ -249,7 +249,7 @@ public class TaskRelationshipService
             {
                 metrics.EarliestDueDate = task.DueDate.Value;
             }
-                
+
             if (!metrics.LatestDueDate.HasValue || task.DueDate.Value > metrics.LatestDueDate.Value)
             {
                 metrics.LatestDueDate = task.DueDate.Value;
@@ -271,11 +271,11 @@ public class TaskRelationshipService
     /// <returns>Reordered subtasks</returns>
     public IEnumerable<DomainTask> ReorderSubtasks(DomainTask parentTask, IEnumerable<DomainTask> subtasks)
     {
-        return subtasks.OrderBy(task => 
+        return subtasks.OrderBy(task =>
         {
             var priority = Priority.FromValue(task.Priority);
             var status = DomainTaskStatus.FromValue(task.Status);
-            
+
             // Primary sort: Status (active tasks first)
             var statusOrder = status switch
             {
@@ -295,12 +295,12 @@ public class TaskRelationshipService
     /// <summary>
     /// Suggests task breakdown for complex tasks
     /// </summary>
-    /// <param name="complexTask">Task to analyze for breakdown</param>
+    /// <param name="complexTask">AppTask to analyze for breakdown</param>
     /// <returns>Suggested subtask breakdown</returns>
     public IEnumerable<SubtaskSuggestion> SuggestTaskBreakdown(DomainTask complexTask)
     {
         var suggestions = new List<SubtaskSuggestion>();
-        var category = TaskCategory.FromValue(complexTask.Category);
+        var category = AppTaskCategory.FromValue(complexTask.Category);
         var description = complexTask.Description ?? "";
 
         // Category-specific breakdown suggestions
@@ -309,14 +309,14 @@ public class TaskRelationshipService
             case "Project":
                 suggestions.AddRange(SuggestProjectBreakdown(complexTask));
                 break;
-                
+
             case "Idea":
                 if (description.Length > 100) // Substantial ideas
                 {
                     suggestions.AddRange(SuggestIdeaBreakdown(complexTask));
                 }
                 break;
-                
+
             case "ToDo":
                 if (description.Contains("and") || description.Contains(","))
                 {
@@ -347,7 +347,7 @@ public class TaskRelationshipService
         {
             var projectDuration = project.DueDate.Value - DateTime.UtcNow;
             var phaseDuration = projectDuration.TotalDays / 5; // 5 phases
-            
+
             for (int i = 0; i < suggestions.Count; i++)
             {
                 suggestions[i].SuggestedDueDate = DateTime.UtcNow.AddDays((i + 1) * phaseDuration);
@@ -380,7 +380,7 @@ public class TaskRelationshipService
 
         // Simple heuristic: split on "and" or comma
         var parts = description.Split(new[] { " and ", ", " }, StringSplitOptions.RemoveEmptyEntries);
-        
+
         if (parts.Length > 1)
         {
             for (int i = 0; i < Math.Min(parts.Length, 5); i++) // Max 5 subtasks
@@ -389,7 +389,7 @@ public class TaskRelationshipService
                 if (part.Length > 5) // Reasonable length
                 {
                     suggestions.Add(new SubtaskSuggestion(
-                        char.ToUpper(part[0]) + part[1..], 
+                        char.ToUpper(part[0]) + part[1..],
                         $"Complete: {part}",
                         Priority.Medium));
                 }
@@ -407,12 +407,12 @@ public class TaskHierarchy
 {
     public DomainTask Root { get; set; } = null!;
     public List<TaskHierarchy> Children { get; set; } = new();
-    
+
     /// <summary>
     /// Gets the total depth of the hierarchy
     /// </summary>
     public int Depth => 1 + (Children.Any() ? Children.Max(c => c.Depth) : 0);
-    
+
     /// <summary>
     /// Gets all tasks in the hierarchy flattened
     /// </summary>
@@ -443,14 +443,14 @@ public class TaskHierarchyMetrics
     public int PendingTasks { get; set; }
     public int ArchivedTasks { get; set; }
     public int OverdueTasks { get; set; }
-    
+
     public decimal CompletionPercentage { get; set; }
     public bool IsOverdue { get; set; }
     public Priority HighestPriority { get; set; } = Priority.Low;
-    
+
     public DateTime? EarliestDueDate { get; set; }
     public DateTime? LatestDueDate { get; set; }
-    
+
     public List<Priority> Priorities { get; set; } = new();
 }
 

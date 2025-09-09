@@ -1,4 +1,5 @@
 using FluentAssertions;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -21,6 +22,7 @@ public class JwtTokenServiceTests : IDisposable
     private readonly JwtTokenService _jwtTokenService;
     private readonly JwtSettings _jwtSettings;
     private readonly Mock<ILogger<JwtTokenService>> _mockLogger;
+    private readonly Mock<IHttpContextAccessor> _mockHttpContextAccessor;
 
     public JwtTokenServiceTests()
     {
@@ -30,6 +32,7 @@ public class JwtTokenServiceTests : IDisposable
 
         _context = new ApplicationDbContext(options);
         _mockLogger = new Mock<ILogger<JwtTokenService>>();
+        _mockHttpContextAccessor = new Mock<IHttpContextAccessor>();
 
         _jwtSettings = new JwtSettings
         {
@@ -47,7 +50,7 @@ public class JwtTokenServiceTests : IDisposable
         };
 
         var jwtOptions = Options.Create(_jwtSettings);
-        _jwtTokenService = new JwtTokenService(jwtOptions, _context, _mockLogger.Object);
+        _jwtTokenService = new JwtTokenService(jwtOptions, _context, _mockLogger.Object, _mockHttpContextAccessor.Object);
     }
 
     [Fact]
@@ -380,11 +383,12 @@ public class JwtTokenServiceTests : IDisposable
 
         // Act & Assert
         var mockLogger = new Mock<ILogger<JwtTokenService>>();
-        var action = () => new JwtTokenService(Options.Create(invalidSettings), _context, mockLogger.Object);
+        var mockHttpContextAccessor = new Mock<IHttpContextAccessor>();
+        var action = () => new JwtTokenService(Options.Create(invalidSettings), _context, mockLogger.Object, mockHttpContextAccessor.Object);
         
         // Note: This would likely fail during token generation, not construction
         // So we test during token generation instead
-        var service = new JwtTokenService(Options.Create(invalidSettings), _context, mockLogger.Object);
+        var service = new JwtTokenService(Options.Create(invalidSettings), _context, mockLogger.Object, mockHttpContextAccessor.Object);
         var user = new User("test@example.com", "testuser", Language.en);
         user.SetPassword("TestPassword123!");
         

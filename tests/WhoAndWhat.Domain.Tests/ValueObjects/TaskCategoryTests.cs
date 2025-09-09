@@ -4,41 +4,41 @@ using WhoAndWhat.Domain.Common;
 
 namespace WhoAndWhat.Domain.Tests.ValueObjects;
 
-public class TaskCategoryTests
+public class AppTaskCategoryTests
 {
     [Fact]
-    public void TaskCategory_Should_Have_All_Predefined_Categories()
+    public void AppTaskCategory_Should_Have_All_Predefined_Categories()
     {
-        var allCategories = TaskCategory.GetAll().ToList();
+        var allCategories = AppTaskCategory.GetAll().ToList();
         
         allCategories.Should().HaveCount(5);
-        allCategories.Should().Contain(TaskCategory.ToDo);
-        allCategories.Should().Contain(TaskCategory.Idea);
-        allCategories.Should().Contain(TaskCategory.Appointment);
-        allCategories.Should().Contain(TaskCategory.BillReminder);
-        allCategories.Should().Contain(TaskCategory.Project);
+        allCategories.Should().Contain(AppTaskCategory.ToDo);
+        allCategories.Should().Contain(AppTaskCategory.Idea);
+        allCategories.Should().Contain(AppTaskCategory.Appointment);
+        allCategories.Should().Contain(AppTaskCategory.BillReminder);
+        allCategories.Should().Contain(AppTaskCategory.Project);
     }
 
     [Fact]
-    public void TaskCategory_Should_Have_Correct_Static_Values()
+    public void AppTaskCategory_Should_Have_Correct_Static_Values()
     {
-        TaskCategory.ToDo.Name.Should().Be("ToDo");
-        TaskCategory.ToDo.Value.Should().Be(0);
-        TaskCategory.ToDo.RequiresDueDate.Should().BeFalse();
-        TaskCategory.ToDo.AllowsSubtasks.Should().BeFalse();
-        TaskCategory.ToDo.ColorCode.Should().Be("#007bff");
-        TaskCategory.ToDo.IconName.Should().Be("task");
+        AppTaskCategory.ToDo.Name.Should().Be("ToDo");
+        AppTaskCategory.ToDo.Value.Should().Be(0);
+        AppTaskCategory.ToDo.RequiresDueDate.Should().BeFalse();
+        AppTaskCategory.ToDo.AllowsSubtasks.Should().BeFalse();
+        AppTaskCategory.ToDo.ColorCode.Should().Be("#007bff");
+        AppTaskCategory.ToDo.IconName.Should().Be("task");
         
-        TaskCategory.Appointment.RequiresDueDate.Should().BeTrue();
-        TaskCategory.Project.AllowsSubtasks.Should().BeTrue();
+        AppTaskCategory.Appointment.RequiresDueDate.Should().BeTrue();
+        AppTaskCategory.Project.AllowsSubtasks.Should().BeTrue();
     }
 
     [Fact]
-    public void TaskCategory_Should_Create_From_Valid_Value()
+    public void AppTaskCategory_Should_Create_From_Valid_Value()
     {
-        var category = TaskCategory.FromValue(2);
+        var category = AppTaskCategory.FromValue(2);
         
-        category.Should().Be(TaskCategory.Appointment);
+        category.Should().Be(AppTaskCategory.Appointment);
         category.Name.Should().Be("Appointment");
         category.Value.Should().Be(2);
         category.Description.Should().Be("Scheduled appointments");
@@ -47,89 +47,89 @@ public class TaskCategoryTests
     }
 
     [Fact]
-    public void TaskCategory_Should_Throw_Exception_For_Invalid_Value()
+    public void AppTaskCategory_Should_Throw_Exception_For_Invalid_Value()
     {
-        Action act = () => TaskCategory.FromValue(999);
+        Action act = () => AppTaskCategory.FromValue(999);
         
         act.Should().Throw<ArgumentException>()
            .WithMessage("Invalid task category value: 999*");
     }
 
     [Fact]
-    public void TaskCategory_Should_Create_From_Valid_Name()
+    public void AppTaskCategory_Should_Create_From_Valid_Name()
     {
-        var category = TaskCategory.FromName("Project");
+        var category = AppTaskCategory.FromName("Project");
         
-        category.Should().Be(TaskCategory.Project);
+        category.Should().Be(AppTaskCategory.Project);
         category.Name.Should().Be("Project");
         category.Value.Should().Be(4);
     }
 
     [Fact]
-    public void TaskCategory_Should_Create_From_Valid_Name_Case_Insensitive()
+    public void AppTaskCategory_Should_Create_From_Valid_Name_Case_Insensitive()
     {
-        var category = TaskCategory.FromName("project");
+        var category = AppTaskCategory.FromName("project");
         
-        category.Should().Be(TaskCategory.Project);
+        category.Should().Be(AppTaskCategory.Project);
     }
 
     [Fact]
-    public void TaskCategory_Should_Throw_Exception_For_Invalid_Name()
+    public void AppTaskCategory_Should_Throw_Exception_For_Invalid_Name()
     {
-        Action act = () => TaskCategory.FromName("InvalidCategory");
+        Action act = () => AppTaskCategory.FromName("InvalidCategory");
         
         act.Should().Throw<ArgumentException>()
            .WithMessage("Invalid task category name: InvalidCategory*");
     }
 
     [Fact]
-    public void TaskCategory_TryFromValue_Should_Work_Correctly()
+    public void AppTaskCategory_TryFromValue_Should_Work_Correctly()
     {
-        var result1 = TaskCategory.TryFromValue(1, out var category1);
-        var result2 = TaskCategory.TryFromValue(999, out var category2);
+        var result1 = AppTaskCategory.TryFromValue(1, out var category1);
+        var result2 = AppTaskCategory.TryFromValue(999, out var category2);
         
         result1.Should().BeTrue();
-        category1.Should().Be(TaskCategory.Idea);
+        category1.Should().Be(AppTaskCategory.Idea);
         
         result2.Should().BeFalse();
         category2.Should().BeNull();
     }
 
     [Fact]
-    public void TaskCategory_TryFromName_Should_Work_Correctly()
+    public void AppTaskCategory_TryFromName_Should_Work_Correctly()
     {
-        var result1 = TaskCategory.TryFromName("BillReminder", out var category1);
-        var result2 = TaskCategory.TryFromName("Invalid", out var category2);
+        var result1 = AppTaskCategory.TryFromName("BillReminder", out var category1);
+        var result2 = AppTaskCategory.TryFromName("Invalid", out var category2);
         
         result1.Should().BeTrue();
-        category1.Should().Be(TaskCategory.BillReminder);
+        category1.Should().Be(AppTaskCategory.BillReminder);
         
         result2.Should().BeFalse();
         category2.Should().BeNull();
     }
 
     [Fact]
-    public void TaskCategory_GetProjectConvertibleCategories_Should_Return_Correct_Categories()
+    public void AppTaskCategory_GetProjectConvertibleCategories_Should_Return_Correct_Categories()
     {
-        var convertible = TaskCategory.GetProjectConvertibleCategories().ToList();
+        var convertible = AppTaskCategory.GetProjectConvertibleCategories().ToList();
         
-        convertible.Should().Contain(TaskCategory.Idea);
-        convertible.Should().Contain(TaskCategory.Project);
-        convertible.Should().NotContain(TaskCategory.ToDo);
-        convertible.Should().NotContain(TaskCategory.Appointment);
-        convertible.Should().NotContain(TaskCategory.BillReminder);
+        convertible.Should().Contain(AppTaskCategory.Idea);
+        convertible.Should().Contain(AppTaskCategory.Project);
+        convertible.Should().NotContain(AppTaskCategory.ToDo);
+        convertible.Should().NotContain(AppTaskCategory.Appointment);
+        convertible.Should().NotContain(AppTaskCategory.BillReminder);
     }
 
     [Fact]
-    public void TaskCategory_GetTimeSensitiveCategories_Should_Return_Correct_Categories()
+    public void AppTaskCategory_GetTimeSensitiveCategories_Should_Return_Correct_Categories()
     {
-        var timeSensitive = TaskCategory.GetTimeSensitiveCategories().ToList();
+        var timeSensitive = AppTaskCategory.GetTimeSensitiveCategories().ToList();
         
-        timeSensitive.Should().Contain(TaskCategory.Appointment);
-        timeSensitive.Should().Contain(TaskCategory.BillReminder);
-        timeSensitive.Should().NotContain(TaskCategory.ToDo);
-        timeSensitive.Should().NotContain(TaskCategory.Idea);
-        timeSensitive.Should().NotContain(TaskCategory.Project);
+        timeSensitive.Should().Contain(AppTaskCategory.Appointment);
+        timeSensitive.Should().Contain(AppTaskCategory.BillReminder);
+        timeSensitive.Should().NotContain(AppTaskCategory.ToDo);
+        timeSensitive.Should().NotContain(AppTaskCategory.Idea);
+        timeSensitive.Should().NotContain(AppTaskCategory.Project);
     }
 
     [Theory]
@@ -146,23 +146,23 @@ public class TaskCategoryTests
     [InlineData("Project", "ToDo", false)]
     [InlineData("Project", "Idea", false)]
     [InlineData("Idea", "Idea", false)]
-    public void TaskCategory_CanConvertTo_Should_Follow_Business_Rules(string fromCategory, string toCategory, bool expectedResult)
+    public void AppTaskCategory_CanConvertTo_Should_Follow_Business_Rules(string fromCategory, string toCategory, bool expectedResult)
     {
-        var from = TaskCategory.FromName(fromCategory);
-        var to = TaskCategory.FromName(toCategory);
+        var from = AppTaskCategory.FromName(fromCategory);
+        var to = AppTaskCategory.FromName(toCategory);
         
         from.CanConvertTo(to).Should().Be(expectedResult);
     }
 
     [Fact]
-    public void TaskCategory_GetValidConversions_Should_Return_Correct_Conversions()
+    public void AppTaskCategory_GetValidConversions_Should_Return_Correct_Conversions()
     {
-        var ideaConversions = TaskCategory.Idea.GetValidConversions().ToList();
-        var todoConversions = TaskCategory.ToDo.GetValidConversions().ToList();
-        var projectConversions = TaskCategory.Project.GetValidConversions().ToList();
+        var ideaConversions = AppTaskCategory.Idea.GetValidConversions().ToList();
+        var todoConversions = AppTaskCategory.ToDo.GetValidConversions().ToList();
+        var projectConversions = AppTaskCategory.Project.GetValidConversions().ToList();
         
         ideaConversions.Should().HaveCount(4); // Can convert to all others
-        ideaConversions.Should().NotContain(TaskCategory.Idea);
+        ideaConversions.Should().NotContain(AppTaskCategory.Idea);
         
         todoConversions.Should().BeEmpty(); // Cannot convert to any
         
@@ -170,73 +170,73 @@ public class TaskCategoryTests
     }
 
     [Fact]
-    public void TaskCategory_ValidateTaskData_Should_Pass_For_Valid_Data()
+    public void AppTaskCategory_ValidateTaskData_Should_Pass_For_Valid_Data()
     {
-        var validation = TaskCategory.ToDo.ValidateTaskData("Test Task", "Description", null, false);
+        var validation = AppTaskCategory.ToDo.ValidateTaskData("Test Task", "Description", null, false);
         
         validation.IsValid.Should().BeTrue();
         validation.Errors.Should().BeEmpty();
     }
 
     [Fact]
-    public void TaskCategory_ValidateTaskData_Should_Fail_For_Missing_Title()
+    public void AppTaskCategory_ValidateTaskData_Should_Fail_For_Missing_Title()
     {
-        var validation = TaskCategory.ToDo.ValidateTaskData(null, "Description", null, false);
+        var validation = AppTaskCategory.ToDo.ValidateTaskData(null, "Description", null, false);
         
         validation.IsValid.Should().BeFalse();
         validation.Errors.Should().Contain("Title is required for all task categories");
     }
 
     [Fact]
-    public void TaskCategory_ValidateTaskData_Should_Fail_For_Appointment_Without_Due_Date()
+    public void AppTaskCategory_ValidateTaskData_Should_Fail_For_Appointment_Without_Due_Date()
     {
-        var validation = TaskCategory.Appointment.ValidateTaskData("Meeting", "Description", null, false);
+        var validation = AppTaskCategory.Appointment.ValidateTaskData("Meeting", "Description", null, false);
         
         validation.IsValid.Should().BeFalse();
         validation.Errors.Should().Contain("Appointment tasks must have a due date");
     }
 
     [Fact]
-    public void TaskCategory_ValidateTaskData_Should_Fail_For_BillReminder_Without_Due_Date()
+    public void AppTaskCategory_ValidateTaskData_Should_Fail_For_BillReminder_Without_Due_Date()
     {
-        var validation = TaskCategory.BillReminder.ValidateTaskData("Bill", "Description", null, false);
+        var validation = AppTaskCategory.BillReminder.ValidateTaskData("Bill", "Description", null, false);
         
         validation.IsValid.Should().BeFalse();
         validation.Errors.Should().Contain("Bill Reminder tasks must have a due date");
     }
 
     [Fact]
-    public void TaskCategory_ValidateTaskData_Should_Fail_For_Subtasks_When_Not_Allowed()
+    public void AppTaskCategory_ValidateTaskData_Should_Fail_For_Subtasks_When_Not_Allowed()
     {
-        var validation = TaskCategory.Appointment.ValidateTaskData("Meeting", "Description", DateTime.UtcNow.AddDays(1), true);
+        var validation = AppTaskCategory.Appointment.ValidateTaskData("Meeting", "Description", DateTime.UtcNow.AddDays(1), true);
         
         validation.IsValid.Should().BeFalse();
         validation.Errors.Should().Contain("Appointment tasks cannot have subtasks");
     }
 
     [Fact]
-    public void TaskCategory_ValidateTaskData_Should_Fail_For_Past_Appointment()
+    public void AppTaskCategory_ValidateTaskData_Should_Fail_For_Past_Appointment()
     {
         var pastDate = DateTime.UtcNow.AddDays(-1);
-        var validation = TaskCategory.Appointment.ValidateTaskData("Meeting", "Description", pastDate, false);
+        var validation = AppTaskCategory.Appointment.ValidateTaskData("Meeting", "Description", pastDate, false);
         
         validation.IsValid.Should().BeFalse();
         validation.Errors.Should().Contain("Appointment date cannot be in the past");
     }
 
     [Fact]
-    public void TaskCategory_ValidateTaskData_Should_Warn_For_BillReminder_Without_Description()
+    public void AppTaskCategory_ValidateTaskData_Should_Warn_For_BillReminder_Without_Description()
     {
-        var validation = TaskCategory.BillReminder.ValidateTaskData("Bill", null, DateTime.UtcNow.AddDays(1), false);
+        var validation = AppTaskCategory.BillReminder.ValidateTaskData("Bill", null, DateTime.UtcNow.AddDays(1), false);
         
         validation.IsValid.Should().BeFalse();
         validation.Errors.Should().Contain("Bill reminders should include payment details in the description");
     }
 
     [Fact]
-    public void TaskCategory_ValidateTaskData_Should_Warn_For_Project_Without_Description()
+    public void AppTaskCategory_ValidateTaskData_Should_Warn_For_Project_Without_Description()
     {
-        var validation = TaskCategory.Project.ValidateTaskData("Project", null, null, false);
+        var validation = AppTaskCategory.Project.ValidateTaskData("Project", null, null, false);
         
         validation.IsValid.Should().BeFalse();
         validation.Errors.Should().Contain("Projects should include a detailed description");
@@ -248,9 +248,9 @@ public class TaskCategoryTests
     [InlineData("Appointment", "Appointment")]
     [InlineData("BillReminder", "Bill Reminder")]
     [InlineData("Project", "Project")]
-    public void TaskCategory_GetDisplayName_Should_Return_Correct_Display_Name(string categoryName, string expectedDisplayName)
+    public void AppTaskCategory_GetDisplayName_Should_Return_Correct_Display_Name(string categoryName, string expectedDisplayName)
     {
-        var category = TaskCategory.FromName(categoryName);
+        var category = AppTaskCategory.FromName(categoryName);
         
         category.GetDisplayName().Should().Be(expectedDisplayName);
     }
@@ -261,17 +261,17 @@ public class TaskCategoryTests
     [InlineData("Appointment", "category-appointment")]
     [InlineData("BillReminder", "category-bill-reminder")]
     [InlineData("Project", "category-project")]
-    public void TaskCategory_GetCssClass_Should_Return_Correct_CSS_Class(string categoryName, string expectedCssClass)
+    public void AppTaskCategory_GetCssClass_Should_Return_Correct_CSS_Class(string categoryName, string expectedCssClass)
     {
-        var category = TaskCategory.FromName(categoryName);
+        var category = AppTaskCategory.FromName(categoryName);
         
         category.GetCssClass().Should().Be(expectedCssClass);
     }
 
     [Fact]
-    public void TaskCategory_GetSuggestedPriorities_Should_Return_Correct_Priorities_For_Appointment()
+    public void AppTaskCategory_GetSuggestedPriorities_Should_Return_Correct_Priorities_For_Appointment()
     {
-        var suggested = TaskCategory.Appointment.GetSuggestedPriorities().ToList();
+        var suggested = AppTaskCategory.Appointment.GetSuggestedPriorities().ToList();
         
         suggested.Should().Contain(Priority.High);
         suggested.Should().Contain(Priority.Urgent);
@@ -279,9 +279,9 @@ public class TaskCategoryTests
     }
 
     [Fact]
-    public void TaskCategory_GetSuggestedPriorities_Should_Return_All_Priorities_For_ToDo()
+    public void AppTaskCategory_GetSuggestedPriorities_Should_Return_All_Priorities_For_ToDo()
     {
-        var suggested = TaskCategory.ToDo.GetSuggestedPriorities().ToList();
+        var suggested = AppTaskCategory.ToDo.GetSuggestedPriorities().ToList();
         
         suggested.Should().HaveCount(4);
         suggested.Should().Contain(Priority.Low);
@@ -296,9 +296,9 @@ public class TaskCategoryTests
     [InlineData("Appointment", 2.0)]
     [InlineData("BillReminder", 0.25)]
     [InlineData("Project", 8.0)]
-    public void TaskCategory_GetEstimatedHours_Should_Return_Correct_Hours(string categoryName, double expectedHours)
+    public void AppTaskCategory_GetEstimatedHours_Should_Return_Correct_Hours(string categoryName, double expectedHours)
     {
-        var category = TaskCategory.FromName(categoryName);
+        var category = AppTaskCategory.FromName(categoryName);
         
         category.GetEstimatedHours().Should().Be(expectedHours);
     }
@@ -309,32 +309,32 @@ public class TaskCategoryTests
     [InlineData("Appointment", true)]
     [InlineData("BillReminder", true)]
     [InlineData("Project", false)]
-    public void TaskCategory_ShouldAutoArchive_Should_Return_Correct_Value(string categoryName, bool expectedAutoArchive)
+    public void AppTaskCategory_ShouldAutoArchive_Should_Return_Correct_Value(string categoryName, bool expectedAutoArchive)
     {
-        var category = TaskCategory.FromName(categoryName);
+        var category = AppTaskCategory.FromName(categoryName);
         
         category.ShouldAutoArchive().Should().Be(expectedAutoArchive);
     }
 
     [Fact]
-    public void TaskCategory_Should_Support_Implicit_Conversion_To_Int()
+    public void AppTaskCategory_Should_Support_Implicit_Conversion_To_Int()
     {
-        int categoryValue = TaskCategory.Project;
+        int categoryValue = AppTaskCategory.Project;
         
         categoryValue.Should().Be(4);
     }
 
     [Fact]
-    public void TaskCategory_Should_Support_Explicit_Conversion_From_Int()
+    public void AppTaskCategory_Should_Support_Explicit_Conversion_From_Int()
     {
-        var category = (TaskCategory)1;
+        var category = (AppTaskCategory)1;
         
-        category.Should().Be(TaskCategory.Idea);
+        category.Should().Be(AppTaskCategory.Idea);
     }
 
     [Fact]
-    public void TaskCategory_ToString_Should_Return_Name()
+    public void AppTaskCategory_ToString_Should_Return_Name()
     {
-        TaskCategory.Appointment.ToString().Should().Be("Appointment");
+        AppTaskCategory.Appointment.ToString().Should().Be("Appointment");
     }
 }

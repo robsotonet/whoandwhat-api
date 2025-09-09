@@ -61,7 +61,7 @@ public class JobSchedulerService : IHostedService
         // Setup automatic task archiving job
         // Run daily at 2 AM UTC by default, or use configured schedule
         var archivingSchedule = _archiveSettings.ScheduleCron ?? "0 2 * * *"; // Daily at 2 AM UTC
-        
+
         _recurringJobManager.AddOrUpdate<ArchiveTasksJob>(
             "archive-tasks",
             job => job.ExecuteAsync(CancellationToken.None),
@@ -78,7 +78,7 @@ public class JobSchedulerService : IHostedService
         {
             // Run weekly on Sunday at 3 AM UTC by default
             var cleanupSchedule = _archiveSettings.CleanupScheduleCron ?? "0 3 * * 0"; // Weekly on Sunday at 3 AM UTC
-            
+
             _recurringJobManager.AddOrUpdate<ArchiveTasksJob>(
                 "cleanup-expired-archives",
                 job => job.CleanupExpiredArchivesAsync(CancellationToken.None),

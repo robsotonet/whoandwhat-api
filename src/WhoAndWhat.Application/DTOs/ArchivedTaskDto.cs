@@ -3,7 +3,7 @@ namespace WhoAndWhat.Application.DTOs;
 /// <summary>
 /// Data transfer object for archived task information
 /// </summary>
-public record ArchivedTaskDto
+public record ArchivedAppTaskDto
 {
     /// <summary>
     /// Archive record ID
@@ -126,20 +126,20 @@ public record ArchivedTaskDto
     public bool IsRecentlyArchived { get; init; }
 
     /// <summary>
-    /// Creates DTO from ArchivedTask entity
+    /// Creates DTO from ArchivedAppTask entity
     /// </summary>
-    public static ArchivedTaskDto FromEntity(Domain.Entities.ArchivedTask entity)
+    public static ArchivedAppTaskDto FromEntity(Domain.Entities.ArchivedAppTask entity)
     {
-        return new ArchivedTaskDto
+        return new ArchivedAppTaskDto
         {
             Id = entity.Id,
-            OriginalTaskId = entity.OriginalTaskId,
+            OriginalTaskId = entity.OriginalAppTaskId,
             UserId = entity.UserId,
             Title = entity.Title,
             Description = entity.Description,
-            Category = ((Domain.ValueObjects.TaskCategory)entity.Category).ToString(),
+            Category = ((Domain.ValueObjects.AppTaskCategory)entity.Category).ToString(),
             Priority = ((Domain.ValueObjects.Priority)entity.Priority).ToString(),
-            Status = ((Domain.ValueObjects.TaskStatus)entity.Status).ToString(),
+            Status = ((Domain.ValueObjects.AppTaskStatus)entity.Status).ToString(),
             DueDate = entity.DueDate,
             CreatedAt = entity.CreatedAt,
             UpdatedAt = entity.UpdatedAt,
@@ -149,8 +149,8 @@ public record ArchivedTaskDto
             ArchivedByUserId = entity.ArchivedByUserId,
             ProjectId = entity.ProjectId,
             ProjectName = entity.ProjectName,
-            ParentTaskId = entity.ParentTaskId,
-            ParentTaskTitle = entity.ParentTaskTitle,
+            ParentTaskId = entity.ParentAppTaskId,
+            ParentTaskTitle = entity.ParentAppTaskTitle,
             SubtaskCount = GetCountFromJson(entity.SubtasksJson),
             ContactCount = GetCountFromJson(entity.ContactsJson),
             AttachmentCount = GetCountFromJson(entity.AttachmentsJson),
@@ -165,7 +165,7 @@ public record ArchivedTaskDto
         {
             return 0;
         }
-        
+
         try
         {
             using var document = System.Text.Json.JsonDocument.Parse(jsonData);
@@ -185,7 +185,7 @@ public record ArchivedTaskDto
 /// <summary>
 /// Filter criteria for querying archived tasks
 /// </summary>
-public record ArchivedTaskFilter
+public record ArchivedAppTaskFilter
 {
     /// <summary>
     /// Filter by task category
@@ -255,7 +255,7 @@ public record ArchivedTaskFilter
     /// <summary>
     /// Sort field
     /// </summary>
-    public ArchivedTaskSortBy SortBy { get; init; } = ArchivedTaskSortBy.ArchivedAt;
+    public ArchivedAppTaskSortBy SortBy { get; init; } = ArchivedAppTaskSortBy.ArchivedAt;
 
     /// <summary>
     /// Sort direction
@@ -266,7 +266,7 @@ public record ArchivedTaskFilter
 /// <summary>
 /// Available sort options for archived tasks
 /// </summary>
-public enum ArchivedTaskSortBy
+public enum ArchivedAppTaskSortBy
 {
     Title,
     CreatedAt,
@@ -294,7 +294,7 @@ public record ArchiveStatistics
     /// <summary>
     /// Total number of archived tasks
     /// </summary>
-    public int TotalArchivedTasks { get; init; }
+    public int TotalArchivedAppTasks { get; init; }
 
     /// <summary>
     /// Total number of archived projects
@@ -309,7 +309,7 @@ public record ArchiveStatistics
     /// <summary>
     /// Number of tasks archived in the last 30 days
     /// </summary>
-    public int RecentlyArchivedTasks { get; init; }
+    public int RecentlyArchivedAppTasks { get; init; }
 
     /// <summary>
     /// Breakdown by archive reason

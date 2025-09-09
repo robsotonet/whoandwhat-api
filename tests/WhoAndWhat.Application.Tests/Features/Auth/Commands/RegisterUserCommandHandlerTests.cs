@@ -2,11 +2,10 @@ using FluentAssertions;
 using Microsoft.Extensions.Logging;
 using Moq;
 using WhoAndWhat.Application.Common;
-using WhoAndWhat.Application.Features.Auth.Commands.RegisterUser;
 using WhoAndWhat.Application.Features.Auth;
+using WhoAndWhat.Application.Features.Auth.Commands.RegisterUser;
 using WhoAndWhat.Application.Interfaces;
 using WhoAndWhat.Domain.Entities;
-using WhoAndWhat.Domain.Services;
 using WhoAndWhat.Domain.ValueObjects;
 using Xunit;
 using Task = System.Threading.Tasks.Task;
@@ -15,24 +14,26 @@ namespace WhoAndWhat.Application.Tests.Features.Auth.Commands;
 
 public class RegisterUserCommandHandlerTests
 {
-    private readonly Mock<IUserRepository> _userRepositoryMock;
-    private readonly Mock<IUserDomainService> _userDomainServiceMock;
+    private readonly Mock<IUserService> _userServiceMock;
     private readonly Mock<IAccountVerificationService> _accountVerificationServiceMock;
+    private readonly Mock<IJwtTokenService> _jwtTokenServiceMock;
+    private readonly Mock<IEmailService> _emailServiceMock;
     private readonly Mock<ILogger<RegisterUserCommandHandler>> _loggerMock;
     private readonly RegisterUserCommandHandler _handler;
 
     public RegisterUserCommandHandlerTests()
     {
-        _userRepositoryMock = new Mock<IUserRepository>();
-        _userDomainServiceMock = new Mock<IUserDomainService>();
+        _userServiceMock = new Mock<IUserService>();
         _accountVerificationServiceMock = new Mock<IAccountVerificationService>();
+        _jwtTokenServiceMock = new Mock<IJwtTokenService>();
+        _emailServiceMock = new Mock<IEmailService>();
         _loggerMock = new Mock<ILogger<RegisterUserCommandHandler>>();
         
         _handler = new RegisterUserCommandHandler(
-            _userDomainServiceMock.Object,
-            _userRepositoryMock.Object,
+            _userServiceMock.Object,
             _accountVerificationServiceMock.Object,
-            Mock.Of<IJwtTokenService>(),
+            _jwtTokenServiceMock.Object,
+            _emailServiceMock.Object,
             _loggerMock.Object);
     }
 
@@ -50,23 +51,14 @@ public class RegisterUserCommandHandlerTests
         var user = new User("test@example.com", "testuser", Language.en);
         var verificationToken = "verification-token-123";
 
-        _userRepositoryMock.Setup(x => x.GetByEmailAsync(It.IsAny<string>(), default))
-            .ReturnsAsync((User?)null);
-        
-        _userRepositoryMock.Setup(x => x.GetByUsernameAsync(It.IsAny<string>(), default))
-            .ReturnsAsync((User?)null);
-
-        _userDomainServiceMock.Setup(x => x.CreateUser(command.Email, command.Username, command.Password, Language.en))
-            .Returns(user);
-
-        _userRepositoryMock.Setup(x => x.AddAsync(It.IsAny<User>(), default))
-            .Returns(Task.CompletedTask);
-
-        _userRepositoryMock.Setup(x => x.SaveChangesAsync(default))
-            .ReturnsAsync(1);
+        _userServiceMock.Setup(x => x.RegisterUserAsync(command.Email, command.Username, command.Password, Language.en, default))
+            .ReturnsAsync(Result<User>.Success(user));
 
         _accountVerificationServiceMock.Setup(x => x.GenerateVerificationTokenAsync(user.Id, default))
             .ReturnsAsync(verificationToken);
+
+        _emailServiceMock.Setup(x => x.SendEmailVerificationAsync(user.Email, user.Username, verificationToken, user.Id, default))
+            .ReturnsAsync(true);
 
         // Act
         var result = await _handler.Handle(command, default);
@@ -80,71 +72,9 @@ public class RegisterUserCommandHandlerTests
         result.Value.Username.Should().Be(user.Username);
         result.Value.RequiresEmailVerification.Should().BeTrue();
 
-        _userRepositoryMock.Verify(x => x.AddAsync(user, default), Times.Once);
-        _userRepositoryMock.Verify(x => x.SaveChangesAsync(default), Times.Once);
+        _userServiceMock.Verify(x => x.RegisterUserAsync(command.Email, command.Username, command.Password, Language.en, default), Times.Once);
         _accountVerificationServiceMock.Verify(x => x.GenerateVerificationTokenAsync(user.Id, default), Times.Once);
-    }
-
-    [Fact]
-    public async Task Handle_Should_Return_Failure_When_Email_Already_Exists()
-    {
-        // Arrange
-        var command = new RegisterUserCommand(
-            "test@example.com",
-            "testuser",
-            "TestPassword123!",
-            "en",
-            true);
-
-        var existingUser = new User("test@example.com", "existinguser", Language.en);
-
-        _userRepositoryMock.Setup(x => x.GetByEmailAsync(command.Email, default))
-            .ReturnsAsync(existingUser);
-
-        // Act
-        var result = await _handler.Handle(command, default);
-
-        // Assert
-        result.Should().NotBeNull();
-        result.IsSuccess.Should().BeFalse();
-        result.Error.Should().Be("User with this email already exists");
-
-        _userRepositoryMock.Verify(x => x.GetByEmailAsync(command.Email, default), Times.Once);
-        _userRepositoryMock.Verify(x => x.AddAsync(It.IsAny<User>(), default), Times.Never);
-        _userDomainServiceMock.Verify(x => x.CreateUser(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<Language>()), Times.Never);
-    }
-
-    [Fact]
-    public async Task Handle_Should_Return_Failure_When_Username_Already_Exists()
-    {
-        // Arrange
-        var command = new RegisterUserCommand(
-            "test@example.com",
-            "testuser",
-            "TestPassword123!",
-            "en",
-            true);
-
-        var existingUser = new User("different@example.com", "testuser", Language.en);
-
-        _userRepositoryMock.Setup(x => x.GetByEmailAsync(It.IsAny<string>(), default))
-            .ReturnsAsync((User?)null);
-
-        _userRepositoryMock.Setup(x => x.GetByUsernameAsync(command.Username, default))
-            .ReturnsAsync(existingUser);
-
-        // Act
-        var result = await _handler.Handle(command, default);
-
-        // Assert
-        result.Should().NotBeNull();
-        result.IsSuccess.Should().BeFalse();
-        result.Error.Should().Be("Username is already taken");
-
-        _userRepositoryMock.Verify(x => x.GetByEmailAsync(command.Email, default), Times.Once);
-        _userRepositoryMock.Verify(x => x.GetByUsernameAsync(command.Username, default), Times.Once);
-        _userRepositoryMock.Verify(x => x.AddAsync(It.IsAny<User>(), default), Times.Never);
-        _userDomainServiceMock.Verify(x => x.CreateUser(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<Language>()), Times.Never);
+        _emailServiceMock.Verify(x => x.SendEmailVerificationAsync(user.Email, user.Username, verificationToken, user.Id, default), Times.Once);
     }
 
     [Fact]
@@ -166,8 +96,7 @@ public class RegisterUserCommandHandlerTests
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Be("You must accept the terms and conditions to register");
 
-        _userRepositoryMock.Verify(x => x.GetByEmailAsync(It.IsAny<string>(), default), Times.Never);
-        _userRepositoryMock.Verify(x => x.AddAsync(It.IsAny<User>(), default), Times.Never);
+        _userServiceMock.Verify(x => x.RegisterUserAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<Language>(), default), Times.Never);
     }
 
     [Theory]
@@ -184,12 +113,6 @@ public class RegisterUserCommandHandlerTests
             invalidLanguage,
             true);
 
-        _userRepositoryMock.Setup(x => x.GetByEmailAsync(It.IsAny<string>(), default))
-            .ReturnsAsync((User?)null);
-
-        _userRepositoryMock.Setup(x => x.GetByUsernameAsync(It.IsAny<string>(), default))
-            .ReturnsAsync((User?)null);
-
         // Act
         var result = await _handler.Handle(command, default);
 
@@ -198,42 +121,11 @@ public class RegisterUserCommandHandlerTests
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("Invalid language");
 
-        _userRepositoryMock.Verify(x => x.AddAsync(It.IsAny<User>(), default), Times.Never);
+        _userServiceMock.Verify(x => x.RegisterUserAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<Language>(), default), Times.Never);
     }
 
     [Fact]
-    public async Task Handle_Should_Return_Failure_When_UserDomainService_Throws_ArgumentException()
-    {
-        // Arrange
-        var command = new RegisterUserCommand(
-            "test@example.com",
-            "testuser",
-            "weakpassword", // This should trigger password validation in domain service
-            "en",
-            true);
-
-        _userRepositoryMock.Setup(x => x.GetByEmailAsync(It.IsAny<string>(), default))
-            .ReturnsAsync((User?)null);
-
-        _userRepositoryMock.Setup(x => x.GetByUsernameAsync(It.IsAny<string>(), default))
-            .ReturnsAsync((User?)null);
-
-        _userDomainServiceMock.Setup(x => x.CreateUser(command.Email, command.Username, command.Password, Language.en))
-            .Throws(new ArgumentException("Password does not meet requirements"));
-
-        // Act
-        var result = await _handler.Handle(command, default);
-
-        // Assert
-        result.Should().NotBeNull();
-        result.IsSuccess.Should().BeFalse();
-        result.Error.Should().Be("Password does not meet requirements");
-
-        _userRepositoryMock.Verify(x => x.AddAsync(It.IsAny<User>(), default), Times.Never);
-    }
-
-    [Fact]
-    public async Task Handle_Should_Return_Failure_When_Database_Save_Fails()
+    public async Task Handle_Should_Return_Failure_When_User_Service_Registration_Fails()
     {
         // Arrange
         var command = new RegisterUserCommand(
@@ -243,19 +135,8 @@ public class RegisterUserCommandHandlerTests
             "en",
             true);
 
-        var user = new User("test@example.com", "testuser", Language.en);
-
-        _userRepositoryMock.Setup(x => x.GetByEmailAsync(It.IsAny<string>(), default))
-            .ReturnsAsync((User?)null);
-
-        _userRepositoryMock.Setup(x => x.GetByUsernameAsync(It.IsAny<string>(), default))
-            .ReturnsAsync((User?)null);
-
-        _userDomainServiceMock.Setup(x => x.CreateUser(command.Email, command.Username, command.Password, Language.en))
-            .Returns(user);
-
-        _userRepositoryMock.Setup(x => x.SaveChangesAsync(default))
-            .ReturnsAsync(0); // Simulate save failure
+        _userServiceMock.Setup(x => x.RegisterUserAsync(command.Email, command.Username, command.Password, Language.en, default))
+            .ReturnsAsync(Result<User>.Failure("User with this email already exists"));
 
         // Act
         var result = await _handler.Handle(command, default);
@@ -263,44 +144,10 @@ public class RegisterUserCommandHandlerTests
         // Assert
         result.Should().NotBeNull();
         result.IsSuccess.Should().BeFalse();
-        result.Error.Should().Be("Failed to save user to database");
+        result.Error.Should().Be("User with this email already exists");
 
-        _userRepositoryMock.Verify(x => x.AddAsync(user, default), Times.Once);
-        _userRepositoryMock.Verify(x => x.SaveChangesAsync(default), Times.Once);
-        _accountVerificationServiceMock.Verify(x => x.GenerateVerificationTokenAsync(user.Id, default), Times.Never);
-    }
-
-    [Fact]
-    public async Task Handle_Should_Handle_Database_Exception_Gracefully()
-    {
-        // Arrange
-        var command = new RegisterUserCommand(
-            "test@example.com",
-            "testuser",
-            "TestPassword123!",
-            "en",
-            true);
-
-        _userRepositoryMock.Setup(x => x.GetByEmailAsync(command.Email, default))
-            .ThrowsAsync(new InvalidOperationException("Database connection failed"));
-
-        // Act
-        var result = await _handler.Handle(command, default);
-
-        // Assert
-        result.Should().NotBeNull();
-        result.IsSuccess.Should().BeFalse();
-        result.Error.Should().Be("An error occurred during registration. Please try again.");
-
-        // Verify that error was logged
-        _loggerMock.Verify(
-            x => x.Log(
-                LogLevel.Error,
-                It.IsAny<EventId>(),
-                It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains("Error occurred during user registration")),
-                It.IsAny<Exception>(),
-                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
-            Times.Once);
+        _userServiceMock.Verify(x => x.RegisterUserAsync(command.Email, command.Username, command.Password, Language.en, default), Times.Once);
+        _accountVerificationServiceMock.Verify(x => x.GenerateVerificationTokenAsync(It.IsAny<Guid>(), default), Times.Never);
     }
 
     [Fact]
@@ -316,17 +163,8 @@ public class RegisterUserCommandHandlerTests
 
         var user = new User("test@example.com", "testuser", Language.en);
 
-        _userRepositoryMock.Setup(x => x.GetByEmailAsync(It.IsAny<string>(), default))
-            .ReturnsAsync((User?)null);
-
-        _userRepositoryMock.Setup(x => x.GetByUsernameAsync(It.IsAny<string>(), default))
-            .ReturnsAsync((User?)null);
-
-        _userDomainServiceMock.Setup(x => x.CreateUser(command.Email, command.Username, command.Password, Language.en))
-            .Returns(user);
-
-        _userRepositoryMock.Setup(x => x.SaveChangesAsync(default))
-            .ReturnsAsync(1);
+        _userServiceMock.Setup(x => x.RegisterUserAsync(command.Email, command.Username, command.Password, Language.en, default))
+            .ReturnsAsync(Result<User>.Success(user));
 
         _accountVerificationServiceMock.Setup(x => x.GenerateVerificationTokenAsync(user.Id, default))
             .ReturnsAsync((string?)null); // Simulate token generation failure
@@ -339,9 +177,9 @@ public class RegisterUserCommandHandlerTests
         result.IsSuccess.Should().BeTrue();
         result.Value.RequiresEmailVerification.Should().BeFalse(); // Should still succeed but without verification requirement
 
-        _userRepositoryMock.Verify(x => x.AddAsync(user, default), Times.Once);
-        _userRepositoryMock.Verify(x => x.SaveChangesAsync(default), Times.Once);
+        _userServiceMock.Verify(x => x.RegisterUserAsync(command.Email, command.Username, command.Password, Language.en, default), Times.Once);
         _accountVerificationServiceMock.Verify(x => x.GenerateVerificationTokenAsync(user.Id, default), Times.Once);
+        _emailServiceMock.Verify(x => x.SendEmailVerificationAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<Guid>(), default), Times.Never);
 
         // Verify that warning was logged
         _loggerMock.Verify(
@@ -370,21 +208,16 @@ public class RegisterUserCommandHandlerTests
             true);
 
         var user = new User("test@example.com", "testuser", expectedLanguage);
+        var verificationToken = "verification-token";
 
-        _userRepositoryMock.Setup(x => x.GetByEmailAsync(It.IsAny<string>(), default))
-            .ReturnsAsync((User?)null);
-
-        _userRepositoryMock.Setup(x => x.GetByUsernameAsync(It.IsAny<string>(), default))
-            .ReturnsAsync((User?)null);
-
-        _userDomainServiceMock.Setup(x => x.CreateUser(command.Email, command.Username, command.Password, expectedLanguage))
-            .Returns(user);
-
-        _userRepositoryMock.Setup(x => x.SaveChangesAsync(default))
-            .ReturnsAsync(1);
+        _userServiceMock.Setup(x => x.RegisterUserAsync(command.Email, command.Username, command.Password, expectedLanguage, default))
+            .ReturnsAsync(Result<User>.Success(user));
 
         _accountVerificationServiceMock.Setup(x => x.GenerateVerificationTokenAsync(user.Id, default))
-            .ReturnsAsync("verification-token");
+            .ReturnsAsync(verificationToken);
+
+        _emailServiceMock.Setup(x => x.SendEmailVerificationAsync(user.Email, user.Username, verificationToken, user.Id, default))
+            .ReturnsAsync(true);
 
         // Act
         var result = await _handler.Handle(command, default);
@@ -394,6 +227,39 @@ public class RegisterUserCommandHandlerTests
         result.IsSuccess.Should().BeTrue();
         result.Value.PreferredLanguage.Should().Be(expectedLanguage.ToString());
 
-        _userDomainServiceMock.Verify(x => x.CreateUser(command.Email, command.Username, command.Password, expectedLanguage), Times.Once);
+        _userServiceMock.Verify(x => x.RegisterUserAsync(command.Email, command.Username, command.Password, expectedLanguage, default), Times.Once);
+    }
+
+    [Fact]
+    public async Task Handle_Should_Handle_Exception_Gracefully()
+    {
+        // Arrange
+        var command = new RegisterUserCommand(
+            "test@example.com",
+            "testuser",
+            "TestPassword123!",
+            "en",
+            true);
+
+        _userServiceMock.Setup(x => x.RegisterUserAsync(command.Email, command.Username, command.Password, Language.en, default))
+            .ThrowsAsync(new InvalidOperationException("Database connection failed"));
+
+        // Act
+        var result = await _handler.Handle(command, default);
+
+        // Assert
+        result.Should().NotBeNull();
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Be("An error occurred during registration. Please try again.");
+
+        // Verify that error was logged
+        _loggerMock.Verify(
+            x => x.Log(
+                LogLevel.Error,
+                It.IsAny<EventId>(),
+                It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains("Error occurred during user registration")),
+                It.IsAny<Exception>(),
+                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+            Times.Once);
     }
 }

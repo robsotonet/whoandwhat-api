@@ -5,41 +5,41 @@ namespace WhoAndWhat.Application.DTOs.Tasks;
 public class TaskQueryRequest
 {
     public string? Search { get; set; }
-    
+
     public List<int>? Categories { get; set; }
-    
+
     public List<int>? Statuses { get; set; }
-    
+
     public List<int>? Priorities { get; set; }
-    
+
     public DateTime? DueDateFrom { get; set; }
-    
+
     public DateTime? DueDateTo { get; set; }
-    
+
     public DateTime? CreatedFrom { get; set; }
-    
+
     public DateTime? CreatedTo { get; set; }
-    
+
     public List<Guid>? ContactIds { get; set; }
-    
+
     public bool? HasDueDate { get; set; }
-    
+
     public bool? IsOverdue { get; set; }
-    
+
     public bool? HasSubtasks { get; set; }
-    
+
     public Guid? ParentTaskId { get; set; }
-    
+
     public string? SortBy { get; set; } = "UpdatedAt";
-    
+
     public bool SortDescending { get; set; } = true;
-    
+
     [Range(1, 100)]
     public int PageSize { get; set; } = 20;
-    
+
     [Range(1, int.MaxValue)]
     public int PageNumber { get; set; } = 1;
-    
+
     public bool IncludeArchived { get; set; } = false;
 }
 

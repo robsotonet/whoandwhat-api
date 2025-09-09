@@ -2,16 +2,18 @@ using MediatR;
 using Microsoft.Extensions.Logging;
 using WhoAndWhat.Application.Common;
 using WhoAndWhat.Application.Interfaces;
+using DomainTask = WhoAndWhat.Domain.Entities.AppTask;
+using SystemTask = System.Threading.Tasks.Task;
 
 namespace WhoAndWhat.Application.Features.Tasks.Commands.DeleteTask;
 
 public class DeleteTaskCommandHandler : IRequestHandler<DeleteTaskCommand, Result>
 {
-    private readonly ITaskRepository _taskRepository;
+    private readonly IAppTaskRepository _taskRepository;
     private readonly ILogger<DeleteTaskCommandHandler> _logger;
 
     public DeleteTaskCommandHandler(
-        ITaskRepository taskRepository,
+        IAppTaskRepository taskRepository,
         ILogger<DeleteTaskCommandHandler> logger)
     {
         _taskRepository = taskRepository;
@@ -31,7 +33,7 @@ public class DeleteTaskCommandHandler : IRequestHandler<DeleteTaskCommand, Resul
             if (request.HardDelete)
             {
                 // Hard delete - permanently remove from database
-                await _taskRepository.DeleteAsync(task.Id);
+                await _taskRepository.DeleteAsync(task);
                 _logger.LogInformation("Hard deleted task {TaskId} for user {UserId}", request.TaskId, request.UserId);
             }
             else
@@ -40,7 +42,7 @@ public class DeleteTaskCommandHandler : IRequestHandler<DeleteTaskCommand, Resul
                 task.IsArchived = true;
                 task.ArchivedAt = DateTime.UtcNow;
                 task.UpdatedAt = DateTime.UtcNow;
-                
+
                 await _taskRepository.UpdateAsync(task);
                 _logger.LogInformation("Soft deleted (archived) task {TaskId} for user {UserId}", request.TaskId, request.UserId);
             }

@@ -1,5 +1,5 @@
-using WhoAndWhat.Domain.ValueObjects;
 using WhoAndWhat.Domain.Events;
+using WhoAndWhat.Domain.ValueObjects;
 
 namespace WhoAndWhat.Domain.Entities;
 
@@ -9,16 +9,16 @@ public class User : BaseEntity
     public string Username { get; private set; } = null!;
     public Language PreferredLanguage { get; private set; }
     public DateTime LastLoginAt { get; private set; }
-    
+
     // Authentication properties
     public string PasswordHash { get; private set; } = null!;
     public string? RefreshToken { get; private set; }
     public DateTime? RefreshTokenExpiryTime { get; private set; }
     public bool IsEmailVerified { get; private set; }
-    
+
     // Account verification properties  
     public string? VerificationToken { get; private set; }
-    
+
     // Password reset properties
     public string? ResetToken { get; private set; }
     public DateTime? ResetTokenExpires { get; private set; }
@@ -36,19 +36,19 @@ public class User : BaseEntity
     public IReadOnlyList<OAuthAccount> OAuthAccounts => _oAuthAccounts.AsReadOnly();
 
     // Navigation properties
-    public ICollection<Task> Tasks { get; set; } = new List<Task>();
+    public ICollection<AppTask> Tasks { get; set; } = new List<AppTask>();
     public ICollection<Contact> Contacts { get; set; } = new List<Contact>();
     public ICollection<Project> Projects { get; set; } = new List<Project>();
 
-    private User() 
-    { 
+    private User()
+    {
         Email = string.Empty;
         Username = string.Empty;
         PreferredLanguage = Language.en;
     }
 
     // Protected constructor for testing purposes - allows setting specific Id
-    protected User(Guid id, string email, string username, Language preferredLanguage, DateTime? createdAt = null) 
+    protected User(Guid id, string email, string username, Language preferredLanguage, DateTime? createdAt = null)
         : base(id, createdAt)
     {
         Email = email ?? throw new ArgumentNullException(nameof(email));
@@ -58,7 +58,7 @@ public class User : BaseEntity
         IsEmailVerified = false;
         IsLocked = false;
         FailedLoginAttempts = 0;
-        
+
         AddDomainEvent(new UserCreatedEvent(Id, Email, Username));
     }
 
@@ -71,7 +71,7 @@ public class User : BaseEntity
         IsEmailVerified = false;
         IsLocked = false;
         FailedLoginAttempts = 0;
-        
+
         AddDomainEvent(new UserCreatedEvent(Id, Email, Username));
     }
 
@@ -193,7 +193,7 @@ public class User : BaseEntity
         {
             throw new ArgumentNullException(nameof(newEmail));
         }
-        
+
         if (!IsValidEmail(newEmail))
         {
             throw new ArgumentException("Invalid email format", nameof(newEmail));

@@ -112,7 +112,7 @@ public class OAuthControllerTests
         
         response.AccessToken.Should().Be("access_token");
         response.RefreshToken.Should().Be("refresh_token");
-        response.User.Email.Should().Be(email);
+        response.Email.Should().Be(email);
     }
 
     [Fact]
@@ -216,7 +216,7 @@ public class OAuthControllerTests
         
         response.AccessToken.Should().Be("access_token");
         response.RefreshToken.Should().Be("refresh_token");
-        response.User.Email.Should().Be(email);
+        response.Email.Should().Be(email);
     }
 
     [Fact]
@@ -279,7 +279,7 @@ public class OAuthControllerTests
         
         response.AccessToken.Should().Be("access_token");
         response.RefreshToken.Should().Be("refresh_token");
-        response.User.Email.Should().Be(email);
+        response.Email.Should().Be(email);
     }
 
     [Fact]

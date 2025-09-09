@@ -2,8 +2,8 @@ using System.Text.RegularExpressions;
 using WhoAndWhat.Domain.Common;
 using WhoAndWhat.Domain.Entities;
 using WhoAndWhat.Domain.ValueObjects;
-using DomainTask = WhoAndWhat.Domain.Entities.Task;
-using DomainTaskStatus = WhoAndWhat.Domain.ValueObjects.TaskStatus;
+using DomainTask = WhoAndWhat.Domain.Entities.AppTask;
+using DomainTaskStatus = WhoAndWhat.Domain.ValueObjects.AppTaskStatus;
 
 namespace WhoAndWhat.Domain.Validators;
 
@@ -52,7 +52,7 @@ public static class CategorySpecificValidators
         }
         else
         {
-            var hasLocationInfo = task.Description.Contains("@") || 
+            var hasLocationInfo = task.Description.Contains("@") ||
                                   ContainsLocationKeywords(task.Description) ||
                                   ContainsPhonePattern(task.Description) ||
                                   ContainsUrlPattern(task.Description);
@@ -105,7 +105,7 @@ public static class CategorySpecificValidators
             }
 
             // Weekend validation
-            if (task.DueDate.Value.DayOfWeek == DayOfWeek.Saturday || 
+            if (task.DueDate.Value.DayOfWeek == DayOfWeek.Saturday ||
                 task.DueDate.Value.DayOfWeek == DayOfWeek.Sunday)
             {
                 warnings.Add("Bill due date falls on weekend - consider processing earlier");
@@ -321,7 +321,7 @@ public static class CategorySpecificValidators
             warnings.Add("High priority tasks should typically have due dates");
         }
 
-        if (task.DueDate.HasValue && task.DueDate.Value < DateTime.UtcNow.AddHours(2) && 
+        if (task.DueDate.HasValue && task.DueDate.Value < DateTime.UtcNow.AddHours(2) &&
             task.Priority < (int)Priority.High)
         {
             warnings.Add("Tasks due very soon should typically have high priority");
@@ -338,7 +338,7 @@ public static class CategorySpecificValidators
     /// <summary>
     /// Validates category transition rules
     /// </summary>
-    public static ValidationResult ValidateCategoryTransition(DomainTask task, TaskCategory fromCategory, TaskCategory toCategory)
+    public static ValidationResult ValidateCategoryTransition(DomainTask task, AppTaskCategory fromCategory, AppTaskCategory toCategory)
     {
         var errors = new List<string>();
         var warnings = new List<string>();
@@ -447,11 +447,14 @@ public static class CategorySpecificValidators
 
     private static decimal ExtractAmountFromDescription(string? description)
     {
-        if (string.IsNullOrWhiteSpace(description)) return 0;
+        if (string.IsNullOrWhiteSpace(description))
+        {
+            return 0;
+        }
 
         var amountPattern = @"\$(\d+(?:\.\d{2})?)";
         var match = Regex.Match(description, amountPattern);
-        
+
         if (match.Success && decimal.TryParse(match.Groups[1].Value, out var amount))
         {
             return amount;
@@ -480,7 +483,7 @@ public static class CategorySpecificValidators
 
     private static bool StartsWithActionWord(string title)
     {
-        var actionWords = new[] 
+        var actionWords = new[]
         {
             "call", "buy", "complete", "finish", "start", "begin", "create", "make", "build",
             "write", "send", "email", "text", "contact", "meet", "schedule", "book",
@@ -501,19 +504,16 @@ public static class CategorySpecificValidators
 /// </summary>
 public class ValidationResult : WhoAndWhat.Domain.Common.ValidationResult
 {
-    public List<string> WarningMessages { get; set; } = new();
-
-    public bool HasWarnings => WarningMessages.Any();
 
     public string GetAllMessages()
     {
         var messages = new List<string>();
-        
+
         if (ErrorMessages.Any())
         {
             messages.Add("Errors: " + string.Join(", ", ErrorMessages));
         }
-        
+
         if (WarningMessages.Any())
         {
             messages.Add("Warnings: " + string.Join(", ", WarningMessages));

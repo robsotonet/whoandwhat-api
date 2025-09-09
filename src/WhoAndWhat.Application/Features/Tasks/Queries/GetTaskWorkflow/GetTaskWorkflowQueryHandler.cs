@@ -5,18 +5,21 @@ using WhoAndWhat.Application.DTOs.Tasks;
 using WhoAndWhat.Application.Interfaces;
 using WhoAndWhat.Domain.Services;
 using WhoAndWhat.Domain.ValueObjects;
+using DomainTask = WhoAndWhat.Domain.Entities.AppTask;
+using DomainTaskStatus = WhoAndWhat.Domain.ValueObjects.AppTaskStatus;
+using SystemTask = System.Threading.Tasks.Task;
 
 namespace WhoAndWhat.Application.Features.Tasks.Queries.GetTaskWorkflow;
 
 public class GetTaskWorkflowQueryHandler : IRequestHandler<GetTaskWorkflowQuery, Result<TaskWorkflowStateDto>>
 {
-    private readonly ITaskRepository _taskRepository;
+    private readonly IAppTaskRepository _taskRepository;
     private readonly CategoryBusinessRuleService _categoryBusinessRuleService;
     private readonly CategoryWorkflowService _categoryWorkflowService;
     private readonly ILogger<GetTaskWorkflowQueryHandler> _logger;
 
     public GetTaskWorkflowQueryHandler(
-        ITaskRepository taskRepository,
+        IAppTaskRepository taskRepository,
         CategoryBusinessRuleService categoryBusinessRuleService,
         CategoryWorkflowService categoryWorkflowService,
         ILogger<GetTaskWorkflowQueryHandler> logger)
@@ -37,7 +40,7 @@ public class GetTaskWorkflowQueryHandler : IRequestHandler<GetTaskWorkflowQuery,
                 return Result<TaskWorkflowStateDto>.Failure("Task not found");
             }
 
-            var currentStatus = TaskStatus.FromValue(task.Status);
+            var currentStatus = DomainTaskStatus.FromValue(task.Status);
             var recommendedStatus = _categoryBusinessRuleService.GetRecommendedNextStatus(task);
             var availableActions = _categoryBusinessRuleService.GetAvailableActions(task);
             var workflowState = _categoryWorkflowService.GetWorkflowState(task);
