@@ -40,18 +40,21 @@ public static class ApplicationBuilderExtensions
         // Global exception handling (should be early but after dev exception page)
         app.UseMiddleware<GlobalExceptionMiddleware>();
 
-        // Serilog request logging
-        app.UseSerilogRequestLogging(options =>
+        // Serilog request logging (skip in testing environment)
+        if (!env.IsEnvironment("Testing"))
         {
-            options.MessageTemplate = "HTTP {RequestMethod} {RequestPath} responded {StatusCode} in {Elapsed:0.0000} ms";
-            options.EnrichDiagnosticContext = (diagnosticContext, httpContext) =>
+            app.UseSerilogRequestLogging(options =>
             {
-                diagnosticContext.Set("RequestHost", httpContext.Request.Host.Value);
-                diagnosticContext.Set("RequestScheme", httpContext.Request.Scheme);
-                diagnosticContext.Set("UserAgent", httpContext.Request.Headers.UserAgent.FirstOrDefault());
-                diagnosticContext.Set("RemoteIP", httpContext.Connection.RemoteIpAddress?.ToString());
-            };
-        });
+                options.MessageTemplate = "HTTP {RequestMethod} {RequestPath} responded {StatusCode} in {Elapsed:0.0000} ms";
+                options.EnrichDiagnosticContext = (diagnosticContext, httpContext) =>
+                {
+                    diagnosticContext.Set("RequestHost", httpContext.Request.Host.Value);
+                    diagnosticContext.Set("RequestScheme", httpContext.Request.Scheme);
+                    diagnosticContext.Set("UserAgent", httpContext.Request.Headers.UserAgent.FirstOrDefault());
+                    diagnosticContext.Set("RemoteIP", httpContext.Connection.RemoteIpAddress?.ToString());
+                };
+            });
+        }
 
         // HTTPS redirection (can be disabled for Docker development)
         if (!env.IsDevelopment() || Environment.GetEnvironmentVariable("ASPNETCORE_FORCE_HTTPS") == "true")
