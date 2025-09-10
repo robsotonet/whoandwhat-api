@@ -66,14 +66,41 @@ This API supports multiple authentication methods:
 - **OAuth 2.0**: Google, Facebook, and Apple Sign-In
 - **Password Reset**: Email-based password recovery
 
-## Features
-- User registration and authentication
-- Password management (change, reset, forgot)
+## Core Features
+- **User Management**: Registration, authentication, profile management
+- **Task Management**: Complete CRUD operations for tasks across multiple categories
+- **Project Conversion**: Transform tasks into projects with advanced workflow capabilities
+- **Advanced Search**: Full-text search with relevance scoring and result highlighting
+- **Batch Operations**: Efficient bulk task management and status updates
+- **Task Analytics**: Comprehensive statistics and performance metrics
+- **Category Management**: Support for ToDos, Ideas, Appointments, Bill Reminders, and Projects
+
+## Task Management Capabilities
+- Create, read, update, and delete tasks with rich metadata
+- Support for 5 task categories: ToDo, Idea, Appointment, BillReminder, Project
+- Priority levels (None, Low, Medium, High, Critical) with workflow validation
+- Status tracking (NotStarted, InProgress, Completed, Paused, Cancelled)
+- Due date management with overdue task detection
+- Project hierarchy with parent-child relationships
+- Task conversion workflows (task-to-project, etc.)
+- Bulk operations for efficient task management
+- Advanced search with PostgreSQL full-text search
+- Real-time task statistics and analytics
+
+## Security Features
+- JWT token authentication with refresh token rotation
 - OAuth 2.0 integration (Google, Facebook, Apple)
-- User account management (profile, deactivation, data export)
-- Email verification system
 - Rate limiting and DDoS protection
 - Comprehensive security headers
+- Input validation and sanitization
+- Audit logging for sensitive operations
+
+## Performance Features
+- Redis caching for improved response times
+- Database query optimization with proper indexing
+- Response compression for reduced bandwidth
+- Pagination support for large datasets
+- Background job processing with Hangfire
 
 ## Rate Limiting
 API requests are limited to:
@@ -84,9 +111,10 @@ API requests are limited to:
 ## Data Export
 Users can export their data in JSON or CSV format including:
 - Profile information
-- Tasks and projects
-- Contacts
-- OAuth account connections",
+- Tasks and projects with full metadata
+- Task completion statistics and analytics
+- Contacts and social connections
+- OAuth account connections and preferences",
                 Contact = new Microsoft.OpenApi.Models.OpenApiContact
                 {
                     Name = "WhoAndWhat Development Team",

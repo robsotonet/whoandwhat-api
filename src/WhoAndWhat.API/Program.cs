@@ -47,9 +47,12 @@ try
         Log.Information("Azure Key Vault not configured - using local configuration");
     }
 
-    // Configure Serilog
-    builder.Host.UseSerilog((context, configuration) =>
-        configuration.ReadFrom.Configuration(context.Configuration));
+    // Configure Serilog (skip in testing environment to avoid conflicts)
+    if (!builder.Environment.IsEnvironment("Testing"))
+    {
+        builder.Host.UseSerilog((context, configuration) =>
+            configuration.ReadFrom.Configuration(context.Configuration));
+    }
 
     // Core services - Environment-conditional database configuration
     if (builder.Environment.IsEnvironment("Testing"))
@@ -66,6 +69,7 @@ try
     }
 
     builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
+    builder.Services.AddScoped<IAppTaskRepository, TaskRepository>();
     builder.Services.AddScoped<IUserDomainService, UserDomainService>();
     builder.Services.AddScoped<IUserRepository, UserRepository>();
     builder.Services.AddScoped<IUserService, UserService>();
