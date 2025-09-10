@@ -1,11 +1,11 @@
 using WhoAndWhat.Domain.Entities;
 
-namespace WhoAndWhat.Domain.Repositories;
+namespace WhoAndWhat.Application.Interfaces;
 
 /// <summary>
 /// Repository interface for Contact entities with soft delete support
 /// </summary>
-public interface IContactRepository
+public interface IContactRepository : IRepository<Contact>
 {
     /// <summary>
     /// Gets a contact by ID including soft deleted contacts

@@ -12,6 +12,7 @@ using WhoAndWhat.Infrastructure.Data;
 using WhoAndWhat.Infrastructure.Repositories;
 using WhoAndWhat.Infrastructure.Services;
 using WhoAndWhat.Application.Features.Auth;
+using WhoAndWhat.Domain.Validators;
 using Azure.Extensions.AspNetCore.Configuration.Secrets;
 using Azure.Identity;
 using Azure.Security.KeyVault.Secrets;
@@ -70,12 +71,16 @@ try
 
     builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
     builder.Services.AddScoped<IAppTaskRepository, TaskRepository>();
+    builder.Services.AddScoped<IContactRepository, ContactRepository>();
     builder.Services.AddScoped<IUserDomainService, UserDomainService>();
     builder.Services.AddScoped<IUserRepository, UserRepository>();
     builder.Services.AddScoped<IUserService, UserService>();
     builder.Services.AddScoped<IEmailService, EmailService>();
     builder.Services.AddScoped<IAccountVerificationService, AccountVerificationService>();
     builder.Services.AddScoped<IPasswordResetService, PasswordResetService>();
+    
+    // Register domain validators
+    builder.Services.AddScoped<ContactValidator>();
 
     // Application services (MediatR, FluentValidation, Pipeline Behaviors)
     builder.Services.AddApplicationServices();
