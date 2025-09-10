@@ -8,6 +8,9 @@ using WhoAndWhat.Application.Features.Tasks.Commands.UpdateTask;
 using WhoAndWhat.Application.Features.Tasks.Commands.DeleteTask;
 using WhoAndWhat.Application.Features.Tasks.Commands.ConvertTask;
 using WhoAndWhat.Application.Features.Tasks.Commands.ExecuteTaskAction;
+using WhoAndWhat.Application.Features.Tasks.Commands.LinkContactToTask;
+using WhoAndWhat.Application.Features.Tasks.Commands.UnlinkContactFromTask;
+using WhoAndWhat.Application.Features.Tasks.Commands.UpdateContactRole;
 using WhoAndWhat.Application.Features.Tasks.Queries.GetTask;
 using WhoAndWhat.Application.Features.Tasks.Queries.GetTasks;
 using WhoAndWhat.Application.Features.Tasks.Queries.GetTaskStatistics;
@@ -1320,6 +1323,289 @@ public class TasksController : ControllerBase
             });
         }
     }
+
+    #region Task-Contact Management
+
+    /// <summary>
+    /// Link a contact to a task with specified role
+    /// </summary>
+    /// <param name="taskId">Task ID</param>
+    /// <param name="request">Link contact request</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Task contact information</returns>
+    [HttpPost("{taskId:guid}/contacts")]
+    [ProducesResponseType(typeof(TaskContactDto), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<TaskContactDto>> LinkContactToTask(
+        Guid taskId,
+        [FromBody] LinkContactToTaskRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var userId = GetCurrentUserId();
+            if (!userId.HasValue)
+            {
+                return Unauthorized("User identity not found");
+            }
+
+            var command = new LinkContactToTaskCommand(
+                TaskId: taskId,
+                ContactId: request.ContactId,
+                Role: request.Role,
+                Notes: request.Notes,
+                UserId: userId.Value
+            );
+
+            _logger.LogInformation("Linking contact {ContactId} to task {TaskId} with role '{Role}' for user {UserId}",
+                request.ContactId, taskId, request.Role, userId.Value);
+
+            var result = await _mediator.Send(command, cancellationToken);
+            if (!result.IsSuccess)
+            {
+                _logger.LogWarning("Failed to link contact {ContactId} to task {TaskId} for user {UserId}: {Error}",
+                    request.ContactId, taskId, userId.Value, result.Error);
+                    
+                if (result.Error.Contains("not found"))
+                {
+                    return NotFound(new ProblemDetails
+                    {
+                        Title = "Resource not found",
+                        Detail = result.Error,
+                        Status = StatusCodes.Status404NotFound
+                    });
+                }
+
+                return BadRequest(new ProblemDetails
+                {
+                    Title = "Failed to link contact to task",
+                    Detail = result.Error,
+                    Status = StatusCodes.Status400BadRequest
+                });
+            }
+
+            return CreatedAtAction(
+                nameof(GetTaskContacts),
+                new { taskId = taskId },
+                result.Value);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error linking contact to task {TaskId} for user", taskId);
+            return StatusCode(StatusCodes.Status500InternalServerError, new ProblemDetails
+            {
+                Title = "An unexpected error occurred",
+                Detail = "Unable to link contact to task",
+                Status = StatusCodes.Status500InternalServerError
+            });
+        }
+    }
+
+    /// <summary>
+    /// Unlink a contact from a task
+    /// </summary>
+    /// <param name="taskId">Task ID</param>
+    /// <param name="contactId">Contact ID</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Success status</returns>
+    [HttpDelete("{taskId:guid}/contacts/{contactId:guid}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    public async Task<ActionResult> UnlinkContactFromTask(
+        Guid taskId,
+        Guid contactId,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var userId = GetCurrentUserId();
+            if (!userId.HasValue)
+            {
+                return Unauthorized("User identity not found");
+            }
+
+            var command = new UnlinkContactFromTaskCommand(
+                TaskId: taskId,
+                ContactId: contactId,
+                UserId: userId.Value
+            );
+
+            _logger.LogInformation("Unlinking contact {ContactId} from task {TaskId} for user {UserId}",
+                contactId, taskId, userId.Value);
+
+            var result = await _mediator.Send(command, cancellationToken);
+            if (!result.IsSuccess)
+            {
+                _logger.LogWarning("Failed to unlink contact {ContactId} from task {TaskId} for user {UserId}: {Error}",
+                    contactId, taskId, userId.Value, result.Error);
+                    
+                if (result.Error.Contains("not found"))
+                {
+                    return NotFound(new ProblemDetails
+                    {
+                        Title = "Resource not found",
+                        Detail = result.Error,
+                        Status = StatusCodes.Status404NotFound
+                    });
+                }
+
+                return BadRequest(new ProblemDetails
+                {
+                    Title = "Failed to unlink contact from task",
+                    Detail = result.Error,
+                    Status = StatusCodes.Status400BadRequest
+                });
+            }
+
+            return NoContent();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error unlinking contact {ContactId} from task {TaskId} for user", contactId, taskId);
+            return StatusCode(StatusCodes.Status500InternalServerError, new ProblemDetails
+            {
+                Title = "An unexpected error occurred",
+                Detail = "Unable to unlink contact from task",
+                Status = StatusCodes.Status500InternalServerError
+            });
+        }
+    }
+
+    /// <summary>
+    /// Update a contact's role in a task
+    /// </summary>
+    /// <param name="taskId">Task ID</param>
+    /// <param name="contactId">Contact ID</param>
+    /// <param name="request">Update role request</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Updated task contact information</returns>
+    [HttpPut("{taskId:guid}/contacts/{contactId:guid}")]
+    [ProducesResponseType(typeof(TaskContactDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<TaskContactDto>> UpdateContactRole(
+        Guid taskId,
+        Guid contactId,
+        [FromBody] UpdateContactRoleRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var userId = GetCurrentUserId();
+            if (!userId.HasValue)
+            {
+                return Unauthorized("User identity not found");
+            }
+
+            var command = new UpdateContactRoleCommand(
+                TaskId: taskId,
+                ContactId: contactId,
+                NewRole: request.Role,
+                Notes: request.Notes,
+                UserId: userId.Value
+            );
+
+            _logger.LogInformation("Updating contact {ContactId} role in task {TaskId} to '{Role}' for user {UserId}",
+                contactId, taskId, request.Role, userId.Value);
+
+            var result = await _mediator.Send(command, cancellationToken);
+            if (!result.IsSuccess)
+            {
+                _logger.LogWarning("Failed to update contact {ContactId} role in task {TaskId} for user {UserId}: {Error}",
+                    contactId, taskId, userId.Value, result.Error);
+                    
+                if (result.Error.Contains("not found"))
+                {
+                    return NotFound(new ProblemDetails
+                    {
+                        Title = "Resource not found",
+                        Detail = result.Error,
+                        Status = StatusCodes.Status404NotFound
+                    });
+                }
+
+                return BadRequest(new ProblemDetails
+                {
+                    Title = "Failed to update contact role",
+                    Detail = result.Error,
+                    Status = StatusCodes.Status400BadRequest
+                });
+            }
+
+            return Ok(result.Value);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error updating contact {ContactId} role in task {TaskId} for user", contactId, taskId);
+            return StatusCode(StatusCodes.Status500InternalServerError, new ProblemDetails
+            {
+                Title = "An unexpected error occurred",
+                Detail = "Unable to update contact role",
+                Status = StatusCodes.Status500InternalServerError
+            });
+        }
+    }
+
+    /// <summary>
+    /// Get all contacts linked to a task
+    /// </summary>
+    /// <param name="taskId">Task ID</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>List of task contacts</returns>
+    [HttpGet("{taskId:guid}/contacts")]
+    [ProducesResponseType(typeof(List<TaskContactDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<List<TaskContactDto>>> GetTaskContacts(
+        Guid taskId,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var userId = GetCurrentUserId();
+            if (!userId.HasValue)
+            {
+                return Unauthorized("User identity not found");
+            }
+
+            var query = new GetTaskQuery(taskId, userId.Value, false);
+
+            _logger.LogInformation("Getting contacts for task {TaskId} for user {UserId}", taskId, userId.Value);
+
+            var result = await _mediator.Send(query, cancellationToken);
+            if (!result.IsSuccess)
+            {
+                _logger.LogWarning("Failed to get task {TaskId} for user {UserId}: {Error}",
+                    taskId, userId.Value, result.Error);
+                    
+                return NotFound(new ProblemDetails
+                {
+                    Title = "Task not found",
+                    Detail = result.Error,
+                    Status = StatusCodes.Status404NotFound
+                });
+            }
+
+            return Ok(result.Value.TaskContacts);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting contacts for task {TaskId} for user", taskId);
+            return StatusCode(StatusCodes.Status500InternalServerError, new ProblemDetails
+            {
+                Title = "An unexpected error occurred",
+                Detail = "Unable to get task contacts",
+                Status = StatusCodes.Status500InternalServerError
+            });
+        }
+    }
+
+    #endregion
 
     /// <summary>
     /// Helper method to get current user ID from JWT claims

@@ -6,6 +6,8 @@ using Asp.Versioning;
 using WhoAndWhat.Application.Features.Contacts.Commands.CreateContact;
 using WhoAndWhat.Application.Features.Contacts.Commands.UpdateContact;
 using WhoAndWhat.Application.Features.Contacts.Commands.DeleteContact;
+using WhoAndWhat.Application.Features.Contacts.Commands.RestoreContact;
+using WhoAndWhat.Application.Features.Contacts.Commands.PermanentlyDeleteContact;
 using WhoAndWhat.Application.Features.Contacts.Queries.GetContact;
 using WhoAndWhat.Application.Features.Contacts.Queries.GetContacts;
 using WhoAndWhat.Application.DTOs.Contacts;
@@ -535,40 +537,43 @@ public class ContactsController : ControllerBase
 
             _logger.LogInformation("Attempting to restore contact {ContactId} for user {UserId}", id, userId.Value);
 
-            // First, get the soft-deleted contact
-            var getContactQuery = new GetContactQuery(id, userId.Value, false, true);
-            var contactResult = await _mediator.Send(getContactQuery, cancellationToken);
-            
-            if (!contactResult.IsSuccess)
-            {
-                _logger.LogWarning("Failed to find soft-deleted contact {ContactId} for user {UserId}: {Error}", id, userId.Value, contactResult.Error);
-                return NotFound(new ProblemDetails
-                {
-                    Title = "Contact not found",
-                    Detail = $"Soft-deleted contact with ID {id} was not found",
-                    Status = StatusCodes.Status404NotFound
-                });
-            }
+            var command = new RestoreContactCommand(id, userId.Value);
 
-            var contact = contactResult.Value;
-            if (!contact.IsDeleted)
+            var result = await _mediator.Send(command, cancellationToken);
+            
+            if (!result.IsSuccess)
             {
+                _logger.LogWarning("Failed to restore contact {ContactId} for user {UserId}: {Error}", id, userId.Value, result.Error);
+                
+                if (result.Error == "Contact not found")
+                {
+                    return NotFound(new ProblemDetails
+                    {
+                        Title = "Contact not found",
+                        Detail = $"Soft-deleted contact with ID {id} was not found",
+                        Status = StatusCodes.Status404NotFound
+                    });
+                }
+
+                if (result.Error == "Contact is not deleted and cannot be restored")
+                {
+                    return BadRequest(new ProblemDetails
+                    {
+                        Title = "Contact is not deleted",
+                        Detail = "Cannot restore a contact that is not soft-deleted",
+                        Status = StatusCodes.Status400BadRequest
+                    });
+                }
+
                 return BadRequest(new ProblemDetails
                 {
-                    Title = "Contact is not deleted",
-                    Detail = "Cannot restore a contact that is not soft-deleted",
+                    Title = "Failed to restore contact",
+                    Detail = result.Error,
                     Status = StatusCodes.Status400BadRequest
                 });
             }
 
-            // Note: We would need a RestoreContactCommand for this operation
-            // For now, we'll return a not implemented response
-            return StatusCode(StatusCodes.Status501NotImplemented, new ProblemDetails
-            {
-                Title = "Not Implemented",
-                Detail = "Contact restoration will be implemented in a future version",
-                Status = StatusCodes.Status501NotImplemented
-            });
+            return Ok(result.Value);
         }
         catch (Exception ex)
         {
@@ -607,40 +612,43 @@ public class ContactsController : ControllerBase
 
             _logger.LogInformation("Attempting to permanently delete contact {ContactId} for user {UserId}", id, userId.Value);
 
-            // First, verify the contact exists and is soft-deleted
-            var getContactQuery = new GetContactQuery(id, userId.Value, false, true);
-            var contactResult = await _mediator.Send(getContactQuery, cancellationToken);
-            
-            if (!contactResult.IsSuccess)
-            {
-                _logger.LogWarning("Failed to find soft-deleted contact {ContactId} for user {UserId}: {Error}", id, userId.Value, contactResult.Error);
-                return NotFound(new ProblemDetails
-                {
-                    Title = "Contact not found",
-                    Detail = $"Soft-deleted contact with ID {id} was not found",
-                    Status = StatusCodes.Status404NotFound
-                });
-            }
+            var command = new PermanentlyDeleteContactCommand(id, userId.Value);
 
-            var contact = contactResult.Value;
-            if (!contact.IsDeleted)
+            var result = await _mediator.Send(command, cancellationToken);
+            
+            if (!result.IsSuccess)
             {
+                _logger.LogWarning("Failed to permanently delete contact {ContactId} for user {UserId}: {Error}", id, userId.Value, result.Error);
+                
+                if (result.Error == "Contact not found")
+                {
+                    return NotFound(new ProblemDetails
+                    {
+                        Title = "Contact not found",
+                        Detail = $"Soft-deleted contact with ID {id} was not found",
+                        Status = StatusCodes.Status404NotFound
+                    });
+                }
+
+                if (result.Error == "Contact must be soft-deleted before permanent deletion")
+                {
+                    return BadRequest(new ProblemDetails
+                    {
+                        Title = "Contact is not deleted",
+                        Detail = "Cannot permanently delete a contact that is not soft-deleted",
+                        Status = StatusCodes.Status400BadRequest
+                    });
+                }
+
                 return BadRequest(new ProblemDetails
                 {
-                    Title = "Contact is not deleted",
-                    Detail = "Cannot permanently delete a contact that is not soft-deleted",
+                    Title = "Failed to permanently delete contact",
+                    Detail = result.Error,
                     Status = StatusCodes.Status400BadRequest
                 });
             }
 
-            // Note: We would need a PermanentlyDeleteContactCommand for this operation
-            // For now, we'll return a not implemented response
-            return StatusCode(StatusCodes.Status501NotImplemented, new ProblemDetails
-            {
-                Title = "Not Implemented",
-                Detail = "Permanent contact deletion will be implemented in a future version",
-                Status = StatusCodes.Status501NotImplemented
-            });
+            return NoContent();
         }
         catch (Exception ex)
         {

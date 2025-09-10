@@ -196,6 +196,18 @@ public interface IAppTaskRepository : IRepository<DomainAppTask>
     /// <returns>Paged search results</returns>
     public Task<PagedResult<DomainAppTask>> SearchAsync(AppTaskSearchCriteria searchCriteria, int pageNumber, int pageSize, string sortBy, bool sortDescending, CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Gets tasks with pagination support for testing compatibility
+    /// </summary>
+    /// <param name="searchCriteria">Search criteria</param>
+    /// <param name="pageSize">Page size</param>
+    /// <param name="pageNumber">Page number (1-based)</param>
+    /// <param name="sortBy">Sort field name</param>
+    /// <param name="sortDescending">Sort direction</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Tasks with total count</returns>
+    public Task<(IList<DomainAppTask>, int)> GetPagedAsync(AppTaskSearchCriteria searchCriteria, int pageSize, int pageNumber, string sortBy, bool sortDescending, CancellationToken cancellationToken = default);
+
     #endregion
 
     #region Soft Delete and Archiving
@@ -380,6 +392,28 @@ public interface IAppTaskRepository : IRepository<DomainAppTask>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Productivity patterns</returns>
     public Task<Dictionary<DayOfWeek, TimeSpan>> GetProductivityPatternsAsync(Guid userId, CancellationToken cancellationToken = default);
+
+    #endregion
+
+    #region Contact-Enhanced Retrieval Methods
+
+    /// <summary>
+    /// Gets a task by ID including contact information
+    /// </summary>
+    /// <param name="taskId">The task ID</param>
+    /// <param name="userId">The user ID for security filtering</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Task with contact information or null if not found</returns>
+    public Task<DomainAppTask?> GetTaskWithContactsAsync(Guid taskId, Guid userId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Gets a task by ID with subtasks and contact information
+    /// </summary>
+    /// <param name="taskId">The task ID</param>
+    /// <param name="userId">The user ID for security filtering</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Task with subtasks and contact information or null if not found</returns>
+    public Task<DomainAppTask?> GetTaskWithSubtasksAndContactsAsync(Guid taskId, Guid userId, CancellationToken cancellationToken = default);
 
     #endregion
 }

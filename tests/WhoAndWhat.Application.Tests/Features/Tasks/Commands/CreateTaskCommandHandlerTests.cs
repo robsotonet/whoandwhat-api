@@ -893,7 +893,7 @@ public class CreateTaskCommandHandlerTests
     {
         // Arrange
         // Note: Metadata handling would depend on actual implementation
-        object? metadata = null;
+        TaskMetadataRequest? metadata = null;
 
         var command = new CreateTaskCommand(
             Title: "Task with Metadata",

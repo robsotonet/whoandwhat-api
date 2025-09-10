@@ -100,6 +100,8 @@ public class GetTasksQueryHandler : IRequestHandler<GetTasksQuery, Result<PagedR
             {
                 TaskId = tc.TaskId,
                 ContactId = tc.ContactId,
+                ContactName = tc.Contact?.Name ?? string.Empty,
+                ContactEmail = tc.Contact?.Email ?? string.Empty,
                 Role = tc.Role
             }).ToList() ?? new List<TaskContactDto>()
         };
