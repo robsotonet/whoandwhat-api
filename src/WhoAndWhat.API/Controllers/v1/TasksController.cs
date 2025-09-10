@@ -21,6 +21,27 @@ using WhoAndWhat.Application.Common;
 namespace WhoAndWhat.API.Controllers.v1;
 
 /// <summary>
+/// Task batch operation constants
+/// </summary>
+public static class TaskBatchOperations
+{
+    public const string Delete = "delete";
+    public const string Complete = "complete";
+    public const string Archive = "archive";
+}
+
+/// <summary>
+/// Task action ID constants
+/// </summary>
+public static class TaskActionIds
+{
+    public const string MarkCompleted = "MarkCompleted";
+    public const string MarkArchived = "MarkArchived";
+    public const string MarkPending = "MarkPending";
+    public const string MarkInProgress = "MarkInProgress";
+}
+
+/// <summary>
 /// Task management controller handling core task operations
 /// </summary>
 [ApiController]
@@ -688,10 +709,10 @@ public class TasksController : ControllerBase
 
             var actionId = request.Status switch
             {
-                1 => "MarkInProgress", // InProgress
-                2 => "MarkCompleted", // Completed
-                3 => "MarkArchived", // Archived
-                _ => "MarkPending" // Pending
+                1 => TaskActionIds.MarkInProgress, // InProgress
+                2 => TaskActionIds.MarkCompleted, // Completed
+                3 => TaskActionIds.MarkArchived, // Archived
+                _ => TaskActionIds.MarkPending // Pending
             };
 
             var command = new ExecuteTaskActionCommand(
@@ -962,9 +983,9 @@ public class TasksController : ControllerBase
                 {
                     IRequest<Result> command = request.Operation switch
                     {
-                        "delete" => new DeleteTaskCommand(taskId, userId.Value),
-                        "complete" => new ExecuteTaskActionCommand(taskId, "MarkCompleted", new Dictionary<string, object>(), userId.Value),
-                        "archive" => new ExecuteTaskActionCommand(taskId, "MarkArchived", new Dictionary<string, object>(), userId.Value),
+                        TaskBatchOperations.Delete => new DeleteTaskCommand(taskId, userId.Value),
+                        TaskBatchOperations.Complete => new ExecuteTaskActionCommand(taskId, TaskActionIds.MarkCompleted, new Dictionary<string, object>(), userId.Value),
+                        TaskBatchOperations.Archive => new ExecuteTaskActionCommand(taskId, TaskActionIds.MarkArchived, new Dictionary<string, object>(), userId.Value),
                         _ => throw new ArgumentException($"Unknown operation: {request.Operation}")
                     };
 
@@ -1058,10 +1079,10 @@ public class TasksController : ControllerBase
                 {
                     var actionId = request.NewStatus switch
                     {
-                        1 => "MarkInProgress", // InProgress
-                        2 => "MarkCompleted", // Completed
-                        3 => "MarkArchived", // Archived
-                        _ => "MarkPending" // Pending
+                        1 => TaskActionIds.MarkInProgress, // InProgress
+                        2 => TaskActionIds.MarkCompleted, // Completed
+                        3 => TaskActionIds.MarkArchived, // Archived
+                        _ => TaskActionIds.MarkPending // Pending
                     };
 
                     var command = new ExecuteTaskActionCommand(
@@ -1161,17 +1182,6 @@ public class TasksController : ControllerBase
                     Status = StatusCodes.Status400BadRequest
                 });
             }
-
-            // Create search criteria using existing infrastructure
-            var searchCriteria = new AppTaskSearchCriteria
-            {
-                UserId = userId.Value,
-                Query = query,
-                Category = category.HasValue ? (AppTaskCategory)category.Value : null,
-                Status = status.HasValue ? (AppTaskStatus)status.Value : null,
-                PageNumber = pageNumber,
-                PageSize = pageSize
-            };
 
             _logger.LogInformation("Searching tasks for user {UserId} with query '{Query}'", userId.Value, query);
 
@@ -1316,7 +1326,7 @@ public class TasksController : ControllerBase
 public class TaskActionRequest
 {
     /// <summary>
-    /// Action ID to execute (MarkCompleted, MarkInProgress, MarkArchived, etc.)
+    /// Action ID to execute (see TaskActionIds constants)
     /// </summary>
     public string ActionId { get; set; } = string.Empty;
 
@@ -1395,7 +1405,7 @@ public class TaskStatusInfo
 public class TaskBatchOperationRequest
 {
     /// <summary>
-    /// Operation to perform (delete, complete, archive)
+    /// Operation to perform (see TaskBatchOperations constants)
     /// </summary>
     public string Operation { get; set; } = string.Empty;
 

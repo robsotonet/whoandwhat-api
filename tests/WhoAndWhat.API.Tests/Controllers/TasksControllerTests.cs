@@ -19,6 +19,7 @@ using WhoAndWhat.Application.Services;
 using WhoAndWhat.Domain.Services;
 using WhoAndWhat.Infrastructure.Data;
 using WhoAndWhat.Infrastructure.Repositories;
+using WhoAndWhat.API.Tests.Helpers;
 using Xunit;
 
 namespace WhoAndWhat.API.Tests.Controllers;
@@ -91,65 +92,6 @@ public class TasksControllerTests : IClassFixture<WebApplicationFactory<Program>
 
     #region Helper Methods
 
-    private async Task<string> GetAuthTokenAsync()
-    {
-        // Generate unique email for each test to avoid conflicts
-        var uniqueEmail = $"tasktest_{Guid.NewGuid():N}@example.com";
-        
-        // Register a test user
-        var registerRequest = new RegisterRequest
-        {
-            Email = uniqueEmail,
-            Username = $"taskuser_{Guid.NewGuid():N}",
-            Password = "TaskTest123!",
-            AcceptTerms = true
-        };
-
-        var registerContent = new StringContent(
-            JsonSerializer.Serialize(registerRequest, _jsonOptions),
-            Encoding.UTF8,
-            "application/json");
-
-        var registerResponse = await _client.PostAsync("/api/v1/auth/register", registerContent);
-        
-        // Check if registration was successful
-        if (registerResponse.StatusCode != HttpStatusCode.Created && registerResponse.StatusCode != HttpStatusCode.OK)
-        {
-            var errorContent = await registerResponse.Content.ReadAsStringAsync();
-            throw new Exception($"Failed to register test user: {registerResponse.StatusCode} - {errorContent}");
-        }
-
-        // Login to get token
-        var loginRequest = new LoginRequest
-        {
-            Email = uniqueEmail,
-            Password = "TaskTest123!"
-        };
-
-        var loginContent = new StringContent(
-            JsonSerializer.Serialize(loginRequest, _jsonOptions),
-            Encoding.UTF8,
-            "application/json");
-
-        var loginResponse = await _client.PostAsync("/api/v1/auth/login", loginContent);
-        
-        // Check if login was successful
-        if (loginResponse.StatusCode != HttpStatusCode.OK)
-        {
-            var errorContent = await loginResponse.Content.ReadAsStringAsync();
-            throw new Exception($"Failed to login test user: {loginResponse.StatusCode} - {errorContent}");
-        }
-        
-        var loginResponseContent = await loginResponse.Content.ReadAsStringAsync();
-        var loginResult = JsonSerializer.Deserialize<LoginResponse>(loginResponseContent, _jsonOptions);
-
-        if (loginResult?.AccessToken == null)
-        {
-            throw new Exception("Login successful but no access token received");
-        }
-
-        return loginResult.AccessToken;
-    }
 
     private async Task<TaskDto> CreateTestTaskAsync(string token, string title = "Test Task")
     {
@@ -182,7 +124,7 @@ public class TasksControllerTests : IClassFixture<WebApplicationFactory<Program>
     public async Task GetTasks_Should_Return_Ok_With_Valid_Token()
     {
         // Arrange
-        var token = await GetAuthTokenAsync();
+        var token = await AuthenticationTestHelper.GetAuthTokenAsync(_client);
         _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
         // Act
@@ -210,7 +152,7 @@ public class TasksControllerTests : IClassFixture<WebApplicationFactory<Program>
     public async Task GetTasks_Should_Support_Pagination()
     {
         // Arrange
-        var token = await GetAuthTokenAsync();
+        var token = await AuthenticationTestHelper.GetAuthTokenAsync(_client);
         _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
         
         // Create multiple test tasks
@@ -235,7 +177,7 @@ public class TasksControllerTests : IClassFixture<WebApplicationFactory<Program>
     public async Task GetTasks_Should_Support_Filtering_By_Category()
     {
         // Arrange
-        var token = await GetAuthTokenAsync();
+        var token = await AuthenticationTestHelper.GetAuthTokenAsync(_client);
         _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
         // Act
@@ -256,7 +198,7 @@ public class TasksControllerTests : IClassFixture<WebApplicationFactory<Program>
     public async Task GetTask_Should_Return_Ok_With_Valid_Task_Id()
     {
         // Arrange
-        var token = await GetAuthTokenAsync();
+        var token = await AuthenticationTestHelper.GetAuthTokenAsync(_client);
         var task = await CreateTestTaskAsync(token);
         _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
@@ -275,7 +217,7 @@ public class TasksControllerTests : IClassFixture<WebApplicationFactory<Program>
     public async Task GetTask_Should_Return_NotFound_With_Invalid_Task_Id()
     {
         // Arrange
-        var token = await GetAuthTokenAsync();
+        var token = await AuthenticationTestHelper.GetAuthTokenAsync(_client);
         _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
         var invalidId = Guid.NewGuid();
 
@@ -294,7 +236,7 @@ public class TasksControllerTests : IClassFixture<WebApplicationFactory<Program>
     public async Task CreateTask_Should_Return_Created_With_Valid_Request()
     {
         // Arrange
-        var token = await GetAuthTokenAsync();
+        var token = await AuthenticationTestHelper.GetAuthTokenAsync(_client);
         _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
         
         var request = new CreateTaskRequest
@@ -327,7 +269,7 @@ public class TasksControllerTests : IClassFixture<WebApplicationFactory<Program>
     public async Task CreateTask_Should_Return_BadRequest_With_Empty_Title()
     {
         // Arrange
-        var token = await GetAuthTokenAsync();
+        var token = await AuthenticationTestHelper.GetAuthTokenAsync(_client);
         _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
         
         var request = new CreateTaskRequest
@@ -358,7 +300,7 @@ public class TasksControllerTests : IClassFixture<WebApplicationFactory<Program>
     public async Task UpdateTask_Should_Return_Ok_With_Valid_Request()
     {
         // Arrange
-        var token = await GetAuthTokenAsync();
+        var token = await AuthenticationTestHelper.GetAuthTokenAsync(_client);
         var task = await CreateTestTaskAsync(token);
         _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
         
@@ -390,7 +332,7 @@ public class TasksControllerTests : IClassFixture<WebApplicationFactory<Program>
     public async Task UpdateTask_Should_Return_NotFound_With_Invalid_Task_Id()
     {
         // Arrange
-        var token = await GetAuthTokenAsync();
+        var token = await AuthenticationTestHelper.GetAuthTokenAsync(_client);
         _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
         var invalidId = Guid.NewGuid();
         
@@ -420,7 +362,7 @@ public class TasksControllerTests : IClassFixture<WebApplicationFactory<Program>
     public async Task DeleteTask_Should_Return_NoContent_With_Valid_Task_Id()
     {
         // Arrange
-        var token = await GetAuthTokenAsync();
+        var token = await AuthenticationTestHelper.GetAuthTokenAsync(_client);
         var task = await CreateTestTaskAsync(token);
         _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
@@ -435,7 +377,7 @@ public class TasksControllerTests : IClassFixture<WebApplicationFactory<Program>
     public async Task DeleteTask_Should_Return_NotFound_With_Invalid_Task_Id()
     {
         // Arrange
-        var token = await GetAuthTokenAsync();
+        var token = await AuthenticationTestHelper.GetAuthTokenAsync(_client);
         _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
         var invalidId = Guid.NewGuid();
 
@@ -454,7 +396,7 @@ public class TasksControllerTests : IClassFixture<WebApplicationFactory<Program>
     public async Task ConvertToProject_Should_Return_Ok_With_Valid_Task_Id()
     {
         // Arrange
-        var token = await GetAuthTokenAsync();
+        var token = await AuthenticationTestHelper.GetAuthTokenAsync(_client);
         var task = await CreateTestTaskAsync(token);
         _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
@@ -473,7 +415,7 @@ public class TasksControllerTests : IClassFixture<WebApplicationFactory<Program>
     public async Task GetCategories_Should_Return_Ok_With_Category_List()
     {
         // Arrange
-        var token = await GetAuthTokenAsync();
+        var token = await AuthenticationTestHelper.GetAuthTokenAsync(_client);
         _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
         // Act
@@ -494,7 +436,7 @@ public class TasksControllerTests : IClassFixture<WebApplicationFactory<Program>
     public async Task SearchTasks_Should_Return_Ok_With_Valid_Query()
     {
         // Arrange
-        var token = await GetAuthTokenAsync();
+        var token = await AuthenticationTestHelper.GetAuthTokenAsync(_client);
         _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
         await CreateTestTaskAsync(token, "Searchable Task");
 
@@ -512,7 +454,7 @@ public class TasksControllerTests : IClassFixture<WebApplicationFactory<Program>
     public async Task SearchTasks_Should_Return_BadRequest_With_Empty_Query()
     {
         // Arrange
-        var token = await GetAuthTokenAsync();
+        var token = await AuthenticationTestHelper.GetAuthTokenAsync(_client);
         _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
         // Act
@@ -530,7 +472,7 @@ public class TasksControllerTests : IClassFixture<WebApplicationFactory<Program>
     public async Task GetTaskStatistics_Should_Return_Ok_With_Valid_Token()
     {
         // Arrange
-        var token = await GetAuthTokenAsync();
+        var token = await AuthenticationTestHelper.GetAuthTokenAsync(_client);
         _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
         // Act
@@ -550,7 +492,7 @@ public class TasksControllerTests : IClassFixture<WebApplicationFactory<Program>
     public async Task UpdateTaskStatus_Should_Return_Ok_With_Valid_Request()
     {
         // Arrange
-        var token = await GetAuthTokenAsync();
+        var token = await AuthenticationTestHelper.GetAuthTokenAsync(_client);
         var task = await CreateTestTaskAsync(token);
         _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
         
@@ -579,7 +521,7 @@ public class TasksControllerTests : IClassFixture<WebApplicationFactory<Program>
     public async Task UpdateTaskStatus_Should_Return_NotFound_With_Invalid_Task_Id()
     {
         // Arrange
-        var token = await GetAuthTokenAsync();
+        var token = await AuthenticationTestHelper.GetAuthTokenAsync(_client);
         _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
         var invalidId = Guid.NewGuid();
         
@@ -609,7 +551,7 @@ public class TasksControllerTests : IClassFixture<WebApplicationFactory<Program>
     public async Task GetOverdueTasks_Should_Return_Ok_With_Overdue_Tasks()
     {
         // Arrange
-        var token = await GetAuthTokenAsync();
+        var token = await AuthenticationTestHelper.GetAuthTokenAsync(_client);
         _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
         
         // Create an overdue task
@@ -658,7 +600,7 @@ public class TasksControllerTests : IClassFixture<WebApplicationFactory<Program>
     public async Task GetTasksDueToday_Should_Return_Ok_With_Tasks_Due_Today()
     {
         // Arrange
-        var token = await GetAuthTokenAsync();
+        var token = await AuthenticationTestHelper.GetAuthTokenAsync(_client);
         _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
         
         // Create a task due today
@@ -693,7 +635,7 @@ public class TasksControllerTests : IClassFixture<WebApplicationFactory<Program>
     public async Task GetTasksDueToday_Should_Return_Empty_When_No_Tasks_Due_Today()
     {
         // Arrange
-        var token = await GetAuthTokenAsync();
+        var token = await AuthenticationTestHelper.GetAuthTokenAsync(_client);
         _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
         
         // Create a task due tomorrow
@@ -732,7 +674,7 @@ public class TasksControllerTests : IClassFixture<WebApplicationFactory<Program>
     public async Task BatchOperation_Should_Delete_Multiple_Tasks()
     {
         // Arrange
-        var token = await GetAuthTokenAsync();
+        var token = await AuthenticationTestHelper.GetAuthTokenAsync(_client);
         _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
         
         // Create multiple tasks
@@ -769,7 +711,7 @@ public class TasksControllerTests : IClassFixture<WebApplicationFactory<Program>
     public async Task BatchOperation_Should_Complete_Multiple_Tasks()
     {
         // Arrange
-        var token = await GetAuthTokenAsync();
+        var token = await AuthenticationTestHelper.GetAuthTokenAsync(_client);
         _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
         
         // Create multiple tasks
@@ -807,7 +749,7 @@ public class TasksControllerTests : IClassFixture<WebApplicationFactory<Program>
     public async Task BatchOperation_Should_Archive_Multiple_Tasks()
     {
         // Arrange
-        var token = await GetAuthTokenAsync();
+        var token = await AuthenticationTestHelper.GetAuthTokenAsync(_client);
         _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
         
         // Create multiple tasks
@@ -845,7 +787,7 @@ public class TasksControllerTests : IClassFixture<WebApplicationFactory<Program>
     public async Task BatchOperation_Should_Return_BadRequest_With_Invalid_Operation()
     {
         // Arrange
-        var token = await GetAuthTokenAsync();
+        var token = await AuthenticationTestHelper.GetAuthTokenAsync(_client);
         _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
         
         var task = await CreateTestTaskAsync(token);
@@ -876,7 +818,7 @@ public class TasksControllerTests : IClassFixture<WebApplicationFactory<Program>
     public async Task ExecuteTaskAction_Should_Return_Ok_With_Valid_Action()
     {
         // Arrange
-        var token = await GetAuthTokenAsync();
+        var token = await AuthenticationTestHelper.GetAuthTokenAsync(_client);
         var task = await CreateTestTaskAsync(token);
         _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
         
@@ -906,7 +848,7 @@ public class TasksControllerTests : IClassFixture<WebApplicationFactory<Program>
     public async Task ExecuteTaskAction_Should_Return_NotFound_With_Invalid_Task_Id()
     {
         // Arrange
-        var token = await GetAuthTokenAsync();
+        var token = await AuthenticationTestHelper.GetAuthTokenAsync(_client);
         _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
         var invalidId = Guid.NewGuid();
         
@@ -932,7 +874,7 @@ public class TasksControllerTests : IClassFixture<WebApplicationFactory<Program>
     public async Task ExecuteTaskAction_Should_Return_BadRequest_With_Invalid_Action()
     {
         // Arrange
-        var token = await GetAuthTokenAsync();
+        var token = await AuthenticationTestHelper.GetAuthTokenAsync(_client);
         var task = await CreateTestTaskAsync(token);
         _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
         
@@ -962,7 +904,7 @@ public class TasksControllerTests : IClassFixture<WebApplicationFactory<Program>
     public async Task GetStatusOptions_Should_Return_Ok_With_Status_List()
     {
         // Arrange
-        var token = await GetAuthTokenAsync();
+        var token = await AuthenticationTestHelper.GetAuthTokenAsync(_client);
         _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
         // Act
@@ -995,7 +937,7 @@ public class TasksControllerTests : IClassFixture<WebApplicationFactory<Program>
     public async Task GetTaskWorkflow_Should_Return_Ok_With_Valid_Task_Id()
     {
         // Arrange
-        var token = await GetAuthTokenAsync();
+        var token = await AuthenticationTestHelper.GetAuthTokenAsync(_client);
         var task = await CreateTestTaskAsync(token);
         _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
@@ -1012,7 +954,7 @@ public class TasksControllerTests : IClassFixture<WebApplicationFactory<Program>
     public async Task GetTaskWorkflow_Should_Return_NotFound_With_Invalid_Task_Id()
     {
         // Arrange
-        var token = await GetAuthTokenAsync();
+        var token = await AuthenticationTestHelper.GetAuthTokenAsync(_client);
         _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
         var invalidId = Guid.NewGuid();
 
@@ -1044,7 +986,7 @@ public class TasksControllerTests : IClassFixture<WebApplicationFactory<Program>
     public async Task GetTaskScheduling_Should_Return_Ok_With_Valid_Parameters()
     {
         // Arrange
-        var token = await GetAuthTokenAsync();
+        var token = await AuthenticationTestHelper.GetAuthTokenAsync(_client);
         _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
         // Act
@@ -1060,7 +1002,7 @@ public class TasksControllerTests : IClassFixture<WebApplicationFactory<Program>
     public async Task GetTaskScheduling_Should_Return_Ok_With_Target_Date()
     {
         // Arrange
-        var token = await GetAuthTokenAsync();
+        var token = await AuthenticationTestHelper.GetAuthTokenAsync(_client);
         _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
         var targetDate = DateTime.UtcNow.AddDays(1).ToString("yyyy-MM-ddTHH:mm:ss.fffZ");
 
@@ -1091,7 +1033,7 @@ public class TasksControllerTests : IClassFixture<WebApplicationFactory<Program>
     public async Task BatchUpdateStatus_Should_Update_Multiple_Task_Statuses()
     {
         // Arrange
-        var token = await GetAuthTokenAsync();
+        var token = await AuthenticationTestHelper.GetAuthTokenAsync(_client);
         _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
         
         // Create multiple tasks
@@ -1131,7 +1073,7 @@ public class TasksControllerTests : IClassFixture<WebApplicationFactory<Program>
     public async Task BatchUpdateStatus_Should_Return_BadRequest_With_Invalid_Status()
     {
         // Arrange
-        var token = await GetAuthTokenAsync();
+        var token = await AuthenticationTestHelper.GetAuthTokenAsync(_client);
         _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
         
         var task = await CreateTestTaskAsync(token);
@@ -1160,7 +1102,7 @@ public class TasksControllerTests : IClassFixture<WebApplicationFactory<Program>
     public async Task BatchUpdateStatus_Should_Handle_Mix_Of_Valid_And_Invalid_Tasks()
     {
         // Arrange
-        var token = await GetAuthTokenAsync();
+        var token = await AuthenticationTestHelper.GetAuthTokenAsync(_client);
         _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
         
         // Create one valid task

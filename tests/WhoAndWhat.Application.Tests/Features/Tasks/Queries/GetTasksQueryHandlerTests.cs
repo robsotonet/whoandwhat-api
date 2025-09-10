@@ -28,6 +28,14 @@ public class GetTasksQueryHandlerTests
             _mockLogger.Object);
     }
 
+    #region Test Constants
+
+    private const int TestTotalCount = 2;
+    private const int TestPageNumber = 1;
+    private const int TestPageSize = 20;
+
+    #endregion
+
     [Fact]
     public async Task Handle_Should_Return_Paged_Tasks_Successfully_With_Default_Parameters()
     {
@@ -66,13 +74,13 @@ public class GetTasksQueryHandlerTests
             }
         };
 
-        var pagedResult = PagedResult<DomainTask>.Create(tasks, 2, 1, 20);
+        var pagedResult = PagedResult<DomainTask>.Create(tasks, TestTotalCount, TestPageNumber, TestPageSize);
         var query = new GetTasksQuery(userId);
 
         _mockTaskRepository.Setup(x => x.SearchAsync(
             It.IsAny<AppTaskSearchCriteria>(),
-            1,
-            20,
+            TestPageNumber,
+            TestPageSize,
             "UpdatedAt",
             true))
             .ReturnsAsync(pagedResult);
@@ -84,10 +92,10 @@ public class GetTasksQueryHandlerTests
         result.Should().NotBeNull();
         result.IsSuccess.Should().BeTrue();
         result.Value.Should().NotBeNull();
-        result.Value.Items.Should().HaveCount(2);
-        result.Value.TotalCount.Should().Be(2);
-        result.Value.Page.Should().Be(1);
-        result.Value.PageSize.Should().Be(20);
+        result.Value.Items.Should().HaveCount(TestTotalCount);
+        result.Value.TotalCount.Should().Be(TestTotalCount);
+        result.Value.Page.Should().Be(TestPageNumber);
+        result.Value.PageSize.Should().Be(TestPageSize);
 
         var firstTask = result.Value.Items.First();
         firstTask.Id.Should().Be(taskId1);
@@ -98,8 +106,8 @@ public class GetTasksQueryHandlerTests
 
         _mockTaskRepository.Verify(x => x.SearchAsync(
             It.Is<AppTaskSearchCriteria>(c => c.UserId == userId),
-            1,
-            20,
+            TestPageNumber,
+            TestPageSize,
             "UpdatedAt",
             true), Times.Once);
     }
@@ -111,14 +119,14 @@ public class GetTasksQueryHandlerTests
         var userId = Guid.NewGuid();
         var searchText = "important task";
         var tasks = new List<DomainTask>();
-        var pagedResult = PagedResult<DomainTask>.Create(tasks, 0, 1, 20);
+        var pagedResult = PagedResult<DomainTask>.Create(tasks, 0, TestPageNumber, TestPageSize);
         
         var query = new GetTasksQuery(userId, Search: searchText);
 
         _mockTaskRepository.Setup(x => x.SearchAsync(
             It.IsAny<AppTaskSearchCriteria>(),
-            1,
-            20,
+            TestPageNumber,
+            TestPageSize,
             "UpdatedAt",
             true))
             .ReturnsAsync(pagedResult);
@@ -130,8 +138,8 @@ public class GetTasksQueryHandlerTests
         result.IsSuccess.Should().BeTrue();
         _mockTaskRepository.Verify(x => x.SearchAsync(
             It.Is<AppTaskSearchCriteria>(c => c.SearchText == searchText),
-            1,
-            20,
+            TestPageNumber,
+            TestPageSize,
             "UpdatedAt",
             true), Times.Once);
     }
@@ -143,14 +151,14 @@ public class GetTasksQueryHandlerTests
         var userId = Guid.NewGuid();
         var categories = new List<int> { (int)AppTaskCategory.ToDo, (int)AppTaskCategory.Project };
         var tasks = new List<DomainTask>();
-        var pagedResult = PagedResult<DomainTask>.Create(tasks, 0, 1, 20);
+        var pagedResult = PagedResult<DomainTask>.Create(tasks, 0, TestPageNumber, TestPageSize);
         
         var query = new GetTasksQuery(userId, Categories: categories);
 
         _mockTaskRepository.Setup(x => x.SearchAsync(
             It.IsAny<AppTaskSearchCriteria>(),
-            1,
-            20,
+            TestPageNumber,
+            TestPageSize,
             "UpdatedAt",
             true))
             .ReturnsAsync(pagedResult);
@@ -162,8 +170,8 @@ public class GetTasksQueryHandlerTests
         result.IsSuccess.Should().BeTrue();
         _mockTaskRepository.Verify(x => x.SearchAsync(
             It.Is<AppTaskSearchCriteria>(c => c.Categories != null),
-            1,
-            20,
+            TestPageNumber,
+            TestPageSize,
             "UpdatedAt",
             true), Times.Once);
     }
@@ -176,14 +184,14 @@ public class GetTasksQueryHandlerTests
         var statuses = new List<int> { (int)DomainTaskStatus.Pending, (int)DomainTaskStatus.InProgress };
         var priorities = new List<int> { (int)Priority.High, (int)Priority.Urgent };
         var tasks = new List<DomainTask>();
-        var pagedResult = PagedResult<DomainTask>.Create(tasks, 0, 1, 20);
+        var pagedResult = PagedResult<DomainTask>.Create(tasks, 0, TestPageNumber, TestPageSize);
         
         var query = new GetTasksQuery(userId, Statuses: statuses, Priorities: priorities);
 
         _mockTaskRepository.Setup(x => x.SearchAsync(
             It.IsAny<AppTaskSearchCriteria>(),
-            1,
-            20,
+            TestPageNumber,
+            TestPageSize,
             "UpdatedAt",
             true))
             .ReturnsAsync(pagedResult);
@@ -196,8 +204,8 @@ public class GetTasksQueryHandlerTests
         _mockTaskRepository.Verify(x => x.SearchAsync(
             It.Is<AppTaskSearchCriteria>(c => 
                 c.Statuses != null && c.Priorities != null),
-            1,
-            20,
+            TestPageNumber,
+            TestPageSize,
             "UpdatedAt",
             true), Times.Once);
     }
@@ -212,7 +220,7 @@ public class GetTasksQueryHandlerTests
         var createdFrom = DateTime.UtcNow.AddDays(-30).Date;
         var createdTo = DateTime.UtcNow.Date;
         var tasks = new List<DomainTask>();
-        var pagedResult = PagedResult<DomainTask>.Create(tasks, 0, 1, 20);
+        var pagedResult = PagedResult<DomainTask>.Create(tasks, 0, TestPageNumber, TestPageSize);
         
         var query = new GetTasksQuery(
             userId, 
@@ -223,8 +231,8 @@ public class GetTasksQueryHandlerTests
 
         _mockTaskRepository.Setup(x => x.SearchAsync(
             It.IsAny<AppTaskSearchCriteria>(),
-            1,
-            20,
+            TestPageNumber,
+            TestPageSize,
             "UpdatedAt",
             true))
             .ReturnsAsync(pagedResult);
@@ -240,8 +248,8 @@ public class GetTasksQueryHandlerTests
                 c.DueDateTo == dueDateTo &&
                 c.CreatedFrom == createdFrom &&
                 c.CreatedTo == createdTo),
-            1,
-            20,
+            TestPageNumber,
+            TestPageSize,
             "UpdatedAt",
             true), Times.Once);
     }
@@ -254,7 +262,7 @@ public class GetTasksQueryHandlerTests
         var contactIds = new List<Guid> { Guid.NewGuid(), Guid.NewGuid() };
         var parentTaskId = Guid.NewGuid();
         var tasks = new List<DomainTask>();
-        var pagedResult = PagedResult<DomainTask>.Create(tasks, 0, 1, 20);
+        var pagedResult = PagedResult<DomainTask>.Create(tasks, 0, TestPageNumber, TestPageSize);
         
         var query = new GetTasksQuery(
             userId,
@@ -267,8 +275,8 @@ public class GetTasksQueryHandlerTests
 
         _mockTaskRepository.Setup(x => x.SearchAsync(
             It.IsAny<AppTaskSearchCriteria>(),
-            1,
-            20,
+            TestPageNumber,
+            TestPageSize,
             "UpdatedAt",
             true))
             .ReturnsAsync(pagedResult);
@@ -286,8 +294,8 @@ public class GetTasksQueryHandlerTests
                 c.HasSubtasks == true &&
                 c.ParentTaskId == parentTaskId &&
                 c.IncludeArchived == true),
-            1,
-            20,
+            TestPageNumber,
+            TestPageSize,
             "UpdatedAt",
             true), Times.Once);
     }
@@ -337,14 +345,14 @@ public class GetTasksQueryHandlerTests
         // Arrange
         var userId = Guid.NewGuid();
         var tasks = new List<DomainTask>();
-        var pagedResult = PagedResult<DomainTask>.Create(tasks, 0, 1, 20);
+        var pagedResult = PagedResult<DomainTask>.Create(tasks, 0, TestPageNumber, TestPageSize);
         
         var query = new GetTasksQuery(userId, SortBy: null);
 
         _mockTaskRepository.Setup(x => x.SearchAsync(
             It.IsAny<AppTaskSearchCriteria>(),
-            1,
-            20,
+            TestPageNumber,
+            TestPageSize,
             "UpdatedAt", // Default value
             true))
             .ReturnsAsync(pagedResult);
@@ -356,8 +364,8 @@ public class GetTasksQueryHandlerTests
         result.IsSuccess.Should().BeTrue();
         _mockTaskRepository.Verify(x => x.SearchAsync(
             It.IsAny<AppTaskSearchCriteria>(),
-            1,
-            20,
+            TestPageNumber,
+            TestPageSize,
             "UpdatedAt",
             true), Times.Once);
     }
@@ -404,13 +412,13 @@ public class GetTasksQueryHandlerTests
         };
 
         var tasks = new List<DomainTask> { task };
-        var pagedResult = PagedResult<DomainTask>.Create(tasks, 1, 1, 20);
+        var pagedResult = PagedResult<DomainTask>.Create(tasks, 1, TestPageNumber, TestPageSize);
         var query = new GetTasksQuery(userId);
 
         _mockTaskRepository.Setup(x => x.SearchAsync(
             It.IsAny<AppTaskSearchCriteria>(),
-            1,
-            20,
+            TestPageNumber,
+            TestPageSize,
             "UpdatedAt",
             true))
             .ReturnsAsync(pagedResult);
@@ -450,13 +458,13 @@ public class GetTasksQueryHandlerTests
         // Arrange
         var userId = Guid.NewGuid();
         var tasks = new List<DomainTask>();
-        var pagedResult = PagedResult<DomainTask>.Create(tasks, 0, 1, 20);
+        var pagedResult = PagedResult<DomainTask>.Create(tasks, 0, TestPageNumber, TestPageSize);
         var query = new GetTasksQuery(userId);
 
         _mockTaskRepository.Setup(x => x.SearchAsync(
             It.IsAny<AppTaskSearchCriteria>(),
-            1,
-            20,
+            TestPageNumber,
+            TestPageSize,
             "UpdatedAt",
             true))
             .ReturnsAsync(pagedResult);
@@ -468,8 +476,8 @@ public class GetTasksQueryHandlerTests
         result.IsSuccess.Should().BeTrue();
         result.Value.Items.Should().BeEmpty();
         result.Value.TotalCount.Should().Be(0);
-        result.Value.Page.Should().Be(1);
-        result.Value.PageSize.Should().Be(20);
+        result.Value.Page.Should().Be(TestPageNumber);
+        result.Value.PageSize.Should().Be(TestPageSize);
     }
 
     [Fact]
@@ -492,13 +500,13 @@ public class GetTasksQueryHandlerTests
         };
 
         var tasks = new List<DomainTask> { task };
-        var pagedResult = PagedResult<DomainTask>.Create(tasks, 1, 1, 20);
+        var pagedResult = PagedResult<DomainTask>.Create(tasks, 1, TestPageNumber, TestPageSize);
         var query = new GetTasksQuery(userId);
 
         _mockTaskRepository.Setup(x => x.SearchAsync(
             It.IsAny<AppTaskSearchCriteria>(),
-            1,
-            20,
+            TestPageNumber,
+            TestPageSize,
             "UpdatedAt",
             true))
             .ReturnsAsync(pagedResult);
@@ -524,8 +532,8 @@ public class GetTasksQueryHandlerTests
 
         _mockTaskRepository.Setup(x => x.SearchAsync(
             It.IsAny<AppTaskSearchCriteria>(),
-            1,
-            20,
+            TestPageNumber,
+            TestPageSize,
             "UpdatedAt",
             true))
             .ThrowsAsync(new Exception("Database connection failed"));
@@ -579,13 +587,13 @@ public class GetTasksQueryHandlerTests
         };
 
         var tasks = new List<DomainTask> { task };
-        var pagedResult = PagedResult<DomainTask>.Create(tasks, 1, 1, 20);
+        var pagedResult = PagedResult<DomainTask>.Create(tasks, 1, TestPageNumber, TestPageSize);
         var query = new GetTasksQuery(userId);
 
         _mockTaskRepository.Setup(x => x.SearchAsync(
             It.IsAny<AppTaskSearchCriteria>(),
-            1,
-            20,
+            TestPageNumber,
+            TestPageSize,
             "UpdatedAt",
             true))
             .ReturnsAsync(pagedResult);

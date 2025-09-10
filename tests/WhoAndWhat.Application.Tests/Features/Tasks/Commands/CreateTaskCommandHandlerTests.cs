@@ -494,7 +494,7 @@ public class CreateTaskCommandHandlerTests
     public async Task Handle_Should_Return_Failure_When_Title_Exceeds_Maximum_Length()
     {
         // Arrange
-        var longTitle = new string('A', 201); // Assuming max length is 200
+        var longTitle = new string('A', DomainTask.MaxTitleLength + 1); // Exceeds maximum title length
         var command = new CreateTaskCommand(
             Title: longTitle,
             Description: "Valid description",
@@ -522,7 +522,7 @@ public class CreateTaskCommandHandlerTests
     public async Task Handle_Should_Return_Failure_When_Description_Exceeds_Maximum_Length()
     {
         // Arrange
-        var longDescription = new string('B', 2001); // Assuming max length is 2000
+        var longDescription = new string('B', DomainTask.MaxDescriptionLength + 1); // Exceeds maximum description length
         var command = new CreateTaskCommand(
             Title: "Valid Title",
             Description: longDescription,
