@@ -217,4 +217,23 @@ public class ContactRepository : Repository<Contact>, IContactRepository
             return Enumerable.Empty<Contact>();
         }
     }
+
+    public async Task<Contact?> FindContactByInviteCodeAsync(string inviteCode, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(inviteCode))
+            {
+                return null;
+            }
+
+            return await _dbSet
+                .FirstOrDefaultAsync(c => c.InviteCode == inviteCode && !c.IsDeleted, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error finding contact by invite code '{InviteCode}'", inviteCode);
+            return null;
+        }
+    }
 }

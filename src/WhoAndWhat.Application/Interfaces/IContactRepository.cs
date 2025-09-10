@@ -87,4 +87,12 @@ public interface IContactRepository : IRepository<Contact>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>List of matching contacts</returns>
     public Task<IEnumerable<Contact>> FindContactsAsync(string query, Guid userId, bool includeDeleted = false, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Finds a contact by invite code
+    /// </summary>
+    /// <param name="inviteCode">The invite code to search for</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>The contact with the matching invite code, or null if not found</returns>
+    public Task<Contact?> FindContactByInviteCodeAsync(string inviteCode, CancellationToken cancellationToken = default);
 }
