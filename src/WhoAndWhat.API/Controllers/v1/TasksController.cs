@@ -12,6 +12,7 @@ using WhoAndWhat.Application.Features.Tasks.Queries.GetTask;
 using WhoAndWhat.Application.Features.Tasks.Queries.GetTasks;
 using WhoAndWhat.Application.Features.Tasks.Queries.GetTaskStatistics;
 using WhoAndWhat.Application.Features.Tasks.Queries.GetTaskWorkflow;
+using WhoAndWhat.Application.Features.Tasks.Queries.GetTaskScheduling;
 using WhoAndWhat.Application.DTOs.Tasks;
 using WhoAndWhat.Application.DTOs;
 using WhoAndWhat.Domain.ValueObjects;
@@ -189,6 +190,68 @@ public class TasksController : ControllerBase
             {
                 Title = "Internal server error",
                 Detail = "An error occurred while retrieving the task",
+                Status = StatusCodes.Status500InternalServerError
+            });
+        }
+    }
+
+    /// <summary>
+    /// Get task workflow information
+    /// </summary>
+    /// <param name="id">Task ID</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Task workflow state information</returns>
+    [HttpGet("{id:guid}/workflow")]
+    [ProducesResponseType(typeof(TaskWorkflowStateDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
+    public async Task<ActionResult<TaskWorkflowStateDto>> GetTaskWorkflow(Guid id, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var userId = GetCurrentUserId();
+            if (!userId.HasValue)
+            {
+                return Unauthorized("User identity not found");
+            }
+
+            var query = new GetTaskWorkflowQuery(id, userId.Value);
+
+            _logger.LogInformation("Getting workflow information for task {TaskId} for user {UserId}", id, userId.Value);
+
+            var result = await _mediator.Send(query, cancellationToken);
+            if (!result.IsSuccess)
+            {
+                _logger.LogWarning("Failed to get workflow for task {TaskId} for user {UserId}: {Error}", id, userId.Value, result.Error);
+                
+                if (result.Error.Contains("not found", StringComparison.OrdinalIgnoreCase))
+                {
+                    return NotFound(new ProblemDetails
+                    {
+                        Title = "Task not found",
+                        Detail = $"Task with ID {id} was not found or you don't have access to it",
+                        Status = StatusCodes.Status404NotFound
+                    });
+                }
+
+                return BadRequest(new ProblemDetails
+                {
+                    Title = "Failed to retrieve task workflow",
+                    Detail = result.Error,
+                    Status = StatusCodes.Status400BadRequest
+                });
+            }
+
+            return Ok(result.Value);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting workflow for task {TaskId}", id);
+            return StatusCode(StatusCodes.Status500InternalServerError, new ProblemDetails
+            {
+                Title = "Internal server error",
+                Detail = "An error occurred while retrieving task workflow information",
                 Status = StatusCodes.Status500InternalServerError
             });
         }
@@ -524,6 +587,81 @@ public class TasksController : ControllerBase
     }
 
     /// <summary>
+    /// Execute a task action (complete, pause, resume, archive, etc.)
+    /// </summary>
+    /// <param name="id">Task ID</param>
+    /// <param name="request">Task action request</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Updated task after action execution</returns>
+    [HttpPost("{id:guid}/actions")]
+    [ProducesResponseType(typeof(TaskDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    public async Task<ActionResult<TaskDto>> ExecuteTaskAction(
+        Guid id,
+        [FromBody] TaskActionRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var userId = GetCurrentUserId();
+            if (!userId.HasValue)
+            {
+                return Unauthorized("User identity not found");
+            }
+
+            var command = new ExecuteTaskActionCommand(
+                TaskId: id,
+                ActionId: request.ActionId,
+                Parameters: request.Parameters ?? new Dictionary<string, object>(),
+                UserId: userId.Value
+            );
+
+            _logger.LogInformation("Executing action '{ActionId}' for task {TaskId} for user {UserId}", 
+                request.ActionId, id, userId.Value);
+
+            var result = await _mediator.Send(command, cancellationToken);
+            if (!result.IsSuccess)
+            {
+                _logger.LogWarning("Failed to execute action '{ActionId}' for task {TaskId} for user {UserId}: {Error}", 
+                    request.ActionId, id, userId.Value, result.Error);
+                
+                if (result.Error.Contains("not found", StringComparison.OrdinalIgnoreCase))
+                {
+                    return NotFound(new ProblemDetails
+                    {
+                        Title = "Task not found",
+                        Detail = $"Task with ID {id} was not found or you don't have access to it",
+                        Status = StatusCodes.Status404NotFound
+                    });
+                }
+
+                return BadRequest(new ProblemDetails
+                {
+                    Title = "Failed to execute task action",
+                    Detail = result.Error,
+                    Status = StatusCodes.Status400BadRequest
+                });
+            }
+
+            _logger.LogInformation("Task action '{ActionId}' executed successfully for task: {TaskId}", request.ActionId, id);
+
+            return Ok(result.Value);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error executing action '{ActionId}' for task {TaskId}", request.ActionId, id);
+            return StatusCode(StatusCodes.Status500InternalServerError, new ProblemDetails
+            {
+                Title = "Internal server error",
+                Detail = "An error occurred while executing the task action",
+                Status = StatusCodes.Status500InternalServerError
+            });
+        }
+    }
+
+    /// <summary>
     /// Update task status
     /// </summary>
     /// <param name="id">Task ID</param>
@@ -640,6 +778,40 @@ public class TasksController : ControllerBase
             {
                 Title = "Internal server error",
                 Detail = "An error occurred while retrieving task categories",
+                Status = StatusCodes.Status500InternalServerError
+            });
+        }
+    }
+
+    /// <summary>
+    /// Get task status options information
+    /// </summary>
+    /// <returns>List of available task status options</returns>
+    [HttpGet("status-options")]
+    [ProducesResponseType(typeof(IEnumerable<TaskStatusInfo>), StatusCodes.Status200OK)]
+    public ActionResult<IEnumerable<TaskStatusInfo>> GetStatusOptions()
+    {
+        try
+        {
+            _logger.LogInformation("Getting task status options");
+
+            var statusOptions = new[]
+            {
+                new TaskStatusInfo { Id = 0, Name = "Pending", Description = "Task is pending and not yet started" },
+                new TaskStatusInfo { Id = 1, Name = "InProgress", Description = "Task is currently being worked on" },
+                new TaskStatusInfo { Id = 2, Name = "Completed", Description = "Task has been completed successfully" },
+                new TaskStatusInfo { Id = 3, Name = "Archived", Description = "Task has been archived and is no longer active" }
+            };
+
+            return Ok(statusOptions);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting task status options");
+            return StatusCode(StatusCodes.Status500InternalServerError, new ProblemDetails
+            {
+                Title = "Internal server error",
+                Detail = "An error occurred while retrieving task status options",
                 Status = StatusCodes.Status500InternalServerError
             });
         }
@@ -844,6 +1016,113 @@ public class TasksController : ControllerBase
     }
 
     /// <summary>
+    /// Perform bulk status updates on multiple tasks
+    /// </summary>
+    /// <param name="request">Bulk status update request</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Bulk status update results</returns>
+    [HttpPost("batch/update-status")]
+    [ProducesResponseType(typeof(TaskBatchOperationResult), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    public async Task<ActionResult<TaskBatchOperationResult>> BatchUpdateStatus(
+        [FromBody] TaskBatchStatusUpdateRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var userId = GetCurrentUserId();
+            if (!userId.HasValue)
+            {
+                return Unauthorized("User identity not found");
+            }
+
+            if (request.NewStatus < 0 || request.NewStatus > 3)
+            {
+                return BadRequest(new ProblemDetails
+                {
+                    Title = "Invalid status",
+                    Detail = "Status must be between 0 (Pending) and 3 (Archived)",
+                    Status = StatusCodes.Status400BadRequest
+                });
+            }
+
+            _logger.LogInformation("Performing bulk status update to {NewStatus} on {TaskCount} tasks for user {UserId}", 
+                request.NewStatus, request.TaskIds.Count(), userId.Value);
+
+            var results = new List<TaskBatchItemResult>();
+
+            foreach (var taskId in request.TaskIds)
+            {
+                try
+                {
+                    var actionId = request.NewStatus switch
+                    {
+                        1 => "MarkInProgress", // InProgress
+                        2 => "MarkCompleted", // Completed
+                        3 => "MarkArchived", // Archived
+                        _ => "MarkPending" // Pending
+                    };
+
+                    var command = new ExecuteTaskActionCommand(
+                        TaskId: taskId,
+                        ActionId: actionId,
+                        Parameters: new Dictionary<string, object>
+                        {
+                            ["NewStatus"] = request.NewStatus,
+                            ["Reason"] = request.Reason ?? ""
+                        },
+                        UserId: userId.Value
+                    );
+
+                    var result = await _mediator.Send(command, cancellationToken);
+                    
+                    results.Add(new TaskBatchItemResult
+                    {
+                        TaskId = taskId,
+                        Success = result.IsSuccess,
+                        Error = result.IsSuccess ? null : result.Error
+                    });
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Error processing bulk status update for task {TaskId}", taskId);
+                    results.Add(new TaskBatchItemResult
+                    {
+                        TaskId = taskId,
+                        Success = false,
+                        Error = ex.Message
+                    });
+                }
+            }
+
+            var batchResult = new TaskBatchOperationResult
+            {
+                Operation = $"update-status-{request.NewStatus}",
+                TotalTasks = request.TaskIds.Count(),
+                SuccessfulTasks = results.Count(r => r.Success),
+                FailedTasks = results.Count(r => !r.Success),
+                Results = results
+            };
+
+            _logger.LogInformation("Bulk status update to {NewStatus} completed: {Successful}/{Total} successful", 
+                request.NewStatus, batchResult.SuccessfulTasks, batchResult.TotalTasks);
+
+            return Ok(batchResult);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error performing bulk status update");
+            return StatusCode(StatusCodes.Status500InternalServerError, new ProblemDetails
+            {
+                Title = "Internal server error",
+                Detail = "An error occurred while performing the bulk status update",
+                Status = StatusCodes.Status500InternalServerError
+            });
+        }
+    }
+
+    /// <summary>
     /// Search tasks with full-text search capabilities
     /// </summary>
     /// <param name="query">Search query</param>
@@ -967,6 +1246,60 @@ public class TasksController : ControllerBase
     }
 
     /// <summary>
+    /// Get task scheduling suggestions and recommendations
+    /// </summary>
+    /// <param name="targetDate">Target date for scheduling (optional)</param>
+    /// <param name="maxSuggestions">Maximum number of suggestions to return</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Task scheduling recommendations</returns>
+    [HttpGet("scheduling")]
+    [ProducesResponseType(typeof(TaskSchedulingResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    public async Task<ActionResult<TaskSchedulingResponse>> GetTaskScheduling(
+        [FromQuery] DateTime? targetDate = null,
+        [FromQuery] int maxSuggestions = 20,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var userId = GetCurrentUserId();
+            if (!userId.HasValue)
+            {
+                return Unauthorized("User identity not found");
+            }
+
+            var query = new GetTaskSchedulingQuery(userId.Value, targetDate, maxSuggestions);
+
+            _logger.LogInformation("Getting task scheduling suggestions for user {UserId} for date {TargetDate}", 
+                userId.Value, targetDate?.ToString("yyyy-MM-dd") ?? "today");
+
+            var result = await _mediator.Send(query, cancellationToken);
+            if (!result.IsSuccess)
+            {
+                _logger.LogWarning("Failed to get task scheduling for user {UserId}: {Error}", userId.Value, result.Error);
+                return BadRequest(new ProblemDetails
+                {
+                    Title = "Failed to retrieve task scheduling",
+                    Detail = result.Error,
+                    Status = StatusCodes.Status400BadRequest
+                });
+            }
+
+            return Ok(result.Value);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting task scheduling suggestions");
+            return StatusCode(StatusCodes.Status500InternalServerError, new ProblemDetails
+            {
+                Title = "Internal server error",
+                Detail = "An error occurred while retrieving task scheduling suggestions",
+                Status = StatusCodes.Status500InternalServerError
+            });
+        }
+    }
+
+    /// <summary>
     /// Helper method to get current user ID from JWT claims
     /// </summary>
     /// <returns>User ID if found, null otherwise</returns>
@@ -975,6 +1308,27 @@ public class TasksController : ControllerBase
         var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
         return Guid.TryParse(userIdClaim, out var userId) ? userId : null;
     }
+}
+
+/// <summary>
+/// Task action execution request
+/// </summary>
+public class TaskActionRequest
+{
+    /// <summary>
+    /// Action ID to execute (MarkCompleted, MarkInProgress, MarkArchived, etc.)
+    /// </summary>
+    public string ActionId { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Optional parameters for the action
+    /// </summary>
+    public Dictionary<string, object>? Parameters { get; set; }
+
+    /// <summary>
+    /// Optional reason for the action
+    /// </summary>
+    public string? Reason { get; set; }
 }
 
 /// <summary>
@@ -1015,6 +1369,27 @@ public class TaskCategoryInfo
 }
 
 /// <summary>
+/// Task status information
+/// </summary>
+public class TaskStatusInfo
+{
+    /// <summary>
+    /// Status ID
+    /// </summary>
+    public int Id { get; set; }
+
+    /// <summary>
+    /// Status name
+    /// </summary>
+    public string Name { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Status description
+    /// </summary>
+    public string Description { get; set; } = string.Empty;
+}
+
+/// <summary>
 /// Task batch operation request
 /// </summary>
 public class TaskBatchOperationRequest
@@ -1028,6 +1403,27 @@ public class TaskBatchOperationRequest
     /// Task IDs to operate on
     /// </summary>
     public IEnumerable<Guid> TaskIds { get; set; } = new List<Guid>();
+}
+
+/// <summary>
+/// Batch status update request
+/// </summary>
+public class TaskBatchStatusUpdateRequest
+{
+    /// <summary>
+    /// New status to set for all tasks (0=Pending, 1=InProgress, 2=Completed, 3=Archived)
+    /// </summary>
+    public int NewStatus { get; set; }
+
+    /// <summary>
+    /// Task IDs to update
+    /// </summary>
+    public IEnumerable<Guid> TaskIds { get; set; } = new List<Guid>();
+
+    /// <summary>
+    /// Optional reason for the status change
+    /// </summary>
+    public string? Reason { get; set; }
 }
 
 /// <summary>

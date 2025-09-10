@@ -870,6 +870,350 @@ public class TasksControllerTests : IClassFixture<WebApplicationFactory<Program>
 
     #endregion
 
+    #region POST /api/v1/tasks/{id}/actions Tests
+
+    [Fact]
+    public async Task ExecuteTaskAction_Should_Return_Ok_With_Valid_Action()
+    {
+        // Arrange
+        var token = await GetAuthTokenAsync();
+        var task = await CreateTestTaskAsync(token);
+        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        
+        var actionRequest = new
+        {
+            ActionId = "MarkCompleted",
+            Parameters = new Dictionary<string, object>(),
+            Reason = "Task completed"
+        };
+
+        var content = new StringContent(
+            JsonSerializer.Serialize(actionRequest, _jsonOptions),
+            Encoding.UTF8,
+            "application/json");
+
+        // Act
+        var response = await _client.PostAsync($"/api/v1/tasks/{task.Id}/actions", content);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var responseContent = await response.Content.ReadAsStringAsync();
+        var result = JsonSerializer.Deserialize<TaskDto>(responseContent, _jsonOptions);
+        result!.Status.Should().Be(2); // Completed
+    }
+
+    [Fact]
+    public async Task ExecuteTaskAction_Should_Return_NotFound_With_Invalid_Task_Id()
+    {
+        // Arrange
+        var token = await GetAuthTokenAsync();
+        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        var invalidId = Guid.NewGuid();
+        
+        var actionRequest = new
+        {
+            ActionId = "MarkCompleted",
+            Parameters = new Dictionary<string, object>()
+        };
+
+        var content = new StringContent(
+            JsonSerializer.Serialize(actionRequest, _jsonOptions),
+            Encoding.UTF8,
+            "application/json");
+
+        // Act
+        var response = await _client.PostAsync($"/api/v1/tasks/{invalidId}/actions", content);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    [Fact]
+    public async Task ExecuteTaskAction_Should_Return_BadRequest_With_Invalid_Action()
+    {
+        // Arrange
+        var token = await GetAuthTokenAsync();
+        var task = await CreateTestTaskAsync(token);
+        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        
+        var actionRequest = new
+        {
+            ActionId = "InvalidAction",
+            Parameters = new Dictionary<string, object>()
+        };
+
+        var content = new StringContent(
+            JsonSerializer.Serialize(actionRequest, _jsonOptions),
+            Encoding.UTF8,
+            "application/json");
+
+        // Act
+        var response = await _client.PostAsync($"/api/v1/tasks/{task.Id}/actions", content);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
+    #endregion
+
+    #region GET /api/v1/tasks/status-options Tests
+
+    [Fact]
+    public async Task GetStatusOptions_Should_Return_Ok_With_Status_List()
+    {
+        // Arrange
+        var token = await GetAuthTokenAsync();
+        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+        // Act
+        var response = await _client.GetAsync("/api/v1/tasks/status-options");
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var content = await response.Content.ReadAsStringAsync();
+        content.Should().Contain("Pending");
+        content.Should().Contain("InProgress");
+        content.Should().Contain("Completed");
+        content.Should().Contain("Archived");
+    }
+
+    [Fact]
+    public async Task GetStatusOptions_Should_Return_Unauthorized_Without_Token()
+    {
+        // Act
+        var response = await _client.GetAsync("/api/v1/tasks/status-options");
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+
+    #endregion
+
+    #region GET /api/v1/tasks/{id}/workflow Tests
+
+    [Fact]
+    public async Task GetTaskWorkflow_Should_Return_Ok_With_Valid_Task_Id()
+    {
+        // Arrange
+        var token = await GetAuthTokenAsync();
+        var task = await CreateTestTaskAsync(token);
+        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+        // Act
+        var response = await _client.GetAsync($"/api/v1/tasks/{task.Id}/workflow");
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var content = await response.Content.ReadAsStringAsync();
+        content.Should().NotBeEmpty();
+    }
+
+    [Fact]
+    public async Task GetTaskWorkflow_Should_Return_NotFound_With_Invalid_Task_Id()
+    {
+        // Arrange
+        var token = await GetAuthTokenAsync();
+        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        var invalidId = Guid.NewGuid();
+
+        // Act
+        var response = await _client.GetAsync($"/api/v1/tasks/{invalidId}/workflow");
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    [Fact]
+    public async Task GetTaskWorkflow_Should_Return_Unauthorized_Without_Token()
+    {
+        // Arrange
+        var validId = Guid.NewGuid();
+
+        // Act
+        var response = await _client.GetAsync($"/api/v1/tasks/{validId}/workflow");
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+
+    #endregion
+
+    #region GET /api/v1/tasks/scheduling Tests
+
+    [Fact]
+    public async Task GetTaskScheduling_Should_Return_Ok_With_Valid_Parameters()
+    {
+        // Arrange
+        var token = await GetAuthTokenAsync();
+        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+        // Act
+        var response = await _client.GetAsync("/api/v1/tasks/scheduling?maxSuggestions=10");
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var content = await response.Content.ReadAsStringAsync();
+        content.Should().NotBeEmpty();
+    }
+
+    [Fact]
+    public async Task GetTaskScheduling_Should_Return_Ok_With_Target_Date()
+    {
+        // Arrange
+        var token = await GetAuthTokenAsync();
+        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        var targetDate = DateTime.UtcNow.AddDays(1).ToString("yyyy-MM-ddTHH:mm:ss.fffZ");
+
+        // Act
+        var response = await _client.GetAsync($"/api/v1/tasks/scheduling?targetDate={Uri.EscapeDataString(targetDate)}");
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var content = await response.Content.ReadAsStringAsync();
+        content.Should().NotBeEmpty();
+    }
+
+    [Fact]
+    public async Task GetTaskScheduling_Should_Return_Unauthorized_Without_Token()
+    {
+        // Act
+        var response = await _client.GetAsync("/api/v1/tasks/scheduling");
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+
+    #endregion
+
+    #region POST /api/v1/tasks/batch/update-status Tests
+
+    [Fact]
+    public async Task BatchUpdateStatus_Should_Update_Multiple_Task_Statuses()
+    {
+        // Arrange
+        var token = await GetAuthTokenAsync();
+        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        
+        // Create multiple tasks
+        var task1 = await CreateTestTaskAsync(token, "Task 1 for Status Update");
+        var task2 = await CreateTestTaskAsync(token, "Task 2 for Status Update");
+        var task3 = await CreateTestTaskAsync(token, "Task 3 for Status Update");
+        
+        var batchStatusRequest = new
+        {
+            NewStatus = 1, // InProgress
+            TaskIds = new[] { task1.Id, task2.Id, task3.Id },
+            Reason = "Batch status update test"
+        };
+
+        var content = new StringContent(
+            JsonSerializer.Serialize(batchStatusRequest, _jsonOptions),
+            Encoding.UTF8,
+            "application/json");
+
+        // Act
+        var response = await _client.PostAsync("/api/v1/tasks/batch/update-status", content);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var responseContent = await response.Content.ReadAsStringAsync();
+        responseContent.Should().Contain("\"operation\":\"update-status-1\"");
+        responseContent.Should().Contain("\"successfulTasks\":3");
+        
+        // Verify tasks status updated
+        var getResponse = await _client.GetAsync($"/api/v1/tasks/{task1.Id}");
+        var taskContent = await getResponse.Content.ReadAsStringAsync();
+        var updatedTask = JsonSerializer.Deserialize<TaskDto>(taskContent, _jsonOptions);
+        updatedTask!.Status.Should().Be(1); // InProgress
+    }
+
+    [Fact]
+    public async Task BatchUpdateStatus_Should_Return_BadRequest_With_Invalid_Status()
+    {
+        // Arrange
+        var token = await GetAuthTokenAsync();
+        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        
+        var task = await CreateTestTaskAsync(token);
+        
+        var batchStatusRequest = new
+        {
+            NewStatus = 5, // Invalid status (should be 0-3)
+            TaskIds = new[] { task.Id }
+        };
+
+        var content = new StringContent(
+            JsonSerializer.Serialize(batchStatusRequest, _jsonOptions),
+            Encoding.UTF8,
+            "application/json");
+
+        // Act
+        var response = await _client.PostAsync("/api/v1/tasks/batch/update-status", content);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        var responseContent = await response.Content.ReadAsStringAsync();
+        responseContent.Should().Contain("Invalid status");
+    }
+
+    [Fact]
+    public async Task BatchUpdateStatus_Should_Handle_Mix_Of_Valid_And_Invalid_Tasks()
+    {
+        // Arrange
+        var token = await GetAuthTokenAsync();
+        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        
+        // Create one valid task
+        var validTask = await CreateTestTaskAsync(token, "Valid Task");
+        var invalidTaskId = Guid.NewGuid(); // Task that doesn't exist
+        
+        var batchStatusRequest = new
+        {
+            NewStatus = 2, // Completed
+            TaskIds = new[] { validTask.Id, invalidTaskId },
+            Reason = "Mixed batch test"
+        };
+
+        var content = new StringContent(
+            JsonSerializer.Serialize(batchStatusRequest, _jsonOptions),
+            Encoding.UTF8,
+            "application/json");
+
+        // Act
+        var response = await _client.PostAsync("/api/v1/tasks/batch/update-status", content);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var responseContent = await response.Content.ReadAsStringAsync();
+        responseContent.Should().Contain("\"totalTasks\":2");
+        responseContent.Should().Contain("\"successfulTasks\":1");
+        responseContent.Should().Contain("\"failedTasks\":1");
+    }
+
+    [Fact]
+    public async Task BatchUpdateStatus_Should_Return_Unauthorized_Without_Token()
+    {
+        // Arrange
+        var batchStatusRequest = new
+        {
+            NewStatus = 2, // Completed
+            TaskIds = new[] { Guid.NewGuid() }
+        };
+
+        var content = new StringContent(
+            JsonSerializer.Serialize(batchStatusRequest, _jsonOptions),
+            Encoding.UTF8,
+            "application/json");
+
+        // Act
+        var response = await _client.PostAsync("/api/v1/tasks/batch/update-status", content);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+
+    #endregion
+
     #region Dispose Pattern
 
     /// <summary>
