@@ -214,7 +214,6 @@ public class LinkContactToTaskCommandHandlerTests
     [InlineData("")]
     [InlineData("   ")]
     [InlineData("InvalidRole")]
-    [InlineData("OWNER")] // Case sensitivity test
     public async Task Handle_Should_Return_Failure_For_Invalid_Role(string invalidRole)
     {
         // Arrange
@@ -228,6 +227,46 @@ public class LinkContactToTaskCommandHandlerTests
         result.Error.Should().Contain("Invalid role");
         
         _mockTaskRepository.Verify(x => x.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Theory]
+    [InlineData("OWNER", "Owner")]
+    [InlineData("COLLABORATOR", "Collaborator")]  
+    [InlineData("REVIEWER", "Reviewer")]
+    [InlineData("OBSERVER", "Observer")]
+    [InlineData("owner", "Owner")]
+    [InlineData("collaborator", "Collaborator")]
+    [InlineData("MiXeD CaSe", "InvalidRole")] // This should fail - mixed case invalid role
+    public async Task Handle_Should_Accept_Case_Insensitive_Valid_Roles(string inputRole, string expectedOutcome)
+    {
+        // Arrange
+        var userId = Guid.NewGuid();
+        var task = CreateValidTask(userId);
+        var contact = CreateValidContact(userId);
+        var command = CreateValidCommand(task.Id, contact.Id, userId, inputRole);
+
+        if (expectedOutcome == "InvalidRole")
+        {
+            // Act
+            var result = await _handler.Handle(command, CancellationToken.None);
+
+            // Assert - should fail for invalid roles
+            result.IsSuccess.Should().BeFalse();
+            result.Error.Should().Contain("Invalid role");
+        }
+        else
+        {
+            // Setup for successful linking
+            SetupSuccessfulLinking(task, contact);
+
+            // Act
+            var result = await _handler.Handle(command, CancellationToken.None);
+
+            // Assert - should succeed for valid roles regardless of case
+            result.IsSuccess.Should().BeTrue();
+            result.Value.Should().NotBeNull();
+            result.Value.Role.Should().Be(inputRole); // Should preserve original case
+        }
     }
 
     #endregion
