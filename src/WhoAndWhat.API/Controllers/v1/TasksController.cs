@@ -972,6 +972,18 @@ public class TasksController : ControllerBase
                 return Unauthorized("User identity not found");
             }
 
+            // Validate operation before processing
+            var validOperations = new[] { TaskBatchOperations.Delete, TaskBatchOperations.Complete, TaskBatchOperations.Archive };
+            if (!validOperations.Contains(request.Operation))
+            {
+                return BadRequest(new ProblemDetails
+                {
+                    Title = "Invalid batch operation",
+                    Detail = $"Operation '{request.Operation}' is not supported. Valid operations are: {GetValidBatchOperations()}",
+                    Status = StatusCodes.Status400BadRequest
+                });
+            }
+
             _logger.LogInformation("Performing batch operation {Operation} on {TaskCount} tasks for user {UserId}", 
                 request.Operation, request.TaskIds.Count(), userId.Value);
 
@@ -986,7 +998,7 @@ public class TasksController : ControllerBase
                         TaskBatchOperations.Delete => new DeleteTaskCommand(taskId, userId.Value),
                         TaskBatchOperations.Complete => new ExecuteTaskActionCommand(taskId, TaskActionIds.MarkCompleted, new Dictionary<string, object>(), userId.Value),
                         TaskBatchOperations.Archive => new ExecuteTaskActionCommand(taskId, TaskActionIds.MarkArchived, new Dictionary<string, object>(), userId.Value),
-                        _ => throw new ArgumentException($"Unknown operation: {request.Operation}")
+                        _ => throw new InvalidOperationException($"Unexpected operation: {request.Operation}. This should have been caught by validation.")
                     };
 
                     var result = await _mediator.Send(command, cancellationToken);
@@ -1317,6 +1329,20 @@ public class TasksController : ControllerBase
     {
         var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
         return Guid.TryParse(userIdClaim, out var userId) ? userId : null;
+    }
+
+    /// <summary>
+    /// Gets a comma-separated list of valid batch operations for error messages
+    /// </summary>
+    /// <returns>Formatted string of valid operations</returns>
+    private static string GetValidBatchOperations()
+    {
+        return string.Join(", ", new[]
+        {
+            $"'{TaskBatchOperations.Delete}'",
+            $"'{TaskBatchOperations.Complete}'", 
+            $"'{TaskBatchOperations.Archive}'"
+        });
     }
 }
 
