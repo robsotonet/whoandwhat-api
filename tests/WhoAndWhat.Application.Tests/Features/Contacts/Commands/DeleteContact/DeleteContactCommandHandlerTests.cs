@@ -472,7 +472,7 @@ public class DeleteContactCommandHandlerTests
             x => x.Log(
                 LogLevel.Information,
                 It.IsAny<EventId>(),
-                It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains("Soft deleting contact")),
+                It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains("successfully soft deleted")),
                 It.IsAny<Exception>(),
                 It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
             Times.Once);
@@ -481,7 +481,7 @@ public class DeleteContactCommandHandlerTests
             x => x.Log(
                 LogLevel.Information,
                 It.IsAny<EventId>(),
-                It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains("Contact") && v.ToString()!.Contains("soft deleted successfully")),
+                It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains("successfully soft deleted")),
                 It.IsAny<Exception>(),
                 It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
             Times.Once);

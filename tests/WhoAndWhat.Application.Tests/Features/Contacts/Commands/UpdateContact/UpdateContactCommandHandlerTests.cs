@@ -232,7 +232,7 @@ public class UpdateContactCommandHandlerTests
 
         // Assert
         result.IsSuccess.Should().BeFalse();
-        result.Error.Should().Contain("Name is required");
+        result.Error.Should().Contain("must not be empty");
         
         _mockContactRepository.Verify(x => x.GetByIdAsync(existingContact.Id, It.IsAny<CancellationToken>()), Times.Once);
         _mockContactRepository.Verify(x => x.UpdateAsync(It.IsAny<Contact>(), It.IsAny<CancellationToken>()), Times.Never);
@@ -265,7 +265,7 @@ public class UpdateContactCommandHandlerTests
 
         // Assert
         result.IsSuccess.Should().BeFalse();
-        result.Error.Should().Contain("valid email");
+        result.Error.Should().Contain("valid email address");
         
         _mockContactRepository.Verify(x => x.UpdateAsync(It.IsAny<Contact>(), It.IsAny<CancellationToken>()), Times.Never);
     }

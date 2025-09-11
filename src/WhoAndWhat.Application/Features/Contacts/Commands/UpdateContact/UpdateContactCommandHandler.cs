@@ -30,6 +30,17 @@ public class UpdateContactCommandHandler : IRequestHandler<UpdateContactCommand,
     {
         try
         {
+            // Validate input parameters
+            if (request.UserId == Guid.Empty)
+            {
+                return Result<ContactDto>.Failure("User ID is required");
+            }
+
+            if (request.ContactId == Guid.Empty)
+            {
+                return Result<ContactDto>.Failure("Contact ID is required");
+            }
+
             _logger.LogInformation("Updating contact {ContactId} for user {UserId}", 
                 request.ContactId, request.UserId);
 
@@ -65,7 +76,7 @@ public class UpdateContactCommandHandler : IRequestHandler<UpdateContactCommand,
             }
 
             // Update contact properties
-            existingContact.Name = request.Name.Trim();
+            existingContact.Name = request.Name?.Trim() ?? string.Empty;
             existingContact.Email = string.IsNullOrWhiteSpace(request.Email) ? null : request.Email.Trim().ToLowerInvariant();
             existingContact.Phone = string.IsNullOrWhiteSpace(request.Phone) ? null : request.Phone.Trim();
             existingContact.RelationshipType = request.RelationshipType;

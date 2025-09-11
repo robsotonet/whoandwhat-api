@@ -24,6 +24,22 @@ public class GetContactsQueryHandler : IRequestHandler<GetContactsQuery, Result<
     {
         try
         {
+            // Validate input parameters
+            if (request.UserId == Guid.Empty)
+            {
+                return Result<ContactSearchResult>.Failure("User ID is required");
+            }
+
+            if (request.PageSize <= 0 || request.PageSize > 100)
+            {
+                return Result<ContactSearchResult>.Failure("Page size must be between 1 and 100");
+            }
+
+            if (request.PageNumber <= 0)
+            {
+                return Result<ContactSearchResult>.Failure("Page number must be greater than 0");
+            }
+
             _logger.LogInformation("Getting contacts for user {UserId} with search: '{Search}'", 
                 request.UserId, request.Search);
 

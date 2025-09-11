@@ -30,6 +30,12 @@ public class CreateContactCommandHandler : IRequestHandler<CreateContactCommand,
     {
         try
         {
+            // Validate input parameters
+            if (request.UserId == Guid.Empty)
+            {
+                return Result<ContactDto>.Failure("User ID is required");
+            }
+
             _logger.LogInformation("Creating contact for user {UserId} with name '{Name}'", 
                 request.UserId, request.Name);
 
@@ -44,7 +50,7 @@ public class CreateContactCommandHandler : IRequestHandler<CreateContactCommand,
             {
                 Id = Guid.NewGuid(),
                 UserId = request.UserId,
-                Name = request.Name.Trim(),
+                Name = request.Name?.Trim() ?? string.Empty,
                 Email = string.IsNullOrWhiteSpace(request.Email) ? null : request.Email.Trim().ToLowerInvariant(),
                 Phone = string.IsNullOrWhiteSpace(request.Phone) ? null : request.Phone.Trim(),
                 RelationshipType = request.RelationshipType,

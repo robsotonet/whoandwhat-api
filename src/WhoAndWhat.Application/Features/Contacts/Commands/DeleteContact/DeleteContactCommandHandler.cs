@@ -22,6 +22,17 @@ public class DeleteContactCommandHandler : IRequestHandler<DeleteContactCommand,
     {
         try
         {
+            // Validate input parameters
+            if (request.UserId == Guid.Empty)
+            {
+                return Result<bool>.Failure("User ID is required");
+            }
+
+            if (request.ContactId == Guid.Empty)
+            {
+                return Result<bool>.Failure("Contact ID is required");
+            }
+
             _logger.LogInformation("Attempting to delete contact {ContactId} for user {UserId}", 
                 request.ContactId, request.UserId);
 

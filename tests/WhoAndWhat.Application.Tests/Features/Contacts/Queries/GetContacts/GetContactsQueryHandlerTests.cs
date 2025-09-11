@@ -106,6 +106,31 @@ public class GetContactsQueryHandlerTests
     }
 
     /// <summary>
+    /// Creates a list of test contacts with the specified count for pagination testing
+    /// </summary>
+    private static List<Contact> CreateTestContactsWithCount(Guid userId, int count)
+    {
+        var contacts = new List<Contact>();
+        for (int i = 0; i < count; i++)
+        {
+            contacts.Add(new Contact
+            {
+                Id = Guid.NewGuid(),
+                UserId = userId,
+                Name = $"Test Contact {i + 1}",
+                Email = $"contact{i + 1}@example.com",
+                Phone = $"+1{i:000}000{i:0000}",
+                RelationshipType = (i % 4) + 1, // Cycle through relationship types 1-4
+                CreatedAt = DateTime.UtcNow.AddDays(-i),
+                UpdatedAt = DateTime.UtcNow.AddDays(-i / 2.0),
+                IsDeleted = false,
+                Tasks = new List<AppTask>()
+            });
+        }
+        return contacts;
+    }
+
+    /// <summary>
     /// Sets up successful repository mocks for pagination queries
     /// </summary>
     private void SetupSuccessfulGetContactsRepositoryMocks(List<Contact> contacts)
@@ -278,7 +303,10 @@ public class GetContactsQueryHandlerTests
             // Arrange
             var userId = Guid.NewGuid();
             var query = CreateValidGetContactsQuery(userId, pageSize: testCase.PageSize);
-            SetupSuccessfulGetContactsRepositoryMocks(new List<Contact>());
+            
+            // Create the right number of contacts for each test case
+            var contacts = CreateTestContactsWithCount(userId, testCase.TotalCount);
+            SetupSuccessfulGetContactsRepositoryMocks(contacts);
 
             // Act
             var result = await _handler.Handle(query, CancellationToken.None);

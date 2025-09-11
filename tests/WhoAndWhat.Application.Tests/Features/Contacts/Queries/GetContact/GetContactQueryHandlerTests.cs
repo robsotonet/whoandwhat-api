@@ -123,8 +123,8 @@ public class GetContactQueryHandlerTests
         return contact;
     }
 
-    private static GetContactQuery CreateValidQuery(Guid? contactId = null, Guid? userId = null, bool includeTasks = false, bool includeDeleted = false) => 
-        new(contactId ?? Guid.NewGuid(), userId ?? Guid.NewGuid(), includeTasks, includeDeleted);
+    private static GetContactQuery CreateValidQuery(Guid? contactId = null, Guid? userId = null, bool includeDeleted = false, bool includeTasks = false) => 
+        new(contactId ?? Guid.NewGuid(), userId ?? Guid.NewGuid(), includeDeleted, includeTasks);
 
     #endregion
 

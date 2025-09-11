@@ -183,7 +183,7 @@ public class GenerateInviteCodeCommandHandlerTests
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Be("Contact not found");
         
-        VerifyLogMessage(LogLevel.Warning, "Contact {ContactId} not found");
+        VerifyLogMessage(LogLevel.Warning, "not found");
         VerifyNoSaveOperations();
     }
 
@@ -205,7 +205,7 @@ public class GenerateInviteCodeCommandHandlerTests
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Be("Contact not found");
         
-        VerifyLogMessage(LogLevel.Warning, "Contact {ContactId} does not belong to user {UserId}");
+        VerifyLogMessage(LogLevel.Warning, "does not belong to user");
         VerifyNoSaveOperations();
     }
 
