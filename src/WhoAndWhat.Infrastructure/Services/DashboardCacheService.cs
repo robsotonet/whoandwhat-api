@@ -1,3 +1,4 @@
+using System.Runtime.CompilerServices;
 using System.Text.Json;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Logging;
@@ -683,9 +684,10 @@ public class DashboardCacheService : IDashboardCacheService
             
             var keysToDelete = new List<RedisKey>();
             const int batchSize = 100; // Process keys in batches to avoid memory issues
+            var totalDeleted = 0;
             
             // Use SCAN instead of KEYS for better performance in production
-            await foreach (var key in ScanDashboardKeysAsync(server, pattern, batchSize))
+            await foreach (var key in ScanDashboardKeysAsync(server, pattern, batchSize, cancellationToken))
             {
                 keysToDelete.Add(key);
                 
@@ -693,6 +695,7 @@ public class DashboardCacheService : IDashboardCacheService
                 if (keysToDelete.Count >= batchSize)
                 {
                     await _database.KeyDeleteAsync(keysToDelete.ToArray());
+                    totalDeleted += keysToDelete.Count;
                     keysToDelete.Clear();
                 }
                 
@@ -704,9 +707,8 @@ public class DashboardCacheService : IDashboardCacheService
             if (keysToDelete.Count > 0)
             {
                 await _database.KeyDeleteAsync(keysToDelete.ToArray());
+                totalDeleted += keysToDelete.Count;
             }
-            
-            var totalDeleted = keysToDelete.Count;
             if (totalDeleted > 0)
             {
                 _logger.LogWarning("Cleared {KeyCount} dashboard cache keys using SCAN pattern", totalDeleted);
@@ -728,31 +730,71 @@ public class DashboardCacheService : IDashboardCacheService
 
     /// <summary>
     /// Scans dashboard cache keys using Redis SCAN command for better performance than KEYS.
-    /// Uses cursor-based iteration to avoid blocking the Redis server.
+    /// Uses true cursor-based iteration to avoid blocking the Redis server in production environments.
+    /// Implements the Redis SCAN protocol: SCAN cursor MATCH pattern COUNT count
     /// </summary>
-    private async IAsyncEnumerable<RedisKey> ScanDashboardKeysAsync(IServer server, string pattern, int count = 100)
+    private async IAsyncEnumerable<RedisKey> ScanDashboardKeysAsync(IServer server, string pattern, int count = 100, [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         var cursor = 0L;
         var database = _database.Database;
         
         do
         {
-            var result = server.Keys(database, pattern, count, cursor, CommandFlags.None);
-            var keys = result.ToArray();
+            // Check for cancellation before each SCAN operation
+            cancellationToken.ThrowIfCancellationRequested();
             
-            foreach (var key in keys)
+            try
             {
-                yield return key;
+                // Execute true Redis SCAN command: SCAN [cursor] MATCH [pattern] COUNT [count]
+                var result = await Task.Run(() => 
+                    server.Execute("SCAN", cursor, "MATCH", pattern, "COUNT", count), 
+                    cancellationToken);
+                
+                // SCAN returns array: [new_cursor, [keys_array]]
+                var resultArray = (RedisResult[])result;
+                if (resultArray.Length < 2)
+                {
+                    _logger.LogWarning("Invalid SCAN response format from Redis server");
+                    yield break;
+                }
+                
+                // Parse the new cursor for next iteration
+                var nextCursorStr = (string)resultArray[0];
+                if (!long.TryParse(nextCursorStr, out cursor))
+                {
+                    _logger.LogError("Failed to parse SCAN cursor: {Cursor}", nextCursorStr);
+                    yield break;
+                }
+                
+                // Extract and yield keys from the response
+                var keysArray = (RedisResult[])resultArray[1];
+                foreach (var keyResult in keysArray)
+                {
+                    var keyStr = (string)keyResult;
+                    if (!string.IsNullOrEmpty(keyStr))
+                    {
+                        yield return (RedisKey)keyStr;
+                    }
+                }
+                
+                // Log progress for monitoring (only for large scans)
+                if (keysArray.Length > 0 && cursor % 10000 == 0)
+                {
+                    _logger.LogDebug("SCAN progress: cursor={Cursor}, keys_found={KeyCount}", cursor, keysArray.Length);
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                _logger.LogInformation("Redis SCAN operation cancelled at cursor {Cursor}", cursor);
+                yield break;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error during Redis SCAN at cursor {Cursor}", cursor);
+                yield break;
             }
             
-            // Note: StackExchange.Redis doesn't expose SCAN cursor directly in the Keys method
-            // This implementation uses the Keys method with pagination which is more efficient than
-            // getting all keys at once, but for true SCAN implementation, we would need to use
-            // the Execute method directly. This is a compromise that provides better performance
-            // than the original KEYS(*) approach while maintaining code readability.
-            cursor = 0; // This will exit after first iteration - see note above
-            
-        } while (cursor != 0);
+        } while (cursor != 0); // Continue until cursor returns to 0 (scan complete)
     }
 
     public async Task<int> PrecomputeDashboardDataAsync(IEnumerable<Guid> userIds, CancellationToken cancellationToken = default)
