@@ -18,6 +18,7 @@ public class CreateContactCommandHandlerTests
     private readonly ContactValidator _contactValidator;
     private readonly Mock<ILogger<CreateContactCommandHandler>> _mockLogger;
     private readonly CreateContactCommandHandler _handler;
+    private Contact? _capturedContact;
 
     public CreateContactCommandHandlerTests()
     {
@@ -46,16 +47,14 @@ public class CreateContactCommandHandlerTests
     /// <summary>
     /// Sets up repository mock to capture the created contact
     /// </summary>
-    /// <param name="capturedContact">Variable to capture the contact</param>
-    private void SetupContactCaptureRepositoryMocks(out Contact capturedContact)
+    private void SetupContactCaptureRepositoryMocks()
     {
-        Contact captured = null!;
+        _capturedContact = null;
         _mockContactRepository.Setup(x => x.AddAsync(It.IsAny<Contact>(), It.IsAny<CancellationToken>()))
-            .Callback<Contact, CancellationToken>((contact, ct) => captured = contact)
+            .Callback<Contact, CancellationToken>((contact, ct) => _capturedContact = contact)
             .Returns(Task.CompletedTask);
         _mockContactRepository.Setup(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(1);
-        capturedContact = captured;
     }
 
     /// <summary>
@@ -116,24 +115,24 @@ public class CreateContactCommandHandlerTests
             UserId: userId
         );
 
-        SetupContactCaptureRepositoryMocks(out var capturedContact);
+        SetupContactCaptureRepositoryMocks();
 
         // Act
         var result = await _handler.Handle(command, CancellationToken.None);
 
         // Assert
         result.IsSuccess.Should().BeTrue();
-        capturedContact.Should().NotBeNull();
-        capturedContact.Name.Should().Be("Jane Smith");
-        capturedContact.Email.Should().Be("jane.smith@example.com");
-        capturedContact.Phone.Should().Be("+0987654321");
-        capturedContact.RelationshipType.Should().Be(2);
-        capturedContact.UserId.Should().Be(userId);
-        capturedContact.Id.Should().NotBe(Guid.Empty);
-        capturedContact.CreatedAt.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(5));
-        capturedContact.UpdatedAt.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(5));
-        capturedContact.IsDeleted.Should().BeFalse();
-        capturedContact.DeletedAt.Should().BeNull();
+        _capturedContact.Should().NotBeNull();
+        _capturedContact!.Name.Should().Be("Jane Smith");
+        _capturedContact.Email.Should().Be("jane.smith@example.com");
+        _capturedContact.Phone.Should().Be("+0987654321");
+        _capturedContact.RelationshipType.Should().Be(2);
+        _capturedContact.UserId.Should().Be(userId);
+        _capturedContact.Id.Should().NotBe(Guid.Empty);
+        _capturedContact.CreatedAt.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(5));
+        _capturedContact.UpdatedAt.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(5));
+        _capturedContact.IsDeleted.Should().BeFalse();
+        _capturedContact.DeletedAt.Should().BeNull();
     }
 
     [Fact]
@@ -330,8 +329,8 @@ public class CreateContactCommandHandlerTests
     [Fact]
     public async Task Handle_Should_Handle_Various_Relationship_Types()
     {
-        // Arrange & Act & Assert for different relationship types
-        for (int relationshipType = 0; relationshipType <= 5; relationshipType++)
+        // Arrange & Act & Assert for different relationship types (0-3: Family, Friend, Colleague, Other)
+        for (int relationshipType = 0; relationshipType <= 3; relationshipType++)
         {
             var command = new CreateContactCommand(
                 Name: $"Contact {relationshipType}",

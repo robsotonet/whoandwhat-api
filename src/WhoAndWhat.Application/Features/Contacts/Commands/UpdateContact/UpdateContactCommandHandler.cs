@@ -109,7 +109,7 @@ public class UpdateContactCommandHandler : IRequestHandler<UpdateContactCommand,
             }
 
             // Save the updated contact
-            await _contactRepository.UpdateAsync(existingContact);
+            await _contactRepository.UpdateAsync(existingContact, cancellationToken);
             await _contactRepository.SaveChangesAsync(cancellationToken);
 
             _logger.LogInformation("Contact {ContactId} updated successfully for user {UserId}", 

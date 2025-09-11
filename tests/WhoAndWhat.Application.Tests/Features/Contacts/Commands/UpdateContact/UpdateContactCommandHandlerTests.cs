@@ -18,6 +18,7 @@ public class UpdateContactCommandHandlerTests
     private readonly ContactValidator _contactValidator;
     private readonly Mock<ILogger<UpdateContactCommandHandler>> _mockLogger;
     private readonly UpdateContactCommandHandler _handler;
+    private Contact? _capturedContact;
 
     public UpdateContactCommandHandlerTests()
     {
@@ -67,17 +68,16 @@ public class UpdateContactCommandHandlerTests
     /// <summary>
     /// Sets up repository mock to capture the updated contact
     /// </summary>
-    private void SetupContactCaptureUpdateRepositoryMocks(Contact existingContact, out Contact capturedContact)
+    private void SetupContactCaptureUpdateRepositoryMocks(Contact existingContact)
     {
-        Contact captured = null!;
+        _capturedContact = null;
         _mockContactRepository.Setup(x => x.GetByIdAsync(existingContact.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(existingContact);
         _mockContactRepository.Setup(x => x.UpdateAsync(It.IsAny<Contact>(), It.IsAny<CancellationToken>()))
-            .Callback<Contact, CancellationToken>((contact, ct) => captured = contact)
+            .Callback<Contact, CancellationToken>((contact, ct) => _capturedContact = contact)
             .Returns(Task.CompletedTask);
         _mockContactRepository.Setup(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(1);
-        capturedContact = captured;
     }
 
     private static UpdateContactCommand CreateValidUpdateCommand(Guid? contactId = null, Guid? userId = null) => new(
@@ -133,24 +133,24 @@ public class UpdateContactCommandHandlerTests
             UserId: userId
         );
 
-        SetupContactCaptureUpdateRepositoryMocks(existingContact, out var capturedContact);
+        SetupContactCaptureUpdateRepositoryMocks(existingContact);
 
         // Act
         var result = await _handler.Handle(command, CancellationToken.None);
 
         // Assert
         result.IsSuccess.Should().BeTrue();
-        capturedContact.Should().NotBeNull();
-        capturedContact.Id.Should().Be(contactId);
-        capturedContact.UserId.Should().Be(userId);
-        capturedContact.Name.Should().Be("Jane Smith Updated");
-        capturedContact.Email.Should().Be("jane.updated@example.com");
-        capturedContact.Phone.Should().Be("+5551234567");
-        capturedContact.RelationshipType.Should().Be(3);
-        capturedContact.UpdatedAt.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(5));
-        capturedContact.IsDeleted.Should().BeFalse();
+        _capturedContact.Should().NotBeNull();
+        _capturedContact!.Id.Should().Be(contactId);
+        _capturedContact.UserId.Should().Be(userId);
+        _capturedContact.Name.Should().Be("Jane Smith Updated");
+        _capturedContact.Email.Should().Be("jane.updated@example.com");
+        _capturedContact.Phone.Should().Be("+5551234567");
+        _capturedContact.RelationshipType.Should().Be(3);
+        _capturedContact.UpdatedAt.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(5));
+        _capturedContact.IsDeleted.Should().BeFalse();
         // CreatedAt should remain unchanged
-        capturedContact.CreatedAt.Should().Be(existingContact.CreatedAt);
+        _capturedContact.CreatedAt.Should().Be(existingContact.CreatedAt);
     }
 
     [Fact]
@@ -534,8 +534,8 @@ public class UpdateContactCommandHandlerTests
     [Fact]
     public async Task Handle_Should_Handle_Various_Relationship_Types()
     {
-        // Arrange & Act & Assert for different relationship types
-        for (int relationshipType = 0; relationshipType <= 5; relationshipType++)
+        // Arrange & Act & Assert for different relationship types (0-3: Family, Friend, Colleague, Other)
+        for (int relationshipType = 0; relationshipType <= 3; relationshipType++)
         {
             var existingContact = CreateValidExistingContact();
             var command = new UpdateContactCommand(
