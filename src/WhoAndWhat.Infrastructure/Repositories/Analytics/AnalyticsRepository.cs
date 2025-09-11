@@ -383,7 +383,7 @@ public class AnalyticsRepository : IAnalyticsRepository
     {
         try
         {
-            var existing = await GetSnapshotAsync(snapshot.UserId, snapshot.SnapshotDate, (SnapshotType)snapshot.SnapshotType, cancellationToken);
+            var existing = await GetSnapshotAsync(snapshot.UserId, snapshot.SnapshotDate, snapshot.SnapshotType, cancellationToken);
 
             if (existing != null)
             {

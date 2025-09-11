@@ -16,7 +16,7 @@ public static class HangfireConfiguration
     /// <summary>
     /// Adds Hangfire services to the dependency injection container
     /// </summary>
-    [Obsolete]
+    [Obsolete("Use ContentSchedulingService with SignalR integration instead. Hangfire support will be removed in v2.0. See ContentSchedulingService for background job processing.")]
     public static IServiceCollection AddHangfireServices(
         this IServiceCollection services,
         IConfiguration configuration)

@@ -1,3 +1,5 @@
+using System.Security.Cryptography;
+using System.Text;
 using Microsoft.Extensions.Logging;
 using WhoAndWhat.Application.Interfaces;
 using WhoAndWhat.Domain.Entities;
@@ -282,7 +284,7 @@ public class MotivationalContentService : IMotivationalContentService
         try
         {
             // Use consistent hashing to assign users to groups
-            var userHash = ComputeUserHash(userId, testName);
+            var userHash = ComputeDeterministicHash(userId, testName);
             var groups = _defaultABTestWeights.Keys.ToArray();
             var weights = _defaultABTestWeights.Values.ToArray();
 
@@ -762,10 +764,21 @@ public class MotivationalContentService : IMotivationalContentService
         };
     }
 
-    private int ComputeUserHash(Guid userId, string testName)
+    /// <summary>
+    /// Computes a deterministic hash for consistent A/B test group assignment.
+    /// Uses SHA256 to ensure consistency across application restarts and .NET versions.
+    /// </summary>
+    private int ComputeDeterministicHash(Guid userId, string testName)
     {
         var input = $"{userId}_{testName}";
-        return Math.Abs(input.GetHashCode());
+        var inputBytes = Encoding.UTF8.GetBytes(input);
+        
+        using var sha256 = SHA256.Create();
+        var hashBytes = sha256.ComputeHash(inputBytes);
+        
+        // Convert first 4 bytes to int for consistent hash value
+        var hashInt = BitConverter.ToInt32(hashBytes, 0);
+        return Math.Abs(hashInt);
     }
 
     private string SelectGroupByWeight(int hash, string[] groups, double[] weights)

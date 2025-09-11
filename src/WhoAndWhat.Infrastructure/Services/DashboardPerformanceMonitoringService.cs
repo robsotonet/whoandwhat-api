@@ -26,9 +26,10 @@ public class DashboardPerformanceMonitoringService : IHostedService, IDisposable
     
     /// <summary>
     /// Cache the latest performance snapshot for O(1) access instead of O(n) LastOrDefault() enumeration.
-    /// Thread-safe with volatile semantics to ensure visibility across threads.
+    /// Thread-safe with ReaderWriterLockSlim for proper synchronization across multiple timer threads.
     /// </summary>
-    private volatile DashboardPerformanceSnapshot? _latestSnapshot;
+    private DashboardPerformanceSnapshot? _latestSnapshot;
+    private readonly ReaderWriterLockSlim _latestSnapshotLock = new();
 
     public DashboardPerformanceMonitoringService(
         IDashboardCacheService dashboardCacheService,
@@ -96,7 +97,16 @@ public class DashboardPerformanceMonitoringService : IHostedService, IDisposable
             _performanceHistory.Enqueue(snapshot);
             
             // Update latest snapshot for efficient access (O(1) vs O(n) enumeration)
-            _latestSnapshot = snapshot;
+            // Use write lock for thread-safe update
+            _latestSnapshotLock.EnterWriteLock();
+            try
+            {
+                _latestSnapshot = snapshot;
+            }
+            finally
+            {
+                _latestSnapshotLock.ExitWriteLock();
+            }
 
             // Keep only last 288 snapshots (24 hours at 5-minute intervals)
             while (_performanceHistory.Count > 288)
@@ -131,7 +141,17 @@ public class DashboardPerformanceMonitoringService : IHostedService, IDisposable
             }
 
             // Use cached latest snapshot for O(1) access instead of O(n) enumeration
-            var latestSnapshot = _latestSnapshot;
+            // Use read lock for thread-safe access
+            DashboardPerformanceSnapshot? latestSnapshot;
+            _latestSnapshotLock.EnterReadLock();
+            try
+            {
+                latestSnapshot = _latestSnapshot;
+            }
+            finally
+            {
+                _latestSnapshotLock.ExitReadLock();
+            }
             if (latestSnapshot == null)
             {
                 return;
@@ -358,6 +378,7 @@ public class DashboardPerformanceMonitoringService : IHostedService, IDisposable
     {
         _performanceTimer?.Dispose();
         _alertTimer?.Dispose();
+        _latestSnapshotLock?.Dispose();
     }
 }
 

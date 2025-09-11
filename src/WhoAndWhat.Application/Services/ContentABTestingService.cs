@@ -1,3 +1,4 @@
+using MathNet.Numerics.Distributions;
 using Microsoft.Extensions.Logging;
 using WhoAndWhat.Application.Interfaces;
 using WhoAndWhat.Domain.Entities;
@@ -445,11 +446,32 @@ public class ContentABTestingService : IContentABTestingService
             }
         }
 
-        // Very simplified p-value approximation
+        // Calculate accurate p-value using chi-square distribution
         var degreesOfFreedom = groups.Count - 1;
-        var pValue = chiSquare > 3.84 ? 0.05 : 0.1; // Rough approximation
-
-        return (pValue, chiSquare);
+        
+        if (degreesOfFreedom <= 0)
+        {
+            // Not enough groups for meaningful statistical analysis
+            return (1.0, chiSquare);
+        }
+        
+        try
+        {
+            // Use Math.NET Numerics for accurate chi-square p-value calculation
+            var chiSquareDistribution = new ChiSquared(degreesOfFreedom);
+            var pValue = 1.0 - chiSquareDistribution.CumulativeDistribution(chiSquare);
+            
+            // Ensure p-value is within valid bounds [0, 1]
+            pValue = Math.Max(0.0, Math.Min(1.0, pValue));
+            
+            return (pValue, chiSquare);
+        }
+        catch (Exception ex)
+        {
+            // Fallback to conservative p-value if calculation fails
+            _logger.LogWarning(ex, "Failed to calculate chi-square p-value, using conservative estimate");
+            return (1.0, chiSquare);
+        }
     }
 
     private double CalculateEffectSize(Dictionary<string, ABTestGroupResults> groupResults)
