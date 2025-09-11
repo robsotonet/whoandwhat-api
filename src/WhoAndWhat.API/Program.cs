@@ -120,6 +120,9 @@ try
     // Azure Key Vault
     builder.Services.AddAzureKeyVaultConfiguration(builder.Configuration);
 
+    // SignalR for real-time updates
+    builder.Services.AddSignalRConfiguration(builder.Configuration);
+
     builder.Services.AddControllers(options =>
     {
         options.SuppressAsyncSuffixInActionNames = false;
@@ -144,6 +147,9 @@ try
 
     // Map controllers with versioning
     app.MapControllers();
+
+    // Configure SignalR hubs
+    app.UseSignalRConfiguration();
 
     // Database seeding (development only, skip if DB unavailable)
     if (app.Environment.IsDevelopment())
