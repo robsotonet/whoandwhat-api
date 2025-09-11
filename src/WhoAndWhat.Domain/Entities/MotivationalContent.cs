@@ -307,28 +307,40 @@ public class MotivationalContent : BaseEntity
                 case "mincompletionrate":
                     if (userValue is double userRate && condition.Value is double minRate)
                     {
-                        if (userRate < minRate) return false;
+                        if (userRate < minRate) 
+                        {
+                            return false;
+                        }
                     }
                     break;
 
                 case "minstreakdays":
                     if (userValue is int userStreak && condition.Value is int minStreak)
                     {
-                        if (userStreak < minStreak) return false;
+                        if (userStreak < minStreak) 
+                        {
+                            return false;
+                        }
                     }
                     break;
 
                 case "experiencelevel":
                     if (userValue is UserExperienceLevel userLevel && condition.Value is UserExperienceLevel requiredLevel)
                     {
-                        if (userLevel < requiredLevel) return false;
+                        if (userLevel < requiredLevel) 
+                        {
+                            return false;
+                        }
                     }
                     break;
 
                 case "categories":
                     if (condition.Value is string[] allowedCategories && userValue is string userCategory)
                     {
-                        if (!allowedCategories.Contains(userCategory)) return false;
+                        if (!allowedCategories.Contains(userCategory)) 
+                        {
+                            return false;
+                        }
                     }
                     break;
 

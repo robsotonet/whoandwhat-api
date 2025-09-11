@@ -411,7 +411,7 @@ public class UserContentPreferences : BaseEntity
         }
 
         // Apply engagement history if available
-        var contentTypeHistory = GetEngagementHistory<double>($"score_{contentType}");
+        var contentTypeHistory = GetEngagementHistory<double?>($"score_{contentType}");
         if (contentTypeHistory.HasValue)
         {
             score = (score + contentTypeHistory.Value) / 2; // Average with historical performance
