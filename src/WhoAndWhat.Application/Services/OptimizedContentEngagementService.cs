@@ -34,10 +34,10 @@ public static class OptimizedContentEngagementService
             var cutoffDate = DateTime.UtcNow.AddDays(-30); // Analyze last 30 days
             
             // Step 1: Analyze engagement patterns for all active content
-            var activeContent = await contentRepository.GetAllByConditionAsync(
+            var activeContent = await contentRepository.FindAsync(
                 c => c.IsActive && !c.IsDeleted, cancellationToken);
             
-            logger.LogInformation("Analyzing engagement patterns for {Count} active content items", activeContent.Count);
+            logger.LogInformation("Analyzing engagement patterns for {Count} active content items", activeContent.Count());
             
             foreach (var content in activeContent)
             {
@@ -52,7 +52,7 @@ public static class OptimizedContentEngagementService
             
             // Step 2: Optimize underperforming content targeting
             optimizedCount += await OptimizeTargetingConditionsAsync(
-                activeContent, deliveryRepository, cutoffDate, logger, cancellationToken);
+                activeContent.ToList(), deliveryRepository, cutoffDate, logger, cancellationToken);
             
             // Step 3: Optimize delivery timing based on user engagement patterns
             optimizedCount += await OptimizeDeliveryTimingAsync(
@@ -60,7 +60,7 @@ public static class OptimizedContentEngagementService
             
             // Step 4: Update A/B test configurations based on results
             optimizedCount += await OptimizeABTestConfigurationsAsync(
-                activeContent, deliveryRepository, cutoffDate, logger, cancellationToken);
+                activeContent.ToList(), deliveryRepository, cutoffDate, logger, cancellationToken);
             
             logger.LogInformation("Content optimization completed - {Count} optimizations applied", optimizedCount);
             return optimizedCount;
@@ -86,7 +86,7 @@ public static class OptimizedContentEngagementService
         try
         {
             // Get engagement data for this content
-            var deliveryLogs = await deliveryRepository.GetAllByConditionAsync(
+            var deliveryLogs = await deliveryRepository.FindAsync(
                 log => log.MotivationalContentId == content.Id && log.DeliveredAt >= cutoffDate,
                 cancellationToken);
             
@@ -95,7 +95,7 @@ public static class OptimizedContentEngagementService
                 return false; // No data to optimize
             }
             
-            var totalDeliveries = deliveryLogs.Count;
+            var totalDeliveries = deliveryLogs.Count();
             var engagedDeliveries = deliveryLogs.Count(log => log.EngagementType.HasValue);
             var engagementRate = totalDeliveries > 0 ? (double)engagedDeliveries / totalDeliveries : 0.0;
             
@@ -105,17 +105,19 @@ public static class OptimizedContentEngagementService
             var optimalPriority = CalculateOptimalPriority(engagementRate, content.Priority);
             if (Math.Abs(optimalPriority - content.Priority) > 5)
             {
-                content.UpdatePriority(optimalPriority);
+                var oldPriority = content.Priority;
+                content.SetPriority(optimalPriority);
                 wasOptimized = true;
                 logger.LogDebug("Updated priority for content {ContentId}: {OldPriority} → {NewPriority} (Engagement: {Rate:P1})",
-                    content.Id, content.Priority, optimalPriority, engagementRate);
+                    content.Id, oldPriority, optimalPriority, engagementRate);
             }
             
             // Optimization Logic 2: Adjust targeting based on user segment performance
             var segmentPerformance = AnalyzeSegmentPerformance(deliveryLogs);
             if (ShouldUpdateTargeting(segmentPerformance, content.TargetConditions))
             {
-                content.UpdateTargetingConditions(OptimizeTargeting(segmentPerformance, content.TargetConditions));
+                var optimizedTargeting = OptimizeTargeting(segmentPerformance, content.TargetConditions);
+                content.SetTargetConditions(optimizedTargeting);
                 wasOptimized = true;
                 logger.LogDebug("Updated targeting conditions for content {ContentId} based on segment performance", content.Id);
             }
@@ -123,7 +125,7 @@ public static class OptimizedContentEngagementService
             // Optimization Logic 3: Disable consistently poor performers
             if (engagementRate < 0.1 && totalDeliveries > 50) // Less than 10% engagement with significant data
             {
-                content.Deactivate("Low engagement rate optimization");
+                content.Deactivate();
                 wasOptimized = true;
                 logger.LogInformation("Deactivated low-performing content {ContentId} (Engagement: {Rate:P1})", 
                     content.Id, engagementRate);
@@ -171,7 +173,7 @@ public static class OptimizedContentEngagementService
                     var optimizedConditions = new Dictionary<string, object>(content.TargetConditions);
                     optimizedConditions["experienceLevel"] = GetOptimalExperienceLevel(experienceLevelPerformance);
                     
-                    content.UpdateTargetingConditions(optimizedConditions);
+                    content.SetTargetConditions(optimizedConditions);
                     optimizedCount++;
                     
                     logger.LogDebug("Optimized experience level targeting for content {ContentId}", content.Id);
@@ -195,7 +197,7 @@ public static class OptimizedContentEngagementService
         logger.LogDebug("Optimizing content delivery timing patterns");
         
         // Analyze when users are most likely to engage
-        var deliveryLogs = await deliveryRepository.GetAllByConditionAsync(
+        var deliveryLogs = await deliveryRepository.FindAsync(
             log => log.DeliveredAt >= cutoffDate && log.EngagementType.HasValue,
             cancellationToken);
         
@@ -234,10 +236,10 @@ public static class OptimizedContentEngagementService
         
         foreach (var preferences in allPreferences)
         {
-            var currentOptimalHours = preferences.GetOptimalDeliveryHours();
+            var currentOptimalHours = GetCurrentOptimalHours(preferences);
             if (!ListsAreEquivalent(currentOptimalHours, optimalHours))
             {
-                preferences.UpdateOptimalDeliveryHours(optimalHours);
+                UpdateOptimalDeliveryHours(preferences, optimalHours);
                 await preferencesRepository.UpdateAsync(preferences, cancellationToken);
                 optimizedCount++;
             }
@@ -266,21 +268,21 @@ public static class OptimizedContentEngagementService
         
         foreach (var content in abTestContents)
         {
-            var testLogs = await deliveryRepository.GetAllByConditionAsync(
+            var testLogs = await deliveryRepository.FindAsync(
                 log => log.MotivationalContentId == content.Id && 
                        log.DeliveredAt >= cutoffDate && 
                        !string.IsNullOrEmpty(log.ABTestGroup),
                 cancellationToken);
                 
-            if (testLogs.Count < 100) // Need minimum sample size
+            if (testLogs.Count() < 100) // Need minimum sample size
             {
                 continue;
             }
             
             var groupResults = testLogs
                 .GroupBy(log => log.ABTestGroup)
-                .ToDictionary(
-                    g => g.Key,
+                .ToDictionary<IGrouping<string?, ContentDeliveryLog>, string, object>(
+                    g => g.Key ?? "unknown",
                     g => new
                     {
                         Deliveries = g.Count(),
@@ -292,12 +294,12 @@ public static class OptimizedContentEngagementService
             var winner = FindStatisticalWinner(groupResults);
             if (winner != null)
             {
-                // Update content to use winning variant
-                var config = content.ABTestConfiguration ?? new Dictionary<string, object>();
-                config["winningGroup"] = winner;
-                config["optimizedAt"] = DateTime.UtcNow;
-                
-                content.UpdateABTestConfiguration(config);
+                // Update content to use winning variant - configure A/B test with winner
+                content.ConfigureABTest(winner, new Dictionary<string, object>
+                {
+                    ["winningGroup"] = winner,
+                    ["optimizedAt"] = DateTime.UtcNow
+                });
                 optimizedCount++;
                 
                 logger.LogInformation("A/B test winner identified for content {ContentId}: Group {Winner}",
@@ -321,8 +323,9 @@ public static class OptimizedContentEngagementService
     {
         return logs
             .GroupBy(log => log.DeliveryContext?.GetValueOrDefault("userSegment", "unknown")?.ToString() ?? "unknown")
+            .Where(g => !string.IsNullOrEmpty(g.Key))
             .ToDictionary(
-                g => g.Key,
+                g => g.Key!,
                 g => g.Count(log => log.EngagementType.HasValue) / (double)g.Count()
             );
     }
@@ -361,12 +364,13 @@ public static class OptimizedContentEngagementService
         DateTime cutoffDate,
         CancellationToken cancellationToken)
     {
-        var logs = await deliveryRepository.GetAllByConditionAsync(
+        var logs = await deliveryRepository.FindAsync(
             log => log.DeliveredAt >= cutoffDate, cancellationToken);
             
         return logs
             .Where(log => log.DeliveryContext?.ContainsKey("experienceLevel") == true)
-            .GroupBy(log => Enum.Parse<UserExperienceLevel>(log.DeliveryContext["experienceLevel"].ToString()))
+            .Where(log => log.DeliveryContext!["experienceLevel"]?.ToString() != null)
+            .GroupBy(log => Enum.Parse<UserExperienceLevel>(log.DeliveryContext!["experienceLevel"]!.ToString()!))
             .ToDictionary(
                 g => g.Key,
                 g => g.Count(log => log.EngagementType.HasValue) / (double)g.Count()
@@ -400,14 +404,25 @@ public static class OptimizedContentEngagementService
         return set1.SetEquals(set2);
     }
     
-    private static string? FindStatisticalWinner(Dictionary<string, dynamic> groupResults)
+    private static string? FindStatisticalWinner(Dictionary<string, object> groupResults)
     {
         if (groupResults.Count < 2)
         {
             return null;
         }
         
-        var bestGroup = groupResults
+        // Convert to strongly typed results for analysis
+        var typedResults = groupResults.ToDictionary(
+            kvp => kvp.Key,
+            kvp => {
+                var result = kvp.Value as dynamic;
+                return new { 
+                    Deliveries = (int)result.Deliveries,
+                    EngagementRate = (double)result.EngagementRate
+                };
+            });
+        
+        var bestGroup = typedResults
             .Where(g => g.Value.Deliveries > 50) // Minimum sample size
             .OrderByDescending(g => g.Value.EngagementRate)
             .FirstOrDefault();
@@ -419,7 +434,7 @@ public static class OptimizedContentEngagementService
         
         // Simple statistical significance check (in production, use proper statistical tests)
         var bestRate = bestGroup.Value.EngagementRate;
-        var otherRates = groupResults
+        var otherRates = typedResults
             .Where(g => g.Key != bestGroup.Key && g.Value.Deliveries > 50)
             .Select(g => g.Value.EngagementRate);
             
@@ -427,5 +442,36 @@ public static class OptimizedContentEngagementService
         
         // Winner needs to be at least 20% better than others
         return bestRate > avgOtherRate * 1.2 ? bestGroup.Key : null;
+    }
+    
+    private static List<int> GetCurrentOptimalHours(UserContentPreferences preferences)
+    {
+        // Extract hours from current preferred delivery times
+        return preferences.PreferredDeliveryTimes.Values
+            .Select(timeSpan => timeSpan.Hours)
+            .Distinct()
+            .OrderBy(h => h)
+            .ToList();
+    }
+    
+    private static void UpdateOptimalDeliveryHours(UserContentPreferences preferences, List<int> optimalHours)
+    {
+        // Convert hours to TimeSpan dictionary
+        var newDeliveryTimes = new Dictionary<string, TimeSpan>();
+        
+        for (int i = 0; i < optimalHours.Count; i++)
+        {
+            var hour = optimalHours[i];
+            var name = i switch
+            {
+                0 => "morning",
+                1 => "afternoon", 
+                2 => "evening",
+                _ => $"slot_{i + 1}"
+            };
+            newDeliveryTimes[name] = new TimeSpan(hour, 0, 0);
+        }
+        
+        preferences.SetPreferredDeliveryTimes(newDeliveryTimes);
     }
 }

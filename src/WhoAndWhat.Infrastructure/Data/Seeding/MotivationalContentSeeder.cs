@@ -77,7 +77,7 @@ public class MotivationalContentSeeder
                 title: "🎉 Task Completed!",
                 message: "Great job completing that task! You're building momentum one accomplishment at a time.",
                 MotivationalContentType.Achievement,
-                MotivationalContentCategory.Productivity,
+                ContentCategory.Productivity,
                 CreateBasicTargeting(UserExperienceLevel.Beginner),
                 priority: 100
             ),
@@ -86,7 +86,7 @@ public class MotivationalContentSeeder
                 title: "✨ Outstanding Progress!",
                 message: "Your consistency is paying off! You've completed several tasks today - that's the kind of dedication that leads to success.",
                 MotivationalContentType.Achievement,
-                MotivationalContentCategory.Productivity,
+                ContentCategory.Productivity,
                 CreateBasicTargeting(UserExperienceLevel.Intermediate),
                 priority: 90
             ),
@@ -95,11 +95,9 @@ public class MotivationalContentSeeder
                 title: "🚀 Productivity Master!",
                 message: "Incredible! You've completed multiple high-priority tasks. Your systematic approach to getting things done is truly impressive.",
                 MotivationalContentType.Achievement,
-                MotivationalContentCategory.Productivity,
+                ContentCategory.Productivity,
                 CreateAdvancedTargeting(UserExperienceLevel.Expert, 0.8),
-                priority: 95,
-                actionText: "View Analytics",
-                actionUrl: "/dashboard/analytics"
+                priority: 95
             )
         };
     }
@@ -112,7 +110,7 @@ public class MotivationalContentSeeder
                 title: "🎯 Focus Time",
                 message: "Ready to tackle your next task? Choose one important item and give it your full attention for the next 25 minutes.",
                 MotivationalContentType.Insight,
-                MotivationalContentCategory.Productivity,
+                ContentCategory.Productivity,
                 CreateBasicTargeting(UserExperienceLevel.Beginner),
                 priority: 80
             ),
@@ -121,7 +119,7 @@ public class MotivationalContentSeeder
                 title: "⚡ Peak Performance Tip",
                 message: "Break large tasks into smaller, manageable chunks. You're more likely to complete them and feel accomplished along the way!",
                 MotivationalContentType.Insight,
-                MotivationalContentCategory.Productivity,
+                ContentCategory.Productivity,
                 CreateBasicTargeting(UserExperienceLevel.Intermediate),
                 priority: 85
             ),
@@ -130,11 +128,9 @@ public class MotivationalContentSeeder
                 title: "🧠 Smart Prioritization",
                 message: "Try the 'Two-Minute Rule': If a task takes less than two minutes, do it immediately. For larger tasks, schedule them.",
                 MotivationalContentType.Insight,
-                MotivationalContentCategory.Productivity,
+                ContentCategory.Productivity,
                 CreateAdvancedTargeting(UserExperienceLevel.Expert, 0.7),
-                priority: 90,
-                actionText: "Set Priorities",
-                actionUrl: "/tasks?sort=priority"
+                priority: 90
             )
         };
     }
@@ -147,7 +143,7 @@ public class MotivationalContentSeeder
                 title: "🌱 Balance Check",
                 message: "Remember to take breaks! Even a 5-minute walk or stretch can refresh your mind and boost creativity.",
                 MotivationalContentType.Reminder,
-                MotivationalContentCategory.Wellness,
+                ContentCategory.Wellness,
                 CreateBasicTargeting(UserExperienceLevel.Beginner),
                 priority: 70
             ),
@@ -156,7 +152,7 @@ public class MotivationalContentSeeder
                 title: "🧘 Mindful Moment",
                 message: "Take a deep breath. You're doing great work, and it's okay to pause and appreciate your progress.",
                 MotivationalContentType.Encouragement,
-                MotivationalContentCategory.Wellness,
+                ContentCategory.Wellness,
                 CreateBasicTargeting(UserExperienceLevel.Intermediate),
                 priority: 75
             ),
@@ -165,7 +161,7 @@ public class MotivationalContentSeeder
                 title: "🌟 Work-Life Harmony",
                 message: "High performers know when to push and when to rest. Honor both your ambition and your need for restoration.",
                 MotivationalContentType.Insight,
-                MotivationalContentCategory.Wellness,
+                ContentCategory.Wellness,
                 CreateAdvancedTargeting(UserExperienceLevel.Expert, 0.9),
                 priority: 85
             )
@@ -179,8 +175,8 @@ public class MotivationalContentSeeder
             MotivationalContent.Create(
                 title: "📚 Growth Mindset",
                 message: "Every task you complete teaches you something new. What did you learn from your recent accomplishments?",
-                MotivationalContentType.Reflection,
-                MotivationalContentCategory.Learning,
+                MotivationalContentType.Insight,
+                ContentCategory.Learning,
                 CreateBasicTargeting(UserExperienceLevel.Beginner),
                 priority: 60
             ),
@@ -188,19 +184,17 @@ public class MotivationalContentSeeder
             MotivationalContent.Create(
                 title: "🎓 Skill Building",
                 message: "Consider adding a learning goal to your tasks. What skill would help you work more effectively?",
-                MotivationalContentType.Suggestion,
-                MotivationalContentCategory.Learning,
+                MotivationalContentType.Tip,
+                ContentCategory.Learning,
                 CreateBasicTargeting(UserExperienceLevel.Intermediate),
-                priority: 65,
-                actionText: "Add Learning Task",
-                actionUrl: "/tasks/create?category=learning"
+                priority: 65
             ),
 
             MotivationalContent.Create(
                 title: "🏆 Mastery Path",
                 message: "You're becoming a master of your craft. Each completed project adds to your expertise and opens new opportunities.",
                 MotivationalContentType.Encouragement,
-                MotivationalContentCategory.Learning,
+                ContentCategory.Learning,
                 CreateAdvancedTargeting(UserExperienceLevel.Expert, 0.85),
                 priority: 80
             )
@@ -215,7 +209,7 @@ public class MotivationalContentSeeder
                 title: "🔥 Streak Started!",
                 message: "You've begun a productivity streak! Consistency is the key to lasting success. Keep the momentum going!",
                 MotivationalContentType.Achievement,
-                MotivationalContentCategory.Productivity,
+                ContentCategory.Productivity,
                 CreateStreakTargeting(3),
                 priority: 95
             ),
@@ -224,22 +218,18 @@ public class MotivationalContentSeeder
                 title: "⚡ Week Strong!",
                 message: "7 days of consistent progress! You're proving that small daily actions create remarkable results.",
                 MotivationalContentType.Achievement,
-                MotivationalContentCategory.Productivity,
+                ContentCategory.Productivity,
                 CreateStreakTargeting(7),
-                priority: 100,
-                actionText: "Share Achievement",
-                actionUrl: "/social/share-streak"
+                priority: 100
             ),
 
             MotivationalContent.Create(
                 title: "💎 Streak Master!",
                 message: "30 days of excellence! You've transformed consistency into a superpower. This is how success is built!",
                 MotivationalContentType.Achievement,
-                MotivationalContentCategory.Productivity,
+                ContentCategory.Productivity,
                 CreateStreakTargeting(30),
-                priority: 110,
-                actionText: "View Milestone",
-                actionUrl: "/achievements/30-day-streak"
+                priority: 110
             )
         };
     }
@@ -252,7 +242,7 @@ public class MotivationalContentSeeder
                 title: "💪 You've Got This!",
                 message: "Feeling stuck? That's normal! Take a moment to appreciate how far you've come, then take one small step forward.",
                 MotivationalContentType.Encouragement,
-                MotivationalContentCategory.Wellness,
+                ContentCategory.Wellness,
                 CreateLowActivityTargeting(),
                 priority: 90
             ),
@@ -261,7 +251,7 @@ public class MotivationalContentSeeder
                 title: "🌈 Progress Over Perfection",
                 message: "Done is better than perfect. You're making progress, even if it doesn't feel like it right now. Keep going!",
                 MotivationalContentType.Encouragement,
-                MotivationalContentCategory.Wellness,
+                ContentCategory.Wellness,
                 CreateBasicTargeting(UserExperienceLevel.Beginner),
                 priority: 85
             ),
@@ -270,7 +260,7 @@ public class MotivationalContentSeeder
                 title: "🎨 Your Unique Path",
                 message: "Your approach to productivity is uniquely yours. Trust your process and celebrate your individual wins.",
                 MotivationalContentType.Encouragement,
-                MotivationalContentCategory.Learning,
+                ContentCategory.Learning,
                 CreateBasicTargeting(UserExperienceLevel.Expert),
                 priority: 75
             )
