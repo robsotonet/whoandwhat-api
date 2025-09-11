@@ -285,8 +285,11 @@ public class MotivationalContentService : IMotivationalContentService
         {
             // Use consistent hashing to assign users to groups
             var userHash = ComputeDeterministicHash(userId, testName);
-            var groups = _defaultABTestWeights.Keys.ToArray();
-            var weights = _defaultABTestWeights.Values.ToArray();
+            
+            // Use atomic KeyValuePair enumeration to ensure groups and weights correspond correctly
+            var testWeights = _defaultABTestWeights.ToArray();
+            var groups = testWeights.Select(kvp => kvp.Key).ToArray();
+            var weights = testWeights.Select(kvp => kvp.Value).ToArray();
 
             var selectedGroup = SelectGroupByWeight(userHash, groups, weights);
 
@@ -778,6 +781,13 @@ public class MotivationalContentService : IMotivationalContentService
         
         // Convert first 4 bytes to int for consistent hash value
         var hashInt = BitConverter.ToInt32(hashBytes, 0);
+        
+        // Handle int.MinValue overflow case: Math.Abs(int.MinValue) returns int.MinValue
+        if (hashInt == int.MinValue)
+        {
+            return int.MaxValue; // Use maximum positive value instead
+        }
+        
         return Math.Abs(hashInt);
     }
 

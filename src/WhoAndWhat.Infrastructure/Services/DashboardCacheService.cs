@@ -770,10 +770,16 @@ public class DashboardCacheService : IDashboardCacheService
                 var keysArray = (RedisResult[])resultArray[1];
                 foreach (var keyResult in keysArray)
                 {
-                    var keyStr = (string)keyResult;
-                    if (!string.IsNullOrEmpty(keyStr))
+                    // Use safe pattern matching to prevent InvalidCastException
+                    if (keyResult is string keyStr && !string.IsNullOrEmpty(keyStr))
                     {
                         yield return (RedisKey)keyStr;
+                    }
+                    else if (keyResult != null)
+                    {
+                        // Log unexpected Redis result type for debugging
+                        _logger.LogWarning("Unexpected Redis key result type: {ResultType}, Value: {Value}", 
+                            keyResult.GetType().Name, keyResult.ToString());
                     }
                 }
                 
@@ -795,6 +801,23 @@ public class DashboardCacheService : IDashboardCacheService
             }
             
         } while (cursor != 0); // Continue until cursor returns to 0 (scan complete)
+    }
+
+    /// <summary>
+    /// Helper method to scan and collect all keys matching a pattern using Redis SCAN.
+    /// Provides consistent performance behavior across all Redis key operations.
+    /// </summary>
+    private async Task<RedisKey[]> ScanKeysForPatternAsync(string pattern, CancellationToken cancellationToken = default)
+    {
+        var server = _redis.GetServer(_redis.GetEndPoints().First());
+        var keys = new List<RedisKey>();
+        
+        await foreach (var key in ScanDashboardKeysAsync(server, pattern, 100, cancellationToken))
+        {
+            keys.Add(key);
+        }
+        
+        return keys.ToArray();
     }
 
     public async Task<int> PrecomputeDashboardDataAsync(IEnumerable<Guid> userIds, CancellationToken cancellationToken = default)
@@ -849,15 +872,14 @@ public class DashboardCacheService : IDashboardCacheService
     {
         try
         {
-            // Remove all analytics snapshot cache entries for the user
-            var server = _redis.GetServer(_redis.GetEndPoints().First());
+            // Remove all analytics snapshot cache entries for the user using optimized SCAN
             var pattern = $"{_cacheSettings.KeyPrefix}:dashboard:user:{userId}:snapshot:*";
-            var keys = server.Keys(_database.Database, pattern).ToArray();
+            var keys = await ScanKeysForPatternAsync(pattern, cancellationToken);
 
             if (keys.Length > 0)
             {
                 await _database.KeyDeleteAsync(keys);
-                _logger.LogDebug("Invalidated {KeyCount} analytics snapshot cache keys for user {UserId}", 
+                _logger.LogDebug("Invalidated {KeyCount} analytics snapshot cache keys for user {UserId} using SCAN", 
                     keys.Length, userId);
             }
         }
@@ -871,15 +893,14 @@ public class DashboardCacheService : IDashboardCacheService
     {
         try
         {
-            // Remove all productivity metrics cache entries for the user
-            var server = _redis.GetServer(_redis.GetEndPoints().First());
+            // Remove all productivity metrics cache entries for the user using optimized SCAN
             var pattern = $"{_cacheSettings.KeyPrefix}:dashboard:user:{userId}:metrics:*";
-            var keys = server.Keys(_database.Database, pattern).ToArray();
+            var keys = await ScanKeysForPatternAsync(pattern, cancellationToken);
 
             if (keys.Length > 0)
             {
                 await _database.KeyDeleteAsync(keys);
-                _logger.LogDebug("Invalidated {KeyCount} productivity metrics cache keys for user {UserId}", 
+                _logger.LogDebug("Invalidated {KeyCount} productivity metrics cache keys for user {UserId} using SCAN", 
                     keys.Length, userId);
             }
         }

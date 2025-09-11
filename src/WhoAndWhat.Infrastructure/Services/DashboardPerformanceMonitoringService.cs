@@ -236,13 +236,27 @@ public class DashboardPerformanceMonitoringService : IHostedService, IDisposable
         var now = DateTime.UtcNow;
 
         // Throttle alerts - don't send the same alert more than once every 15 minutes
-        if (_lastAlerts.TryGetValue(alertKey, out var lastAlert) && 
-            now.Subtract(lastAlert).TotalMinutes < 15)
+        // Use atomic AddOrUpdate to prevent race conditions between check and update
+        var wasThrottled = false;
+        _lastAlerts.AddOrUpdate(alertKey, 
+            // Key doesn't exist - add it and allow alert
+            now, 
+            // Key exists - check if enough time has passed, update if not throttled
+            (key, lastAlert) => 
+            {
+                var timeSinceLastAlert = now.Subtract(lastAlert).TotalMinutes;
+                if (timeSinceLastAlert < 15)
+                {
+                    wasThrottled = true;
+                    return lastAlert; // Keep existing timestamp (throttled)
+                }
+                return now; // Update timestamp (not throttled)
+            });
+        
+        if (wasThrottled)
         {
             return;
         }
-
-        _lastAlerts.AddOrUpdate(alertKey, now, (key, oldValue) => now);
 
         switch (severity)
         {
