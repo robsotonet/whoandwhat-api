@@ -19,7 +19,7 @@ public class ApiInfoControllerTests
     {
         _mockConfiguration = new Mock<IConfiguration>();
         _controller = new ApiInfoController(_mockConfiguration.Object);
-        
+
         SetupDefaultConfiguration();
     }
 

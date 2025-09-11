@@ -131,7 +131,7 @@ public class DeleteContactCommandHandlerTests
         // Assert
         result.IsSuccess.Should().BeTrue();
         result.Value.Should().BeTrue();
-        
+
         _mockContactRepository.Verify(x => x.GetByIdAsync(existingContact.Id, It.IsAny<CancellationToken>()), Times.Once);
         _mockContactRepository.Verify(x => x.CountActiveTaskAssociationsAsync(existingContact.Id, existingContact.UserId, It.IsAny<CancellationToken>()), Times.Once);
         _mockContactRepository.Verify(x => x.SoftDeleteContactAsync(existingContact.Id, existingContact.UserId, It.IsAny<CancellationToken>()), Times.Once);
@@ -155,7 +155,7 @@ public class DeleteContactCommandHandlerTests
         // Assert
         result.IsSuccess.Should().BeTrue();
         result.Value.Should().BeTrue();
-        
+
         // Verify the repository methods were called correctly
         _mockContactRepository.Verify(x => x.GetByIdAsync(contactId, It.IsAny<CancellationToken>()), Times.Once);
         _mockContactRepository.Verify(x => x.CountActiveTaskAssociationsAsync(contactId, userId, It.IsAny<CancellationToken>()), Times.Once);
@@ -170,7 +170,7 @@ public class DeleteContactCommandHandlerTests
         var existingContact = CreateValidExistingContact();
         var activeTask = CreateAssociatedTask(existingContact.Id, existingContact.UserId, "Active Task", AppTaskStatus.InProgress);
         existingContact.Tasks.Add(activeTask);
-        
+
         var command = CreateValidDeleteCommand(existingContact.Id, existingContact.UserId);
         SetupSuccessfulSoftDeleteRepositoryMocks(existingContact);
 
@@ -180,7 +180,7 @@ public class DeleteContactCommandHandlerTests
         // Assert
         result.IsSuccess.Should().BeTrue();
         result.Value.Should().BeTrue();
-        
+
         _mockContactRepository.Verify(x => x.SoftDeleteContactAsync(existingContact.Id, existingContact.UserId, It.IsAny<CancellationToken>()), Times.Once);
     }
 
@@ -191,7 +191,7 @@ public class DeleteContactCommandHandlerTests
         var existingContact = CreateValidExistingContact();
         var completedTask = CreateAssociatedTask(existingContact.Id, existingContact.UserId, "Completed Task", AppTaskStatus.Completed);
         existingContact.Tasks.Add(completedTask);
-        
+
         var command = CreateValidDeleteCommand(existingContact.Id, existingContact.UserId);
         SetupSuccessfulSoftDeleteRepositoryMocks(existingContact);
 
@@ -201,7 +201,7 @@ public class DeleteContactCommandHandlerTests
         // Assert
         result.IsSuccess.Should().BeTrue();
         result.Value.Should().BeTrue();
-        
+
         _mockContactRepository.Verify(x => x.SoftDeleteContactAsync(existingContact.Id, existingContact.UserId, It.IsAny<CancellationToken>()), Times.Once);
     }
 
@@ -224,7 +224,7 @@ public class DeleteContactCommandHandlerTests
         // Assert
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("Contact ID is required");
-        
+
         _mockContactRepository.Verify(x => x.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
@@ -243,7 +243,7 @@ public class DeleteContactCommandHandlerTests
         // Assert
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("User ID is required");
-        
+
         _mockContactRepository.Verify(x => x.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
@@ -265,7 +265,7 @@ public class DeleteContactCommandHandlerTests
         // Assert
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("Contact not found");
-        
+
         _mockContactRepository.Verify(x => x.GetByIdAsync(command.ContactId, It.IsAny<CancellationToken>()), Times.Once);
         _mockContactRepository.Verify(x => x.SoftDeleteContactAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Never);
     }
@@ -278,7 +278,7 @@ public class DeleteContactCommandHandlerTests
         existingContact.IsDeleted = true;
         existingContact.DeletedAt = DateTime.UtcNow.AddDays(-1);
         var command = CreateValidDeleteCommand(existingContact.Id, existingContact.UserId);
-        
+
         _mockContactRepository.Setup(x => x.GetByIdAsync(command.ContactId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(existingContact);
 
@@ -288,7 +288,7 @@ public class DeleteContactCommandHandlerTests
         // Assert
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("Contact not found or has already been deleted");
-        
+
         _mockContactRepository.Verify(x => x.SoftDeleteContactAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
@@ -299,7 +299,7 @@ public class DeleteContactCommandHandlerTests
         var existingContact = CreateValidExistingContact();
         var differentUserId = Guid.NewGuid();
         var command = CreateValidDeleteCommand(existingContact.Id, differentUserId);
-        
+
         _mockContactRepository.Setup(x => x.GetByIdAsync(command.ContactId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(existingContact);
 
@@ -309,7 +309,7 @@ public class DeleteContactCommandHandlerTests
         // Assert
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("Contact not found");
-        
+
         _mockContactRepository.Verify(x => x.SoftDeleteContactAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
@@ -323,7 +323,7 @@ public class DeleteContactCommandHandlerTests
         // Arrange
         var existingContact = CreateValidExistingContact();
         var command = CreateValidDeleteCommand(existingContact.Id, existingContact.UserId);
-        
+
         _mockContactRepository.Setup(x => x.GetByIdAsync(command.ContactId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(existingContact);
         _mockContactRepository.Setup(x => x.CountActiveTaskAssociationsAsync(command.ContactId, command.UserId, It.IsAny<CancellationToken>()))
@@ -337,7 +337,7 @@ public class DeleteContactCommandHandlerTests
         // Assert
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("Failed to delete contact");
-        
+
         _mockContactRepository.Verify(x => x.SoftDeleteContactAsync(command.ContactId, command.UserId, It.IsAny<CancellationToken>()), Times.Once);
         _mockContactRepository.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
@@ -348,7 +348,7 @@ public class DeleteContactCommandHandlerTests
         // Arrange
         var existingContact = CreateValidExistingContact();
         var command = CreateValidDeleteCommand(existingContact.Id, existingContact.UserId);
-        
+
         _mockContactRepository.Setup(x => x.GetByIdAsync(command.ContactId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(existingContact);
         _mockContactRepository.Setup(x => x.CountActiveTaskAssociationsAsync(command.ContactId, command.UserId, It.IsAny<CancellationToken>()))
@@ -362,7 +362,7 @@ public class DeleteContactCommandHandlerTests
         // Assert
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("Error deleting contact");
-        
+
         _mockContactRepository.Verify(x => x.SoftDeleteContactAsync(command.ContactId, command.UserId, It.IsAny<CancellationToken>()), Times.Once);
         _mockContactRepository.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
@@ -381,7 +381,7 @@ public class DeleteContactCommandHandlerTests
         // Assert
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("An error occurred while deleting the contact");
-        
+
         _mockContactRepository.Verify(x => x.GetByIdAsync(command.ContactId, It.IsAny<CancellationToken>()), Times.Once);
         _mockContactRepository.Verify(x => x.SoftDeleteContactAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Never);
     }
@@ -398,9 +398,9 @@ public class DeleteContactCommandHandlerTests
         var task1 = CreateAssociatedTask(existingContact.Id, existingContact.UserId, "Task 1", AppTaskStatus.Pending);
         var task2 = CreateAssociatedTask(existingContact.Id, existingContact.UserId, "Task 2", AppTaskStatus.InProgress);
         var task3 = CreateAssociatedTask(existingContact.Id, existingContact.UserId, "Task 3", AppTaskStatus.Completed);
-        
+
         ((List<AppTask>)existingContact.Tasks).AddRange(new[] { task1, task2, task3 });
-        
+
         var command = CreateValidDeleteCommand(existingContact.Id, existingContact.UserId);
         SetupSuccessfulSoftDeleteRepositoryMocks(existingContact);
 
@@ -410,7 +410,7 @@ public class DeleteContactCommandHandlerTests
         // Assert
         result.IsSuccess.Should().BeTrue();
         result.Value.Should().BeTrue();
-        
+
         _mockContactRepository.Verify(x => x.SoftDeleteContactAsync(existingContact.Id, existingContact.UserId, It.IsAny<CancellationToken>()), Times.Once);
     }
 
@@ -428,7 +428,7 @@ public class DeleteContactCommandHandlerTests
         // Assert
         result.IsSuccess.Should().BeTrue();
         result.Value.Should().BeTrue();
-        
+
         _mockContactRepository.Verify(x => x.SoftDeleteContactAsync(existingContact.Id, existingContact.UserId, It.IsAny<CancellationToken>()), Times.Once);
     }
 
@@ -448,7 +448,7 @@ public class DeleteContactCommandHandlerTests
         // Assert
         result.IsSuccess.Should().BeTrue();
         result.Value.Should().BeTrue();
-        
+
         _mockContactRepository.Verify(x => x.SoftDeleteContactAsync(existingContact.Id, existingContact.UserId, It.IsAny<CancellationToken>()), Times.Once);
     }
 
@@ -515,7 +515,7 @@ public class DeleteContactCommandHandlerTests
         // Arrange
         var existingContact = CreateValidExistingContact();
         var command = CreateValidDeleteCommand(existingContact.Id, existingContact.UserId);
-        
+
         _mockContactRepository.Setup(x => x.GetByIdAsync(command.ContactId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(existingContact);
         _mockContactRepository.Setup(x => x.CountActiveTaskAssociationsAsync(command.ContactId, command.UserId, It.IsAny<CancellationToken>()))
@@ -568,7 +568,7 @@ public class DeleteContactCommandHandlerTests
         var command = CreateValidDeleteCommand();
         var cancellationTokenSource = new CancellationTokenSource();
         cancellationTokenSource.Cancel(); // Cancel immediately
-        
+
         _mockContactRepository.Setup(x => x.GetByIdAsync(command.ContactId, It.IsAny<CancellationToken>()))
             .ThrowsAsync(new OperationCanceledException());
 

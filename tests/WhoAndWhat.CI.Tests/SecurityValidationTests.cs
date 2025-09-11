@@ -1,7 +1,7 @@
-using FluentAssertions;
-using Microsoft.AspNetCore.Mvc.Testing;
 using System.Net;
 using System.Reflection;
+using FluentAssertions;
+using Microsoft.AspNetCore.Mvc.Testing;
 
 namespace WhoAndWhat.CI.Tests;
 
@@ -40,7 +40,7 @@ public class SecurityValidationTests : IClassFixture<WebApplicationFactory<Progr
         // Assert - These headers should be configured in production
         // For now, we just ensure the response is successful
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        
+
         // TODO: When security headers middleware is implemented, test for:
         // - X-Content-Type-Options: nosniff
         // - X-Frame-Options: DENY
@@ -62,7 +62,7 @@ public class SecurityValidationTests : IClassFixture<WebApplicationFactory<Progr
         foreach (var configFile in configFiles)
         {
             var content = File.ReadAllText(configFile);
-            
+
             // Check for common secret patterns
             content.Should().NotContain("password=", "Configuration should not contain hardcoded passwords");
             content.Should().NotContain("Password=", "Configuration should not contain hardcoded passwords");
@@ -70,7 +70,7 @@ public class SecurityValidationTests : IClassFixture<WebApplicationFactory<Progr
             content.Should().NotMatch("*secretKey*=*", "Configuration should not contain hardcoded secret keys");
             content.Should().NotMatch("*privateKey*=*", "Configuration should not contain hardcoded private keys");
             content.Should().NotMatch("*accessKey*=*", "Configuration should not contain hardcoded access keys");
-            
+
             // Ensure JWT secrets are not hardcoded (should be environment variables or Key Vault)
             if (content.Contains("JWT"))
             {
@@ -85,9 +85,9 @@ public class SecurityValidationTests : IClassFixture<WebApplicationFactory<Progr
         // Arrange
         var baseDirectory = GetSolutionRoot();
         var dockerfilePath = Path.Combine(baseDirectory, "Dockerfile");
-        
+
         File.Exists(dockerfilePath).Should().BeTrue("Dockerfile should exist");
-        
+
         // Act
         var dockerfileContent = File.ReadAllText(dockerfilePath);
 
@@ -108,7 +108,7 @@ public class SecurityValidationTests : IClassFixture<WebApplicationFactory<Progr
         foreach (var projectFile in projectFiles)
         {
             var content = File.ReadAllText(projectFile);
-            
+
             // Check for outdated or vulnerable package versions
             // This is a basic check - in production, use tools like OWASP Dependency Check
             content.Should().NotContain("Version=\"1.", "Avoid using very old package versions");
@@ -158,7 +158,7 @@ public class SecurityValidationTests : IClassFixture<WebApplicationFactory<Progr
         // In a real production scenario, you would sign assemblies
         // For now, we just ensure the assembly loads correctly
         assembly.Should().NotBeNull("Assembly should load successfully");
-        
+
         // TODO: When implementing assembly signing:
         // publicKeyToken.Should().NotBeNull("Assembly should be signed in production builds");
         // isFullySigned.Should().BeTrue("Assembly should be fully signed");
@@ -210,14 +210,16 @@ public class SecurityValidationTests : IClassFixture<WebApplicationFactory<Progr
     {
         var currentDirectory = Directory.GetCurrentDirectory();
         var directory = new DirectoryInfo(currentDirectory);
-        
+
         while (directory != null && !directory.GetFiles("*.sln").Any())
         {
             directory = directory.Parent;
         }
 
         if (directory == null)
+        {
             throw new InvalidOperationException("Could not find solution root directory");
+        }
 
         return directory.FullName;
     }

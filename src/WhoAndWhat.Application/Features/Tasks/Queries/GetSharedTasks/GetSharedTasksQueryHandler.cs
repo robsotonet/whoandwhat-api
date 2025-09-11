@@ -56,7 +56,7 @@ public class GetSharedTasksQueryHandler : IRequestHandler<GetSharedTasksQuery, R
                 request.PageNumber,
                 request.PageSize);
 
-            _logger.LogInformation("Found {Count} shared tasks for user {UserId}", 
+            _logger.LogInformation("Found {Count} shared tasks for user {UserId}",
                 result.Items.Count(), request.UserId);
 
             return Result<PagedResult<SharedTaskDto>>.Success(result);
@@ -72,24 +72,24 @@ public class GetSharedTasksQueryHandler : IRequestHandler<GetSharedTasksQuery, R
     {
         // This is a simplified approach. In a real implementation, you might want to create a specific repository method
         // for better performance with joins and filtering at the database level
-        
+
         var sharedTasks = new List<SharedTaskDto>();
-        
+
         // Find all contacts that belong to the user
         var userContacts = await GetUserContactsAsync(request.UserId, cancellationToken);
-        
+
         foreach (var contact in userContacts)
         {
             // Get tasks where this contact is linked (tasks shared with this user through the contact)
             var contactTasks = await GetTasksForContactAsync(contact.Id, cancellationToken);
-            
+
             foreach (var taskContact in contactTasks)
             {
                 var sharedTask = MapToSharedTaskDto(taskContact, contact);
-                
+
                 // Apply authorization logic based on role
                 ApplyAuthorizationRules(sharedTask);
-                
+
                 sharedTasks.Add(sharedTask);
             }
         }
@@ -109,7 +109,7 @@ public class GetSharedTasksQueryHandler : IRequestHandler<GetSharedTasksQuery, R
         // This is a limitation of the current repository interface
         // In a real implementation, you would have a method like:
         // return await _taskRepository.GetTaskContactsByContactIdAsync(contactId, cancellationToken);
-        
+
         // For now, return empty list as we need to enhance the repository interface
         _logger.LogWarning("GetTasksForContactAsync not fully implemented - repository interface limitation");
         return Task.FromResult(new List<Domain.Entities.TaskContact>());
@@ -118,7 +118,7 @@ public class GetSharedTasksQueryHandler : IRequestHandler<GetSharedTasksQuery, R
     private SharedTaskDto MapToSharedTaskDto(Domain.Entities.TaskContact taskContact, Domain.Entities.Contact contact)
     {
         var task = taskContact.Task;
-        
+
         return new SharedTaskDto
         {
             TaskId = task.Id,
@@ -154,28 +154,28 @@ public class GetSharedTasksQueryHandler : IRequestHandler<GetSharedTasksQuery, R
                 sharedTask.CanComment = true;
                 sharedTask.CanViewDetails = true;
                 break;
-                
+
             case "collaborator":
                 sharedTask.CanEdit = true;
                 sharedTask.CanDelete = false;
                 sharedTask.CanComment = true;
                 sharedTask.CanViewDetails = true;
                 break;
-                
+
             case "reviewer":
                 sharedTask.CanEdit = false;
                 sharedTask.CanDelete = false;
                 sharedTask.CanComment = true;
                 sharedTask.CanViewDetails = true;
                 break;
-                
+
             case "observer":
                 sharedTask.CanEdit = false;
                 sharedTask.CanDelete = false;
                 sharedTask.CanComment = false;
                 sharedTask.CanViewDetails = true;
                 break;
-                
+
             default:
                 // Default to observer permissions
                 sharedTask.CanEdit = false;
@@ -216,8 +216,8 @@ public class GetSharedTasksQueryHandler : IRequestHandler<GetSharedTasksQuery, R
     private IEnumerable<SharedTaskDto> ApplySearch(IEnumerable<SharedTaskDto> tasks, string searchTerm)
     {
         var normalizedSearch = searchTerm.ToLower().Trim();
-        
-        return tasks.Where(t => 
+
+        return tasks.Where(t =>
             t.Title.ToLower().Contains(normalizedSearch) ||
             (t.Description?.ToLower().Contains(normalizedSearch) ?? false) ||
             t.ContactName.ToLower().Contains(normalizedSearch) ||

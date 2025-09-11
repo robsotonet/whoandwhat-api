@@ -11,9 +11,9 @@ using WhoAndWhat.Domain.ValueObjects;
 using WhoAndWhat.Infrastructure.Data;
 using WhoAndWhat.Infrastructure.Repositories;
 using Xunit;
-using Task = System.Threading.Tasks.Task;
 using DomainTask = WhoAndWhat.Domain.Entities.AppTask;
 using DomainTaskStatus = WhoAndWhat.Domain.ValueObjects.AppTaskStatus;
+using Task = System.Threading.Tasks.Task;
 
 namespace WhoAndWhat.Infrastructure.Tests;
 
@@ -33,11 +33,11 @@ public class ContactRepositoryIntegrationTests : IDisposable
         var options = new DbContextOptionsBuilder<ApplicationDbContext>()
             .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
             .Options;
-        
+
         _context = new ApplicationDbContext(options);
         _baseRepository = new Repository<Contact>(_context);
         _softDeleteService = new SoftDeleteService();
-        
+
         // Setup test data
         SetupTestData().GetAwaiter().GetResult();
     }
@@ -47,7 +47,7 @@ public class ContactRepositoryIntegrationTests : IDisposable
         // Create test users
         _testUser = new User("test@test.com", "testuser", Language.en);
         _testUser.SetPassword("TestPassword123!");
-        
+
         _otherUser = new User("other@test.com", "otheruser", Language.en);
         _otherUser.SetPassword("TestPassword123!");
 
@@ -165,10 +165,10 @@ public class ContactRepositoryIntegrationTests : IDisposable
         // Arrange
         var contact1 = CreateTestContact("John Doe", _testUser.Id);
         contact1.Email = "john@company.com";
-        
+
         var contact2 = CreateTestContact("Jane Smith", _testUser.Id);
         contact2.Email = "jane@company.com";
-        
+
         var contact3 = CreateTestContact("Bob Wilson", _testUser.Id);
         contact3.Email = "bob@personal.com";
 
@@ -222,7 +222,7 @@ public class ContactRepositoryIntegrationTests : IDisposable
         // Assert
         result.IsSuccess.Should().BeTrue();
         result.Message.Should().Contain("has been deleted");
-        
+
         contact.IsDeleted.Should().BeTrue();
         contact.DeletedAt.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromMinutes(1));
 
@@ -262,7 +262,7 @@ public class ContactRepositoryIntegrationTests : IDisposable
         result.IsSuccess.Should().BeFalse();
         result.Message.Should().Contain("associated with");
         result.Message.Should().Contain("active tasks");
-        
+
         contact.IsDeleted.Should().BeFalse();
         contact.DeletedAt.Should().BeNull();
     }
@@ -293,9 +293,9 @@ public class ContactRepositoryIntegrationTests : IDisposable
 
         // Assert
         result.IsSuccess.Should().BeTrue();
-        
+
         contact.IsDeleted.Should().BeTrue();
-        
+
         // Contact should be removed from task
         var taskWithContacts = await _context.Tasks
             .Include(t => t.Contacts)
@@ -318,7 +318,7 @@ public class ContactRepositoryIntegrationTests : IDisposable
         // Assert
         result.IsSuccess.Should().BeTrue();
         result.Message.Should().Contain("has been restored");
-        
+
         contact.IsDeleted.Should().BeFalse();
         contact.DeletedAt.Should().BeNull();
 
@@ -427,10 +427,10 @@ public class ContactRepositoryIntegrationTests : IDisposable
         // Arrange
         var familyContact = CreateTestContact("Family Member", _testUser.Id);
         familyContact.RelationshipType = 1; // Family
-        
+
         var businessContact = CreateTestContact("Business Contact", _testUser.Id);
         businessContact.RelationshipType = 2; // Business
-        
+
         var friendContact = CreateTestContact("Friend", _testUser.Id);
         friendContact.RelationshipType = 3; // Friend
 
@@ -481,7 +481,7 @@ public class ContactRepositoryIntegrationTests : IDisposable
         {
             contacts.Add(CreateTestContact($"Contact {i}", _testUser.Id));
         }
-        
+
         await _context.Contacts.AddRangeAsync(contacts);
         await _context.SaveChangesAsync();
 
@@ -508,7 +508,7 @@ public class ContactRepositoryIntegrationTests : IDisposable
             contact.Email = $"testcontact{i}@example.com";
             contacts.Add(contact);
         }
-        
+
         await _context.Contacts.AddRangeAsync(contacts);
         await _context.SaveChangesAsync();
 
@@ -551,7 +551,7 @@ public class ContactRepositoryIntegrationTests : IDisposable
         // Arrange
         var userContact = CreateTestContact("User Contact", _testUser.Id);
         var otherContact = CreateTestContact("Other Contact", _otherUser.Id);
-        
+
         await _context.Contacts.AddRangeAsync(userContact, otherContact);
         await _context.SaveChangesAsync();
 
@@ -560,11 +560,11 @@ public class ContactRepositoryIntegrationTests : IDisposable
 
         // Assert
         result.IsSuccess.Should().BeTrue();
-        
+
         // Verify the contact belongs to the other user
         otherContact.UserId.Should().Be(_otherUser.Id);
         otherContact.UserId.Should().NotBe(_testUser.Id);
-        
+
         // User should still see their own contacts
         var userContacts = await _context.Contacts
             .Where(c => c.UserId == _testUser.Id)

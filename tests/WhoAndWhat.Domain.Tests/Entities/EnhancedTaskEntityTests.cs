@@ -32,7 +32,7 @@ public class EnhancedTaskEntityTests
     {
         var task = CreateValidTask();
         task.DueDate = null;
-        
+
         task.IsOverdue.Should().BeFalse();
     }
 
@@ -42,7 +42,7 @@ public class EnhancedTaskEntityTests
         var task = CreateValidTask();
         task.DueDate = DateTime.UtcNow.AddDays(-1);
         task.Status = DomainTaskStatus.Completed.Value;
-        
+
         task.IsOverdue.Should().BeFalse();
     }
 
@@ -52,7 +52,7 @@ public class EnhancedTaskEntityTests
         var task = CreateValidTask();
         task.DueDate = DateTime.UtcNow.AddDays(-1);
         task.Status = DomainTaskStatus.Archived.Value;
-        
+
         task.IsOverdue.Should().BeFalse();
     }
 
@@ -62,7 +62,7 @@ public class EnhancedTaskEntityTests
         var task = CreateValidTask();
         task.DueDate = DateTime.UtcNow.AddDays(-1);
         task.Status = DomainTaskStatus.InProgress.Value;
-        
+
         task.IsOverdue.Should().BeTrue();
     }
 
@@ -71,7 +71,7 @@ public class EnhancedTaskEntityTests
     {
         var task = CreateValidTask();
         task.DueDate = null;
-        
+
         task.DaysUntilDue.Should().BeNull();
     }
 
@@ -80,7 +80,7 @@ public class EnhancedTaskEntityTests
     {
         var task = CreateValidTask();
         task.DueDate = DateTime.UtcNow.Date.AddDays(5);
-        
+
         task.DaysUntilDue.Should().Be(5);
     }
 
@@ -89,7 +89,7 @@ public class EnhancedTaskEntityTests
     {
         var task = CreateValidTask();
         task.DueDate = DateTime.UtcNow.Date.AddDays(-2);
-        
+
         task.DaysUntilDue.Should().Be(-2);
     }
 
@@ -98,7 +98,7 @@ public class EnhancedTaskEntityTests
     {
         var task = CreateValidTask();
         task.Status = DomainTaskStatus.Completed.Value;
-        
+
         task.CompletionPercentage.Should().Be(100m);
     }
 
@@ -108,7 +108,7 @@ public class EnhancedTaskEntityTests
         var task = CreateValidTask();
         task.Status = DomainTaskStatus.InProgress.Value;
         task.Subtasks = new List<DomainTask>();
-        
+
         task.CompletionPercentage.Should().Be(50m);
     }
 
@@ -118,7 +118,7 @@ public class EnhancedTaskEntityTests
         var task = CreateValidTask();
         task.Status = DomainTaskStatus.Pending.Value;
         task.Subtasks = new List<DomainTask>();
-        
+
         task.CompletionPercentage.Should().Be(0m);
     }
 
@@ -134,7 +134,7 @@ public class EnhancedTaskEntityTests
             new() { Status = DomainTaskStatus.Pending.Value },
             new() { Status = DomainTaskStatus.Pending.Value }
         };
-        
+
         task.CompletionPercentage.Should().Be(50m); // 2 out of 4 completed
     }
 
@@ -143,7 +143,7 @@ public class EnhancedTaskEntityTests
     {
         var task = CreateValidTask();
         task.Subtasks = new List<DomainTask>();
-        
+
         task.HasActiveSubtasks.Should().BeFalse();
     }
 
@@ -156,7 +156,7 @@ public class EnhancedTaskEntityTests
             new() { Status = DomainTaskStatus.InProgress.Value },
             new() { Status = DomainTaskStatus.Completed.Value }
         };
-        
+
         task.HasActiveSubtasks.Should().BeTrue();
     }
 
@@ -165,7 +165,7 @@ public class EnhancedTaskEntityTests
     {
         var task = CreateValidTask();
         task.ProjectId = null;
-        
+
         task.IsStandalone.Should().BeTrue();
     }
 
@@ -174,7 +174,7 @@ public class EnhancedTaskEntityTests
     {
         var task = CreateValidTask();
         task.ProjectId = Guid.NewGuid();
-        
+
         task.IsStandalone.Should().BeFalse();
     }
 
@@ -187,9 +187,9 @@ public class EnhancedTaskEntityTests
     {
         var task = CreateValidTask();
         task.Title = "Valid Title";
-        
+
         var result = task.ValidateTitle();
-        
+
         result.IsValid.Should().BeTrue();
         result.Errors.Should().BeEmpty();
     }
@@ -199,9 +199,9 @@ public class EnhancedTaskEntityTests
     {
         var task = CreateValidTask();
         task.Title = null!;
-        
+
         var result = task.ValidateTitle();
-        
+
         result.IsValid.Should().BeFalse();
         result.Errors.Should().Contain("Title is required");
     }
@@ -211,9 +211,9 @@ public class EnhancedTaskEntityTests
     {
         var task = CreateValidTask();
         task.Title = "";
-        
+
         var result = task.ValidateTitle();
-        
+
         result.IsValid.Should().BeFalse();
         result.Errors.Should().Contain("Title is required");
     }
@@ -223,9 +223,9 @@ public class EnhancedTaskEntityTests
     {
         var task = CreateValidTask();
         task.Title = new string('a', DomainTask.MaxTitleLength + 1);
-        
+
         var result = task.ValidateTitle();
-        
+
         result.IsValid.Should().BeFalse();
         result.Errors.Should().Contain($"Title cannot exceed {DomainTask.MaxTitleLength} characters");
     }
@@ -235,9 +235,9 @@ public class EnhancedTaskEntityTests
     {
         var task = CreateValidTask();
         task.Title = " Title with whitespace ";
-        
+
         var result = task.ValidateTitle();
-        
+
         result.IsValid.Should().BeFalse();
         result.Errors.Should().Contain("Title cannot start or end with whitespace");
     }
@@ -247,9 +247,9 @@ public class EnhancedTaskEntityTests
     {
         var task = CreateValidTask();
         task.Description = "Valid description";
-        
+
         var result = task.ValidateDescription();
-        
+
         result.IsValid.Should().BeTrue();
     }
 
@@ -258,9 +258,9 @@ public class EnhancedTaskEntityTests
     {
         var task = CreateValidTask();
         task.Description = null;
-        
+
         var result = task.ValidateDescription();
-        
+
         result.IsValid.Should().BeTrue();
     }
 
@@ -269,9 +269,9 @@ public class EnhancedTaskEntityTests
     {
         var task = CreateValidTask();
         task.Description = new string('a', DomainTask.MaxDescriptionLength + 1);
-        
+
         var result = task.ValidateDescription();
-        
+
         result.IsValid.Should().BeFalse();
         result.Errors.Should().Contain($"Description cannot exceed {DomainTask.MaxDescriptionLength} characters");
     }
@@ -282,9 +282,9 @@ public class EnhancedTaskEntityTests
         var task = CreateValidTask();
         task.Category = AppTaskCategory.ToDo.Value;
         task.DueDate = DateTime.UtcNow.AddDays(1);
-        
+
         var result = task.ValidateDueDate();
-        
+
         result.IsValid.Should().BeTrue();
     }
 
@@ -294,9 +294,9 @@ public class EnhancedTaskEntityTests
         var task = CreateValidTask();
         task.Category = AppTaskCategory.Appointment.Value;
         task.DueDate = null;
-        
+
         var result = task.ValidateDueDate();
-        
+
         result.IsValid.Should().BeFalse();
         result.Errors.Should().Contain("Appointments must have a due date");
     }
@@ -307,9 +307,9 @@ public class EnhancedTaskEntityTests
         var task = CreateValidTask();
         task.Category = AppTaskCategory.BillReminder.Value;
         task.DueDate = null;
-        
+
         var result = task.ValidateDueDate();
-        
+
         result.IsValid.Should().BeFalse();
         result.Errors.Should().Contain("Bill reminders must have a due date");
     }
@@ -320,9 +320,9 @@ public class EnhancedTaskEntityTests
         var task = CreateValidTask();
         task.CreatedAt = DateTime.MinValue; // Indicates new task
         task.DueDate = DateTime.UtcNow.AddDays(-1);
-        
+
         var result = task.ValidateDueDate();
-        
+
         result.IsValid.Should().BeFalse();
         result.Errors.Should().Contain("Due date cannot be in the past");
     }
@@ -335,9 +335,9 @@ public class EnhancedTaskEntityTests
         task.Description = new string('a', DomainTask.MaxDescriptionLength + 1);
         task.Category = AppTaskCategory.Appointment.Value;
         task.DueDate = null;
-        
+
         var result = task.Validate();
-        
+
         result.IsValid.Should().BeFalse();
         result.Errors.Should().HaveCountGreaterOrEqualTo(2);
         result.Errors.Should().Contain("Title is required");
@@ -354,7 +354,7 @@ public class EnhancedTaskEntityTests
     {
         var task = CreateValidTask();
         task.Status = DomainTaskStatus.Pending.Value;
-        
+
         task.CanBeCompleted().Should().BeTrue();
     }
 
@@ -363,7 +363,7 @@ public class EnhancedTaskEntityTests
     {
         var task = CreateValidTask();
         task.Status = DomainTaskStatus.InProgress.Value;
-        
+
         task.CanBeCompleted().Should().BeTrue();
     }
 
@@ -372,7 +372,7 @@ public class EnhancedTaskEntityTests
     {
         var task = CreateValidTask();
         task.Status = DomainTaskStatus.Completed.Value;
-        
+
         task.CanBeCompleted().Should().BeFalse();
     }
 
@@ -381,7 +381,7 @@ public class EnhancedTaskEntityTests
     {
         var task = CreateValidTask();
         task.Status = DomainTaskStatus.Archived.Value;
-        
+
         task.CanBeCompleted().Should().BeFalse();
     }
 
@@ -390,7 +390,7 @@ public class EnhancedTaskEntityTests
     {
         var task = CreateValidTask();
         task.IsDeleted = true;
-        
+
         task.CanBeCompleted().Should().BeFalse();
     }
 
@@ -403,7 +403,7 @@ public class EnhancedTaskEntityTests
         {
             new() { Status = DomainTaskStatus.InProgress.Value }
         };
-        
+
         task.CanBeCompleted().Should().BeFalse();
     }
 
@@ -416,7 +416,7 @@ public class EnhancedTaskEntityTests
         {
             new() { Status = DomainTaskStatus.InProgress.Value }
         };
-        
+
         task.CanBeCompleted().Should().BeTrue();
     }
 
@@ -425,7 +425,7 @@ public class EnhancedTaskEntityTests
     {
         var task = CreateValidTask();
         task.Status = DomainTaskStatus.Completed.Value;
-        
+
         task.CanBeArchived().Should().BeTrue();
     }
 
@@ -435,7 +435,7 @@ public class EnhancedTaskEntityTests
         var task = CreateValidTask();
         task.Status = DomainTaskStatus.Pending.Value;
         task.CreatedAt = DateTime.UtcNow.AddMonths(-7);
-        
+
         task.CanBeArchived().Should().BeTrue();
     }
 
@@ -445,7 +445,7 @@ public class EnhancedTaskEntityTests
         var task = CreateValidTask();
         task.Status = DomainTaskStatus.Pending.Value;
         task.CreatedAt = DateTime.UtcNow.AddMonths(-3);
-        
+
         task.CanBeArchived().Should().BeFalse();
     }
 
@@ -454,7 +454,7 @@ public class EnhancedTaskEntityTests
     {
         var task = CreateValidTask();
         task.Status = DomainTaskStatus.Archived.Value;
-        
+
         task.CanBeArchived().Should().BeFalse();
     }
 
@@ -465,7 +465,7 @@ public class EnhancedTaskEntityTests
         task.Category = AppTaskCategory.Idea.Value;
         task.Status = DomainTaskStatus.Pending.Value;
         task.Subtasks = new List<DomainTask> { new() };
-        
+
         task.CanConvertToProject().Should().BeTrue();
     }
 
@@ -476,7 +476,7 @@ public class EnhancedTaskEntityTests
         task.Category = AppTaskCategory.ToDo.Value;
         task.Status = DomainTaskStatus.Pending.Value;
         task.Description = new string('a', 150);
-        
+
         task.CanConvertToProject().Should().BeTrue();
     }
 
@@ -485,7 +485,7 @@ public class EnhancedTaskEntityTests
     {
         var task = CreateValidTask();
         task.Status = DomainTaskStatus.Completed.Value;
-        
+
         task.CanConvertToProject().Should().BeFalse();
     }
 
@@ -494,7 +494,7 @@ public class EnhancedTaskEntityTests
     {
         var task = CreateValidTask();
         task.Category = AppTaskCategory.Project.Value;
-        
+
         task.CanConvertToProject().Should().BeFalse();
     }
 
@@ -503,7 +503,7 @@ public class EnhancedTaskEntityTests
     {
         var task = CreateValidTask();
         task.ProjectId = Guid.NewGuid();
-        
+
         task.CanConvertToProject().Should().BeFalse();
     }
 
@@ -517,9 +517,9 @@ public class EnhancedTaskEntityTests
         var task = CreateValidTask();
         task.Status = DomainTaskStatus.Pending.Value;
         var originalUpdatedAt = task.UpdatedAt;
-        
+
         var result = task.MarkInProgress();
-        
+
         result.Should().BeTrue();
         task.Status.Should().Be(DomainTaskStatus.InProgress.Value);
         task.UpdatedAt.Should().BeAfter(originalUpdatedAt);
@@ -530,9 +530,9 @@ public class EnhancedTaskEntityTests
     {
         var task = CreateValidTask();
         task.Status = DomainTaskStatus.InProgress.Value;
-        
+
         var result = task.MarkInProgress();
-        
+
         result.Should().BeTrue();
         task.Status.Should().Be(DomainTaskStatus.InProgress.Value);
     }
@@ -542,9 +542,9 @@ public class EnhancedTaskEntityTests
     {
         var task = CreateValidTask();
         task.Status = DomainTaskStatus.Completed.Value;
-        
+
         var result = task.MarkInProgress();
-        
+
         result.Should().BeFalse();
         task.Status.Should().Be(DomainTaskStatus.Completed.Value);
     }
@@ -555,9 +555,9 @@ public class EnhancedTaskEntityTests
         var task = CreateValidTask();
         task.Status = DomainTaskStatus.InProgress.Value;
         var originalUpdatedAt = task.UpdatedAt;
-        
+
         var result = task.MarkCompleted();
-        
+
         result.Should().BeTrue();
         task.Status.Should().Be(DomainTaskStatus.Completed.Value);
         task.UpdatedAt.Should().BeAfter(originalUpdatedAt);
@@ -568,9 +568,9 @@ public class EnhancedTaskEntityTests
     {
         var task = CreateValidTask();
         task.Status = DomainTaskStatus.Archived.Value;
-        
+
         var result = task.MarkCompleted();
-        
+
         result.Should().BeFalse();
         task.Status.Should().Be(DomainTaskStatus.Archived.Value);
     }
@@ -581,9 +581,9 @@ public class EnhancedTaskEntityTests
         var task = CreateValidTask();
         task.Status = DomainTaskStatus.Completed.Value;
         var originalUpdatedAt = task.UpdatedAt;
-        
+
         var result = task.MarkArchived();
-        
+
         result.Should().BeTrue();
         task.Status.Should().Be(DomainTaskStatus.Archived.Value);
         task.UpdatedAt.Should().BeAfter(originalUpdatedAt);
@@ -594,9 +594,9 @@ public class EnhancedTaskEntityTests
     {
         var task = CreateValidTask();
         task.Status = DomainTaskStatus.InProgress.Value;
-        
+
         var result = task.MarkArchived();
-        
+
         result.Should().BeFalse();
         task.Status.Should().Be(DomainTaskStatus.InProgress.Value);
     }
@@ -606,9 +606,9 @@ public class EnhancedTaskEntityTests
     {
         var task = CreateValidTask();
         var originalUpdatedAt = task.UpdatedAt;
-        
+
         task.SoftDelete();
-        
+
         task.IsDeleted.Should().BeTrue();
         task.UpdatedAt.Should().BeAfter(originalUpdatedAt);
     }
@@ -619,9 +619,9 @@ public class EnhancedTaskEntityTests
         var task = CreateValidTask();
         task.IsDeleted = true;
         var originalUpdatedAt = task.UpdatedAt;
-        
+
         task.Restore();
-        
+
         task.IsDeleted.Should().BeFalse();
         task.UpdatedAt.Should().BeAfter(originalUpdatedAt);
     }
@@ -636,9 +636,9 @@ public class EnhancedTaskEntityTests
         var task = CreateValidTask();
         var newTitle = "New Valid Title";
         var originalUpdatedAt = task.UpdatedAt;
-        
+
         var result = task.UpdateTitle(newTitle);
-        
+
         result.Should().BeTrue();
         task.Title.Should().Be(newTitle);
         task.UpdatedAt.Should().BeAfter(originalUpdatedAt);
@@ -648,9 +648,9 @@ public class EnhancedTaskEntityTests
     public void UpdateTitle_Should_Trim_Whitespace()
     {
         var task = CreateValidTask();
-        
+
         var result = task.UpdateTitle("  Trimmed Title  ");
-        
+
         result.Should().BeTrue();
         task.Title.Should().Be("Trimmed Title");
     }
@@ -660,9 +660,9 @@ public class EnhancedTaskEntityTests
     {
         var task = CreateValidTask();
         var originalTitle = task.Title;
-        
+
         var result = task.UpdateTitle(null!);
-        
+
         result.Should().BeFalse();
         task.Title.Should().Be(originalTitle);
     }
@@ -673,9 +673,9 @@ public class EnhancedTaskEntityTests
         var task = CreateValidTask();
         var newDescription = "New valid description";
         var originalUpdatedAt = task.UpdatedAt;
-        
+
         var result = task.UpdateDescription(newDescription);
-        
+
         result.Should().BeTrue();
         task.Description.Should().Be(newDescription);
         task.UpdatedAt.Should().BeAfter(originalUpdatedAt);
@@ -685,9 +685,9 @@ public class EnhancedTaskEntityTests
     public void UpdateDescription_Should_Handle_Null_Description()
     {
         var task = CreateValidTask();
-        
+
         var result = task.UpdateDescription(null);
-        
+
         result.Should().BeTrue();
         task.Description.Should().BeNull();
     }
@@ -698,9 +698,9 @@ public class EnhancedTaskEntityTests
         var task = CreateValidTask();
         var originalDescription = task.Description;
         var tooLongDescription = new string('a', DomainTask.MaxDescriptionLength + 1);
-        
+
         var result = task.UpdateDescription(tooLongDescription);
-        
+
         result.Should().BeFalse();
         task.Description.Should().Be(originalDescription);
     }
@@ -711,9 +711,9 @@ public class EnhancedTaskEntityTests
         var task = CreateValidTask();
         var newDueDate = DateTime.UtcNow.AddDays(10);
         var originalUpdatedAt = task.UpdatedAt;
-        
+
         var result = task.UpdateDueDate(newDueDate);
-        
+
         result.Should().BeTrue();
         task.DueDate.Should().Be(newDueDate);
         task.UpdatedAt.Should().BeAfter(originalUpdatedAt);
@@ -725,9 +725,9 @@ public class EnhancedTaskEntityTests
         var task = CreateValidTask();
         task.Category = AppTaskCategory.Appointment.Value;
         var originalDueDate = task.DueDate;
-        
+
         var result = task.UpdateDueDate(null);
-        
+
         result.Should().BeFalse();
         task.DueDate.Should().Be(originalDueDate);
     }

@@ -1,10 +1,10 @@
+using System.Net;
 using FluentAssertions;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Moq;
 using StackExchange.Redis;
-using System.Net;
 using WhoAndWhat.Domain.Entities;
 using WhoAndWhat.Infrastructure.Configuration;
 using WhoAndWhat.Infrastructure.Services;
@@ -119,7 +119,7 @@ public class TaskCacheServiceTests : IDisposable
         // Arrange
         var taskId = Guid.NewGuid();
         var userId = Guid.NewGuid();
-        
+
         _mockDistributedCache.Setup(x => x.GetStringAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync((string?)null);
 
@@ -142,7 +142,7 @@ public class TaskCacheServiceTests : IDisposable
         await act.Should().NotThrowAsync();
     }
 
-    [Fact] 
+    [Fact]
     public async Task InvalidateTaskCacheAsync_Should_Remove_Cache_Entries()
     {
         // Arrange
@@ -154,7 +154,7 @@ public class TaskCacheServiceTests : IDisposable
 
         var mockServer = new Mock<IServer>();
         var mockEndPoint = new IPEndPoint(IPAddress.Loopback, 6379);
-        
+
         _mockRedis.Setup(x => x.GetEndPoints(It.IsAny<bool>()))
             .Returns(new EndPoint[] { mockEndPoint });
         _mockRedis.Setup(x => x.GetServer(It.IsAny<EndPoint>(), It.IsAny<object>()))
@@ -173,13 +173,13 @@ public class TaskCacheServiceTests : IDisposable
     {
         // Arrange
         var userId = Guid.NewGuid();
-        
+
         _mockDistributedCache.Setup(x => x.RemoveAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
 
         var mockServer = new Mock<IServer>();
         var mockEndPoint = new IPEndPoint(IPAddress.Loopback, 6379);
-        
+
         _mockRedis.Setup(x => x.GetEndPoints(It.IsAny<bool>()))
             .Returns(new EndPoint[] { mockEndPoint });
         _mockRedis.Setup(x => x.GetServer(It.IsAny<EndPoint>(), It.IsAny<object>()))
@@ -199,16 +199,16 @@ public class TaskCacheServiceTests : IDisposable
         // Arrange
         var mockServer = new Mock<IServer>();
         var mockEndPoint = new IPEndPoint(IPAddress.Loopback, 6379);
-        
+
         _mockRedis.Setup(x => x.GetEndPoints(It.IsAny<bool>()))
             .Returns(new EndPoint[] { mockEndPoint });
         _mockRedis.Setup(x => x.GetServer(It.IsAny<EndPoint>(), It.IsAny<object>()))
             .Returns(mockServer.Object);
-            
+
         var mockKeys = new RedisKey[] { "test:task:id:123", "test:task:user:456" };
         mockServer.Setup(x => x.Keys(It.IsAny<int>(), It.IsAny<RedisValue>(), It.IsAny<int>(), It.IsAny<long>(), It.IsAny<int>(), It.IsAny<CommandFlags>()))
             .Returns(mockKeys);
-            
+
         _mockDatabase.Setup(x => x.KeyDeleteAsync(It.IsAny<RedisKey[]>(), It.IsAny<CommandFlags>()))
             .ReturnsAsync(2);
 
@@ -241,7 +241,7 @@ public class TaskCacheServiceTests : IDisposable
         // Arrange
         var taskId = Guid.NewGuid();
         var userId = Guid.NewGuid();
-        
+
         _mockDistributedCache.Setup(x => x.GetStringAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ThrowsAsync(new RedisException("Connection failed"));
 
@@ -256,7 +256,7 @@ public class TaskCacheServiceTests : IDisposable
         // Arrange
         var task = CreateTestTask();
         var userId = Guid.NewGuid();
-        
+
         _mockDistributedCache.Setup(x => x.SetStringAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<DistributedCacheEntryOptions>(), It.IsAny<CancellationToken>()))
             .ThrowsAsync(new RedisException("Connection failed"));
 

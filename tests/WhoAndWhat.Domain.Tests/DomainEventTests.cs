@@ -1,7 +1,7 @@
+using System.Linq;
+using FluentAssertions;
 using WhoAndWhat.Domain.Events;
 using Xunit;
-using FluentAssertions;
-using System.Linq;
 
 namespace WhoAndWhat.Domain.Tests;
 

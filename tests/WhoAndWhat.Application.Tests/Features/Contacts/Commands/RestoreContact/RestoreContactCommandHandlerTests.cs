@@ -75,9 +75,9 @@ public class RestoreContactCommandHandlerTests
         _mockContactRepository.Setup(x => x.GetContactIncludingDeletedAsync(
             It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(contact);
-        
+
         _mockContactRepository.Setup(x => x.Update(It.IsAny<Contact>()));
-        
+
         _mockContactRepository.Setup(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(1);
     }
@@ -88,21 +88,21 @@ public class RestoreContactCommandHandlerTests
     private Contact SetupContactCaptureRepositoryMocks(Contact originalContact)
     {
         Contact updatedContact = null!;
-        
+
         _mockContactRepository.Setup(x => x.GetContactIncludingDeletedAsync(
             It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(originalContact);
-        
+
         _mockContactRepository.Setup(x => x.Update(It.IsAny<Contact>()))
             .Callback<Contact>(contact => updatedContact = contact);
-        
+
         _mockContactRepository.Setup(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(1);
-        
+
         return updatedContact;
     }
 
-    private static RestoreContactCommand CreateValidCommand(Guid? contactId = null, Guid? userId = null) => 
+    private static RestoreContactCommand CreateValidCommand(Guid? contactId = null, Guid? userId = null) =>
         new(contactId ?? Guid.NewGuid(), userId ?? Guid.NewGuid());
 
     #endregion
@@ -117,7 +117,7 @@ public class RestoreContactCommandHandlerTests
         var userId = Guid.NewGuid();
         var deletedContact = CreateSoftDeletedContact(contactId, userId);
         var command = CreateValidCommand(contactId, userId);
-        
+
         SetupSuccessfulRestoreRepositoryMocks(deletedContact);
 
         // Act
@@ -131,7 +131,7 @@ public class RestoreContactCommandHandlerTests
         result.Value.Email.Should().Be("deleted@example.com");
         result.Value.IsDeleted.Should().BeFalse();
         result.Value.DeletedAt.Should().BeNull();
-        
+
         _mockContactRepository.Verify(x => x.GetContactIncludingDeletedAsync(contactId, userId, It.IsAny<CancellationToken>()), Times.Once);
         _mockContactRepository.Verify(x => x.Update(It.IsAny<Contact>()), Times.Once);
         _mockContactRepository.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
@@ -145,7 +145,7 @@ public class RestoreContactCommandHandlerTests
         var userId = Guid.NewGuid();
         var deletedContact = CreateSoftDeletedContact(contactId, userId);
         var command = CreateValidCommand(contactId, userId);
-        
+
         var updatedContact = SetupContactCaptureRepositoryMocks(deletedContact);
 
         // Act
@@ -157,7 +157,7 @@ public class RestoreContactCommandHandlerTests
         updatedContact.IsDeleted.Should().BeFalse();
         updatedContact.DeletedAt.Should().BeNull();
         updatedContact.UpdatedAt.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(5));
-        
+
         // Verify other properties remain unchanged
         updatedContact.Id.Should().Be(contactId);
         updatedContact.Name.Should().Be("Deleted Contact");
@@ -176,7 +176,7 @@ public class RestoreContactCommandHandlerTests
     {
         // Arrange
         var command = CreateValidCommand();
-        
+
         _mockContactRepository.Setup(x => x.GetContactIncludingDeletedAsync(
             It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync((Contact)null!);
@@ -187,7 +187,7 @@ public class RestoreContactCommandHandlerTests
         // Assert
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Be("Contact not found");
-        
+
         _mockContactRepository.Verify(x => x.GetContactIncludingDeletedAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Once);
         _mockContactRepository.Verify(x => x.Update(It.IsAny<Contact>()), Times.Never);
         _mockContactRepository.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
@@ -200,10 +200,10 @@ public class RestoreContactCommandHandlerTests
         var contactId = Guid.NewGuid();
         var commandUserId = Guid.NewGuid();
         var contactOwnerUserId = Guid.NewGuid(); // Different user
-        
+
         var deletedContact = CreateSoftDeletedContact(contactId, contactOwnerUserId);
         var command = CreateValidCommand(contactId, commandUserId);
-        
+
         _mockContactRepository.Setup(x => x.GetContactIncludingDeletedAsync(
             contactId, commandUserId, It.IsAny<CancellationToken>()))
             .ReturnsAsync((Contact)null!); // Repository should filter by user
@@ -228,7 +228,7 @@ public class RestoreContactCommandHandlerTests
         var userId = Guid.NewGuid();
         var activeContact = CreateActiveContact(contactId, userId);
         var command = CreateValidCommand(contactId, userId);
-        
+
         _mockContactRepository.Setup(x => x.GetContactIncludingDeletedAsync(
             contactId, userId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(activeContact);
@@ -239,7 +239,7 @@ public class RestoreContactCommandHandlerTests
         // Assert
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Be("Contact is not deleted and cannot be restored");
-        
+
         _mockContactRepository.Verify(x => x.GetContactIncludingDeletedAsync(contactId, userId, It.IsAny<CancellationToken>()), Times.Once);
         _mockContactRepository.Verify(x => x.Update(It.IsAny<Contact>()), Times.Never);
         _mockContactRepository.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
@@ -254,7 +254,7 @@ public class RestoreContactCommandHandlerTests
     {
         // Arrange
         var command = CreateValidCommand();
-        
+
         _mockContactRepository.Setup(x => x.GetContactIncludingDeletedAsync(
             It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ThrowsAsync(new Exception("Database connection failed"));
@@ -265,7 +265,7 @@ public class RestoreContactCommandHandlerTests
         // Assert
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Be("An error occurred while restoring the contact");
-        
+
         _mockContactRepository.Verify(x => x.Update(It.IsAny<Contact>()), Times.Never);
         _mockContactRepository.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
@@ -278,11 +278,11 @@ public class RestoreContactCommandHandlerTests
         var userId = Guid.NewGuid();
         var deletedContact = CreateSoftDeletedContact(contactId, userId);
         var command = CreateValidCommand(contactId, userId);
-        
+
         _mockContactRepository.Setup(x => x.GetContactIncludingDeletedAsync(
             contactId, userId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(deletedContact);
-        
+
         _mockContactRepository.Setup(x => x.Update(It.IsAny<Contact>()))
             .Throws(new Exception("Update operation failed"));
 
@@ -292,7 +292,7 @@ public class RestoreContactCommandHandlerTests
         // Assert
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Be("An error occurred while restoring the contact");
-        
+
         _mockContactRepository.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
 
@@ -304,13 +304,13 @@ public class RestoreContactCommandHandlerTests
         var userId = Guid.NewGuid();
         var deletedContact = CreateSoftDeletedContact(contactId, userId);
         var command = CreateValidCommand(contactId, userId);
-        
+
         _mockContactRepository.Setup(x => x.GetContactIncludingDeletedAsync(
             contactId, userId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(deletedContact);
-        
+
         _mockContactRepository.Setup(x => x.Update(It.IsAny<Contact>()));
-        
+
         _mockContactRepository.Setup(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()))
             .ThrowsAsync(new Exception("Save operation failed"));
 
@@ -338,7 +338,7 @@ public class RestoreContactCommandHandlerTests
         // Assert
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Be("Contact not found");
-        
+
         _mockContactRepository.Verify(x => x.GetContactIncludingDeletedAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Once);
     }
 
@@ -354,7 +354,7 @@ public class RestoreContactCommandHandlerTests
         // Assert
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Be("Contact not found");
-        
+
         _mockContactRepository.Verify(x => x.GetContactIncludingDeletedAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Once);
     }
 
@@ -372,7 +372,7 @@ public class RestoreContactCommandHandlerTests
         var command = CreateValidCommand(contactId, userId);
         var cancellationTokenSource = new CancellationTokenSource();
         var cancellationToken = cancellationTokenSource.Token;
-        
+
         SetupSuccessfulRestoreRepositoryMocks(deletedContact);
 
         // Act
@@ -390,7 +390,7 @@ public class RestoreContactCommandHandlerTests
         var command = CreateValidCommand();
         var cancellationTokenSource = new CancellationTokenSource();
         cancellationTokenSource.Cancel(); // Cancel immediately
-        
+
         _mockContactRepository.Setup(x => x.GetContactIncludingDeletedAsync(
             It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ThrowsAsync(new OperationCanceledException());
@@ -415,7 +415,7 @@ public class RestoreContactCommandHandlerTests
         var userId = Guid.NewGuid();
         var deletedContact = CreateSoftDeletedContact(contactId, userId);
         var command = CreateValidCommand(contactId, userId);
-        
+
         SetupSuccessfulRestoreRepositoryMocks(deletedContact);
 
         // Act
@@ -430,7 +430,7 @@ public class RestoreContactCommandHandlerTests
                 It.IsAny<Exception>(),
                 It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
             Times.Once);
-        
+
         _mockLogger.Verify(
             x => x.Log(
                 LogLevel.Information,
@@ -448,7 +448,7 @@ public class RestoreContactCommandHandlerTests
         var contactId = Guid.NewGuid();
         var userId = Guid.NewGuid();
         var command = CreateValidCommand(contactId, userId);
-        
+
         _mockContactRepository.Setup(x => x.GetContactIncludingDeletedAsync(
             contactId, userId, It.IsAny<CancellationToken>()))
             .ReturnsAsync((Contact)null!);
@@ -475,7 +475,7 @@ public class RestoreContactCommandHandlerTests
         var userId = Guid.NewGuid();
         var command = CreateValidCommand(contactId, userId);
         var expectedException = new Exception("Database error");
-        
+
         _mockContactRepository.Setup(x => x.GetContactIncludingDeletedAsync(
             It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ThrowsAsync(expectedException);

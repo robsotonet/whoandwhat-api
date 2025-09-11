@@ -16,7 +16,7 @@ public class UpdateContactRoleCommandHandler : IRequestHandler<UpdateContactRole
     private static readonly HashSet<string> ValidRoles = new(StringComparer.OrdinalIgnoreCase)
     {
         "Owner",
-        "Collaborator", 
+        "Collaborator",
         "Reviewer",
         "Observer"
     };
@@ -35,7 +35,7 @@ public class UpdateContactRoleCommandHandler : IRequestHandler<UpdateContactRole
     {
         try
         {
-            _logger.LogInformation("Updating role for contact {ContactId} in task {TaskId} to '{NewRole}' for user {UserId}", 
+            _logger.LogInformation("Updating role for contact {ContactId} in task {TaskId} to '{NewRole}' for user {UserId}",
                 request.ContactId, request.TaskId, request.NewRole, request.UserId);
 
             // Validate new role
@@ -55,7 +55,7 @@ public class UpdateContactRoleCommandHandler : IRequestHandler<UpdateContactRole
             // Verify task ownership
             if (task.UserId != request.UserId)
             {
-                _logger.LogWarning("User {UserId} attempted to update contact role in task {TaskId} owned by {OwnerId}", 
+                _logger.LogWarning("User {UserId} attempted to update contact role in task {TaskId} owned by {OwnerId}",
                     request.UserId, request.TaskId, task.UserId);
                 return Result<TaskContactDto>.Failure("Task not found");
             }
@@ -78,7 +78,7 @@ public class UpdateContactRoleCommandHandler : IRequestHandler<UpdateContactRole
             // Verify contact ownership
             if (contact.UserId != request.UserId)
             {
-                _logger.LogWarning("User {UserId} attempted to update role for contact {ContactId} owned by {OwnerId}", 
+                _logger.LogWarning("User {UserId} attempted to update role for contact {ContactId} owned by {OwnerId}",
                     request.UserId, request.ContactId, contact.UserId);
                 return Result<TaskContactDto>.Failure("Contact not found");
             }
@@ -86,7 +86,7 @@ public class UpdateContactRoleCommandHandler : IRequestHandler<UpdateContactRole
             // Check if contact is soft deleted
             if (contact.IsDeleted)
             {
-                _logger.LogWarning("Cannot update role for soft-deleted contact {ContactId} in task {TaskId}", 
+                _logger.LogWarning("Cannot update role for soft-deleted contact {ContactId} in task {TaskId}",
                     request.ContactId, request.TaskId);
                 return Result<TaskContactDto>.Failure("Cannot update role for deleted contact");
             }
@@ -95,7 +95,7 @@ public class UpdateContactRoleCommandHandler : IRequestHandler<UpdateContactRole
             var existingLink = task.TaskContacts?.FirstOrDefault(tc => tc.ContactId == request.ContactId);
             if (existingLink == null)
             {
-                _logger.LogWarning("No existing relationship found between contact {ContactId} and task {TaskId}", 
+                _logger.LogWarning("No existing relationship found between contact {ContactId} and task {TaskId}",
                     request.ContactId, request.TaskId);
                 return Result<TaskContactDto>.Failure("Contact is not linked to this task");
             }
@@ -103,9 +103,9 @@ public class UpdateContactRoleCommandHandler : IRequestHandler<UpdateContactRole
             // Check if role is actually changing
             if (string.Equals(existingLink.Role, request.NewRole, StringComparison.OrdinalIgnoreCase))
             {
-                _logger.LogInformation("Contact {ContactId} already has role '{Role}' in task {TaskId}. No update needed.", 
+                _logger.LogInformation("Contact {ContactId} already has role '{Role}' in task {TaskId}. No update needed.",
                     request.ContactId, request.NewRole, request.TaskId);
-                
+
                 // Return current state
                 var currentDto = new TaskContactDto
                 {
@@ -120,13 +120,13 @@ public class UpdateContactRoleCommandHandler : IRequestHandler<UpdateContactRole
 
             // Log the role change for audit purposes
             var oldRole = existingLink.Role;
-            _logger.LogInformation("Changing contact {ContactId} role in task {TaskId} from '{OldRole}' to '{NewRole}' for user {UserId}", 
+            _logger.LogInformation("Changing contact {ContactId} role in task {TaskId} from '{OldRole}' to '{NewRole}' for user {UserId}",
                 request.ContactId, request.TaskId, oldRole, request.NewRole, request.UserId);
 
             // Update the relationship
             existingLink.Role = request.NewRole;
             existingLink.UpdatedAt = DateTime.UtcNow;
-            
+
             // Update notes if provided
             if (request.Notes != null)
             {
@@ -140,7 +140,7 @@ public class UpdateContactRoleCommandHandler : IRequestHandler<UpdateContactRole
             await _taskRepository.UpdateAsync(task);
             await _taskRepository.SaveChangesAsync(cancellationToken);
 
-            _logger.LogInformation("Successfully updated contact {ContactId} role in task {TaskId} from '{OldRole}' to '{NewRole}' for user {UserId}", 
+            _logger.LogInformation("Successfully updated contact {ContactId} role in task {TaskId} from '{OldRole}' to '{NewRole}' for user {UserId}",
                 request.ContactId, request.TaskId, oldRole, request.NewRole, request.UserId);
 
             // Create response DTO
@@ -157,7 +157,7 @@ public class UpdateContactRoleCommandHandler : IRequestHandler<UpdateContactRole
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error updating contact {ContactId} role in task {TaskId} for user {UserId}", 
+            _logger.LogError(ex, "Error updating contact {ContactId} role in task {TaskId} for user {UserId}",
                 request.ContactId, request.TaskId, request.UserId);
             return Result<TaskContactDto>.Failure($"Error updating contact role: {ex.Message}");
         }

@@ -74,14 +74,14 @@ public class DomainEventDispatcherTests
         // Arrange
         var domainEvent = new TestDomainEvent(Guid.NewGuid(), "Test Event");
         var expectedException = new InvalidOperationException("Mediator failed");
-        
+
         _mockMediator.Setup(x => x.Publish(It.IsAny<object>(), It.IsAny<CancellationToken>()))
             .ThrowsAsync(expectedException);
 
         // Act & Assert
         var exception = await Assert.ThrowsAsync<InvalidOperationException>(
             () => _dispatcher.Dispatch(domainEvent));
-        
+
         exception.Should().BeSameAs(expectedException);
         _mockMediator.Verify(x => x.Publish(domainEvent, It.IsAny<CancellationToken>()), Times.Once);
     }

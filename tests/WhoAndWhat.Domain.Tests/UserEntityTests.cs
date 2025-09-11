@@ -12,9 +12,9 @@ public class UserEntityTests
         var email = "test@example.com";
         var username = "testuser";
         var language = Language.en;
-        
+
         var user = new User(email, username, language);
-        
+
         user.Id.Should().NotBe(Guid.Empty);
         user.Email.Should().Be(email);
         user.Username.Should().Be(username);
@@ -85,11 +85,11 @@ public class UserEntityTests
     public void User_Should_Verify_Email()
     {
         var user = new User("test@example.com", "testuser", Language.en);
-        
+
         user.IsEmailVerified.Should().BeFalse();
-        
+
         user.VerifyEmail();
-        
+
         user.IsEmailVerified.Should().BeTrue();
     }
 
@@ -97,11 +97,11 @@ public class UserEntityTests
     public void User_Should_Update_Preferred_Language()
     {
         var user = new User("test@example.com", "testuser", Language.en);
-        
+
         user.PreferredLanguage.Should().Be(Language.en);
-        
+
         user.UpdatePreferredLanguage(Language.es);
-        
+
         user.PreferredLanguage.Should().Be(Language.es);
     }
 
@@ -109,16 +109,16 @@ public class UserEntityTests
     public void User_Should_Lock_And_Unlock_Account()
     {
         var user = new User("test@example.com", "testuser", Language.en);
-        
+
         user.IsLocked.Should().BeFalse();
-        
+
         user.LockAccount();
-        
+
         user.IsLocked.Should().BeTrue();
         user.LockedUntil.Should().BeAfter(DateTime.UtcNow);
-        
+
         user.UnlockAccount();
-        
+
         user.IsLocked.Should().BeFalse();
         user.LockedUntil.Should().BeNull();
         user.FailedLoginAttempts.Should().Be(0);

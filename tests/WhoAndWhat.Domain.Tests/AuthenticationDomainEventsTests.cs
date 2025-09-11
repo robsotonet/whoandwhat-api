@@ -17,7 +17,7 @@ public class AuthenticationDomainEventsTests
         user.DomainEvents.Should().HaveCount(1);
         var domainEvent = user.DomainEvents.First();
         domainEvent.Should().BeOfType<UserCreatedEvent>();
-        
+
         var userCreatedEvent = domainEvent as UserCreatedEvent;
         userCreatedEvent!.UserId.Should().Be(user.Id);
         userCreatedEvent.Email.Should().Be("test@example.com");
@@ -39,7 +39,7 @@ public class AuthenticationDomainEventsTests
         user.DomainEvents.Should().HaveCount(1);
         var domainEvent = user.DomainEvents.First();
         domainEvent.Should().BeOfType<UserPasswordChangedEvent>();
-        
+
         var passwordChangedEvent = domainEvent as UserPasswordChangedEvent;
         passwordChangedEvent!.UserId.Should().Be(user.Id);
         passwordChangedEvent.DateOccurred.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(5));
@@ -59,7 +59,7 @@ public class AuthenticationDomainEventsTests
         user.DomainEvents.Should().HaveCount(1);
         var domainEvent = user.DomainEvents.First();
         domainEvent.Should().BeOfType<UserLoggedInEvent>();
-        
+
         var loggedInEvent = domainEvent as UserLoggedInEvent;
         loggedInEvent!.UserId.Should().Be(user.Id);
         loggedInEvent.DateOccurred.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(5));
@@ -93,7 +93,7 @@ public class AuthenticationDomainEventsTests
         user.DomainEvents.Should().HaveCount(1);
         var domainEvent = user.DomainEvents.First();
         domainEvent.Should().BeOfType<UserLockedEvent>();
-        
+
         var lockedEvent = domainEvent as UserLockedEvent;
         lockedEvent!.UserId.Should().Be(user.Id);
         lockedEvent.LockedUntil.Should().BeAfter(DateTime.UtcNow);
@@ -117,7 +117,7 @@ public class AuthenticationDomainEventsTests
         user.DomainEvents.Should().HaveCount(1);
         var domainEvent = user.DomainEvents.First();
         domainEvent.Should().BeOfType<UserLockedEvent>();
-        
+
         var lockedEvent = domainEvent as UserLockedEvent;
         lockedEvent!.UserId.Should().Be(user.Id);
         lockedEvent.LockedUntil.Should().BeAfter(DateTime.UtcNow);
@@ -138,7 +138,7 @@ public class AuthenticationDomainEventsTests
         user.DomainEvents.Should().HaveCount(1);
         var domainEvent = user.DomainEvents.First();
         domainEvent.Should().BeOfType<UserUnlockedEvent>();
-        
+
         var unlockedEvent = domainEvent as UserUnlockedEvent;
         unlockedEvent!.UserId.Should().Be(user.Id);
         unlockedEvent.DateOccurred.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(5));
@@ -158,7 +158,7 @@ public class AuthenticationDomainEventsTests
         user.DomainEvents.Should().HaveCount(1);
         var domainEvent = user.DomainEvents.First();
         domainEvent.Should().BeOfType<UserEmailVerifiedEvent>();
-        
+
         var emailVerifiedEvent = domainEvent as UserEmailVerifiedEvent;
         emailVerifiedEvent!.UserId.Should().Be(user.Id);
         emailVerifiedEvent.DateOccurred.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(5));
@@ -178,7 +178,7 @@ public class AuthenticationDomainEventsTests
         user.DomainEvents.Should().HaveCount(1);
         var domainEvent = user.DomainEvents.First();
         domainEvent.Should().BeOfType<UserDeactivatedEvent>();
-        
+
         var deactivatedEvent = domainEvent as UserDeactivatedEvent;
         deactivatedEvent!.UserId.Should().Be(user.Id);
         deactivatedEvent.DateOccurred.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(5));
@@ -198,7 +198,7 @@ public class AuthenticationDomainEventsTests
         user.DomainEvents.Should().HaveCount(1);
         var domainEvent = user.DomainEvents.First();
         domainEvent.Should().BeOfType<UserPreferencesUpdatedEvent>();
-        
+
         var preferencesUpdatedEvent = domainEvent as UserPreferencesUpdatedEvent;
         preferencesUpdatedEvent!.UserId.Should().Be(user.Id);
         preferencesUpdatedEvent.DateOccurred.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(5));
@@ -209,7 +209,7 @@ public class AuthenticationDomainEventsTests
     {
         // Arrange
         var user = new User("test@example.com", "testuser", Language.en);
-        
+
         // Act - Perform multiple operations that generate events
         user.SetPassword("TestPassword123!");
         user.VerifyEmail();
@@ -230,7 +230,7 @@ public class AuthenticationDomainEventsTests
         var user = new User("test@example.com", "testuser", Language.en);
         user.SetPassword("TestPassword123!");
         user.VerifyEmail();
-        
+
         user.DomainEvents.Should().HaveCount(3); // Creation + Password + Email
 
         // Act
@@ -246,7 +246,7 @@ public class AuthenticationDomainEventsTests
         // Arrange
         var user = new User("test@example.com", "testuser", Language.en);
         user.ClearDomainEvents();
-        
+
         // Act
         user.UpdatePreferredLanguage(Language.es);
         user.LockAccount();
@@ -267,7 +267,7 @@ public class AuthenticationDomainEventsTests
         // Assert
         var domainEvent = user.DomainEvents.First();
         domainEvent.DateOccurred.Should().BeCloseTo(creationTime, TimeSpan.FromSeconds(5));
-        
+
         // All domain events should implement IDomainEvent correctly
         domainEvent.Should().BeAssignableTo<IDomainEvent>();
     }

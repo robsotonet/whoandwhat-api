@@ -18,7 +18,7 @@ public class DashboardControllerTests
         // - Test productivity streaks calculation
         // - Test overdue tasks count
         // - Test authorization validation
-        
+
         Assert.True(true, "Placeholder test - implement when DashboardController is created");
     }
 
@@ -30,7 +30,7 @@ public class DashboardControllerTests
         // - Test localization support (English/Spanish)
         // - Test personalization based on user progress
         // - Test content rotation and freshness
-        
+
         Assert.True(true, "Placeholder test - implement when motivational content endpoint is created");
     }
 
@@ -42,7 +42,7 @@ public class DashboardControllerTests
         // - Test activity feed formatting
         // - Test pagination of activities
         // - Test activity filtering by type and date range
-        
+
         Assert.True(true, "Placeholder test - implement when recent activity endpoint is created");
     }
 
@@ -54,7 +54,7 @@ public class DashboardControllerTests
         // - Test trend calculation algorithms
         // - Test data aggregation by time periods (daily, weekly, monthly)
         // - Test chart data formatting for frontend consumption
-        
+
         Assert.True(true, "Placeholder test - implement when productivity trends endpoint is created");
     }
 
@@ -66,7 +66,7 @@ public class DashboardControllerTests
         // - Test deadline priority sorting
         // - Test configurable deadline window (next 7 days, etc.)
         // - Test deadline notification formatting
-        
+
         Assert.True(true, "Placeholder test - implement when upcoming deadlines endpoint is created");
     }
 }

@@ -11,7 +11,7 @@ public class FileUploadOperationFilter : IOperationFilter
     public void Apply(OpenApiOperation operation, OperationFilterContext context)
     {
         var fileParameters = context.MethodInfo.GetParameters()
-            .Where(p => p.ParameterType == typeof(IFormFile) || 
+            .Where(p => p.ParameterType == typeof(IFormFile) ||
                        p.ParameterType == typeof(IFormFileCollection) ||
                        p.ParameterType.IsAssignableFrom(typeof(IEnumerable<IFormFile>)))
             .ToList();
@@ -91,13 +91,13 @@ public class FileUploadOperationFilter : IOperationFilter
         {
             return "Single file upload";
         }
-        
-        if (parameterType == typeof(IFormFileCollection) || 
+
+        if (parameterType == typeof(IFormFileCollection) ||
             parameterType.IsAssignableFrom(typeof(IEnumerable<IFormFile>)))
         {
             return "Multiple file upload";
         }
-        
+
         return "File upload";
     }
 }

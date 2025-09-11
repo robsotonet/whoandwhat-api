@@ -23,7 +23,7 @@ public class ContactValidatorTests
         var result = _validator.TestValidate(contact);
         result.ShouldNotHaveValidationErrorFor(c => c.Name);
     }
-    
+
     [Fact]
     public void Should_Have_Error_When_Email_Is_Invalid()
     {
@@ -31,7 +31,7 @@ public class ContactValidatorTests
         var result = _validator.TestValidate(contact);
         result.ShouldHaveValidationErrorFor(c => c.Email);
     }
-    
+
     [Fact]
     public void Should_Not_Have_Error_When_Email_Is_Valid()
     {

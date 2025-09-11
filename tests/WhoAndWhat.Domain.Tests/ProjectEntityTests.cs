@@ -9,7 +9,7 @@ public class ProjectEntityTests
     public void Project_Should_Initialize_With_Default_Values()
     {
         var project = new Project();
-        
+
         project.Id.Should().NotBe(Guid.Empty); // BaseEntity auto-generates ID
         project.Name.Should().BeNull();
         project.Description.Should().BeNull();

@@ -21,7 +21,7 @@ public class ScanContactQRCommandHandlerTests
     private readonly ContactValidator _contactValidator;
     private readonly Mock<ILogger<ScanContactQRCommandHandler>> _mockLogger;
     private readonly ScanContactQRCommandHandler _handler;
-    
+
     private readonly Guid _testUserId = Guid.NewGuid();
     private readonly Guid _testContactId = Guid.NewGuid();
     private readonly DateTime _futureExpiry = DateTime.UtcNow.AddHours(2);
@@ -31,7 +31,7 @@ public class ScanContactQRCommandHandlerTests
         _mockContactRepository = new Mock<IContactRepository>();
         _contactValidator = new ContactValidator();
         _mockLogger = new Mock<ILogger<ScanContactQRCommandHandler>>();
-        
+
         _handler = new ScanContactQRCommandHandler(
             _mockContactRepository.Object,
             _contactValidator,
@@ -42,7 +42,7 @@ public class ScanContactQRCommandHandlerTests
     public async Task Handle_ValidQRCodeWithCompleteInfo_ShouldCreateContactSuccessfully()
     {
         // Arrange
-        var payload = CreateValidQRPayload(_testContactId, "John Doe", "john@example.com", "+1234567890", 
+        var payload = CreateValidQRPayload(_testContactId, "John Doe", "john@example.com", "+1234567890",
             (int)ContactRelationType.Friend, _futureExpiry);
         var encodedPayload = EncodePayload(payload);
         var command = new ScanContactQRCommand(encodedPayload, _testUserId, "Custom notes");
@@ -73,7 +73,7 @@ public class ScanContactQRCommandHandlerTests
     public async Task Handle_ValidQRCodeWithMinimalInfo_ShouldCreateContactSuccessfully()
     {
         // Arrange
-        var payload = CreateValidQRPayload(_testContactId, "Jane Smith", null, null, 
+        var payload = CreateValidQRPayload(_testContactId, "Jane Smith", null, null,
             (int)ContactRelationType.Other, _futureExpiry);
         var encodedPayload = EncodePayload(payload);
         var command = new ScanContactQRCommand(encodedPayload, _testUserId);
@@ -106,7 +106,7 @@ public class ScanContactQRCommandHandlerTests
         // Assert
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("Failed to decode QR code payload");
-        
+
         VerifyLogMessage(LogLevel.Warning, "Invalid QR code payload for user");
         VerifyNoContactInteractions();
     }
@@ -124,7 +124,7 @@ public class ScanContactQRCommandHandlerTests
         // Assert
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("Failed to decode QR code payload");
-        
+
         VerifyLogMessage(LogLevel.Warning, "Invalid QR code payload for user");
         VerifyNoContactInteractions();
     }
@@ -133,7 +133,7 @@ public class ScanContactQRCommandHandlerTests
     public async Task Handle_EmptyContactId_ShouldReturnFailure()
     {
         // Arrange
-        var payload = CreateValidQRPayload(Guid.Empty, "John Doe", "john@example.com", "+1234567890", 
+        var payload = CreateValidQRPayload(Guid.Empty, "John Doe", "john@example.com", "+1234567890",
             (int)ContactRelationType.Friend, _futureExpiry);
         var encodedPayload = EncodePayload(payload);
         var command = new ScanContactQRCommand(encodedPayload, _testUserId);
@@ -144,7 +144,7 @@ public class ScanContactQRCommandHandlerTests
         // Assert
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Be("Invalid contact ID in QR code");
-        
+
         VerifyLogMessage(LogLevel.Warning, "Invalid QR code payload for user");
         VerifyNoContactInteractions();
     }
@@ -153,7 +153,7 @@ public class ScanContactQRCommandHandlerTests
     public async Task Handle_EmptyContactName_ShouldReturnFailure()
     {
         // Arrange
-        var payload = CreateValidQRPayload(_testContactId, "", "john@example.com", "+1234567890", 
+        var payload = CreateValidQRPayload(_testContactId, "", "john@example.com", "+1234567890",
             (int)ContactRelationType.Friend, _futureExpiry);
         var encodedPayload = EncodePayload(payload);
         var command = new ScanContactQRCommand(encodedPayload, _testUserId);
@@ -164,7 +164,7 @@ public class ScanContactQRCommandHandlerTests
         // Assert
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Be("Contact name is required");
-        
+
         VerifyLogMessage(LogLevel.Warning, "Invalid QR code payload for user");
         VerifyNoContactInteractions();
     }
@@ -174,7 +174,7 @@ public class ScanContactQRCommandHandlerTests
     {
         // Arrange
         var expiredTime = DateTime.UtcNow.AddHours(-1);
-        var payload = CreateValidQRPayload(_testContactId, "John Doe", "john@example.com", "+1234567890", 
+        var payload = CreateValidQRPayload(_testContactId, "John Doe", "john@example.com", "+1234567890",
             (int)ContactRelationType.Friend, expiredTime);
         var encodedPayload = EncodePayload(payload);
         var command = new ScanContactQRCommand(encodedPayload, _testUserId);
@@ -185,7 +185,7 @@ public class ScanContactQRCommandHandlerTests
         // Assert
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Be("QR code has expired");
-        
+
         VerifyLogMessage(LogLevel.Warning, "QR code expired for contact");
         VerifyNoContactInteractions();
     }
@@ -195,7 +195,7 @@ public class ScanContactQRCommandHandlerTests
     {
         // Arrange - Set expiry to current time
         var currentTime = DateTime.UtcNow;
-        var payload = CreateValidQRPayload(_testContactId, "John Doe", "john@example.com", "+1234567890", 
+        var payload = CreateValidQRPayload(_testContactId, "John Doe", "john@example.com", "+1234567890",
             (int)ContactRelationType.Friend, currentTime);
         var encodedPayload = EncodePayload(payload);
         var command = new ScanContactQRCommand(encodedPayload, _testUserId);
@@ -212,7 +212,7 @@ public class ScanContactQRCommandHandlerTests
     public async Task Handle_InvalidSignature_ShouldReturnFailure()
     {
         // Arrange
-        var payload = CreateValidQRPayload(_testContactId, "John Doe", "john@example.com", "+1234567890", 
+        var payload = CreateValidQRPayload(_testContactId, "John Doe", "john@example.com", "+1234567890",
             (int)ContactRelationType.Friend, _futureExpiry);
         payload.Signature = "invalid-signature";
         var encodedPayload = EncodePayload(payload);
@@ -224,7 +224,7 @@ public class ScanContactQRCommandHandlerTests
         // Assert
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Be("Invalid QR code signature");
-        
+
         VerifyLogMessage(LogLevel.Warning, "Invalid QR code signature for contact");
         VerifyNoContactInteractions();
     }
@@ -233,7 +233,7 @@ public class ScanContactQRCommandHandlerTests
     public async Task Handle_ContactAlreadyExists_ShouldReturnFailure()
     {
         // Arrange
-        var payload = CreateValidQRPayload(_testContactId, "John Doe", "john@example.com", "+1234567890", 
+        var payload = CreateValidQRPayload(_testContactId, "John Doe", "john@example.com", "+1234567890",
             (int)ContactRelationType.Friend, _futureExpiry);
         var encodedPayload = EncodePayload(payload);
         var command = new ScanContactQRCommand(encodedPayload, _testUserId);
@@ -248,7 +248,7 @@ public class ScanContactQRCommandHandlerTests
         // Assert
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Be("A contact with this email already exists");
-        
+
         VerifyLogMessage(LogLevel.Information, "Contact with email john@example.com already exists for user");
         _mockContactRepository.Verify(x => x.AddAsync(It.IsAny<Contact>(), It.IsAny<CancellationToken>()), Times.Never);
     }
@@ -257,7 +257,7 @@ public class ScanContactQRCommandHandlerTests
     public async Task Handle_ContactWithoutEmail_ShouldSkipDuplicateCheck()
     {
         // Arrange
-        var payload = CreateValidQRPayload(_testContactId, "John Doe", null, "+1234567890", 
+        var payload = CreateValidQRPayload(_testContactId, "John Doe", null, "+1234567890",
             (int)ContactRelationType.Friend, _futureExpiry);
         var encodedPayload = EncodePayload(payload);
         var command = new ScanContactQRCommand(encodedPayload, _testUserId);
@@ -276,7 +276,7 @@ public class ScanContactQRCommandHandlerTests
     public async Task Handle_ContactValidationFails_ShouldReturnFailure()
     {
         // Arrange
-        var payload = CreateValidQRPayload(_testContactId, "John Doe", "invalid-email", "+1234567890", 
+        var payload = CreateValidQRPayload(_testContactId, "John Doe", "invalid-email", "+1234567890",
             (int)ContactRelationType.Friend, _futureExpiry);
         var encodedPayload = EncodePayload(payload);
         var command = new ScanContactQRCommand(encodedPayload, _testUserId);
@@ -291,7 +291,7 @@ public class ScanContactQRCommandHandlerTests
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("Invalid contact data:");
         result.Error.Should().Contain("email"); // Real validator will complain about email format
-        
+
         VerifyLogMessage(LogLevel.Warning, "Contact validation failed");
         _mockContactRepository.Verify(x => x.AddAsync(It.IsAny<Contact>(), It.IsAny<CancellationToken>()), Times.Never);
     }
@@ -300,7 +300,7 @@ public class ScanContactQRCommandHandlerTests
     public async Task Handle_RepositorySaveFails_ShouldReturnFailure()
     {
         // Arrange
-        var payload = CreateValidQRPayload(_testContactId, "John Doe", "john@example.com", "+1234567890", 
+        var payload = CreateValidQRPayload(_testContactId, "John Doe", "john@example.com", "+1234567890",
             (int)ContactRelationType.Friend, _futureExpiry);
         var encodedPayload = EncodePayload(payload);
         var command = new ScanContactQRCommand(encodedPayload, _testUserId);
@@ -318,7 +318,7 @@ public class ScanContactQRCommandHandlerTests
         // Assert
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Be("Failed to create contact from QR code");
-        
+
         VerifyLogMessage(LogLevel.Error, "Failed to save contact from QR scan for user");
     }
 
@@ -326,7 +326,7 @@ public class ScanContactQRCommandHandlerTests
     public async Task Handle_ExceptionDuringProcessing_ShouldReturnFailure()
     {
         // Arrange
-        var payload = CreateValidQRPayload(_testContactId, "John Doe", "john@example.com", "+1234567890", 
+        var payload = CreateValidQRPayload(_testContactId, "John Doe", "john@example.com", "+1234567890",
             (int)ContactRelationType.Friend, _futureExpiry);
         var encodedPayload = EncodePayload(payload);
         var command = new ScanContactQRCommand(encodedPayload, _testUserId);
@@ -340,7 +340,7 @@ public class ScanContactQRCommandHandlerTests
         // Assert
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("Error processing QR code: Database connection error");
-        
+
         VerifyLogMessage(LogLevel.Error, "Error processing QR code scan for user");
     }
 
@@ -352,7 +352,7 @@ public class ScanContactQRCommandHandlerTests
     public async Task Handle_DifferentRelationshipTypes_ShouldCreateContactWithCorrectType(ContactRelationType relationshipType)
     {
         // Arrange
-        var payload = CreateValidQRPayload(_testContactId, "Test Contact", "test@example.com", null, 
+        var payload = CreateValidQRPayload(_testContactId, "Test Contact", "test@example.com", null,
             (int)relationshipType, _futureExpiry);
         var encodedPayload = EncodePayload(payload);
         var command = new ScanContactQRCommand(encodedPayload, _testUserId);
@@ -374,7 +374,7 @@ public class ScanContactQRCommandHandlerTests
     public async Task Handle_CustomMessageInPayload_ShouldCreateContactSuccessfully()
     {
         // Arrange
-        var payload = CreateValidQRPayload(_testContactId, "John Doe", "john@example.com", "+1234567890", 
+        var payload = CreateValidQRPayload(_testContactId, "John Doe", "john@example.com", "+1234567890",
             (int)ContactRelationType.Friend, _futureExpiry, "Hello from QR code");
         var encodedPayload = EncodePayload(payload);
         var command = new ScanContactQRCommand(encodedPayload, _testUserId, "Command custom notes");
@@ -389,7 +389,7 @@ public class ScanContactQRCommandHandlerTests
         // Assert
         result.IsSuccess.Should().BeTrue();
         result.Value.Should().NotBeNull();
-        
+
         // Note: CustomMessage in payload and command notes are for different purposes in this implementation
         VerifyContactAddedAndSaved();
     }
@@ -400,10 +400,10 @@ public class ScanContactQRCommandHandlerTests
         // Arrange - Create two payloads with same data to ensure signature consistency
         var contactId = Guid.NewGuid();
         var expiryTime = DateTime.UtcNow.AddHours(1);
-        
-        var payload1 = CreateValidQRPayload(contactId, "Test User", "test@example.com", null, 
+
+        var payload1 = CreateValidQRPayload(contactId, "Test User", "test@example.com", null,
             (int)ContactRelationType.Friend, expiryTime);
-        var payload2 = CreateValidQRPayload(contactId, "Test User", "test@example.com", null, 
+        var payload2 = CreateValidQRPayload(contactId, "Test User", "test@example.com", null,
             (int)ContactRelationType.Friend, expiryTime);
 
         // Both payloads should have the same signature
@@ -425,11 +425,11 @@ public class ScanContactQRCommandHandlerTests
 
     // Helper Methods
 
-    private static QRPayload CreateValidQRPayload(Guid contactId, string name, string? email, string? phone, 
+    private static QRPayload CreateValidQRPayload(Guid contactId, string name, string? email, string? phone,
         int relationshipType, DateTime expiresAt, string? customMessage = null)
     {
         var signature = GenerateSignature(contactId.ToString(), expiresAt);
-        
+
         return new QRPayload
         {
             ContactId = contactId,
@@ -447,7 +447,7 @@ public class ScanContactQRCommandHandlerTests
     {
         var data = $"{contactId}:{expiresAt:yyyy-MM-ddTHH:mm:ssZ}";
         var dataBytes = Encoding.UTF8.GetBytes(data);
-        
+
         using var sha256 = SHA256.Create();
         var hash = sha256.ComputeHash(dataBytes);
         return Convert.ToBase64String(hash);

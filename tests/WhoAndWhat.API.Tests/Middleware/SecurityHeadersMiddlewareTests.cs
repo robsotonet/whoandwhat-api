@@ -214,7 +214,7 @@ public class SecurityHeadersMiddlewareTests
         var expectedHeaders = new[]
         {
             "X-Content-Type-Options",
-            "X-Frame-Options", 
+            "X-Frame-Options",
             "X-XSS-Protection",
             "Referrer-Policy",
             "Permissions-Policy",
@@ -228,7 +228,7 @@ public class SecurityHeadersMiddlewareTests
         // Assert
         foreach (var header in expectedHeaders)
         {
-            context.Response.Headers.Should().ContainKey(header, 
+            context.Response.Headers.Should().ContainKey(header,
                 $"Security header '{header}' should be present");
         }
     }
@@ -247,7 +247,7 @@ public class SecurityHeadersMiddlewareTests
             () => _middleware.InvokeAsync(context));
 
         exception.Should().Be(expectedException);
-        
+
         // Verify headers were still added before the exception
         context.Response.Headers.Should().ContainKey("X-Content-Type-Options");
         context.Response.Headers.Should().ContainKey("X-Frame-Options");

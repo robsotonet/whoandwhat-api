@@ -1,21 +1,21 @@
+using Azure.Extensions.AspNetCore.Configuration.Secrets;
+using Azure.Identity;
+using Azure.Security.KeyVault.Secrets;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
 using WhoAndWhat.API.Configuration;
 using WhoAndWhat.Application;
-using WhoAndWhat.Application.Interfaces;
 using WhoAndWhat.Application.DependencyInjection;
+using WhoAndWhat.Application.Features.Auth;
+using WhoAndWhat.Application.Interfaces;
 using WhoAndWhat.Application.Services;
 using WhoAndWhat.Domain.Services;
+using WhoAndWhat.Domain.Validators;
 using WhoAndWhat.Infrastructure;
 using WhoAndWhat.Infrastructure.Configuration;
 using WhoAndWhat.Infrastructure.Data;
 using WhoAndWhat.Infrastructure.Repositories;
 using WhoAndWhat.Infrastructure.Services;
-using WhoAndWhat.Application.Features.Auth;
-using WhoAndWhat.Domain.Validators;
-using Azure.Extensions.AspNetCore.Configuration.Secrets;
-using Azure.Identity;
-using Azure.Security.KeyVault.Secrets;
 
 // Configure Serilog early for logging during bootstrap
 Log.Logger = new LoggerConfiguration()
@@ -40,7 +40,7 @@ try
             {
                 ReloadInterval = TimeSpan.FromMinutes(30) // Reload secrets every 30 minutes
             });
-            
+
         Log.Information("Azure Key Vault configuration enabled for endpoint: {Endpoint}", keyVaultEndpoint);
     }
     else
@@ -78,7 +78,7 @@ try
     builder.Services.AddScoped<IEmailService, EmailService>();
     builder.Services.AddScoped<IAccountVerificationService, AccountVerificationService>();
     builder.Services.AddScoped<IPasswordResetService, PasswordResetService>();
-    
+
     // Register domain validators
     builder.Services.AddScoped<ContactValidator>();
 
@@ -98,25 +98,25 @@ try
     builder.Services.AddCorsConfiguration();
     builder.Services.AddResponseCompressionConfiguration();
     builder.Services.AddApplicationInsightsConfiguration(builder.Configuration);
-    
+
     // Email Service Configuration
     builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection(EmailSettings.SectionName));
-    
+
     // JWT Authentication
     builder.Services.AddJwtAuthenticationConfiguration(builder.Configuration);
-    
+
     // OAuth Authentication
     builder.Services.AddOAuthConfiguration(builder.Configuration);
-    
+
     // Rate Limiting
     builder.Services.AddRateLimitingConfiguration(builder.Configuration);
-    
+
     // DDoS Protection
     builder.Services.AddDDoSProtectionConfiguration(builder.Configuration);
-    
+
     // Security Headers
     builder.Services.AddSecurityHeadersConfiguration(builder.Configuration);
-    
+
     // Azure Key Vault
     builder.Services.AddAzureKeyVaultConfiguration(builder.Configuration);
 
@@ -164,7 +164,7 @@ try
 
     Log.Information("WhoAndWhat API application configured successfully");
     Log.Information("Available endpoints: /health, /health/live, /health/ready, /swagger");
-    
+
     await app.RunAsync();
 }
 catch (Exception ex)

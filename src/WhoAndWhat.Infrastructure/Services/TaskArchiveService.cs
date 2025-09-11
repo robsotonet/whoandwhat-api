@@ -10,8 +10,8 @@ using WhoAndWhat.Domain.ValueObjects;
 using WhoAndWhat.Infrastructure.Configuration;
 using WhoAndWhat.Infrastructure.Data;
 using AppTaskCategory = WhoAndWhat.Domain.ValueObjects.AppTaskCategory;
-using Priority = WhoAndWhat.Domain.ValueObjects.Priority;
 using DomainTask = WhoAndWhat.Domain.Entities.AppTask;
+using Priority = WhoAndWhat.Domain.ValueObjects.Priority;
 using TaskStatus = WhoAndWhat.Domain.ValueObjects.AppTaskStatus;
 
 namespace WhoAndWhat.Infrastructure.Services;

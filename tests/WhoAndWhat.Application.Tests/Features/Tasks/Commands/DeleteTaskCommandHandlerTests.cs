@@ -125,7 +125,7 @@ public class DeleteTaskCommandHandlerTests
         var taskId = Guid.NewGuid();
         var taskOwnerId = Guid.NewGuid();
         var requestUserId = Guid.NewGuid();
-        
+
         var existingTask = new DomainTask
         {
             Id = taskId,
@@ -157,7 +157,7 @@ public class DeleteTaskCommandHandlerTests
         var taskId = Guid.NewGuid();
         var originalUpdatedAt = DateTime.UtcNow.AddDays(-1);
         var beforeExecution = DateTime.UtcNow;
-        
+
         var existingTask = new DomainTask
         {
             Id = taskId,

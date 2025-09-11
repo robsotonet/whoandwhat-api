@@ -24,7 +24,7 @@ public class GetContactQueryHandler : IRequestHandler<GetContactQuery, Result<Co
     {
         try
         {
-            _logger.LogInformation("Getting contact {ContactId} for user {UserId}", 
+            _logger.LogInformation("Getting contact {ContactId} for user {UserId}",
                 request.ContactId, request.UserId);
 
             Domain.Entities.Contact? contact;
@@ -32,27 +32,27 @@ public class GetContactQueryHandler : IRequestHandler<GetContactQuery, Result<Co
             if (request.IncludeTasks)
             {
                 contact = await _contactRepository.GetContactWithTasksAsync(
-                    request.ContactId, 
-                    request.UserId, 
-                    request.IncludeDeleted, 
+                    request.ContactId,
+                    request.UserId,
+                    request.IncludeDeleted,
                     cancellationToken);
             }
             else if (request.IncludeDeleted)
             {
                 contact = await _contactRepository.GetContactIncludingDeletedAsync(
-                    request.ContactId, 
-                    request.UserId, 
+                    request.ContactId,
+                    request.UserId,
                     cancellationToken);
             }
             else
             {
                 // Use the base repository method from Repository<Contact>
                 contact = await _contactRepository.GetByIdAsync(request.ContactId, cancellationToken);
-                
+
                 // Verify the contact belongs to the user
                 if (contact != null && contact.UserId != request.UserId)
                 {
-                    _logger.LogWarning("Contact {ContactId} does not belong to user {UserId}", 
+                    _logger.LogWarning("Contact {ContactId} does not belong to user {UserId}",
                         request.ContactId, request.UserId);
                     return Result<ContactDto>.Failure("Contact not found");
                 }
@@ -60,21 +60,21 @@ public class GetContactQueryHandler : IRequestHandler<GetContactQuery, Result<Co
 
             if (contact == null)
             {
-                _logger.LogWarning("Contact {ContactId} not found for user {UserId}", 
+                _logger.LogWarning("Contact {ContactId} not found for user {UserId}",
                     request.ContactId, request.UserId);
                 return Result<ContactDto>.Failure("Contact not found");
             }
 
             var contactDto = MapToContactDto(contact);
 
-            _logger.LogInformation("Successfully retrieved contact {ContactId} for user {UserId}", 
+            _logger.LogInformation("Successfully retrieved contact {ContactId} for user {UserId}",
                 request.ContactId, request.UserId);
 
             return Result<ContactDto>.Success(contactDto);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error getting contact {ContactId} for user {UserId}", 
+            _logger.LogError(ex, "Error getting contact {ContactId} for user {UserId}",
                 request.ContactId, request.UserId);
             return Result<ContactDto>.Failure($"Error retrieving contact: {ex.Message}");
         }

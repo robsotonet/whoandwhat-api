@@ -26,7 +26,7 @@ public class EventRepositoryTests
             .Options;
         _context = new ApplicationDbContext(options);
         _repository = new Repository<Event>(_context);
-        
+
         // Create test user for foreign key relationships
         _testUser = new User("test@test.com", "testuser", Language.en);
         _testUser.SetPassword("TestPassword123!");
@@ -41,10 +41,10 @@ public class EventRepositoryTests
         // Arrange
         var startDate = DateTime.UtcNow.AddDays(1);
         var endDate = DateTime.UtcNow.AddDays(1).AddHours(2);
-        var @event = new Event 
-        { 
-            Id = Guid.NewGuid(), 
-            Title = "Test Event", 
+        var @event = new Event
+        {
+            Id = Guid.NewGuid(),
+            Title = "Test Event",
             Description = "Test Description",
             StartDate = startDate,
             EndDate = endDate,
@@ -72,23 +72,23 @@ public class EventRepositoryTests
     public async Task Should_Get_All_Events()
     {
         // Arrange
-        var event1 = new Event 
-        { 
-            Id = Guid.NewGuid(), 
+        var event1 = new Event
+        {
+            Id = Guid.NewGuid(),
             Title = "Event 1",
             StartDate = DateTime.UtcNow,
             EndDate = DateTime.UtcNow.AddHours(1),
             Type = "Meeting",
-            UserId = _testUser.Id 
+            UserId = _testUser.Id
         };
-        var event2 = new Event 
-        { 
-            Id = Guid.NewGuid(), 
+        var event2 = new Event
+        {
+            Id = Guid.NewGuid(),
             Title = "Event 2",
             StartDate = DateTime.UtcNow,
             EndDate = DateTime.UtcNow.AddHours(1),
             Type = "Conference",
-            UserId = _testUser.Id 
+            UserId = _testUser.Id
         };
         await _context.Events.AddRangeAsync(event1, event2);
         await _context.SaveChangesAsync();
@@ -105,14 +105,14 @@ public class EventRepositoryTests
     {
         // Arrange
         var eventId = Guid.NewGuid();
-        var @event = new Event 
-        { 
-            Id = eventId, 
+        var @event = new Event
+        {
+            Id = eventId,
             Title = "Test Event",
             StartDate = DateTime.UtcNow,
             EndDate = DateTime.UtcNow.AddHours(1),
             Type = "Meeting",
-            UserId = _testUser.Id 
+            UserId = _testUser.Id
         };
         await _context.Events.AddAsync(@event);
         await _context.SaveChangesAsync();
@@ -130,23 +130,23 @@ public class EventRepositoryTests
     public async Task Should_Find_Events_By_Title()
     {
         // Arrange
-        var event1 = new Event 
-        { 
-            Id = Guid.NewGuid(), 
+        var event1 = new Event
+        {
+            Id = Guid.NewGuid(),
             Title = "Important Meeting",
             StartDate = DateTime.UtcNow,
             EndDate = DateTime.UtcNow.AddHours(1),
             Type = "Meeting",
-            UserId = _testUser.Id 
+            UserId = _testUser.Id
         };
-        var event2 = new Event 
-        { 
-            Id = Guid.NewGuid(), 
+        var event2 = new Event
+        {
+            Id = Guid.NewGuid(),
             Title = "Regular Conference",
             StartDate = DateTime.UtcNow,
             EndDate = DateTime.UtcNow.AddHours(2),
             Type = "Conference",
-            UserId = _testUser.Id 
+            UserId = _testUser.Id
         };
         await _context.Events.AddRangeAsync(event1, event2);
         await _context.SaveChangesAsync();
@@ -163,23 +163,23 @@ public class EventRepositoryTests
     public async Task Should_Find_Events_By_Type()
     {
         // Arrange
-        var event1 = new Event 
-        { 
-            Id = Guid.NewGuid(), 
+        var event1 = new Event
+        {
+            Id = Guid.NewGuid(),
             Title = "Team Meeting",
             StartDate = DateTime.UtcNow,
             EndDate = DateTime.UtcNow.AddHours(1),
             Type = "Meeting",
-            UserId = _testUser.Id 
+            UserId = _testUser.Id
         };
-        var event2 = new Event 
-        { 
-            Id = Guid.NewGuid(), 
+        var event2 = new Event
+        {
+            Id = Guid.NewGuid(),
             Title = "Annual Conference",
             StartDate = DateTime.UtcNow,
             EndDate = DateTime.UtcNow.AddHours(8),
             Type = "Conference",
-            UserId = _testUser.Id 
+            UserId = _testUser.Id
         };
         await _context.Events.AddRangeAsync(event1, event2);
         await _context.SaveChangesAsync();
@@ -198,24 +198,24 @@ public class EventRepositoryTests
         // Arrange
         var tomorrow = DateTime.UtcNow.AddDays(1);
         var nextWeek = DateTime.UtcNow.AddDays(7);
-        
-        var event1 = new Event 
-        { 
-            Id = Guid.NewGuid(), 
+
+        var event1 = new Event
+        {
+            Id = Guid.NewGuid(),
             Title = "Tomorrow Event",
             StartDate = tomorrow,
             EndDate = tomorrow.AddHours(1),
             Type = "Meeting",
-            UserId = _testUser.Id 
+            UserId = _testUser.Id
         };
-        var event2 = new Event 
-        { 
-            Id = Guid.NewGuid(), 
+        var event2 = new Event
+        {
+            Id = Guid.NewGuid(),
             Title = "Next Week Event",
             StartDate = nextWeek,
             EndDate = nextWeek.AddHours(1),
             Type = "Conference",
-            UserId = _testUser.Id 
+            UserId = _testUser.Id
         };
         await _context.Events.AddRangeAsync(event1, event2);
         await _context.SaveChangesAsync();
@@ -232,14 +232,14 @@ public class EventRepositoryTests
     public async Task Should_Update_Event()
     {
         // Arrange
-        var @event = new Event 
-        { 
-            Id = Guid.NewGuid(), 
+        var @event = new Event
+        {
+            Id = Guid.NewGuid(),
             Title = "Original Title",
             StartDate = DateTime.UtcNow,
             EndDate = DateTime.UtcNow.AddHours(1),
             Type = "Meeting",
-            UserId = _testUser.Id 
+            UserId = _testUser.Id
         };
         await _repository.AddAsync(@event);
         await _repository.SaveChangesAsync();
@@ -261,14 +261,14 @@ public class EventRepositoryTests
     public async Task Should_Remove_Event()
     {
         // Arrange
-        var @event = new Event 
-        { 
-            Id = Guid.NewGuid(), 
+        var @event = new Event
+        {
+            Id = Guid.NewGuid(),
             Title = "Event to Remove",
             StartDate = DateTime.UtcNow,
             EndDate = DateTime.UtcNow.AddHours(1),
             Type = "Meeting",
-            UserId = _testUser.Id 
+            UserId = _testUser.Id
         };
         await _repository.AddAsync(@event);
         await _repository.SaveChangesAsync();
@@ -286,25 +286,25 @@ public class EventRepositoryTests
     public async Task Should_Find_Events_By_Location()
     {
         // Arrange
-        var event1 = new Event 
-        { 
-            Id = Guid.NewGuid(), 
+        var event1 = new Event
+        {
+            Id = Guid.NewGuid(),
             Title = "Room A Event",
             StartDate = DateTime.UtcNow,
             EndDate = DateTime.UtcNow.AddHours(1),
             Location = "Conference Room A",
             Type = "Meeting",
-            UserId = _testUser.Id 
+            UserId = _testUser.Id
         };
-        var event2 = new Event 
-        { 
-            Id = Guid.NewGuid(), 
+        var event2 = new Event
+        {
+            Id = Guid.NewGuid(),
             Title = "Room B Event",
             StartDate = DateTime.UtcNow,
             EndDate = DateTime.UtcNow.AddHours(1),
             Location = "Conference Room B",
             Type = "Meeting",
-            UserId = _testUser.Id 
+            UserId = _testUser.Id
         };
         await _context.Events.AddRangeAsync(event1, event2);
         await _context.SaveChangesAsync();

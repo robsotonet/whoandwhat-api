@@ -65,7 +65,7 @@ public class RepositoryTests
         // Assert
         result.Should().HaveCount(2);
     }
-    
+
     [Fact]
     public async Task Should_Get_User_By_Id()
     {
@@ -84,7 +84,7 @@ public class RepositoryTests
         result.Should().NotBeNull();
         result.Id.Should().Be(user.Id);
     }
-    
+
     [Fact]
     public async Task Should_Find_User()
     {
@@ -103,7 +103,7 @@ public class RepositoryTests
         result.Should().HaveCount(1);
         result.First().Username.Should().Be("findme");
     }
-    
+
     [Fact]
     public async Task Should_Update_User()
     {

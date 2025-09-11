@@ -1,7 +1,7 @@
-using FluentAssertions;
-using Microsoft.AspNetCore.Mvc.Testing;
 using System.Net;
 using System.Text.Json;
+using FluentAssertions;
+using Microsoft.AspNetCore.Mvc.Testing;
 
 namespace WhoAndWhat.CI.Tests;
 
@@ -51,7 +51,7 @@ public class DeploymentValidationTests : IClassFixture<WebApplicationFactory<Pro
 
         // Assert
         responses.Should().HaveCount(concurrentRequests);
-        responses.Should().OnlyContain(r => r.StatusCode == HttpStatusCode.OK, 
+        responses.Should().OnlyContain(r => r.StatusCode == HttpStatusCode.OK,
             "All concurrent requests should succeed");
     }
 
@@ -63,14 +63,14 @@ public class DeploymentValidationTests : IClassFixture<WebApplicationFactory<Pro
     {
         // Arrange
         Environment.SetEnvironmentVariable("ASPNETCORE_ENVIRONMENT", environment);
-        
+
         // Act & Assert
         var factory = new WebApplicationFactory<Program>();
-        
+
         // Verify the application can start in different environments
         Action createApp = () => factory.CreateClient();
         createApp.Should().NotThrow($"Application should start successfully in {environment} environment");
-        
+
         factory.Dispose();
     }
 
@@ -89,7 +89,7 @@ public class DeploymentValidationTests : IClassFixture<WebApplicationFactory<Pro
         if (File.Exists(dockerComposePath))
         {
             var dockerComposeContent = File.ReadAllText(dockerComposePath);
-            
+
             // Validate production-ready configurations
             dockerComposeContent.Should().Contain("restart:", "Services should have restart policies configured");
             dockerComposeContent.Should().Contain("healthcheck:", "Services should have health checks configured");
@@ -106,7 +106,7 @@ public class DeploymentValidationTests : IClassFixture<WebApplicationFactory<Pro
 
         // Act & Assert
         Directory.Exists(migrationsPath).Should().BeTrue("EF Core migrations should exist");
-        
+
         var migrationFiles = Directory.GetFiles(migrationsPath, "*.cs", SearchOption.TopDirectoryOnly);
         migrationFiles.Should().NotBeEmpty("At least one migration should exist");
     }
@@ -121,7 +121,7 @@ public class DeploymentValidationTests : IClassFixture<WebApplicationFactory<Pro
         // Act & Assert
         // Test with very short timeout to simulate network issues
         var response = await timeoutClient.GetAsync("/openapi/v1.json");
-        
+
         // Application should handle network timeouts gracefully
         // This test validates that the application doesn't crash under network stress
         response.StatusCode.Should().BeOneOf(HttpStatusCode.OK, HttpStatusCode.RequestTimeout);
@@ -144,16 +144,16 @@ public class DeploymentValidationTests : IClassFixture<WebApplicationFactory<Pro
             {
                 var jsonDoc = JsonDocument.Parse(content);
                 var loggingSection = jsonDoc.RootElement.GetProperty("Logging");
-                
+
                 // Validate logging configuration exists
                 loggingSection.Should().NotBeNull("Logging configuration should be present");
-                
+
                 // In production, log level should not be too verbose
                 if (settingsFile.Contains("Production"))
                 {
                     // Production logging should be more restrictive
                     var defaultLevel = loggingSection.GetProperty("LogLevel").GetProperty("Default").GetString();
-                    defaultLevel.Should().BeOneOf("Warning", "Error", "Information", 
+                    defaultLevel.Should().BeOneOf("Warning", "Error", "Information",
                         "Production logging should not be too verbose");
                 }
             }
@@ -166,12 +166,12 @@ public class DeploymentValidationTests : IClassFixture<WebApplicationFactory<Pro
         // Arrange
         var baseDirectory = GetSolutionRoot();
         var dockerComposePath = Path.Combine(baseDirectory, "docker-compose.yml");
-        
+
         // Act & Assert
         if (File.Exists(dockerComposePath))
         {
             var content = File.ReadAllText(dockerComposePath);
-            
+
             // Docker Compose should specify resource limits for production deployments
             // This helps with capacity planning and prevents resource exhaustion
             content.Should().ContainAny("mem_limit", "memory", "cpus", "Resource limits should be configured");
@@ -189,7 +189,7 @@ public class DeploymentValidationTests : IClassFixture<WebApplicationFactory<Pro
         if (Directory.Exists(docsPath))
         {
             var docFiles = Directory.GetFiles(docsPath, "*.md", SearchOption.AllDirectories);
-            var hasBackupDocs = docFiles.Any(f => 
+            var hasBackupDocs = docFiles.Any(f =>
                 Path.GetFileName(f).ToLowerInvariant().Contains("backup") ||
                 Path.GetFileName(f).ToLowerInvariant().Contains("recovery") ||
                 Path.GetFileName(f).ToLowerInvariant().Contains("disaster"));
@@ -211,9 +211,9 @@ public class DeploymentValidationTests : IClassFixture<WebApplicationFactory<Pro
         if (File.Exists(pipelineFile))
         {
             var content = File.ReadAllText(pipelineFile);
-            
+
             // Pipeline should include monitoring setup
-            content.Should().ContainAny("ApplicationInsights", "monitoring", "alerts", 
+            content.Should().ContainAny("ApplicationInsights", "monitoring", "alerts",
                 "Pipeline should configure monitoring and alerting");
         }
     }
@@ -222,14 +222,16 @@ public class DeploymentValidationTests : IClassFixture<WebApplicationFactory<Pro
     {
         var currentDirectory = Directory.GetCurrentDirectory();
         var directory = new DirectoryInfo(currentDirectory);
-        
+
         while (directory != null && !directory.GetFiles("*.sln").Any())
         {
             directory = directory.Parent;
         }
 
         if (directory == null)
+        {
             throw new InvalidOperationException("Could not find solution root directory");
+        }
 
         return directory.FullName;
     }

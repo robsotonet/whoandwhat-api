@@ -8,9 +8,9 @@ using WhoAndWhat.Domain.Entities;
 using WhoAndWhat.Domain.Services;
 using WhoAndWhat.Domain.ValueObjects;
 using Xunit;
+using AppTaskUpdateRequest = WhoAndWhat.Domain.Services.AppTaskUpdateRequest;
 using DomainTask = WhoAndWhat.Domain.Entities.AppTask;
 using DomainTaskStatus = WhoAndWhat.Domain.ValueObjects.AppTaskStatus;
-using AppTaskUpdateRequest = WhoAndWhat.Domain.Services.AppTaskUpdateRequest;
 
 namespace WhoAndWhat.Application.Tests.Features.Tasks.Commands;
 
@@ -134,7 +134,7 @@ public class UpdateTaskCommandHandlerTests
         var taskId = Guid.NewGuid();
         var taskOwnerId = Guid.NewGuid();
         var requestUserId = Guid.NewGuid();
-        
+
         var existingTask = new DomainTask
         {
             Id = taskId,
@@ -216,7 +216,7 @@ public class UpdateTaskCommandHandlerTests
         // Assert
         result.IsSuccess.Should().BeTrue();
         result.Value.DueDate.Should().BeNull();
-        
+
         capturedTask.Should().NotBeNull();
         capturedTask.DueDate.Should().BeNull();
     }
@@ -228,7 +228,7 @@ public class UpdateTaskCommandHandlerTests
         var userId = Guid.NewGuid();
         var taskId = Guid.NewGuid();
         var newContactIds = new List<Guid> { Guid.NewGuid(), Guid.NewGuid() };
-        
+
         var existingTask = new DomainTask
         {
             Id = taskId,
@@ -272,7 +272,7 @@ public class UpdateTaskCommandHandlerTests
         // Assert
         result.IsSuccess.Should().BeTrue();
         result.Value.TaskContacts.Should().HaveCount(2);
-        
+
         capturedTask.Should().NotBeNull();
         capturedTask.TaskContacts.Should().HaveCount(2);
         capturedTask.TaskContacts.All(tc => newContactIds.Contains(tc.ContactId)).Should().BeTrue();
@@ -317,7 +317,7 @@ public class UpdateTaskCommandHandlerTests
 
         // Assert
         result.IsSuccess.Should().BeTrue();
-        
+
         // UpdateAsync should not be called since no changes were made
         _mockTaskRepository.Verify(x => x.UpdateAsync(It.IsAny<DomainTask>(), It.IsAny<CancellationToken>()), Times.Never);
         _mockTaskRepository.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
@@ -364,7 +364,7 @@ public class UpdateTaskCommandHandlerTests
         // Assert
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("Title is required");
-        
+
         _mockTaskRepository.Verify(x => x.UpdateAsync(It.IsAny<DomainTask>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
@@ -376,7 +376,7 @@ public class UpdateTaskCommandHandlerTests
         var taskId = Guid.NewGuid();
         var originalUpdatedAt = DateTime.UtcNow.AddDays(-1);
         var beforeExecution = DateTime.UtcNow;
-        
+
         var existingTask = new DomainTask
         {
             Id = taskId,
@@ -421,7 +421,7 @@ public class UpdateTaskCommandHandlerTests
         result.Value.UpdatedAt.Should().BeOnOrAfter(beforeExecution);
         result.Value.UpdatedAt.Should().BeOnOrBefore(afterExecution);
         result.Value.UpdatedAt.Should().BeAfter(originalUpdatedAt);
-        
+
         capturedTask.Should().NotBeNull();
         capturedTask.UpdatedAt.Should().BeOnOrAfter(beforeExecution);
         capturedTask.UpdatedAt.Should().BeOnOrBefore(afterExecution);

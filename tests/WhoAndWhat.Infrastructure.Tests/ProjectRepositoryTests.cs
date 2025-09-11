@@ -26,7 +26,7 @@ public class ProjectRepositoryTests
             .Options;
         _context = new ApplicationDbContext(options);
         _repository = new Repository<Project>(_context);
-        
+
         // Create test user for foreign key relationships
         _testUser = new User("test@test.com", "testuser", Language.en);
         _testUser.SetPassword("TestPassword123!");
@@ -39,10 +39,10 @@ public class ProjectRepositoryTests
     public async Task Should_Add_Project()
     {
         // Arrange
-        var project = new Project 
-        { 
-            Id = Guid.NewGuid(), 
-            Name = "Test Project", 
+        var project = new Project
+        {
+            Id = Guid.NewGuid(),
+            Name = "Test Project",
             Description = "Test Description",
             Progress = 25,
             UserId = _testUser.Id
@@ -64,17 +64,17 @@ public class ProjectRepositoryTests
     public async Task Should_Get_All_Projects()
     {
         // Arrange
-        var project1 = new Project 
-        { 
-            Id = Guid.NewGuid(), 
-            Name = "Project 1", 
-            UserId = _testUser.Id 
+        var project1 = new Project
+        {
+            Id = Guid.NewGuid(),
+            Name = "Project 1",
+            UserId = _testUser.Id
         };
-        var project2 = new Project 
-        { 
-            Id = Guid.NewGuid(), 
-            Name = "Project 2", 
-            UserId = _testUser.Id 
+        var project2 = new Project
+        {
+            Id = Guid.NewGuid(),
+            Name = "Project 2",
+            UserId = _testUser.Id
         };
         await _context.Projects.AddRangeAsync(project1, project2);
         await _context.SaveChangesAsync();
@@ -91,11 +91,11 @@ public class ProjectRepositoryTests
     {
         // Arrange
         var projectId = Guid.NewGuid();
-        var project = new Project 
-        { 
-            Id = projectId, 
-            Name = "Test Project", 
-            UserId = _testUser.Id 
+        var project = new Project
+        {
+            Id = projectId,
+            Name = "Test Project",
+            UserId = _testUser.Id
         };
         await _context.Projects.AddAsync(project);
         await _context.SaveChangesAsync();
@@ -113,17 +113,17 @@ public class ProjectRepositoryTests
     public async Task Should_Find_Projects_By_Name()
     {
         // Arrange
-        var project1 = new Project 
-        { 
-            Id = Guid.NewGuid(), 
-            Name = "Important Project", 
-            UserId = _testUser.Id 
+        var project1 = new Project
+        {
+            Id = Guid.NewGuid(),
+            Name = "Important Project",
+            UserId = _testUser.Id
         };
-        var project2 = new Project 
-        { 
-            Id = Guid.NewGuid(), 
-            Name = "Regular Project", 
-            UserId = _testUser.Id 
+        var project2 = new Project
+        {
+            Id = Guid.NewGuid(),
+            Name = "Regular Project",
+            UserId = _testUser.Id
         };
         await _context.Projects.AddRangeAsync(project1, project2);
         await _context.SaveChangesAsync();
@@ -140,19 +140,19 @@ public class ProjectRepositoryTests
     public async Task Should_Find_Projects_By_Status()
     {
         // Arrange
-        var project1 = new Project 
-        { 
-            Id = Guid.NewGuid(), 
-            Name = "Active Project", 
+        var project1 = new Project
+        {
+            Id = Guid.NewGuid(),
+            Name = "Active Project",
             Status = 1, // Active
-            UserId = _testUser.Id 
+            UserId = _testUser.Id
         };
-        var project2 = new Project 
-        { 
-            Id = Guid.NewGuid(), 
-            Name = "Completed Project", 
+        var project2 = new Project
+        {
+            Id = Guid.NewGuid(),
+            Name = "Completed Project",
             Status = 2, // Completed
-            UserId = _testUser.Id 
+            UserId = _testUser.Id
         };
         await _context.Projects.AddRangeAsync(project1, project2);
         await _context.SaveChangesAsync();
@@ -169,12 +169,12 @@ public class ProjectRepositoryTests
     public async Task Should_Update_Project()
     {
         // Arrange
-        var project = new Project 
-        { 
-            Id = Guid.NewGuid(), 
-            Name = "Original Name", 
+        var project = new Project
+        {
+            Id = Guid.NewGuid(),
+            Name = "Original Name",
             Progress = 10,
-            UserId = _testUser.Id 
+            UserId = _testUser.Id
         };
         await _repository.AddAsync(project);
         await _repository.SaveChangesAsync();
@@ -196,11 +196,11 @@ public class ProjectRepositoryTests
     public async Task Should_Remove_Project()
     {
         // Arrange
-        var project = new Project 
-        { 
-            Id = Guid.NewGuid(), 
-            Name = "Project to Remove", 
-            UserId = _testUser.Id 
+        var project = new Project
+        {
+            Id = Guid.NewGuid(),
+            Name = "Project to Remove",
+            UserId = _testUser.Id
         };
         await _repository.AddAsync(project);
         await _repository.SaveChangesAsync();
@@ -220,13 +220,13 @@ public class ProjectRepositoryTests
         // Arrange
         var startDate = DateTime.UtcNow;
         var endDate = DateTime.UtcNow.AddDays(30);
-        var project = new Project 
-        { 
-            Id = Guid.NewGuid(), 
-            Name = "Project with Dates", 
+        var project = new Project
+        {
+            Id = Guid.NewGuid(),
+            Name = "Project with Dates",
             StartDate = startDate,
             EndDate = endDate,
-            UserId = _testUser.Id 
+            UserId = _testUser.Id
         };
 
         // Act
@@ -244,19 +244,19 @@ public class ProjectRepositoryTests
     public async Task Should_Find_Projects_By_Progress_Range()
     {
         // Arrange
-        var project1 = new Project 
-        { 
-            Id = Guid.NewGuid(), 
-            Name = "Low Progress", 
+        var project1 = new Project
+        {
+            Id = Guid.NewGuid(),
+            Name = "Low Progress",
             Progress = 25,
-            UserId = _testUser.Id 
+            UserId = _testUser.Id
         };
-        var project2 = new Project 
-        { 
-            Id = Guid.NewGuid(), 
-            Name = "High Progress", 
+        var project2 = new Project
+        {
+            Id = Guid.NewGuid(),
+            Name = "High Progress",
             Progress = 85,
-            UserId = _testUser.Id 
+            UserId = _testUser.Id
         };
         await _context.Projects.AddRangeAsync(project1, project2);
         await _context.SaveChangesAsync();

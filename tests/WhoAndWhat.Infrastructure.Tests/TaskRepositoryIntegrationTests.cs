@@ -13,9 +13,9 @@ using WhoAndWhat.Domain.ValueObjects;
 using WhoAndWhat.Infrastructure.Data;
 using WhoAndWhat.Infrastructure.Repositories;
 using Xunit;
-using Task = System.Threading.Tasks.Task;
 using DomainTask = WhoAndWhat.Domain.Entities.AppTask;
 using DomainTaskStatus = WhoAndWhat.Domain.ValueObjects.AppTaskStatus;
+using Task = System.Threading.Tasks.Task;
 
 namespace WhoAndWhat.Infrastructure.Tests;
 
@@ -36,13 +36,13 @@ public class TaskRepositoryIntegrationTests : IDisposable
         var options = new DbContextOptionsBuilder<ApplicationDbContext>()
             .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
             .Options;
-        
+
         _context = new ApplicationDbContext(options);
-        
+
         // Create mock logger
         var mockLogger = new Mock<ILogger<TaskRepository>>();
         _taskRepository = new TaskRepository(_context, mockLogger.Object);
-        
+
         // Setup test data
         SetupTestData().GetAwaiter().GetResult();
     }
@@ -52,7 +52,7 @@ public class TaskRepositoryIntegrationTests : IDisposable
         // Create test users
         _testUser = new User("test@test.com", "testuser", Language.en);
         _testUser.SetPassword("TestPassword123!");
-        
+
         _otherUser = new User("other@test.com", "otheruser", Language.en);
         _otherUser.SetPassword("TestPassword123!");
 
@@ -177,7 +177,7 @@ public class TaskRepositoryIntegrationTests : IDisposable
         var highPriorityTask = CreateTestTask("High Priority", _testUser.Id);
         highPriorityTask.Priority = (int)Priority.High;
         highPriorityTask.Category = (int)AppTaskCategory.ToDo;
-        
+
         var lowPriorityTask = CreateTestTask("Low Priority", _testUser.Id);
         lowPriorityTask.Priority = (int)Priority.Low;
         lowPriorityTask.Category = (int)AppTaskCategory.Idea;
@@ -327,7 +327,7 @@ public class TaskRepositoryIntegrationTests : IDisposable
         result.Should().NotBeNull();
         result.RootTask.Title.Should().Be("Root Task");
         result.Subtasks.Should().HaveCount(2);
-        
+
         var child1Node = result.Subtasks.First(s => s.Task.Title == "Child 1");
         child1Node.Subtasks.Should().HaveCount(1);
         child1Node.Subtasks.First().Task.Title.Should().Be("Grandchild");
@@ -343,10 +343,10 @@ public class TaskRepositoryIntegrationTests : IDisposable
         // Arrange
         var task1 = CreateTestTask("Important Meeting", _testUser.Id);
         task1.Description = "Quarterly review meeting with team";
-        
+
         var task2 = CreateTestTask("Buy Groceries", _testUser.Id);
         task2.Description = "Important items for the week";
-        
+
         var task3 = CreateTestTask("Read Book", _testUser.Id);
         task3.Description = "Fiction novel";
 
@@ -369,10 +369,10 @@ public class TaskRepositoryIntegrationTests : IDisposable
         // Arrange
         var pendingTask = CreateTestTask("Pending Task", _testUser.Id);
         pendingTask.Status = (int)DomainTaskStatus.Pending;
-        
+
         var inProgressTask = CreateTestTask("In Progress Task", _testUser.Id);
         inProgressTask.Status = (int)DomainTaskStatus.InProgress;
-        
+
         var completedTask = CreateTestTask("Completed Task", _testUser.Id);
         completedTask.Status = (int)DomainTaskStatus.Completed;
 
@@ -394,10 +394,10 @@ public class TaskRepositoryIntegrationTests : IDisposable
         // Arrange
         var todoTask = CreateTestTask("Todo Task", _testUser.Id);
         todoTask.Category = (int)AppTaskCategory.ToDo;
-        
+
         var ideaTask = CreateTestTask("Idea Task", _testUser.Id);
         ideaTask.Category = (int)AppTaskCategory.Idea;
-        
+
         var appointmentTask = CreateTestTask("Appointment Task", _testUser.Id);
         appointmentTask.Category = (int)AppTaskCategory.Appointment;
 
@@ -431,7 +431,7 @@ public class TaskRepositoryIntegrationTests : IDisposable
 
         // Assert
         result.Should().BeTrue();
-        
+
         var deletedTask = await _context.Tasks.IgnoreQueryFilters()
             .FirstOrDefaultAsync(t => t.Id == task.Id);
         deletedTask.Should().NotBeNull();
@@ -453,7 +453,7 @@ public class TaskRepositoryIntegrationTests : IDisposable
 
         // Assert
         result.Should().BeTrue();
-        
+
         var restoredTask = await _context.Tasks.FindAsync(task.Id);
         restoredTask.Should().NotBeNull();
         restoredTask.IsDeleted.Should().BeFalse();
@@ -507,7 +507,7 @@ public class TaskRepositoryIntegrationTests : IDisposable
         var deletedTasks = await _context.Tasks.IgnoreQueryFilters()
             .Where(t => taskIds.Contains(t.Id))
             .ToListAsync();
-        
+
         deletedTasks.Should().AllSatisfy(t => t.IsDeleted.Should().BeTrue());
 
         var activeTask = await _context.Tasks.FindAsync(task3.Id);
@@ -521,7 +521,7 @@ public class TaskRepositoryIntegrationTests : IDisposable
         // Arrange
         var task1 = CreateTestTask("Task 1", _testUser.Id);
         var task2 = CreateTestTask("Task 2", _testUser.Id);
-        
+
         task1.Status = (int)DomainTaskStatus.Pending;
         task2.Status = (int)DomainTaskStatus.Pending;
 
@@ -553,7 +553,7 @@ public class TaskRepositoryIntegrationTests : IDisposable
         var completedTask1 = CreateTestTask("Completed Yesterday", _testUser.Id);
         completedTask1.Status = (int)DomainTaskStatus.Completed;
         completedTask1.UpdatedAt = DateTime.UtcNow.AddDays(-1);
-        
+
         var completedTask2 = CreateTestTask("Completed Today", _testUser.Id);
         completedTask2.Status = (int)DomainTaskStatus.Completed;
         completedTask2.UpdatedAt = DateTime.UtcNow;

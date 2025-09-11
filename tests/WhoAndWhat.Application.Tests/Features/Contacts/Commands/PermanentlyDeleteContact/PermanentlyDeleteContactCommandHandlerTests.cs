@@ -102,14 +102,14 @@ public class PermanentlyDeleteContactCommandHandlerTests
         _mockContactRepository.Setup(x => x.GetContactIncludingDeletedAsync(
             It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(contact);
-        
+
         _mockContactRepository.Setup(x => x.Remove(It.IsAny<Contact>()));
-        
+
         _mockContactRepository.Setup(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(1);
     }
 
-    private static PermanentlyDeleteContactCommand CreateValidCommand(Guid? contactId = null, Guid? userId = null) => 
+    private static PermanentlyDeleteContactCommand CreateValidCommand(Guid? contactId = null, Guid? userId = null) =>
         new(contactId ?? Guid.NewGuid(), userId ?? Guid.NewGuid());
 
     #endregion
@@ -124,7 +124,7 @@ public class PermanentlyDeleteContactCommandHandlerTests
         var userId = Guid.NewGuid();
         var deletedContact = CreateSafeToDeleteContact(contactId, userId);
         var command = CreateValidCommand(contactId, userId);
-        
+
         SetupSuccessfulDeletionRepositoryMocks(deletedContact);
 
         // Act
@@ -133,7 +133,7 @@ public class PermanentlyDeleteContactCommandHandlerTests
         // Assert
         result.IsSuccess.Should().BeTrue();
         result.Value.Should().BeTrue();
-        
+
         _mockContactRepository.Verify(x => x.GetContactIncludingDeletedAsync(contactId, userId, It.IsAny<CancellationToken>()), Times.Once);
         _mockContactRepository.Verify(x => x.Remove(deletedContact), Times.Once);
         _mockContactRepository.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
@@ -147,15 +147,15 @@ public class PermanentlyDeleteContactCommandHandlerTests
         var userId = Guid.NewGuid();
         var deletedContact = CreateSafeToDeleteContact(contactId, userId);
         var command = CreateValidCommand(contactId, userId);
-        
+
         var sequence = new MockSequence();
         _mockContactRepository.InSequence(sequence)
             .Setup(x => x.GetContactIncludingDeletedAsync(contactId, userId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(deletedContact);
-        
+
         _mockContactRepository.InSequence(sequence)
             .Setup(x => x.Remove(deletedContact));
-        
+
         _mockContactRepository.InSequence(sequence)
             .Setup(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(1);
@@ -176,7 +176,7 @@ public class PermanentlyDeleteContactCommandHandlerTests
     {
         // Arrange
         var command = CreateValidCommand();
-        
+
         _mockContactRepository.Setup(x => x.GetContactIncludingDeletedAsync(
             It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync((Contact)null!);
@@ -187,7 +187,7 @@ public class PermanentlyDeleteContactCommandHandlerTests
         // Assert
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Be("Contact not found");
-        
+
         _mockContactRepository.Verify(x => x.GetContactIncludingDeletedAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Once);
         _mockContactRepository.Verify(x => x.Remove(It.IsAny<Contact>()), Times.Never);
         _mockContactRepository.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
@@ -200,9 +200,9 @@ public class PermanentlyDeleteContactCommandHandlerTests
         var contactId = Guid.NewGuid();
         var commandUserId = Guid.NewGuid();
         var contactOwnerUserId = Guid.NewGuid(); // Different user
-        
+
         var command = CreateValidCommand(contactId, commandUserId);
-        
+
         _mockContactRepository.Setup(x => x.GetContactIncludingDeletedAsync(
             contactId, commandUserId, It.IsAny<CancellationToken>()))
             .ReturnsAsync((Contact)null!); // Repository should filter by user
@@ -227,7 +227,7 @@ public class PermanentlyDeleteContactCommandHandlerTests
         var userId = Guid.NewGuid();
         var activeContact = CreateActiveContact(contactId, userId);
         var command = CreateValidCommand(contactId, userId);
-        
+
         _mockContactRepository.Setup(x => x.GetContactIncludingDeletedAsync(
             contactId, userId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(activeContact);
@@ -238,7 +238,7 @@ public class PermanentlyDeleteContactCommandHandlerTests
         // Assert
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Be("Contact must be soft-deleted before permanent deletion");
-        
+
         _mockContactRepository.Verify(x => x.GetContactIncludingDeletedAsync(contactId, userId, It.IsAny<CancellationToken>()), Times.Once);
         _mockContactRepository.Verify(x => x.Remove(It.IsAny<Contact>()), Times.Never);
         _mockContactRepository.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
@@ -256,7 +256,7 @@ public class PermanentlyDeleteContactCommandHandlerTests
         var userId = Guid.NewGuid();
         var contactWithTasks = CreateContactWithTaskAssociations(contactId, userId);
         var command = CreateValidCommand(contactId, userId);
-        
+
         _mockContactRepository.Setup(x => x.GetContactIncludingDeletedAsync(
             contactId, userId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(contactWithTasks);
@@ -267,7 +267,7 @@ public class PermanentlyDeleteContactCommandHandlerTests
         // Assert
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Be("Contact has task associations and cannot be permanently deleted");
-        
+
         _mockContactRepository.Verify(x => x.GetContactIncludingDeletedAsync(contactId, userId, It.IsAny<CancellationToken>()), Times.Once);
         _mockContactRepository.Verify(x => x.Remove(It.IsAny<Contact>()), Times.Never);
         _mockContactRepository.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
@@ -282,7 +282,7 @@ public class PermanentlyDeleteContactCommandHandlerTests
         var contact = CreateSafeToDeleteContact(contactId, userId);
         contact.TaskContacts = new List<TaskContact>(); // Explicitly empty
         var command = CreateValidCommand(contactId, userId);
-        
+
         SetupSuccessfulDeletionRepositoryMocks(contact);
 
         // Act
@@ -290,7 +290,7 @@ public class PermanentlyDeleteContactCommandHandlerTests
 
         // Assert
         result.IsSuccess.Should().BeTrue();
-        
+
         _mockContactRepository.Verify(x => x.Remove(contact), Times.Once);
         _mockContactRepository.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
@@ -304,7 +304,7 @@ public class PermanentlyDeleteContactCommandHandlerTests
         var contact = CreateSafeToDeleteContact(contactId, userId);
         contact.TaskContacts = null; // Null collection
         var command = CreateValidCommand(contactId, userId);
-        
+
         SetupSuccessfulDeletionRepositoryMocks(contact);
 
         // Act
@@ -312,7 +312,7 @@ public class PermanentlyDeleteContactCommandHandlerTests
 
         // Assert
         result.IsSuccess.Should().BeTrue();
-        
+
         _mockContactRepository.Verify(x => x.Remove(contact), Times.Once);
         _mockContactRepository.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
@@ -326,7 +326,7 @@ public class PermanentlyDeleteContactCommandHandlerTests
     {
         // Arrange
         var command = CreateValidCommand();
-        
+
         _mockContactRepository.Setup(x => x.GetContactIncludingDeletedAsync(
             It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ThrowsAsync(new Exception("Database connection failed"));
@@ -337,7 +337,7 @@ public class PermanentlyDeleteContactCommandHandlerTests
         // Assert
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Be("An error occurred while permanently deleting the contact");
-        
+
         _mockContactRepository.Verify(x => x.Remove(It.IsAny<Contact>()), Times.Never);
         _mockContactRepository.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
@@ -350,11 +350,11 @@ public class PermanentlyDeleteContactCommandHandlerTests
         var userId = Guid.NewGuid();
         var deletedContact = CreateSafeToDeleteContact(contactId, userId);
         var command = CreateValidCommand(contactId, userId);
-        
+
         _mockContactRepository.Setup(x => x.GetContactIncludingDeletedAsync(
             contactId, userId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(deletedContact);
-        
+
         _mockContactRepository.Setup(x => x.Remove(It.IsAny<Contact>()))
             .Throws(new Exception("Remove operation failed"));
 
@@ -364,7 +364,7 @@ public class PermanentlyDeleteContactCommandHandlerTests
         // Assert
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Be("An error occurred while permanently deleting the contact");
-        
+
         _mockContactRepository.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
 
@@ -376,13 +376,13 @@ public class PermanentlyDeleteContactCommandHandlerTests
         var userId = Guid.NewGuid();
         var deletedContact = CreateSafeToDeleteContact(contactId, userId);
         var command = CreateValidCommand(contactId, userId);
-        
+
         _mockContactRepository.Setup(x => x.GetContactIncludingDeletedAsync(
             contactId, userId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(deletedContact);
-        
+
         _mockContactRepository.Setup(x => x.Remove(It.IsAny<Contact>()));
-        
+
         _mockContactRepository.Setup(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()))
             .ThrowsAsync(new Exception("Save operation failed"));
 
@@ -410,7 +410,7 @@ public class PermanentlyDeleteContactCommandHandlerTests
         // Assert
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Be("Contact not found");
-        
+
         _mockContactRepository.Verify(x => x.GetContactIncludingDeletedAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Once);
     }
 
@@ -426,7 +426,7 @@ public class PermanentlyDeleteContactCommandHandlerTests
         // Assert
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Be("Contact not found");
-        
+
         _mockContactRepository.Verify(x => x.GetContactIncludingDeletedAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Once);
     }
 
@@ -444,7 +444,7 @@ public class PermanentlyDeleteContactCommandHandlerTests
         var command = CreateValidCommand(contactId, userId);
         var cancellationTokenSource = new CancellationTokenSource();
         var cancellationToken = cancellationTokenSource.Token;
-        
+
         SetupSuccessfulDeletionRepositoryMocks(deletedContact);
 
         // Act
@@ -462,7 +462,7 @@ public class PermanentlyDeleteContactCommandHandlerTests
         var command = CreateValidCommand();
         var cancellationTokenSource = new CancellationTokenSource();
         cancellationTokenSource.Cancel(); // Cancel immediately
-        
+
         _mockContactRepository.Setup(x => x.GetContactIncludingDeletedAsync(
             It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ThrowsAsync(new OperationCanceledException());
@@ -487,7 +487,7 @@ public class PermanentlyDeleteContactCommandHandlerTests
         var userId = Guid.NewGuid();
         var deletedContact = CreateSafeToDeleteContact(contactId, userId);
         var command = CreateValidCommand(contactId, userId);
-        
+
         SetupSuccessfulDeletionRepositoryMocks(deletedContact);
 
         // Act
@@ -502,7 +502,7 @@ public class PermanentlyDeleteContactCommandHandlerTests
                 It.IsAny<Exception>(),
                 It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
             Times.Once);
-        
+
         _mockLogger.Verify(
             x => x.Log(
                 LogLevel.Information,
@@ -520,7 +520,7 @@ public class PermanentlyDeleteContactCommandHandlerTests
         var contactId = Guid.NewGuid();
         var userId = Guid.NewGuid();
         var command = CreateValidCommand(contactId, userId);
-        
+
         _mockContactRepository.Setup(x => x.GetContactIncludingDeletedAsync(
             contactId, userId, It.IsAny<CancellationToken>()))
             .ReturnsAsync((Contact)null!);
@@ -547,7 +547,7 @@ public class PermanentlyDeleteContactCommandHandlerTests
         var userId = Guid.NewGuid();
         var contactWithTasks = CreateContactWithTaskAssociations(contactId, userId);
         var command = CreateValidCommand(contactId, userId);
-        
+
         _mockContactRepository.Setup(x => x.GetContactIncludingDeletedAsync(
             contactId, userId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(contactWithTasks);
@@ -574,7 +574,7 @@ public class PermanentlyDeleteContactCommandHandlerTests
         var userId = Guid.NewGuid();
         var command = CreateValidCommand(contactId, userId);
         var expectedException = new Exception("Database error");
-        
+
         _mockContactRepository.Setup(x => x.GetContactIncludingDeletedAsync(
             It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ThrowsAsync(expectedException);

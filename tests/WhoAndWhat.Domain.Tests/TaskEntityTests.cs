@@ -1,8 +1,8 @@
 using FluentAssertions;
 using WhoAndWhat.Domain.Entities;
 using WhoAndWhat.Domain.ValueObjects;
-using Task = WhoAndWhat.Domain.Entities.AppTask;
 using DomainTaskStatus = WhoAndWhat.Domain.ValueObjects.AppTaskStatus;
+using Task = WhoAndWhat.Domain.Entities.AppTask;
 
 namespace WhoAndWhat.Domain.Tests;
 
@@ -12,7 +12,7 @@ public class TaskEntityTests
     public void Task_Should_Initialize_With_Default_Values()
     {
         var task = new Task();
-        
+
         task.Id.Should().NotBe(Guid.Empty); // BaseEntity auto-generates ID
         task.Title.Should().BeNull();
         task.Description.Should().BeNull();

@@ -1,7 +1,7 @@
-using FluentAssertions;
-using Microsoft.AspNetCore.Mvc.Testing;
 using System.Net;
 using System.Text.Json;
+using FluentAssertions;
+using Microsoft.AspNetCore.Mvc.Testing;
 
 namespace WhoAndWhat.CI.Tests;
 
@@ -39,7 +39,7 @@ public class PipelineValidationTests : IClassFixture<WebApplicationFactory<Progr
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         response.Content.Headers.ContentType?.MediaType.Should().Be("application/json");
-        
+
         // Validate it's valid JSON
         var openApiDoc = JsonDocument.Parse(content);
         openApiDoc.RootElement.GetProperty("openapi").GetString().Should().NotBeNullOrEmpty();
@@ -74,7 +74,7 @@ public class PipelineValidationTests : IClassFixture<WebApplicationFactory<Progr
     {
         // Note: This test assumes a health check endpoint will be implemented
         // Currently the API doesn't have health checks, but it's a CI/CD best practice
-        
+
         // Arrange & Act
         var response = await _client.GetAsync("/health");
 
@@ -92,7 +92,7 @@ public class PipelineValidationTests : IClassFixture<WebApplicationFactory<Progr
         // Act & Assert
         assembly.Should().NotBeNull();
         assembly.GetName().Version.Should().NotBeNull();
-        
+
         // In CI/CD, version should be set from build variables
         var informationalVersion = assembly.GetCustomAttributes(typeof(System.Reflection.AssemblyInformationalVersionAttribute), false)
             .Cast<System.Reflection.AssemblyInformationalVersionAttribute>()
@@ -116,11 +116,11 @@ public class PipelineValidationTests : IClassFixture<WebApplicationFactory<Progr
     {
         // Arrange
         var baseDirectory = GetSolutionRoot();
-        
+
         // Act & Assert - Validate required directories exist
         Directory.Exists(Path.Combine(baseDirectory, "src")).Should().BeTrue("src directory should exist");
         Directory.Exists(Path.Combine(baseDirectory, "tests")).Should().BeTrue("tests directory should exist");
-        
+
         // Validate required files exist
         File.Exists(Path.Combine(baseDirectory, "Dockerfile")).Should().BeTrue("Dockerfile should exist for containerization");
         File.Exists(Path.Combine(baseDirectory, "docker-compose.yml")).Should().BeTrue("docker-compose.yml should exist");
@@ -133,7 +133,7 @@ public class PipelineValidationTests : IClassFixture<WebApplicationFactory<Progr
     {
         // Arrange
         var baseDirectory = GetSolutionRoot();
-        
+
         // Act & Assert
         File.Exists(Path.Combine(baseDirectory, "azure-pipelines.yml")).Should().BeTrue("Azure DevOps pipeline configuration should exist");
         File.Exists(Path.Combine(baseDirectory, ".runsettings")).Should().BeTrue("Test run settings should be configured");
@@ -146,7 +146,7 @@ public class PipelineValidationTests : IClassFixture<WebApplicationFactory<Progr
     {
         // Arrange
         var baseDirectory = GetSolutionRoot();
-        
+
         // Act & Assert - These directories should not exist in source control
         Directory.Exists(Path.Combine(baseDirectory, "src", "WhoAndWhat.API", "bin")).Should().BeFalse("bin directories should not be in source control");
         Directory.Exists(Path.Combine(baseDirectory, "src", "WhoAndWhat.API", "obj")).Should().BeFalse("obj directories should not be in source control");
@@ -156,14 +156,16 @@ public class PipelineValidationTests : IClassFixture<WebApplicationFactory<Progr
     {
         var currentDirectory = Directory.GetCurrentDirectory();
         var directory = new DirectoryInfo(currentDirectory);
-        
+
         while (directory != null && !directory.GetFiles("*.sln").Any())
         {
             directory = directory.Parent;
         }
 
         if (directory == null)
+        {
             throw new InvalidOperationException("Could not find solution root directory");
+        }
 
         return directory.FullName;
     }

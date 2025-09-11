@@ -1,10 +1,10 @@
+using System.Security.Claims;
 using FluentAssertions;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Moq;
-using System.Security.Claims;
 using WhoAndWhat.API.Controllers.v1;
 using WhoAndWhat.Application.DTOs.Authentication;
 using WhoAndWhat.Application.Interfaces;
@@ -28,7 +28,7 @@ public class OAuthControllerTests
         _jwtTokenServiceMock = new Mock<IJwtTokenService>();
         _loggerMock = new Mock<ILogger<OAuthController>>();
         _authServiceMock = new Mock<IAuthenticationService>();
-        
+
         _controller = new OAuthController(
             _oAuthServiceMock.Object,
             _jwtTokenServiceMock.Object,
@@ -39,7 +39,7 @@ public class OAuthControllerTests
         {
             HttpContext = new DefaultHttpContext()
         };
-        
+
         // Setup authentication service
         _controller.HttpContext.RequestServices = CreateServiceProvider();
     }
@@ -74,7 +74,7 @@ public class OAuthControllerTests
         var externalId = "google123";
         var email = "test@example.com";
         var name = "Test User";
-        
+
         var claims = new List<Claim>
         {
             new(ClaimTypes.NameIdentifier, externalId),
@@ -83,7 +83,7 @@ public class OAuthControllerTests
         };
         var identity = new ClaimsIdentity(claims, "GoogleAuth");
         var principal = new ClaimsPrincipal(identity);
-        
+
         var authResult = AuthenticateResult.Success(new AuthenticationTicket(principal, "GoogleAuth"));
         var user = new User(email, "testuser", Language.en);
         var tokenResult = new TokenResult
@@ -109,7 +109,7 @@ public class OAuthControllerTests
         result.Should().BeOfType<OkObjectResult>();
         var okResult = result as OkObjectResult;
         var response = okResult!.Value.Should().BeOfType<LoginResponse>().Subject;
-        
+
         response.AccessToken.Should().Be("access_token");
         response.RefreshToken.Should().Be("refresh_token");
         response.Email.Should().Be(email);
@@ -143,7 +143,7 @@ public class OAuthControllerTests
         };
         var identity = new ClaimsIdentity(claims, "GoogleAuth");
         var principal = new ClaimsPrincipal(identity);
-        
+
         var authResult = AuthenticateResult.Success(new AuthenticationTicket(principal, "GoogleAuth"));
 
         _authServiceMock.Setup(x => x.AuthenticateAsync(It.IsAny<HttpContext>(), "Google"))
@@ -178,7 +178,7 @@ public class OAuthControllerTests
         var externalId = "facebook123";
         var email = "test@example.com";
         var name = "Test User";
-        
+
         var claims = new List<Claim>
         {
             new(ClaimTypes.NameIdentifier, externalId),
@@ -187,7 +187,7 @@ public class OAuthControllerTests
         };
         var identity = new ClaimsIdentity(claims, "FacebookAuth");
         var principal = new ClaimsPrincipal(identity);
-        
+
         var authResult = AuthenticateResult.Success(new AuthenticationTicket(principal, "FacebookAuth"));
         var user = new User(email, "testuser", Language.en);
         var tokenResult = new TokenResult
@@ -213,7 +213,7 @@ public class OAuthControllerTests
         result.Should().BeOfType<OkObjectResult>();
         var okResult = result as OkObjectResult;
         var response = okResult!.Value.Should().BeOfType<LoginResponse>().Subject;
-        
+
         response.AccessToken.Should().Be("access_token");
         response.RefreshToken.Should().Be("refresh_token");
         response.Email.Should().Be(email);
@@ -241,7 +241,7 @@ public class OAuthControllerTests
         var externalId = "apple123";
         var email = "test@example.com";
         var name = "Test User";
-        
+
         var claims = new List<Claim>
         {
             new(ClaimTypes.NameIdentifier, externalId),
@@ -250,7 +250,7 @@ public class OAuthControllerTests
         };
         var identity = new ClaimsIdentity(claims, "AppleAuth");
         var principal = new ClaimsPrincipal(identity);
-        
+
         var authResult = AuthenticateResult.Success(new AuthenticationTicket(principal, "AppleAuth"));
         var user = new User(email, "testuser", Language.en);
         var tokenResult = new TokenResult
@@ -276,7 +276,7 @@ public class OAuthControllerTests
         result.Should().BeOfType<OkObjectResult>();
         var okResult = result as OkObjectResult;
         var response = okResult!.Value.Should().BeOfType<LoginResponse>().Subject;
-        
+
         response.AccessToken.Should().Be("access_token");
         response.RefreshToken.Should().Be("refresh_token");
         response.Email.Should().Be(email);
@@ -290,7 +290,7 @@ public class OAuthControllerTests
         var externalId = "apple123";
         var email = "test@example.com";
         var name = "Test User";
-        
+
         var claims = new List<Claim>
         {
             new(ClaimTypes.NameIdentifier, externalId),
@@ -299,7 +299,7 @@ public class OAuthControllerTests
         };
         var identity = new ClaimsIdentity(claims, "AppleAuth");
         var principal = new ClaimsPrincipal(identity);
-        
+
         var authResult = AuthenticateResult.Success(new AuthenticationTicket(principal, "AppleAuth"));
         var user = new User(email, "testuser", Language.en);
         var tokenResult = new TokenResult

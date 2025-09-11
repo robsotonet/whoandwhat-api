@@ -26,7 +26,7 @@ public class ContactRepositoryTests
             .Options;
         _context = new ApplicationDbContext(options);
         _repository = new Repository<Contact>(_context);
-        
+
         // Create test user for foreign key relationships
         _testUser = new User("test@test.com", "testuser", Language.en);
         _testUser.SetPassword("TestPassword123!");
@@ -39,10 +39,10 @@ public class ContactRepositoryTests
     public async Task Should_Add_Contact()
     {
         // Arrange
-        var contact = new Contact 
-        { 
-            Id = Guid.NewGuid(), 
-            Name = "Test Contact", 
+        var contact = new Contact
+        {
+            Id = Guid.NewGuid(),
+            Name = "Test Contact",
             Email = "contact@test.com",
             Phone = "123-456-7890",
             UserId = _testUser.Id
@@ -64,17 +64,17 @@ public class ContactRepositoryTests
     public async Task Should_Get_All_Contacts()
     {
         // Arrange
-        var contact1 = new Contact 
-        { 
-            Id = Guid.NewGuid(), 
-            Name = "Contact 1", 
-            UserId = _testUser.Id 
+        var contact1 = new Contact
+        {
+            Id = Guid.NewGuid(),
+            Name = "Contact 1",
+            UserId = _testUser.Id
         };
-        var contact2 = new Contact 
-        { 
-            Id = Guid.NewGuid(), 
-            Name = "Contact 2", 
-            UserId = _testUser.Id 
+        var contact2 = new Contact
+        {
+            Id = Guid.NewGuid(),
+            Name = "Contact 2",
+            UserId = _testUser.Id
         };
         await _context.Contacts.AddRangeAsync(contact1, contact2);
         await _context.SaveChangesAsync();
@@ -91,11 +91,11 @@ public class ContactRepositoryTests
     {
         // Arrange
         var contactId = Guid.NewGuid();
-        var contact = new Contact 
-        { 
-            Id = contactId, 
-            Name = "Test Contact", 
-            UserId = _testUser.Id 
+        var contact = new Contact
+        {
+            Id = contactId,
+            Name = "Test Contact",
+            UserId = _testUser.Id
         };
         await _context.Contacts.AddAsync(contact);
         await _context.SaveChangesAsync();
@@ -113,17 +113,17 @@ public class ContactRepositoryTests
     public async Task Should_Find_Contacts_By_Name()
     {
         // Arrange
-        var contact1 = new Contact 
-        { 
-            Id = Guid.NewGuid(), 
-            Name = "John Doe", 
-            UserId = _testUser.Id 
+        var contact1 = new Contact
+        {
+            Id = Guid.NewGuid(),
+            Name = "John Doe",
+            UserId = _testUser.Id
         };
-        var contact2 = new Contact 
-        { 
-            Id = Guid.NewGuid(), 
-            Name = "Jane Smith", 
-            UserId = _testUser.Id 
+        var contact2 = new Contact
+        {
+            Id = Guid.NewGuid(),
+            Name = "Jane Smith",
+            UserId = _testUser.Id
         };
         await _context.Contacts.AddRangeAsync(contact1, contact2);
         await _context.SaveChangesAsync();
@@ -140,19 +140,19 @@ public class ContactRepositoryTests
     public async Task Should_Find_Contacts_By_Email()
     {
         // Arrange
-        var contact1 = new Contact 
-        { 
-            Id = Guid.NewGuid(), 
-            Name = "Contact 1", 
+        var contact1 = new Contact
+        {
+            Id = Guid.NewGuid(),
+            Name = "Contact 1",
             Email = "unique@test.com",
-            UserId = _testUser.Id 
+            UserId = _testUser.Id
         };
-        var contact2 = new Contact 
-        { 
-            Id = Guid.NewGuid(), 
-            Name = "Contact 2", 
+        var contact2 = new Contact
+        {
+            Id = Guid.NewGuid(),
+            Name = "Contact 2",
             Email = "another@test.com",
-            UserId = _testUser.Id 
+            UserId = _testUser.Id
         };
         await _context.Contacts.AddRangeAsync(contact1, contact2);
         await _context.SaveChangesAsync();
@@ -169,11 +169,11 @@ public class ContactRepositoryTests
     public async Task Should_Update_Contact()
     {
         // Arrange
-        var contact = new Contact 
-        { 
-            Id = Guid.NewGuid(), 
-            Name = "Original Name", 
-            UserId = _testUser.Id 
+        var contact = new Contact
+        {
+            Id = Guid.NewGuid(),
+            Name = "Original Name",
+            UserId = _testUser.Id
         };
         await _repository.AddAsync(contact);
         await _repository.SaveChangesAsync();
@@ -195,11 +195,11 @@ public class ContactRepositoryTests
     public async Task Should_Remove_Contact()
     {
         // Arrange
-        var contact = new Contact 
-        { 
-            Id = Guid.NewGuid(), 
-            Name = "Contact to Remove", 
-            UserId = _testUser.Id 
+        var contact = new Contact
+        {
+            Id = Guid.NewGuid(),
+            Name = "Contact to Remove",
+            UserId = _testUser.Id
         };
         await _repository.AddAsync(contact);
         await _repository.SaveChangesAsync();
@@ -217,12 +217,12 @@ public class ContactRepositoryTests
     public async Task Should_Add_Contact_With_QR_Code()
     {
         // Arrange
-        var contact = new Contact 
-        { 
-            Id = Guid.NewGuid(), 
-            Name = "QR Contact", 
+        var contact = new Contact
+        {
+            Id = Guid.NewGuid(),
+            Name = "QR Contact",
             QRCode = "QR_CODE_DATA_12345",
-            UserId = _testUser.Id 
+            UserId = _testUser.Id
         };
 
         // Act
@@ -239,12 +239,12 @@ public class ContactRepositoryTests
     public async Task Should_Add_Contact_With_Invite_Code()
     {
         // Arrange
-        var contact = new Contact 
-        { 
-            Id = Guid.NewGuid(), 
-            Name = "Invite Contact", 
+        var contact = new Contact
+        {
+            Id = Guid.NewGuid(),
+            Name = "Invite Contact",
             InviteCode = "INVITE123",
-            UserId = _testUser.Id 
+            UserId = _testUser.Id
         };
 
         // Act

@@ -15,7 +15,7 @@ public class GenerateInviteCodeCommandHandlerTests
     private readonly Mock<IContactRepository> _mockContactRepository;
     private readonly Mock<ILogger<GenerateInviteCodeCommandHandler>> _mockLogger;
     private readonly GenerateInviteCodeCommandHandler _handler;
-    
+
     private readonly Guid _testUserId = Guid.NewGuid();
     private readonly Guid _testContactId = Guid.NewGuid();
 
@@ -23,7 +23,7 @@ public class GenerateInviteCodeCommandHandlerTests
     {
         _mockContactRepository = new Mock<IContactRepository>();
         _mockLogger = new Mock<ILogger<GenerateInviteCodeCommandHandler>>();
-        
+
         _handler = new GenerateInviteCodeCommandHandler(
             _mockContactRepository.Object,
             _mockLogger.Object);
@@ -44,7 +44,7 @@ public class GenerateInviteCodeCommandHandlerTests
         // Assert
         result.IsSuccess.Should().BeTrue();
         result.Value.Should().NotBeNull();
-        
+
         var inviteDto = result.Value;
         inviteDto.ContactId.Should().Be(_testContactId);
         inviteDto.InviteCode.Should().NotBeNullOrEmpty();
@@ -55,7 +55,7 @@ public class GenerateInviteCodeCommandHandlerTests
         inviteDto.AllowMultipleUses.Should().BeFalse();
         inviteDto.UsageCount.Should().Be(0);
         inviteDto.GeneratedAt.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(5));
-        
+
         // Verify ContactDto mapping
         inviteDto.ContactInfo.Should().NotBeNull();
         inviteDto.ContactInfo.Id.Should().Be(_testContactId);
@@ -64,7 +64,7 @@ public class GenerateInviteCodeCommandHandlerTests
         inviteDto.ContactInfo.Phone.Should().Be("+1234567890");
         inviteDto.ContactInfo.RelationshipType.Should().Be((int)ContactRelationType.Friend);
         inviteDto.ContactInfo.RelationshipTypeName.Should().Be("Friend");
-        
+
         // Verify shareable text format
         inviteDto.ShareableText.Should().Contain("🤝 Connect with John Doe!");
         inviteDto.ShareableText.Should().Contain("Message: Welcome to my network!");
@@ -91,13 +91,13 @@ public class GenerateInviteCodeCommandHandlerTests
         // Assert
         result.IsSuccess.Should().BeTrue();
         result.Value.Should().NotBeNull();
-        
+
         var inviteDto = result.Value;
         inviteDto.CustomMessage.Should().BeNull();
         inviteDto.AllowMultipleUses.Should().BeTrue();
         inviteDto.ExpiresAt.Should().BeAfter(DateTime.UtcNow.AddHours(11));
         inviteDto.ExpiresAt.Should().BeBefore(DateTime.UtcNow.AddHours(13)); // Should be ~12 hours
-        
+
         // Shareable text should not contain custom message
         inviteDto.ShareableText.Should().Contain("🤝 Connect with Jane Smith!");
         inviteDto.ShareableText.Should().NotContain("Message:");
@@ -182,7 +182,7 @@ public class GenerateInviteCodeCommandHandlerTests
         // Assert
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Be("Contact not found");
-        
+
         VerifyLogMessage(LogLevel.Warning, "not found");
         VerifyNoSaveOperations();
     }
@@ -204,7 +204,7 @@ public class GenerateInviteCodeCommandHandlerTests
         // Assert
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Be("Contact not found");
-        
+
         VerifyLogMessage(LogLevel.Warning, "does not belong to user");
         VerifyNoSaveOperations();
     }
@@ -227,7 +227,7 @@ public class GenerateInviteCodeCommandHandlerTests
         // Assert
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Be("Failed to generate invite code");
-        
+
         VerifyLogMessage(LogLevel.Error, "Failed to save invite code for contact");
     }
 
@@ -246,7 +246,7 @@ public class GenerateInviteCodeCommandHandlerTests
         // Assert
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("Error generating invite code: Database connection error");
-        
+
         VerifyLogMessage(LogLevel.Error, "Error generating invite code for contact");
     }
 
@@ -280,11 +280,11 @@ public class GenerateInviteCodeCommandHandlerTests
 
         // Act
         var result1 = await _handler.Handle(command1, CancellationToken.None);
-        
+
         // Reset the contact for second call (simulate fresh retrieval)
         var contact2 = CreateTestContact(_testContactId, _testUserId, "John Doe", "john@example.com");
         SetupContactRepositoryForSuccess(contact2);
-        
+
         // Add small delay to ensure different timestamps
         await Task.Delay(10);
         var result2 = await _handler.Handle(command2, CancellationToken.None);
@@ -292,7 +292,7 @@ public class GenerateInviteCodeCommandHandlerTests
         // Assert
         result1.IsSuccess.Should().BeTrue();
         result2.IsSuccess.Should().BeTrue();
-        
+
         // Invite codes should be different due to timestamp differences
         result1.Value.InviteCode.Should().NotBe(result2.Value.InviteCode);
     }
@@ -312,11 +312,11 @@ public class GenerateInviteCodeCommandHandlerTests
 
         // Assert
         result.IsSuccess.Should().BeTrue();
-        
+
         // Verify that the contact's InviteCode was set
         contact.InviteCode.Should().NotBeNullOrEmpty();
         contact.InviteCode.Should().Be(result.Value.InviteCode);
-        
+
         // Verify UpdatedAt timestamp was updated
         contact.UpdatedAt.Should().BeAfter(originalUpdatedAt);
         contact.UpdatedAt.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(5));
@@ -336,15 +336,15 @@ public class GenerateInviteCodeCommandHandlerTests
 
         // Assert
         result.IsSuccess.Should().BeTrue();
-        
+
         var inviteCode = result.Value.InviteCode;
-        
+
         // Should match XXXX-XXXX-XXXX format
         inviteCode.Should().MatchRegex(@"^[A-Z234567]{4}-[A-Z234567]{4}-[A-Z234567]{4}$");
-        
+
         // Should be exactly 14 characters (12 chars + 2 hyphens)
         inviteCode.Length.Should().Be(14);
-        
+
         // Should contain only valid base32-like characters and hyphens
         foreach (char c in inviteCode)
         {
@@ -357,7 +357,7 @@ public class GenerateInviteCodeCommandHandlerTests
 
     // Helper Methods
 
-    private static Contact CreateTestContact(Guid contactId, Guid userId, string name, string? email = null, 
+    private static Contact CreateTestContact(Guid contactId, Guid userId, string name, string? email = null,
         string? phone = null, ContactRelationType relationshipType = ContactRelationType.Friend)
     {
         return new Contact

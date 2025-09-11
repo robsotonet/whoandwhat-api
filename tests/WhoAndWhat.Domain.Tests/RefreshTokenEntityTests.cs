@@ -32,7 +32,7 @@ public class RefreshTokenEntityTests
     {
         var refreshToken = new RefreshToken(
             Guid.NewGuid(),
-            "test-token", 
+            "test-token",
             DateTime.UtcNow.AddDays(7),
             "192.168.1.1"
         );
@@ -112,7 +112,7 @@ public class RefreshTokenEntityTests
     [Theory]
     [InlineData(null)]
     [InlineData("")]
-    public void RefreshToken_Should_Throw_When_Token_Is_Invalid(string invalidToken)
+    public void RefreshToken_Should_Throw_When_Token_Is_Invalid(string? invalidToken)
     {
         var action = () => new RefreshToken(
             Guid.NewGuid(),
@@ -127,7 +127,7 @@ public class RefreshTokenEntityTests
     [Theory]
     [InlineData(null)]
     [InlineData("")]
-    public void RefreshToken_Should_Throw_When_CreatedByIp_Is_Invalid(string invalidIp)
+    public void RefreshToken_Should_Throw_When_CreatedByIp_Is_Invalid(string? invalidIp)
     {
         var action = () => new RefreshToken(
             Guid.NewGuid(),

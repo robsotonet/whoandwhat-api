@@ -1,4 +1,5 @@
 
+using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using WhoAndWhat.Application.Interfaces;
 using WhoAndWhat.Domain.Entities;
@@ -6,7 +7,6 @@ using WhoAndWhat.Domain.ValueObjects;
 using WhoAndWhat.Infrastructure.Data;
 using WhoAndWhat.Infrastructure.Repositories;
 using Xunit;
-using FluentAssertions;
 using Task = System.Threading.Tasks.Task;
 
 namespace WhoAndWhat.Infrastructure.Tests;

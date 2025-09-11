@@ -1,6 +1,6 @@
 using FluentAssertions;
-using WhoAndWhat.Domain.ValueObjects;
 using WhoAndWhat.Domain.Common;
+using WhoAndWhat.Domain.ValueObjects;
 
 namespace WhoAndWhat.Domain.Tests.ValueObjects;
 
@@ -10,7 +10,7 @@ public class PriorityTests
     public void Priority_Should_Have_All_Predefined_Priorities()
     {
         var allPriorities = Priority.GetAll().ToList();
-        
+
         allPriorities.Should().HaveCount(4);
         allPriorities.Should().Contain(Priority.Low);
         allPriorities.Should().Contain(Priority.Medium);
@@ -22,7 +22,7 @@ public class PriorityTests
     public void Priority_GetAll_Should_Return_Ordered_By_Importance()
     {
         var priorities = Priority.GetAll().ToList();
-        
+
         priorities[0].Should().Be(Priority.Urgent);
         priorities[1].Should().Be(Priority.High);
         priorities[2].Should().Be(Priority.Medium);
@@ -33,7 +33,7 @@ public class PriorityTests
     public void Priority_GetAllByValue_Should_Return_Ordered_By_Value()
     {
         var priorities = Priority.GetAllByValue().ToList();
-        
+
         priorities[0].Should().Be(Priority.Low);
         priorities[1].Should().Be(Priority.Medium);
         priorities[2].Should().Be(Priority.High);
@@ -46,15 +46,15 @@ public class PriorityTests
         Priority.Low.Name.Should().Be("Low");
         Priority.Low.Value.Should().Be(0);
         Priority.Low.SortOrder.Should().Be(7);
-        
+
         Priority.Medium.Name.Should().Be("Medium");
         Priority.Medium.Value.Should().Be(1);
         Priority.Medium.SortOrder.Should().Be(3);
-        
+
         Priority.High.Name.Should().Be("High");
         Priority.High.Value.Should().Be(2);
         Priority.High.SortOrder.Should().Be(1);
-        
+
         Priority.Urgent.Name.Should().Be("Urgent");
         Priority.Urgent.Value.Should().Be(3);
         Priority.Urgent.SortOrder.Should().Be(0);
@@ -64,7 +64,7 @@ public class PriorityTests
     public void Priority_Should_Create_From_Valid_Value()
     {
         var priority = Priority.FromValue(2);
-        
+
         priority.Should().Be(Priority.High);
         priority.Name.Should().Be("High");
         priority.Value.Should().Be(2);
@@ -76,7 +76,7 @@ public class PriorityTests
     public void Priority_Should_Throw_Exception_For_Invalid_Value()
     {
         Action act = () => Priority.FromValue(999);
-        
+
         act.Should().Throw<ArgumentException>()
            .WithMessage("Invalid priority value: 999*");
     }
@@ -85,7 +85,7 @@ public class PriorityTests
     public void Priority_Should_Create_From_Valid_Name()
     {
         var priority = Priority.FromName("Urgent");
-        
+
         priority.Should().Be(Priority.Urgent);
         priority.Name.Should().Be("Urgent");
         priority.Value.Should().Be(3);
@@ -95,7 +95,7 @@ public class PriorityTests
     public void Priority_Should_Create_From_Valid_Name_Case_Insensitive()
     {
         var priority = Priority.FromName("urgent");
-        
+
         priority.Should().Be(Priority.Urgent);
     }
 
@@ -103,7 +103,7 @@ public class PriorityTests
     public void Priority_Should_Throw_Exception_For_Invalid_Name()
     {
         Action act = () => Priority.FromName("InvalidPriority");
-        
+
         act.Should().Throw<ArgumentException>()
            .WithMessage("Invalid priority name: InvalidPriority*");
     }
@@ -113,10 +113,10 @@ public class PriorityTests
     {
         var result1 = Priority.TryFromValue(1, out var priority1);
         var result2 = Priority.TryFromValue(999, out var priority2);
-        
+
         result1.Should().BeTrue();
         priority1.Should().Be(Priority.Medium);
-        
+
         result2.Should().BeFalse();
         priority2.Should().BeNull();
     }
@@ -127,13 +127,13 @@ public class PriorityTests
         var result1 = Priority.TryFromName("High", out var priority1);
         var result2 = Priority.TryFromName("Invalid", out var priority2);
         var result3 = Priority.TryFromName(null, out var priority3);
-        
+
         result1.Should().BeTrue();
         priority1.Should().Be(Priority.High);
-        
+
         result2.Should().BeFalse();
         priority2.Should().BeNull();
-        
+
         result3.Should().BeFalse();
         priority3.Should().BeNull();
     }
@@ -142,7 +142,7 @@ public class PriorityTests
     public void Priority_GetHighImportance_Should_Return_High_And_Urgent()
     {
         var highImportance = Priority.GetHighImportance().ToList();
-        
+
         highImportance.Should().HaveCount(2);
         highImportance.Should().Contain(Priority.High);
         highImportance.Should().Contain(Priority.Urgent);
@@ -152,7 +152,7 @@ public class PriorityTests
     public void Priority_GetLowImportance_Should_Return_Low_And_Medium()
     {
         var lowImportance = Priority.GetLowImportance().ToList();
-        
+
         lowImportance.Should().HaveCount(2);
         lowImportance.Should().Contain(Priority.Low);
         lowImportance.Should().Contain(Priority.Medium);
@@ -166,7 +166,7 @@ public class PriorityTests
     public void Priority_CanEscalate_Should_Return_Correct_Value(string priorityName, bool expectedCanEscalate)
     {
         var priority = Priority.FromName(priorityName);
-        
+
         priority.CanEscalate().Should().Be(expectedCanEscalate);
     }
 
@@ -179,7 +179,7 @@ public class PriorityTests
     {
         var priority = Priority.FromName(fromPriority);
         var escalated = priority.Escalate();
-        
+
         escalated.Name.Should().Be(expectedToPriority);
     }
 
@@ -191,7 +191,7 @@ public class PriorityTests
     public void Priority_CanDeEscalate_Should_Return_Correct_Value(string priorityName, bool expectedCanDeEscalate)
     {
         var priority = Priority.FromName(priorityName);
-        
+
         priority.CanDeEscalate().Should().Be(expectedCanDeEscalate);
     }
 
@@ -204,7 +204,7 @@ public class PriorityTests
     {
         var priority = Priority.FromName(fromPriority);
         var deEscalated = priority.DeEscalate();
-        
+
         deEscalated.Name.Should().Be(expectedToPriority);
     }
 
@@ -234,7 +234,7 @@ public class PriorityTests
     public void Priority_GetRecommendedDueDateOffset_Should_Return_Correct_Days(string priorityName, int expectedDays)
     {
         var priority = Priority.FromName(priorityName);
-        
+
         priority.GetRecommendedDueDateOffset().Should().Be(expectedDays);
     }
 
@@ -246,7 +246,7 @@ public class PriorityTests
     public void Priority_GetNotificationLeadHours_Should_Return_Correct_Hours(string priorityName, int expectedHours)
     {
         var priority = Priority.FromName(priorityName);
-        
+
         priority.GetNotificationLeadHours().Should().Be(expectedHours);
     }
 
@@ -254,7 +254,7 @@ public class PriorityTests
     public void Priority_SuggestFromDueDate_Should_Suggest_Correct_Priority_For_No_Due_Date()
     {
         var suggested = Priority.SuggestFromDueDate(null);
-        
+
         suggested.Should().Be(Priority.Medium);
     }
 
@@ -263,7 +263,7 @@ public class PriorityTests
     {
         var overdue = DateTime.UtcNow.AddDays(-1);
         var suggested = Priority.SuggestFromDueDate(overdue);
-        
+
         suggested.Should().Be(Priority.Urgent);
     }
 
@@ -272,7 +272,7 @@ public class PriorityTests
     {
         var tomorrow = DateTime.UtcNow.AddDays(1);
         var suggested = Priority.SuggestFromDueDate(tomorrow);
-        
+
         suggested.Should().Be(Priority.High);
     }
 
@@ -281,7 +281,7 @@ public class PriorityTests
     {
         var thisWeek = DateTime.UtcNow.AddDays(5);
         var suggested = Priority.SuggestFromDueDate(thisWeek);
-        
+
         suggested.Should().Be(Priority.Medium);
     }
 
@@ -290,7 +290,7 @@ public class PriorityTests
     {
         var later = DateTime.UtcNow.AddDays(30);
         var suggested = Priority.SuggestFromDueDate(later);
-        
+
         suggested.Should().Be(Priority.Low);
     }
 
@@ -298,7 +298,7 @@ public class PriorityTests
     public void Priority_ValidatePriorityAssignment_Should_Pass_For_Valid_Assignment()
     {
         var validation = Priority.High.ValidatePriorityAssignment(AppTaskCategory.Appointment, DateTime.UtcNow.AddDays(1));
-        
+
         validation.IsValid.Should().BeTrue();
     }
 
@@ -306,7 +306,7 @@ public class PriorityTests
     public void Priority_ValidatePriorityAssignment_Should_Warn_For_Low_Priority_Appointment()
     {
         var validation = Priority.Low.ValidatePriorityAssignment(AppTaskCategory.Appointment, DateTime.UtcNow.AddDays(1));
-        
+
         validation.IsValid.Should().BeTrue(); // Warnings don't make it invalid
         validation.Errors.Should().Contain("Appointments typically should be High or Urgent priority");
     }
@@ -319,7 +319,7 @@ public class PriorityTests
     public void Priority_GetWeight_Should_Return_Correct_Weight(string priorityName, double expectedWeight)
     {
         var priority = Priority.FromName(priorityName);
-        
+
         priority.GetWeight().Should().Be(expectedWeight);
     }
 
@@ -331,7 +331,7 @@ public class PriorityTests
     public void Priority_GetCssClass_Should_Return_Correct_CSS_Class(string priorityName, string expectedCssClass)
     {
         var priority = Priority.FromName(priorityName);
-        
+
         priority.GetCssClass().Should().Be(expectedCssClass);
     }
 
@@ -343,7 +343,7 @@ public class PriorityTests
     public void Priority_GetIconName_Should_Return_Correct_Icon(string priorityName, string expectedIcon)
     {
         var priority = Priority.FromName(priorityName);
-        
+
         priority.GetIconName().Should().Be(expectedIcon);
     }
 
@@ -353,15 +353,15 @@ public class PriorityTests
         (Priority.Urgent > Priority.High).Should().BeTrue();
         (Priority.High > Priority.Medium).Should().BeTrue();
         (Priority.Medium > Priority.Low).Should().BeTrue();
-        
+
         (Priority.Low < Priority.Medium).Should().BeTrue();
         (Priority.Medium < Priority.High).Should().BeTrue();
         (Priority.High < Priority.Urgent).Should().BeTrue();
-        
+
         (Priority.High >= Priority.High).Should().BeTrue();
         (Priority.High >= Priority.Medium).Should().BeTrue();
         (Priority.Medium >= Priority.High).Should().BeFalse();
-        
+
         (Priority.Medium <= Priority.Medium).Should().BeTrue();
         (Priority.Medium <= Priority.High).Should().BeTrue();
         (Priority.High <= Priority.Medium).Should().BeFalse();
@@ -380,7 +380,7 @@ public class PriorityTests
     public void Priority_Should_Support_Explicit_Conversion_To_Int()
     {
         int priorityValue = (int)Priority.High;
-        
+
         priorityValue.Should().Be(2);
     }
 
@@ -388,7 +388,7 @@ public class PriorityTests
     public void Priority_Should_Support_Explicit_Conversion_From_Int()
     {
         var priority = (Priority)3;
-        
+
         priority.Should().Be(Priority.Urgent);
     }
 

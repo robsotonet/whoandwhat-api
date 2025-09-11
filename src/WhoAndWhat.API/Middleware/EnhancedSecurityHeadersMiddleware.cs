@@ -1,6 +1,6 @@
-using Microsoft.Extensions.Options;
 using System.Security.Cryptography;
 using System.Text;
+using Microsoft.Extensions.Options;
 using WhoAndWhat.Infrastructure.Configuration;
 
 namespace WhoAndWhat.API.Middleware;
@@ -183,8 +183,8 @@ public class EnhancedSecurityHeadersMiddleware
         }
 
         var csp = BuildContentSecurityPolicy(nonce);
-        var headerName = _settings.ContentSecurityPolicy.ReportOnly 
-            ? "Content-Security-Policy-Report-Only" 
+        var headerName = _settings.ContentSecurityPolicy.ReportOnly
+            ? "Content-Security-Policy-Report-Only"
             : "Content-Security-Policy";
 
         headers.TryAdd(headerName, csp);

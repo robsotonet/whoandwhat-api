@@ -26,12 +26,12 @@ public class GenerateInviteCodeCommandHandler : IRequestHandler<GenerateInviteCo
     {
         try
         {
-            _logger.LogInformation("Generating invite code for contact {ContactId} for user {UserId}", 
+            _logger.LogInformation("Generating invite code for contact {ContactId} for user {UserId}",
                 request.ContactId, request.UserId);
 
             // Verify the contact exists and belongs to the user
             var contact = await _contactRepository.GetByIdAsync(request.ContactId, cancellationToken);
-            
+
             if (contact == null)
             {
                 _logger.LogWarning("Contact {ContactId} not found", request.ContactId);
@@ -40,7 +40,7 @@ public class GenerateInviteCodeCommandHandler : IRequestHandler<GenerateInviteCo
 
             if (contact.UserId != request.UserId)
             {
-                _logger.LogWarning("Contact {ContactId} does not belong to user {UserId}", 
+                _logger.LogWarning("Contact {ContactId} does not belong to user {UserId}",
                     request.ContactId, request.UserId);
                 return Result<ContactInviteDto>.Failure("Contact not found");
             }
@@ -96,14 +96,14 @@ public class GenerateInviteCodeCommandHandler : IRequestHandler<GenerateInviteCo
                 ShareableText = shareableText
             };
 
-            _logger.LogInformation("Successfully generated invite code {InviteCode} for contact {ContactId}", 
+            _logger.LogInformation("Successfully generated invite code {InviteCode} for contact {ContactId}",
                 inviteCode, request.ContactId);
 
             return Result<ContactInviteDto>.Success(result);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error generating invite code for contact {ContactId} for user {UserId}", 
+            _logger.LogError(ex, "Error generating invite code for contact {ContactId} for user {UserId}",
                 request.ContactId, request.UserId);
             return Result<ContactInviteDto>.Failure($"Error generating invite code: {ex.Message}");
         }
@@ -114,28 +114,28 @@ public class GenerateInviteCodeCommandHandler : IRequestHandler<GenerateInviteCo
         // Create a unique string combining contact ID, name, and current timestamp
         var timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
         var input = $"{contactId}:{contactName}:{timestamp}";
-        
+
         // Generate hash using SHA256
         using var sha256 = SHA256.Create();
         var hashBytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(input));
-        
+
         // Convert to base32-like string (using only uppercase letters and digits for better readability)
         var base32Chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
         var result = new StringBuilder();
-        
+
         // Take first 8 bytes for a reasonable length code
         for (int i = 0; i < Math.Min(8, hashBytes.Length); i++)
         {
             result.Append(base32Chars[hashBytes[i] % base32Chars.Length]);
         }
-        
+
         // Add a random 4-character suffix for additional uniqueness
         var random = new Random();
         for (int i = 0; i < 4; i++)
         {
             result.Append(base32Chars[random.Next(base32Chars.Length)]);
         }
-        
+
         // Format as XXXX-XXXX-XXXX for readability
         var code = result.ToString();
         return $"{code.Substring(0, 4)}-{code.Substring(4, 4)}-{code.Substring(8, 4)}";
@@ -144,17 +144,17 @@ public class GenerateInviteCodeCommandHandler : IRequestHandler<GenerateInviteCo
     private string CreateShareableText(string inviteCode, string contactName, string? customMessage)
     {
         var text = new StringBuilder();
-        
+
         text.AppendLine($"🤝 Connect with {contactName}!");
-        
+
         if (!string.IsNullOrEmpty(customMessage))
         {
             text.AppendLine($"Message: {customMessage}");
         }
-        
+
         text.AppendLine($"Use invite code: {inviteCode}");
         text.AppendLine("📱 Add this contact to your WhoAndWhat app");
-        
+
         return text.ToString();
     }
 }

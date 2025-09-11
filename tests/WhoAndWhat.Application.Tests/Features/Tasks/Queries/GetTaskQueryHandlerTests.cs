@@ -140,7 +140,7 @@ public class GetTaskQueryHandlerTests
         var taskOwnerId = Guid.NewGuid();
         var requestUserId = Guid.NewGuid();
         var taskId = Guid.NewGuid();
-        
+
         var existingTask = new DomainTask
         {
             Id = taskId,
@@ -223,12 +223,12 @@ public class GetTaskQueryHandlerTests
         result.IsSuccess.Should().BeTrue();
         result.Value.Should().NotBeNull();
         result.Value.Subtasks.Should().HaveCount(2);
-        
+
         var mappedSubtask1 = result.Value.Subtasks.FirstOrDefault(s => s.Id == subtask1Id);
         mappedSubtask1.Should().NotBeNull();
         mappedSubtask1!.Title.Should().Be("Subtask 1");
         mappedSubtask1.ParentTaskId.Should().Be(taskId);
-        
+
         var mappedSubtask2 = result.Value.Subtasks.FirstOrDefault(s => s.Id == subtask2Id);
         mappedSubtask2.Should().NotBeNull();
         mappedSubtask2!.Title.Should().Be("Subtask 2");
@@ -272,11 +272,11 @@ public class GetTaskQueryHandlerTests
         result.IsSuccess.Should().BeTrue();
         result.Value.Should().NotBeNull();
         result.Value.TaskContacts.Should().HaveCount(2);
-        
+
         var organizer = result.Value.TaskContacts.FirstOrDefault(tc => tc.ContactId == contactId1);
         organizer.Should().NotBeNull();
         organizer!.Role.Should().Be("Organizer");
-        
+
         var participant = result.Value.TaskContacts.FirstOrDefault(tc => tc.ContactId == contactId2);
         participant.Should().NotBeNull();
         participant!.Role.Should().Be("Participant");
@@ -353,7 +353,7 @@ public class GetTaskQueryHandlerTests
         result.Should().NotBeNull();
         result.IsSuccess.Should().BeTrue();
         result.Value.Should().NotBeNull();
-        
+
         var taskDto = result.Value;
         taskDto.Id.Should().Be(taskId);
         taskDto.Title.Should().Be("Complete Task Mapping");

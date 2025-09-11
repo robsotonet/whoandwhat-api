@@ -55,7 +55,7 @@ public class GetTaskStatisticsQueryHandlerTests
         result.Should().NotBeNull();
         result.IsSuccess.Should().BeTrue();
         result.Value.Should().NotBeNull();
-        
+
         var response = result.Value;
         response.TotalTasks.Should().Be(10);
         response.CompletedTasks.Should().Be(6);
@@ -101,12 +101,12 @@ public class GetTaskStatisticsQueryHandlerTests
         result.Value.CompletionRate.Should().Be(60); // 3/5 * 100
 
         _mockTaskRepository.Verify(x => x.GetStatisticsAsync(
-            It.Is<AppTaskSearchCriteria>(c => 
+            It.Is<AppTaskSearchCriteria>(c =>
                 c.UserId == userId &&
                 c.CreatedFrom == fromDate &&
                 c.CreatedTo == toDate &&
                 c.IncludeArchived == true),
-            It.IsAny<CancellationToken>()), 
+            It.IsAny<CancellationToken>()),
             Times.AtLeastOnce);
     }
 
@@ -119,7 +119,7 @@ public class GetTaskStatisticsQueryHandlerTests
 
         var overallStats = new TaskStatistics { TotalTasks = 20, CompletedTasks = 10 };
         SetupOverallStatisticsMock(userId, overallStats);
-        
+
         // Setup specific category statistics
         var todoStats = new TaskStatistics
         {
@@ -128,9 +128,9 @@ public class GetTaskStatisticsQueryHandlerTests
             OverdueTasks = 1,
             AverageCompletionTime = TimeSpan.FromHours(6)
         };
-        
+
         _mockTaskRepository.Setup(x => x.GetStatisticsAsync(
-            It.Is<AppTaskSearchCriteria>(c => 
+            It.Is<AppTaskSearchCriteria>(c =>
                 c.UserId == userId &&
                 c.Categories != null &&
                 c.Categories.Contains((int)AppTaskCategory.ToDo)),
@@ -146,7 +146,7 @@ public class GetTaskStatisticsQueryHandlerTests
         // Assert
         result.IsSuccess.Should().BeTrue();
         result.Value.CategoryStats.Should().NotBeEmpty();
-        
+
         var todoCategory = result.Value.CategoryStats.FirstOrDefault(c => c.Category == (int)AppTaskCategory.ToDo);
         todoCategory.Should().NotBeNull();
         todoCategory!.CategoryName.Should().Be("To-Do");
@@ -177,7 +177,7 @@ public class GetTaskStatisticsQueryHandlerTests
         };
 
         _mockTaskRepository.Setup(x => x.GetStatisticsAsync(
-            It.Is<AppTaskSearchCriteria>(c => 
+            It.Is<AppTaskSearchCriteria>(c =>
                 c.UserId == userId &&
                 c.Priorities != null &&
                 c.Priorities.Contains((int)Priority.Urgent)),
@@ -192,7 +192,7 @@ public class GetTaskStatisticsQueryHandlerTests
         // Assert
         result.IsSuccess.Should().BeTrue();
         result.Value.PriorityStats.Should().NotBeEmpty();
-        
+
         var urgentPriority = result.Value.PriorityStats.FirstOrDefault(p => p.Priority == (int)Priority.Urgent);
         urgentPriority.Should().NotBeNull();
         urgentPriority!.PriorityName.Should().Be("Urgent");
@@ -254,7 +254,7 @@ public class GetTaskStatisticsQueryHandlerTests
         };
 
         _mockTaskRepository.Setup(x => x.GetStatisticsAsync(
-            It.Is<AppTaskSearchCriteria>(c => 
+            It.Is<AppTaskSearchCriteria>(c =>
                 c.Categories != null &&
                 c.Categories.Contains((int)AppTaskCategory.Idea)),
             It.IsAny<CancellationToken>()))
@@ -290,7 +290,7 @@ public class GetTaskStatisticsQueryHandlerTests
 
         // Assert
         result.IsSuccess.Should().BeTrue();
-        
+
         var expectedCategories = AppTaskCategory.GetAll().ToList();
         result.Value.CategoryStats.Should().HaveCount(expectedCategories.Count);
 
@@ -317,7 +317,7 @@ public class GetTaskStatisticsQueryHandlerTests
 
         // Assert
         result.IsSuccess.Should().BeTrue();
-        
+
         var expectedPriorities = Priority.GetAll().ToList();
         result.Value.PriorityStats.Should().HaveCount(expectedPriorities.Count);
 
@@ -396,7 +396,7 @@ public class GetTaskStatisticsQueryHandlerTests
         // Verify that all calls included archived tasks
         _mockTaskRepository.Verify(x => x.GetStatisticsAsync(
             It.Is<AppTaskSearchCriteria>(c => c.IncludeArchived == true),
-            It.IsAny<CancellationToken>()), 
+            It.IsAny<CancellationToken>()),
             Times.AtLeast(1 + AppTaskCategory.GetAll().Count() + Priority.GetAll().Count()));
     }
 
@@ -404,7 +404,7 @@ public class GetTaskStatisticsQueryHandlerTests
     private void SetupOverallStatisticsMock(Guid userId, TaskStatistics stats, DateTime? from = null, DateTime? to = null)
     {
         _mockTaskRepository.Setup(x => x.GetStatisticsAsync(
-            It.Is<AppTaskSearchCriteria>(c => 
+            It.Is<AppTaskSearchCriteria>(c =>
                 c.UserId == userId &&
                 c.CreatedFrom == from &&
                 c.CreatedTo == to &&
@@ -428,7 +428,7 @@ public class GetTaskStatisticsQueryHandlerTests
             };
 
             _mockTaskRepository.Setup(x => x.GetStatisticsAsync(
-                It.Is<AppTaskSearchCriteria>(c => 
+                It.Is<AppTaskSearchCriteria>(c =>
                     c.UserId == userId &&
                     c.CreatedFrom == from &&
                     c.CreatedTo == to &&
@@ -446,7 +446,7 @@ public class GetTaskStatisticsQueryHandlerTests
         {
             var categoryStats = new TaskStatistics { TotalTasks = 2, CompletedTasks = 1 };
             _mockTaskRepository.Setup(x => x.GetStatisticsAsync(
-                It.Is<AppTaskSearchCriteria>(c => 
+                It.Is<AppTaskSearchCriteria>(c =>
                     c.Categories != null &&
                     c.Categories.Contains(category.Value)),
                 It.IsAny<CancellationToken>()))
@@ -466,7 +466,7 @@ public class GetTaskStatisticsQueryHandlerTests
             };
 
             _mockTaskRepository.Setup(x => x.GetStatisticsAsync(
-                It.Is<AppTaskSearchCriteria>(c => 
+                It.Is<AppTaskSearchCriteria>(c =>
                     c.UserId == userId &&
                     c.CreatedFrom == from &&
                     c.CreatedTo == to &&
@@ -484,7 +484,7 @@ public class GetTaskStatisticsQueryHandlerTests
         {
             var priorityStats = new TaskStatistics { TotalTasks = 1, CompletedTasks = 1 };
             _mockTaskRepository.Setup(x => x.GetStatisticsAsync(
-                It.Is<AppTaskSearchCriteria>(c => 
+                It.Is<AppTaskSearchCriteria>(c =>
                     c.Priorities != null &&
                     c.Priorities.Contains(priority.Value)),
                 It.IsAny<CancellationToken>()))
@@ -498,7 +498,7 @@ public class GetTaskStatisticsQueryHandlerTests
         foreach (var category in AppTaskCategory.GetAll())
         {
             _mockTaskRepository.Setup(x => x.GetStatisticsAsync(
-                It.Is<AppTaskSearchCriteria>(c => 
+                It.Is<AppTaskSearchCriteria>(c =>
                     c.Categories != null &&
                     c.Categories.Contains(category.Value)),
                 It.IsAny<CancellationToken>()))
@@ -512,7 +512,7 @@ public class GetTaskStatisticsQueryHandlerTests
         foreach (var priority in Priority.GetAll())
         {
             _mockTaskRepository.Setup(x => x.GetStatisticsAsync(
-                It.Is<AppTaskSearchCriteria>(c => 
+                It.Is<AppTaskSearchCriteria>(c =>
                     c.Priorities != null &&
                     c.Priorities.Contains(priority.Value)),
                 It.IsAny<CancellationToken>()))

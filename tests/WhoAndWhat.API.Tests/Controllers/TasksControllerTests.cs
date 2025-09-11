@@ -1,3 +1,8 @@
+using System.Linq;
+using System.Net;
+using System.Net.Http.Headers;
+using System.Text;
+using System.Text.Json;
 using FluentAssertions;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -6,21 +11,16 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
-using System.Linq;
-using System.Net;
-using System.Net.Http.Headers;
-using System.Text;
-using System.Text.Json;
-using WhoAndWhat.Application.DTOs.Tasks;
-using WhoAndWhat.Application.DTOs.Authentication;
+using WhoAndWhat.API.Tests.Helpers;
 using WhoAndWhat.Application.DTOs;
+using WhoAndWhat.Application.DTOs.Authentication;
 using WhoAndWhat.Application.DTOs.Contacts;
+using WhoAndWhat.Application.DTOs.Tasks;
 using WhoAndWhat.Application.Interfaces;
 using WhoAndWhat.Application.Services;
 using WhoAndWhat.Domain.Services;
 using WhoAndWhat.Infrastructure.Data;
 using WhoAndWhat.Infrastructure.Repositories;
-using WhoAndWhat.API.Tests.Helpers;
 using Xunit;
 
 namespace WhoAndWhat.API.Tests.Controllers;
@@ -40,13 +40,13 @@ public class TasksControllerTests : IClassFixture<WebApplicationFactory<Program>
         _factory = factory.WithWebHostBuilder(builder =>
         {
             builder.UseEnvironment("Testing");
-            
+
             // Override configuration for tests
             builder.ConfigureAppConfiguration((context, config) =>
             {
                 config.AddJsonFile("appsettings.Testing.json", optional: false);
             });
-            
+
             builder.ConfigureServices(services =>
             {
                 // Remove all existing database-related registrations
@@ -84,7 +84,7 @@ public class TasksControllerTests : IClassFixture<WebApplicationFactory<Program>
                 }
             });
         });
-        
+
         _client = _factory.CreateClient();
         _jsonOptions = new JsonSerializerOptions
         {
@@ -114,7 +114,7 @@ public class TasksControllerTests : IClassFixture<WebApplicationFactory<Program>
         _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
         var response = await _client.PostAsync("/api/v1/tasks", content);
         var responseContent = await response.Content.ReadAsStringAsync();
-        
+
         return JsonSerializer.Deserialize<TaskDto>(responseContent, _jsonOptions)!;
     }
 
@@ -136,7 +136,7 @@ public class TasksControllerTests : IClassFixture<WebApplicationFactory<Program>
         _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
         var response = await _client.PostAsync("/api/v1/contacts", content);
         var responseContent = await response.Content.ReadAsStringAsync();
-        
+
         return JsonSerializer.Deserialize<ContactDto>(responseContent, _jsonOptions)!;
     }
 
@@ -178,7 +178,7 @@ public class TasksControllerTests : IClassFixture<WebApplicationFactory<Program>
         // Arrange
         var token = await AuthenticationTestHelper.GetAuthTokenAsync(_client);
         _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-        
+
         // Create multiple test tasks
         for (int i = 0; i < 5; i++)
         {
@@ -262,7 +262,7 @@ public class TasksControllerTests : IClassFixture<WebApplicationFactory<Program>
         // Arrange
         var token = await AuthenticationTestHelper.GetAuthTokenAsync(_client);
         _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-        
+
         var request = new CreateTaskRequest
         {
             Title = "New Task",
@@ -295,7 +295,7 @@ public class TasksControllerTests : IClassFixture<WebApplicationFactory<Program>
         // Arrange
         var token = await AuthenticationTestHelper.GetAuthTokenAsync(_client);
         _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-        
+
         var request = new CreateTaskRequest
         {
             Title = "", // Empty title should be invalid
@@ -327,7 +327,7 @@ public class TasksControllerTests : IClassFixture<WebApplicationFactory<Program>
         var token = await AuthenticationTestHelper.GetAuthTokenAsync(_client);
         var task = await CreateTestTaskAsync(token);
         _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-        
+
         var updateRequest = new UpdateTaskRequest
         {
             Title = "Updated Task",
@@ -359,7 +359,7 @@ public class TasksControllerTests : IClassFixture<WebApplicationFactory<Program>
         var token = await AuthenticationTestHelper.GetAuthTokenAsync(_client);
         _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
         var invalidId = Guid.NewGuid();
-        
+
         var updateRequest = new UpdateTaskRequest
         {
             Title = "Updated Task",
@@ -519,7 +519,7 @@ public class TasksControllerTests : IClassFixture<WebApplicationFactory<Program>
         var token = await AuthenticationTestHelper.GetAuthTokenAsync(_client);
         var task = await CreateTestTaskAsync(token);
         _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-        
+
         var statusUpdateRequest = new
         {
             Status = 1, // InProgress
@@ -548,7 +548,7 @@ public class TasksControllerTests : IClassFixture<WebApplicationFactory<Program>
         var token = await AuthenticationTestHelper.GetAuthTokenAsync(_client);
         _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
         var invalidId = Guid.NewGuid();
-        
+
         var statusUpdateRequest = new
         {
             Status = 2, // Completed
@@ -577,7 +577,7 @@ public class TasksControllerTests : IClassFixture<WebApplicationFactory<Program>
         // Arrange
         var token = await AuthenticationTestHelper.GetAuthTokenAsync(_client);
         _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-        
+
         // Create an overdue task
         var createRequest = new CreateTaskRequest
         {
@@ -626,7 +626,7 @@ public class TasksControllerTests : IClassFixture<WebApplicationFactory<Program>
         // Arrange
         var token = await AuthenticationTestHelper.GetAuthTokenAsync(_client);
         _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-        
+
         // Create a task due today
         var createRequest = new CreateTaskRequest
         {
@@ -661,7 +661,7 @@ public class TasksControllerTests : IClassFixture<WebApplicationFactory<Program>
         // Arrange
         var token = await AuthenticationTestHelper.GetAuthTokenAsync(_client);
         _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-        
+
         // Create a task due tomorrow
         var createRequest = new CreateTaskRequest
         {
@@ -700,12 +700,12 @@ public class TasksControllerTests : IClassFixture<WebApplicationFactory<Program>
         // Arrange
         var token = await AuthenticationTestHelper.GetAuthTokenAsync(_client);
         _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-        
+
         // Create multiple tasks
         var task1 = await CreateTestTaskAsync(token, "Task 1");
         var task2 = await CreateTestTaskAsync(token, "Task 2");
         var task3 = await CreateTestTaskAsync(token, "Task 3");
-        
+
         var batchRequest = new
         {
             Operation = "delete",
@@ -725,7 +725,7 @@ public class TasksControllerTests : IClassFixture<WebApplicationFactory<Program>
         var responseContent = await response.Content.ReadAsStringAsync();
         responseContent.Should().Contain("\"operation\":\"delete\"");
         responseContent.Should().Contain("\"successfulTasks\":3");
-        
+
         // Verify tasks are deleted
         var getResponse = await _client.GetAsync($"/api/v1/tasks/{task1.Id}");
         getResponse.StatusCode.Should().Be(HttpStatusCode.NotFound);
@@ -737,11 +737,11 @@ public class TasksControllerTests : IClassFixture<WebApplicationFactory<Program>
         // Arrange
         var token = await AuthenticationTestHelper.GetAuthTokenAsync(_client);
         _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-        
+
         // Create multiple tasks
         var task1 = await CreateTestTaskAsync(token, "Task to Complete 1");
         var task2 = await CreateTestTaskAsync(token, "Task to Complete 2");
-        
+
         var batchRequest = new
         {
             Operation = "complete",
@@ -761,7 +761,7 @@ public class TasksControllerTests : IClassFixture<WebApplicationFactory<Program>
         var responseContent = await response.Content.ReadAsStringAsync();
         responseContent.Should().Contain("\"operation\":\"complete\"");
         responseContent.Should().Contain("\"successfulTasks\":2");
-        
+
         // Verify tasks are completed
         var getResponse = await _client.GetAsync($"/api/v1/tasks/{task1.Id}");
         var taskContent = await getResponse.Content.ReadAsStringAsync();
@@ -775,11 +775,11 @@ public class TasksControllerTests : IClassFixture<WebApplicationFactory<Program>
         // Arrange
         var token = await AuthenticationTestHelper.GetAuthTokenAsync(_client);
         _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-        
+
         // Create multiple tasks
         var task1 = await CreateTestTaskAsync(token, "Task to Archive 1");
         var task2 = await CreateTestTaskAsync(token, "Task to Archive 2");
-        
+
         var batchRequest = new
         {
             Operation = "archive",
@@ -799,7 +799,7 @@ public class TasksControllerTests : IClassFixture<WebApplicationFactory<Program>
         var responseContent = await response.Content.ReadAsStringAsync();
         responseContent.Should().Contain("\"operation\":\"archive\"");
         responseContent.Should().Contain("\"successfulTasks\":2");
-        
+
         // Verify tasks are archived
         var getResponse = await _client.GetAsync($"/api/v1/tasks/{task1.Id}");
         var taskContent = await getResponse.Content.ReadAsStringAsync();
@@ -813,9 +813,9 @@ public class TasksControllerTests : IClassFixture<WebApplicationFactory<Program>
         // Arrange
         var token = await AuthenticationTestHelper.GetAuthTokenAsync(_client);
         _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-        
+
         var task = await CreateTestTaskAsync(token);
-        
+
         var batchRequest = new
         {
             Operation = "invalid_operation",
@@ -845,7 +845,7 @@ public class TasksControllerTests : IClassFixture<WebApplicationFactory<Program>
         var token = await AuthenticationTestHelper.GetAuthTokenAsync(_client);
         var task = await CreateTestTaskAsync(token);
         _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-        
+
         var actionRequest = new
         {
             ActionId = "MarkCompleted",
@@ -875,7 +875,7 @@ public class TasksControllerTests : IClassFixture<WebApplicationFactory<Program>
         var token = await AuthenticationTestHelper.GetAuthTokenAsync(_client);
         _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
         var invalidId = Guid.NewGuid();
-        
+
         var actionRequest = new
         {
             ActionId = "MarkCompleted",
@@ -901,7 +901,7 @@ public class TasksControllerTests : IClassFixture<WebApplicationFactory<Program>
         var token = await AuthenticationTestHelper.GetAuthTokenAsync(_client);
         var task = await CreateTestTaskAsync(token);
         _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-        
+
         var actionRequest = new
         {
             ActionId = "InvalidAction",
@@ -1059,12 +1059,12 @@ public class TasksControllerTests : IClassFixture<WebApplicationFactory<Program>
         // Arrange
         var token = await AuthenticationTestHelper.GetAuthTokenAsync(_client);
         _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-        
+
         // Create multiple tasks
         var task1 = await CreateTestTaskAsync(token, "Task 1 for Status Update");
         var task2 = await CreateTestTaskAsync(token, "Task 2 for Status Update");
         var task3 = await CreateTestTaskAsync(token, "Task 3 for Status Update");
-        
+
         var batchStatusRequest = new
         {
             NewStatus = 1, // InProgress
@@ -1085,7 +1085,7 @@ public class TasksControllerTests : IClassFixture<WebApplicationFactory<Program>
         var responseContent = await response.Content.ReadAsStringAsync();
         responseContent.Should().Contain("\"operation\":\"update-status-1\"");
         responseContent.Should().Contain("\"successfulTasks\":3");
-        
+
         // Verify tasks status updated
         var getResponse = await _client.GetAsync($"/api/v1/tasks/{task1.Id}");
         var taskContent = await getResponse.Content.ReadAsStringAsync();
@@ -1099,9 +1099,9 @@ public class TasksControllerTests : IClassFixture<WebApplicationFactory<Program>
         // Arrange
         var token = await AuthenticationTestHelper.GetAuthTokenAsync(_client);
         _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-        
+
         var task = await CreateTestTaskAsync(token);
-        
+
         var batchStatusRequest = new
         {
             NewStatus = 5, // Invalid status (should be 0-3)
@@ -1128,11 +1128,11 @@ public class TasksControllerTests : IClassFixture<WebApplicationFactory<Program>
         // Arrange
         var token = await AuthenticationTestHelper.GetAuthTokenAsync(_client);
         _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-        
+
         // Create one valid task
         var validTask = await CreateTestTaskAsync(token, "Valid Task");
         var invalidTaskId = Guid.NewGuid(); // Task that doesn't exist
-        
+
         var batchStatusRequest = new
         {
             NewStatus = 2, // Completed
@@ -1190,7 +1190,7 @@ public class TasksControllerTests : IClassFixture<WebApplicationFactory<Program>
         var task = await CreateTestTaskAsync(token);
         var contact = await CreateTestContactAsync(token);
         _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-        
+
         var linkRequest = new LinkContactToTaskRequest
         {
             ContactId = contact.Id,
@@ -1223,7 +1223,7 @@ public class TasksControllerTests : IClassFixture<WebApplicationFactory<Program>
         var task = await CreateTestTaskAsync(token);
         var contact = await CreateTestContactAsync(token);
         _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-        
+
         var linkRequest = new LinkContactToTaskRequest
         {
             ContactId = contact.Id,
@@ -1251,7 +1251,7 @@ public class TasksControllerTests : IClassFixture<WebApplicationFactory<Program>
         var contact = await CreateTestContactAsync(token);
         _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
         var invalidTaskId = Guid.NewGuid();
-        
+
         var linkRequest = new LinkContactToTaskRequest
         {
             ContactId = contact.Id,
@@ -1278,7 +1278,7 @@ public class TasksControllerTests : IClassFixture<WebApplicationFactory<Program>
         var task = await CreateTestTaskAsync(token);
         _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
         var invalidContactId = Guid.NewGuid();
-        
+
         var linkRequest = new LinkContactToTaskRequest
         {
             ContactId = invalidContactId,
@@ -1305,7 +1305,7 @@ public class TasksControllerTests : IClassFixture<WebApplicationFactory<Program>
         var task = await CreateTestTaskAsync(token);
         var contact = await CreateTestContactAsync(token);
         _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-        
+
         // First link
         var linkRequest = new LinkContactToTaskRequest
         {
@@ -1358,7 +1358,7 @@ public class TasksControllerTests : IClassFixture<WebApplicationFactory<Program>
         var task = await CreateTestTaskAsync(token);
         var contact = await CreateTestContactAsync(token);
         _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-        
+
         // First link the contact
         var linkRequest = new LinkContactToTaskRequest
         {
@@ -1378,7 +1378,7 @@ public class TasksControllerTests : IClassFixture<WebApplicationFactory<Program>
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.NoContent);
-        
+
         // Verify contact is no longer linked
         var getResponse = await _client.GetAsync($"/api/v1/tasks/{task.Id}/contacts");
         var contacts = JsonSerializer.Deserialize<List<TaskContactDto>>(
@@ -1426,7 +1426,7 @@ public class TasksControllerTests : IClassFixture<WebApplicationFactory<Program>
         var task = await CreateTestTaskAsync(token);
         var contact = await CreateTestContactAsync(token);
         _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-        
+
         // First link the contact
         var linkRequest = new LinkContactToTaskRequest
         {
@@ -1472,7 +1472,7 @@ public class TasksControllerTests : IClassFixture<WebApplicationFactory<Program>
         var task = await CreateTestTaskAsync(token);
         var contact = await CreateTestContactAsync(token);
         _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-        
+
         // First link the contact
         var linkRequest = new LinkContactToTaskRequest
         {
@@ -1539,7 +1539,7 @@ public class TasksControllerTests : IClassFixture<WebApplicationFactory<Program>
         var contact1 = await CreateTestContactAsync(token, "Contact 1");
         var contact2 = await CreateTestContactAsync(token, "Contact 2");
         _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-        
+
         // Link both contacts
         var linkRequest1 = new LinkContactToTaskRequest
         {
@@ -1619,9 +1619,9 @@ public class TasksControllerTests : IClassFixture<WebApplicationFactory<Program>
         var task = await CreateTestTaskAsync(token, "Lifecycle Test Task");
         var contact = await CreateTestContactAsync(token, "Lifecycle Contact");
         _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-        
+
         // Act & Assert - Full lifecycle test
-        
+
         // 1. Initially no contacts
         var initialResponse = await _client.GetAsync($"/api/v1/tasks/{task.Id}/contacts");
         var initialContacts = JsonSerializer.Deserialize<List<TaskContactDto>>(
@@ -1726,7 +1726,7 @@ public class TasksControllerTests : IClassFixture<WebApplicationFactory<Program>
         var getResponse = await _client.GetAsync($"/api/v1/tasks/{task.Id}/contacts");
         var contacts = JsonSerializer.Deserialize<List<TaskContactDto>>(
             await getResponse.Content.ReadAsStringAsync(), _jsonOptions);
-        
+
         contacts!.Should().HaveCount(4);
         foreach (var (contactId, expectedRole) in roles)
         {

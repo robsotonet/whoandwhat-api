@@ -1,7 +1,7 @@
+using System.Security.Claims;
 using Asp.Versioning;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Security.Claims;
 using WhoAndWhat.Application.Common;
 using WhoAndWhat.Application.DTOs.Authentication;
 using WhoAndWhat.Application.Interfaces;
@@ -57,7 +57,7 @@ public class PasswordController : ControllerBase
 
             // Get user by email - don't reveal if user exists
             var user = await _userService.GetUserByEmailAsync(request.Email, cancellationToken);
-            
+
             if (user != null)
             {
                 // Generate password reset token
@@ -68,7 +68,7 @@ public class PasswordController : ControllerBase
 
                 // Set reset token on user
                 user.SetPasswordResetToken(resetToken, DateTime.UtcNow.AddHours(1));
-                
+
                 // This would normally be handled by the repository's SaveChanges
                 // For now, we'll use a direct repository call
                 var userRepository = HttpContext.RequestServices.GetRequiredService<IUserRepository>();
@@ -105,7 +105,7 @@ public class PasswordController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error processing forgot password request for email: {Email}", request.Email);
-            
+
             return StatusCode(StatusCodes.Status500InternalServerError, new ProblemDetails
             {
                 Title = "Forgot Password Error",
@@ -176,7 +176,7 @@ public class PasswordController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error processing password reset request for email: {Email}", request.Email);
-            
+
             return StatusCode(StatusCodes.Status500InternalServerError, new ProblemDetails
             {
                 Title = "Password Reset Error",
@@ -260,9 +260,9 @@ public class PasswordController : ControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error processing password change request for user: {UserId}", 
+            _logger.LogError(ex, "Error processing password change request for user: {UserId}",
                 User.FindFirst(ClaimTypes.NameIdentifier)?.Value);
-            
+
             return StatusCode(StatusCodes.Status500InternalServerError, new ProblemDetails
             {
                 Title = "Password Change Error",
@@ -332,7 +332,7 @@ public class PasswordController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error processing email verification request for user: {UserId}", request.UserId);
-            
+
             return StatusCode(StatusCodes.Status500InternalServerError, new ProblemDetails
             {
                 Title = "Email Verification Error",

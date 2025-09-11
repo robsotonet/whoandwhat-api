@@ -16,6 +16,7 @@ public static class HangfireConfiguration
     /// <summary>
     /// Adds Hangfire services to the dependency injection container
     /// </summary>
+    [Obsolete]
     public static IServiceCollection AddHangfireServices(
         this IServiceCollection services,
         IConfiguration configuration)

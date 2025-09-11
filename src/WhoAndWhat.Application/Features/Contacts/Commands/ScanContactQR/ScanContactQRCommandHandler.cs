@@ -7,8 +7,8 @@ using WhoAndWhat.Application.Common;
 using WhoAndWhat.Application.DTOs.Contacts;
 using WhoAndWhat.Application.Interfaces;
 using WhoAndWhat.Domain.Entities;
-using WhoAndWhat.Domain.ValueObjects;
 using WhoAndWhat.Domain.Validators;
+using WhoAndWhat.Domain.ValueObjects;
 
 namespace WhoAndWhat.Application.Features.Contacts.Commands.ScanContactQR;
 
@@ -38,7 +38,7 @@ public class ScanContactQRCommandHandler : IRequestHandler<ScanContactQRCommand,
             var payloadResult = DecodeQRPayload(request.QRCodePayload);
             if (!payloadResult.IsValid)
             {
-                _logger.LogWarning("Invalid QR code payload for user {UserId}: {Error}", 
+                _logger.LogWarning("Invalid QR code payload for user {UserId}: {Error}",
                     request.UserId, payloadResult.Error);
                 return Result<ContactDto>.Failure(payloadResult.Error);
             }
@@ -66,7 +66,7 @@ public class ScanContactQRCommandHandler : IRequestHandler<ScanContactQRCommand,
                 var existingContacts = await _contactRepository.FindContactsAsync(payload.Email, request.UserId, false, cancellationToken);
                 if (existingContacts.Any())
                 {
-                    _logger.LogInformation("Contact with email {Email} already exists for user {UserId}", 
+                    _logger.LogInformation("Contact with email {Email} already exists for user {UserId}",
                         payload.Email, request.UserId);
                     return Result<ContactDto>.Failure("A contact with this email already exists");
                 }
@@ -122,7 +122,7 @@ public class ScanContactQRCommandHandler : IRequestHandler<ScanContactQRCommand,
                 AssociatedTasks = new List<ContactTaskDto>()
             };
 
-            _logger.LogInformation("Successfully created contact {ContactId} from QR scan for user {UserId}", 
+            _logger.LogInformation("Successfully created contact {ContactId} from QR scan for user {UserId}",
                 contact.Id, request.UserId);
 
             return Result<ContactDto>.Success(contactDto);
@@ -175,7 +175,7 @@ public class ScanContactQRCommandHandler : IRequestHandler<ScanContactQRCommand,
         // Use the same signature generation logic as the QR generation
         var data = $"{contactId}:{expiresAt:yyyy-MM-ddTHH:mm:ssZ}";
         var dataBytes = Encoding.UTF8.GetBytes(data);
-        
+
         using var sha256 = SHA256.Create();
         var hash = sha256.ComputeHash(dataBytes);
         return Convert.ToBase64String(hash);

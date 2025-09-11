@@ -9,8 +9,8 @@ using WhoAndWhat.Domain.ValueObjects;
 using WhoAndWhat.Infrastructure.Data;
 using WhoAndWhat.Infrastructure.Repositories;
 using Xunit;
-using Task = System.Threading.Tasks.Task;
 using DomainTask = WhoAndWhat.Domain.Entities.AppTask;
+using Task = System.Threading.Tasks.Task;
 
 namespace WhoAndWhat.Infrastructure.Tests;
 
@@ -27,7 +27,7 @@ public class TaskRepositoryTests
             .Options;
         _context = new ApplicationDbContext(options);
         _repository = new Repository<DomainTask>(_context);
-        
+
         // Create test user for foreign key relationships
         _testUser = new User("test@test.com", "testuser", Language.en);
         _testUser.SetPassword("TestPassword123!");
@@ -40,10 +40,10 @@ public class TaskRepositoryTests
     public async Task Should_Add_Task()
     {
         // Arrange
-        var task = new DomainTask 
-        { 
-            Id = Guid.NewGuid(), 
-            Title = "Test Task", 
+        var task = new DomainTask
+        {
+            Id = Guid.NewGuid(),
+            Title = "Test Task",
             Description = "Test Description",
             UserId = _testUser.Id
         };
@@ -63,17 +63,17 @@ public class TaskRepositoryTests
     public async Task Should_Get_All_Tasks()
     {
         // Arrange
-        var task1 = new DomainTask 
-        { 
-            Id = Guid.NewGuid(), 
-            Title = "Task 1", 
-            UserId = _testUser.Id 
+        var task1 = new DomainTask
+        {
+            Id = Guid.NewGuid(),
+            Title = "Task 1",
+            UserId = _testUser.Id
         };
-        var task2 = new DomainTask 
-        { 
-            Id = Guid.NewGuid(), 
-            Title = "Task 2", 
-            UserId = _testUser.Id 
+        var task2 = new DomainTask
+        {
+            Id = Guid.NewGuid(),
+            Title = "Task 2",
+            UserId = _testUser.Id
         };
         await _context.Tasks.AddRangeAsync(task1, task2);
         await _context.SaveChangesAsync();
@@ -90,11 +90,11 @@ public class TaskRepositoryTests
     {
         // Arrange
         var taskId = Guid.NewGuid();
-        var task = new DomainTask 
-        { 
-            Id = taskId, 
-            Title = "Test Task", 
-            UserId = _testUser.Id 
+        var task = new DomainTask
+        {
+            Id = taskId,
+            Title = "Test Task",
+            UserId = _testUser.Id
         };
         await _context.Tasks.AddAsync(task);
         await _context.SaveChangesAsync();
@@ -112,17 +112,17 @@ public class TaskRepositoryTests
     public async Task Should_Find_Tasks_By_Title()
     {
         // Arrange
-        var task1 = new DomainTask 
-        { 
-            Id = Guid.NewGuid(), 
-            Title = "Find This Task", 
-            UserId = _testUser.Id 
+        var task1 = new DomainTask
+        {
+            Id = Guid.NewGuid(),
+            Title = "Find This Task",
+            UserId = _testUser.Id
         };
-        var task2 = new DomainTask 
-        { 
-            Id = Guid.NewGuid(), 
-            Title = "Another Task", 
-            UserId = _testUser.Id 
+        var task2 = new DomainTask
+        {
+            Id = Guid.NewGuid(),
+            Title = "Another Task",
+            UserId = _testUser.Id
         };
         await _context.Tasks.AddRangeAsync(task1, task2);
         await _context.SaveChangesAsync();
@@ -144,18 +144,18 @@ public class TaskRepositoryTests
         anotherUser.SetPassword("TestPassword123!");
 
         await _context.Users.AddAsync(anotherUser);
-        
-        var task1 = new DomainTask 
-        { 
-            Id = Guid.NewGuid(), 
-            Title = "User Task", 
-            UserId = _testUser.Id 
+
+        var task1 = new DomainTask
+        {
+            Id = Guid.NewGuid(),
+            Title = "User Task",
+            UserId = _testUser.Id
         };
-        var task2 = new DomainTask 
-        { 
-            Id = Guid.NewGuid(), 
-            Title = "Another User Task", 
-            UserId = anotherUser.Id 
+        var task2 = new DomainTask
+        {
+            Id = Guid.NewGuid(),
+            Title = "Another User Task",
+            UserId = anotherUser.Id
         };
         await _context.Tasks.AddRangeAsync(task1, task2);
         await _context.SaveChangesAsync();
@@ -172,11 +172,11 @@ public class TaskRepositoryTests
     public async Task Should_Update_Task()
     {
         // Arrange
-        var task = new DomainTask 
-        { 
-            Id = Guid.NewGuid(), 
-            Title = "Original Title", 
-            UserId = _testUser.Id 
+        var task = new DomainTask
+        {
+            Id = Guid.NewGuid(),
+            Title = "Original Title",
+            UserId = _testUser.Id
         };
         await _repository.AddAsync(task);
         await _repository.SaveChangesAsync();
@@ -196,11 +196,11 @@ public class TaskRepositoryTests
     public async Task Should_Remove_Task()
     {
         // Arrange
-        var task = new DomainTask 
-        { 
-            Id = Guid.NewGuid(), 
-            Title = "Task to Remove", 
-            UserId = _testUser.Id 
+        var task = new DomainTask
+        {
+            Id = Guid.NewGuid(),
+            Title = "Task to Remove",
+            UserId = _testUser.Id
         };
         await _repository.AddAsync(task);
         await _repository.SaveChangesAsync();
@@ -219,12 +219,12 @@ public class TaskRepositoryTests
     {
         // Arrange
         var dueDate = DateTime.UtcNow.AddDays(7);
-        var task = new DomainTask 
-        { 
-            Id = Guid.NewGuid(), 
-            Title = "Task with Due Date", 
+        var task = new DomainTask
+        {
+            Id = Guid.NewGuid(),
+            Title = "Task with Due Date",
             DueDate = dueDate,
-            UserId = _testUser.Id 
+            UserId = _testUser.Id
         };
 
         // Act

@@ -1,12 +1,12 @@
+using System.Net;
+using System.Net.Http.Headers;
+using System.Text;
+using System.Text.Json;
 using FluentAssertions;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
-using System.Net;
-using System.Net.Http.Headers;
-using System.Text;
-using System.Text.Json;
 using WhoAndWhat.Application.DTOs.Authentication;
 using WhoAndWhat.Domain.Entities;
 using WhoAndWhat.Infrastructure.Data;
@@ -32,7 +32,7 @@ public class AuthenticationE2ETests : IClassFixture<WebApplicationFactory<Progra
         {
             builder.UseEnvironment("Testing");
         });
-        
+
         _client = _factory.CreateClient();
         _jsonOptions = new JsonSerializerOptions
         {
@@ -75,14 +75,14 @@ public class AuthenticationE2ETests : IClassFixture<WebApplicationFactory<Progra
         };
 
         var registerResponse = await PostJsonAsync("/api/v1/auth/register", registerRequest);
-        
+
         // Temporary debugging: capture error details if registration fails
         if (registerResponse.StatusCode != HttpStatusCode.Created)
         {
             var errorContent = await registerResponse.Content.ReadAsStringAsync();
             throw new InvalidOperationException($"Registration failed with status {registerResponse.StatusCode}. Error: {errorContent}");
         }
-        
+
         registerResponse.StatusCode.Should().Be(HttpStatusCode.Created);
 
         var registerResult = await DeserializeAsync<RegisterResponse>(registerResponse);
@@ -117,7 +117,7 @@ public class AuthenticationE2ETests : IClassFixture<WebApplicationFactory<Progra
         loginResult.Email.Should().Be(registerRequest.Email);
 
         // Step 5: Use the access token to make an authenticated request
-        _client.DefaultRequestHeaders.Authorization = 
+        _client.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", loginResult.AccessToken);
 
         // This would be a protected endpoint - for now we'll test the token is valid format
@@ -263,7 +263,7 @@ public class AuthenticationE2ETests : IClassFixture<WebApplicationFactory<Progra
         var authTokens = await LoginUserAsync("persistent@example.com", "PersistentPassword123!");
 
         // Step 2: Set authorization header
-        _client.DefaultRequestHeaders.Authorization = 
+        _client.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", authTokens.AccessToken);
 
         // Step 3: Make multiple requests that would require authentication
@@ -272,7 +272,7 @@ public class AuthenticationE2ETests : IClassFixture<WebApplicationFactory<Progra
         {
             // Verify token structure remains valid
             authTokens.AccessToken.Split('.').Should().HaveCount(3);
-            
+
             // In a real scenario, we would call protected endpoints here
             // For now, we verify the token is consistently formatted
             authTokens.AccessToken.Should().NotBeNullOrEmpty();
@@ -297,7 +297,7 @@ public class AuthenticationE2ETests : IClassFixture<WebApplicationFactory<Progra
     {
         // Step 1: Create verified user
         var user = await CreateAndVerifyUserAsync("concurrent@example.com", "concurrentuser", "ConcurrentPassword123!");
-        
+
         // Step 2: Make multiple concurrent login requests
         var loginRequest = new LoginRequest
         {
@@ -315,7 +315,7 @@ public class AuthenticationE2ETests : IClassFixture<WebApplicationFactory<Progra
         foreach (var response in responses)
         {
             response.StatusCode.Should().BeOneOf(HttpStatusCode.OK, HttpStatusCode.TooManyRequests);
-            
+
             if (response.StatusCode == HttpStatusCode.OK)
             {
                 var result = await DeserializeAsync<LoginResponse>(response);
@@ -347,9 +347,9 @@ public class AuthenticationE2ETests : IClassFixture<WebApplicationFactory<Progra
         {
             var content = new StringContent(testCase.payload, Encoding.UTF8, "application/json");
             var response = await _client.PostAsync(testCase.endpoint, content);
-            
+
             response.StatusCode.Should().BeOneOf(
-                HttpStatusCode.BadRequest, 
+                HttpStatusCode.BadRequest,
                 HttpStatusCode.UnprocessableEntity,
                 HttpStatusCode.UnsupportedMediaType);
         }
@@ -429,7 +429,7 @@ public class AuthenticationE2ETests : IClassFixture<WebApplicationFactory<Progra
         var response = await PostJsonAsync("/api/v1/auth/login", loginRequest);
         response.EnsureSuccessStatusCode();
 
-        return await DeserializeAsync<LoginResponse>(response) ?? 
+        return await DeserializeAsync<LoginResponse>(response) ??
             throw new InvalidOperationException("Failed to deserialize login response");
     }
 
@@ -447,14 +447,14 @@ public class AuthenticationE2ETests : IClassFixture<WebApplicationFactory<Progra
     {
         var json = JsonSerializer.Serialize(data, _jsonOptions);
         var content = new StringContent(json, Encoding.UTF8, "application/json");
-        
+
         // Create request message with authorization header
         var request = new HttpRequestMessage(HttpMethod.Post, endpoint)
         {
             Content = content,
             Headers = { Authorization = new AuthenticationHeaderValue("Bearer", accessToken) }
         };
-        
+
         return await _client.SendAsync(request);
     }
 

@@ -59,7 +59,7 @@ public class GetContactQueryHandlerTests
     private static Contact CreateContactWithTasks(Guid? contactId = null, Guid? userId = null)
     {
         var contact = CreateTestContact(contactId, userId);
-        
+
         var task1 = new DomainTask
         {
             Id = Guid.NewGuid(),
@@ -123,7 +123,7 @@ public class GetContactQueryHandlerTests
         return contact;
     }
 
-    private static GetContactQuery CreateValidQuery(Guid? contactId = null, Guid? userId = null, bool includeDeleted = false, bool includeTasks = false) => 
+    private static GetContactQuery CreateValidQuery(Guid? contactId = null, Guid? userId = null, bool includeDeleted = false, bool includeTasks = false) =>
         new(contactId ?? Guid.NewGuid(), userId ?? Guid.NewGuid(), includeDeleted, includeTasks);
 
     #endregion
@@ -138,7 +138,7 @@ public class GetContactQueryHandlerTests
         var userId = Guid.NewGuid();
         var contact = CreateTestContact(contactId, userId);
         var query = CreateValidQuery(contactId, userId);
-        
+
         _mockContactRepository.Setup(x => x.GetByIdAsync(contactId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(contact);
 
@@ -160,7 +160,7 @@ public class GetContactQueryHandlerTests
         result.Value.IsDeleted.Should().BeFalse();
         result.Value.DeletedAt.Should().BeNull();
         result.Value.AssociatedTasks.Should().BeNull(); // Not included by default
-        
+
         _mockContactRepository.Verify(x => x.GetByIdAsync(contactId, It.IsAny<CancellationToken>()), Times.Once);
     }
 
@@ -173,7 +173,7 @@ public class GetContactQueryHandlerTests
         var differentUserId = Guid.NewGuid();
         var contact = CreateTestContact(contactId, userId);
         var query = CreateValidQuery(contactId, differentUserId); // Different user
-        
+
         _mockContactRepository.Setup(x => x.GetByIdAsync(contactId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(contact);
 
@@ -207,7 +207,7 @@ public class GetContactQueryHandlerTests
             DeletedAt = null
         };
         var query = CreateValidQuery(contactId, userId);
-        
+
         _mockContactRepository.Setup(x => x.GetByIdAsync(contactId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(contact);
 
@@ -242,7 +242,7 @@ public class GetContactQueryHandlerTests
         var userId = Guid.NewGuid();
         var contactWithTasks = CreateContactWithTasks(contactId, userId);
         var query = CreateValidQuery(contactId, userId, includeTasks: true);
-        
+
         _mockContactRepository.Setup(x => x.GetContactWithTasksAsync(contactId, userId, false, It.IsAny<CancellationToken>()))
             .ReturnsAsync(contactWithTasks);
 
@@ -254,17 +254,17 @@ public class GetContactQueryHandlerTests
         result.Value.Should().NotBeNull();
         result.Value.AssociatedTasks.Should().NotBeNull();
         result.Value.AssociatedTasks.Should().HaveCount(2);
-        
+
         var task1 = result.Value.AssociatedTasks.FirstOrDefault(t => t.TaskTitle == "Task 1");
         task1.Should().NotBeNull();
         task1!.TaskStatus.Should().Be((int)AppTaskStatus.Pending);
         task1.Role.Should().Be("Owner");
-        
+
         var task2 = result.Value.AssociatedTasks.FirstOrDefault(t => t.TaskTitle == "Task 2");
         task2.Should().NotBeNull();
         task2!.TaskStatus.Should().Be((int)AppTaskStatus.Completed);
         task2.Role.Should().Be("Collaborator");
-        
+
         _mockContactRepository.Verify(x => x.GetContactWithTasksAsync(contactId, userId, false, It.IsAny<CancellationToken>()), Times.Once);
         _mockContactRepository.Verify(x => x.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Never);
     }
@@ -276,7 +276,7 @@ public class GetContactQueryHandlerTests
         var contactId = Guid.NewGuid();
         var userId = Guid.NewGuid();
         var contact = CreateTestContact(contactId, userId);
-        
+
         // Test without tasks
         var queryWithoutTasks = CreateValidQuery(contactId, userId, includeTasks: false);
         _mockContactRepository.Setup(x => x.GetByIdAsync(contactId, It.IsAny<CancellationToken>()))
@@ -302,7 +302,7 @@ public class GetContactQueryHandlerTests
         var userId = Guid.NewGuid();
         var deletedContact = CreateSoftDeletedContact(contactId, userId);
         var query = CreateValidQuery(contactId, userId, includeTasks: false, includeDeleted: true);
-        
+
         _mockContactRepository.Setup(x => x.GetContactIncludingDeletedAsync(contactId, userId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(deletedContact);
 
@@ -315,7 +315,7 @@ public class GetContactQueryHandlerTests
         result.Value.Id.Should().Be(contactId);
         result.Value.IsDeleted.Should().BeTrue();
         result.Value.DeletedAt.Should().Be(deletedContact.DeletedAt);
-        
+
         _mockContactRepository.Verify(x => x.GetContactIncludingDeletedAsync(contactId, userId, It.IsAny<CancellationToken>()), Times.Once);
         _mockContactRepository.Verify(x => x.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Never);
     }
@@ -327,7 +327,7 @@ public class GetContactQueryHandlerTests
         var contactId = Guid.NewGuid();
         var userId = Guid.NewGuid();
         var deletedContact = CreateSoftDeletedContact(contactId, userId);
-        
+
         // Test including deleted
         var queryIncludingDeleted = CreateValidQuery(contactId, userId, includeTasks: false, includeDeleted: true);
         _mockContactRepository.Setup(x => x.GetContactIncludingDeletedAsync(contactId, userId, It.IsAny<CancellationToken>()))
@@ -353,7 +353,7 @@ public class GetContactQueryHandlerTests
         var contactId = Guid.NewGuid();
         var userId = Guid.NewGuid();
         var query = CreateValidQuery(contactId, userId);
-        
+
         _mockContactRepository.Setup(x => x.GetByIdAsync(contactId, It.IsAny<CancellationToken>()))
             .ReturnsAsync((Contact)null!);
 
@@ -363,7 +363,7 @@ public class GetContactQueryHandlerTests
         // Assert
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Be("Contact not found");
-        
+
         _mockContactRepository.Verify(x => x.GetByIdAsync(contactId, It.IsAny<CancellationToken>()), Times.Once);
     }
 
@@ -374,7 +374,7 @@ public class GetContactQueryHandlerTests
         var contactId = Guid.NewGuid();
         var userId = Guid.NewGuid();
         var query = CreateValidQuery(contactId, userId, includeTasks: true);
-        
+
         _mockContactRepository.Setup(x => x.GetContactWithTasksAsync(contactId, userId, false, It.IsAny<CancellationToken>()))
             .ReturnsAsync((Contact)null!);
 
@@ -384,7 +384,7 @@ public class GetContactQueryHandlerTests
         // Assert
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Be("Contact not found");
-        
+
         _mockContactRepository.Verify(x => x.GetContactWithTasksAsync(contactId, userId, false, It.IsAny<CancellationToken>()), Times.Once);
     }
 
@@ -395,7 +395,7 @@ public class GetContactQueryHandlerTests
         var contactId = Guid.NewGuid();
         var userId = Guid.NewGuid();
         var query = CreateValidQuery(contactId, userId, includeDeleted: true);
-        
+
         _mockContactRepository.Setup(x => x.GetContactIncludingDeletedAsync(contactId, userId, It.IsAny<CancellationToken>()))
             .ReturnsAsync((Contact)null!);
 
@@ -405,7 +405,7 @@ public class GetContactQueryHandlerTests
         // Assert
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Be("Contact not found");
-        
+
         _mockContactRepository.Verify(x => x.GetContactIncludingDeletedAsync(contactId, userId, It.IsAny<CancellationToken>()), Times.Once);
     }
 
@@ -422,7 +422,7 @@ public class GetContactQueryHandlerTests
         var requestingUserId = Guid.NewGuid(); // Different user
         var contact = CreateTestContact(contactId, contactOwnerId);
         var query = CreateValidQuery(contactId, requestingUserId);
-        
+
         _mockContactRepository.Setup(x => x.GetByIdAsync(contactId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(contact);
 
@@ -443,7 +443,7 @@ public class GetContactQueryHandlerTests
     {
         // Arrange
         var query = CreateValidQuery();
-        
+
         _mockContactRepository.Setup(x => x.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ThrowsAsync(new Exception("Database connection failed"));
 
@@ -460,7 +460,7 @@ public class GetContactQueryHandlerTests
     {
         // Arrange
         var query = CreateValidQuery(includeTasks: true);
-        
+
         _mockContactRepository.Setup(x => x.GetContactWithTasksAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()))
             .ThrowsAsync(new Exception("Database connection failed"));
 
@@ -488,7 +488,7 @@ public class GetContactQueryHandlerTests
         // Assert
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Be("Contact not found");
-        
+
         _mockContactRepository.Verify(x => x.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Once);
     }
 
@@ -532,7 +532,7 @@ public class GetContactQueryHandlerTests
             DeletedAt = null
         };
         var query = CreateValidQuery(contactId, userId);
-        
+
         _mockContactRepository.Setup(x => x.GetByIdAsync(contactId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(contact);
 
@@ -559,7 +559,7 @@ public class GetContactQueryHandlerTests
         contact.Tasks = new List<DomainTask>(); // Empty list
         contact.TaskContacts = new List<TaskContact>(); // Empty list
         var query = CreateValidQuery(contactId, userId, includeTasks: true);
-        
+
         _mockContactRepository.Setup(x => x.GetContactWithTasksAsync(contactId, userId, false, It.IsAny<CancellationToken>()))
             .ReturnsAsync(contact);
 
@@ -586,7 +586,7 @@ public class GetContactQueryHandlerTests
         var query = CreateValidQuery(contactId, userId);
         var cancellationTokenSource = new CancellationTokenSource();
         var cancellationToken = cancellationTokenSource.Token;
-        
+
         _mockContactRepository.Setup(x => x.GetByIdAsync(contactId, cancellationToken))
             .ReturnsAsync(contact);
 
@@ -604,7 +604,7 @@ public class GetContactQueryHandlerTests
         var query = CreateValidQuery();
         var cancellationTokenSource = new CancellationTokenSource();
         cancellationTokenSource.Cancel(); // Cancel immediately
-        
+
         _mockContactRepository.Setup(x => x.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ThrowsAsync(new OperationCanceledException());
 
@@ -628,7 +628,7 @@ public class GetContactQueryHandlerTests
         var userId = Guid.NewGuid();
         var contact = CreateTestContact(contactId, userId);
         var query = CreateValidQuery(contactId, userId);
-        
+
         _mockContactRepository.Setup(x => x.GetByIdAsync(contactId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(contact);
 
@@ -653,7 +653,7 @@ public class GetContactQueryHandlerTests
         var contactId = Guid.NewGuid();
         var userId = Guid.NewGuid();
         var query = CreateValidQuery(contactId, userId);
-        
+
         _mockContactRepository.Setup(x => x.GetByIdAsync(contactId, It.IsAny<CancellationToken>()))
             .ReturnsAsync((Contact)null!);
 
@@ -679,7 +679,7 @@ public class GetContactQueryHandlerTests
         var userId = Guid.NewGuid();
         var query = CreateValidQuery(contactId, userId);
         var expectedException = new Exception("Database error");
-        
+
         _mockContactRepository.Setup(x => x.GetByIdAsync(contactId, It.IsAny<CancellationToken>()))
             .ThrowsAsync(expectedException);
 

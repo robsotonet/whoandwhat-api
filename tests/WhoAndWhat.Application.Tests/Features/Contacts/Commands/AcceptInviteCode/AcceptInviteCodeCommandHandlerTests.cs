@@ -18,7 +18,7 @@ public class AcceptInviteCodeCommandHandlerTests
     private readonly ContactValidator _contactValidator;
     private readonly Mock<ILogger<AcceptInviteCodeCommandHandler>> _mockLogger;
     private readonly AcceptInviteCodeCommandHandler _handler;
-    
+
     private readonly Guid _testUserId = Guid.NewGuid();
     private readonly Guid _originalContactUserId = Guid.NewGuid();
     private readonly string _testInviteCode = "TEST-CODE-1234";
@@ -28,7 +28,7 @@ public class AcceptInviteCodeCommandHandlerTests
         _mockContactRepository = new Mock<IContactRepository>();
         _contactValidator = new ContactValidator();
         _mockLogger = new Mock<ILogger<AcceptInviteCodeCommandHandler>>();
-        
+
         _handler = new AcceptInviteCodeCommandHandler(
             _mockContactRepository.Object,
             _contactValidator,
@@ -50,7 +50,7 @@ public class AcceptInviteCodeCommandHandlerTests
         // Assert
         result.IsSuccess.Should().BeTrue();
         result.Value.Should().NotBeNull();
-        
+
         var contactDto = result.Value;
         contactDto.Name.Should().Be("John Doe");
         contactDto.Email.Should().Be("john@example.com");
@@ -83,7 +83,7 @@ public class AcceptInviteCodeCommandHandlerTests
         // Assert
         result.IsSuccess.Should().BeTrue();
         result.Value.Should().NotBeNull();
-        
+
         var contactDto = result.Value;
         contactDto.Name.Should().Be("Jane Smith");
         contactDto.Email.Should().BeNull();
@@ -92,7 +92,7 @@ public class AcceptInviteCodeCommandHandlerTests
 
         VerifyContactAddedAndSaved();
         // Should not call FindContactsAsync when email is null
-        _mockContactRepository.Verify(x => x.FindContactsAsync(It.IsAny<string>(), It.IsAny<Guid>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()), 
+        _mockContactRepository.Verify(x => x.FindContactsAsync(It.IsAny<string>(), It.IsAny<Guid>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()),
             Times.Never);
     }
 
@@ -108,7 +108,7 @@ public class AcceptInviteCodeCommandHandlerTests
         // Assert
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Be("Invite code is required");
-        
+
         VerifyNoRepositoryInteractions();
     }
 
@@ -124,7 +124,7 @@ public class AcceptInviteCodeCommandHandlerTests
         // Assert
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Be("Invite code is required");
-        
+
         VerifyNoRepositoryInteractions();
     }
 
@@ -140,7 +140,7 @@ public class AcceptInviteCodeCommandHandlerTests
         // Assert
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Be("Invite code is required");
-        
+
         VerifyNoRepositoryInteractions();
     }
 
@@ -159,7 +159,7 @@ public class AcceptInviteCodeCommandHandlerTests
         // Assert
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Be("Invalid or expired invite code");
-        
+
         VerifyLogMessage(LogLevel.Warning, "Invite code {InviteCode} not found");
         VerifyNoContactCreation();
     }
@@ -181,7 +181,7 @@ public class AcceptInviteCodeCommandHandlerTests
         // Assert
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Be("You cannot add yourself as a contact");
-        
+
         VerifyLogMessage(LogLevel.Warning, "User {UserId} tried to accept their own invite code");
         VerifyNoContactCreation();
     }
@@ -205,7 +205,7 @@ public class AcceptInviteCodeCommandHandlerTests
         // Assert
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Be("You already have this contact in your list");
-        
+
         VerifyLogMessage(LogLevel.Information, "Contact already exists for user");
         VerifyNoContactCreation();
     }
@@ -229,7 +229,7 @@ public class AcceptInviteCodeCommandHandlerTests
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("Invalid contact data:");
         result.Error.Should().Contain("email"); // Real validator will complain about email format
-        
+
         VerifyLogMessage(LogLevel.Warning, "Contact validation failed");
         VerifyNoContactCreation();
     }
@@ -256,7 +256,7 @@ public class AcceptInviteCodeCommandHandlerTests
         // Assert
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Be("Failed to add contact from invite code");
-        
+
         VerifyLogMessage(LogLevel.Error, "Failed to save contact from invite code");
     }
 
@@ -275,7 +275,7 @@ public class AcceptInviteCodeCommandHandlerTests
         // Assert
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Be("Invalid or expired invite code");
-        
+
         // Should log the repository error AND the main handler error
         VerifyLogMessage(LogLevel.Error, "Error finding contact by invite code");
     }
@@ -298,7 +298,7 @@ public class AcceptInviteCodeCommandHandlerTests
         // Assert
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("Error processing invite code: Database timeout");
-        
+
         VerifyLogMessage(LogLevel.Error, "Error processing invite code");
     }
 
@@ -382,7 +382,7 @@ public class AcceptInviteCodeCommandHandlerTests
         result.Value.Phone.Should().Be("+1234567890");
 
         // Should not call FindContactsAsync when original contact has no email
-        _mockContactRepository.Verify(x => x.FindContactsAsync(It.IsAny<string>(), It.IsAny<Guid>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()), 
+        _mockContactRepository.Verify(x => x.FindContactsAsync(It.IsAny<string>(), It.IsAny<Guid>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()),
             Times.Never);
         VerifyContactAddedAndSaved();
     }
@@ -432,13 +432,13 @@ public class AcceptInviteCodeCommandHandlerTests
     {
         _mockContactRepository.Setup(x => x.FindContactByInviteCodeAsync(_testInviteCode, It.IsAny<CancellationToken>()))
             .ReturnsAsync(originalContact);
-        
+
         if (!string.IsNullOrEmpty(originalContact.Email))
         {
             _mockContactRepository.Setup(x => x.FindContactsAsync(originalContact.Email, _testUserId, false, It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new List<Contact>());
         }
-        
+
         SetupSuccessfulSave();
     }
 

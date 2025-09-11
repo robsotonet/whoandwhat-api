@@ -34,9 +34,9 @@ public class SecurityHeadersMiddleware
         headers.TryAdd("X-XSS-Protection", "1; mode=block");
         headers.TryAdd("Referrer-Policy", "strict-origin-when-cross-origin");
         headers.TryAdd("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
-        
+
         // Content Security Policy - can be customized based on needs
-        headers.TryAdd("Content-Security-Policy", 
+        headers.TryAdd("Content-Security-Policy",
             "default-src 'self'; " +
             "script-src 'self' 'unsafe-inline'; " +
             "style-src 'self' 'unsafe-inline'; " +

@@ -108,7 +108,7 @@ public class GetTaskSchedulingQueryHandlerTests
         result.IsSuccess.Should().BeTrue();
 
         _mockTaskRepository.Verify(x => x.SearchAsync(
-            It.Is<AppTaskSearchCriteria>(c => 
+            It.Is<AppTaskSearchCriteria>(c =>
                 c.UserId == userId &&
                 c.Statuses != null &&
                 c.IncludeArchived == false),
@@ -357,7 +357,7 @@ public class GetTaskSchedulingQueryHandlerTests
         result.IsSuccess.Should().BeTrue();
 
         _mockTaskRepository.Verify(x => x.SearchAsync(
-            It.Is<AppTaskSearchCriteria>(c => 
+            It.Is<AppTaskSearchCriteria>(c =>
                 c.Statuses != null &&
                 c.Statuses.Contains((int)DomainTaskStatus.Pending) &&
                 c.Statuses.Contains((int)DomainTaskStatus.InProgress) &&
@@ -438,7 +438,7 @@ public class GetTaskSchedulingQueryHandlerTests
     private List<DomainTask> CreateSampleTasks(Guid userId, int count = 2)
     {
         var tasks = new List<DomainTask>();
-        
+
         for (int i = 0; i < count; i++)
         {
             tasks.Add(new DomainTask

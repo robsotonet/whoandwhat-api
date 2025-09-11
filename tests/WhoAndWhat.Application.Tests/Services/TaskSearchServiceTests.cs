@@ -1,15 +1,15 @@
+using System.Text;
+using System.Text.Json;
 using FluentAssertions;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Moq;
-using System.Text;
-using System.Text.Json;
+using WhoAndWhat.Application.Configuration;
 using WhoAndWhat.Application.DTOs;
 using WhoAndWhat.Application.Interfaces;
 using WhoAndWhat.Application.Services;
 using WhoAndWhat.Domain.ValueObjects;
-using WhoAndWhat.Application.Configuration;
 using Xunit;
 
 namespace WhoAndWhat.Application.Tests.Services;

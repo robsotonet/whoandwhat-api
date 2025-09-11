@@ -104,8 +104,8 @@ public class TaskRepository : Repository<DomainTask>, IAppTaskRepository
         {
             var today = DateTime.UtcNow.Date;
             return await _dbSet
-                .Where(t => t.UserId == userId 
-                           && t.DueDate.HasValue 
+                .Where(t => t.UserId == userId
+                           && t.DueDate.HasValue
                            && t.DueDate.Value.Date < today
                            && t.Status != (int)DomainTaskStatus.Completed
                            && t.Status != (int)DomainTaskStatus.Archived)
@@ -125,9 +125,9 @@ public class TaskRepository : Repository<DomainTask>, IAppTaskRepository
         try
         {
             return await _dbSet
-                .Where(t => t.UserId == userId 
-                           && t.DueDate.HasValue 
-                           && t.DueDate.Value.Date >= fromDate.Date 
+                .Where(t => t.UserId == userId
+                           && t.DueDate.HasValue
+                           && t.DueDate.Value.Date >= fromDate.Date
                            && t.DueDate.Value.Date <= toDate.Date)
                 .OrderBy(t => t.DueDate)
                 .ThenByDescending(t => t.Priority)
@@ -200,8 +200,8 @@ public class TaskRepository : Repository<DomainTask>, IAppTaskRepository
         try
         {
             return await _dbSet
-                .Where(t => t.ProjectId == parentTaskId 
-                           && t.Status != (int)DomainTaskStatus.Completed 
+                .Where(t => t.ProjectId == parentTaskId
+                           && t.Status != (int)DomainTaskStatus.Completed
                            && t.Status != (int)DomainTaskStatus.Archived)
                 .CountAsync(cancellationToken);
         }
@@ -267,7 +267,7 @@ public class TaskRepository : Repository<DomainTask>, IAppTaskRepository
                 SELECT * FROM task_hierarchy";
 
             return await _context.Tasks
-                .FromSqlRaw(sql, 
+                .FromSqlRaw(sql,
                     new NpgsqlParameter("@taskId", taskId),
                     new NpgsqlParameter("@userId", userId))
                 .ToListAsync(cancellationToken);
@@ -357,8 +357,8 @@ public class TaskRepository : Repository<DomainTask>, IAppTaskRepository
         {
             var today = DateTime.UtcNow.Date;
             return await _dbSet
-                .Where(t => t.UserId == userId 
-                           && t.DueDate.HasValue 
+                .Where(t => t.UserId == userId
+                           && t.DueDate.HasValue
                            && t.DueDate.Value.Date == today
                            && t.Status != (int)DomainTaskStatus.Completed
                            && t.Status != (int)DomainTaskStatus.Archived)
@@ -379,11 +379,11 @@ public class TaskRepository : Repository<DomainTask>, IAppTaskRepository
         {
             var today = DateTime.UtcNow.Date;
             var endDate = today.AddDays(days);
-            
+
             return await _dbSet
-                .Where(t => t.UserId == userId 
-                           && t.DueDate.HasValue 
-                           && t.DueDate.Value.Date >= today 
+                .Where(t => t.UserId == userId
+                           && t.DueDate.HasValue
+                           && t.DueDate.Value.Date >= today
                            && t.DueDate.Value.Date <= endDate
                            && t.Status != (int)DomainTaskStatus.Completed
                            && t.Status != (int)DomainTaskStatus.Archived)
@@ -408,9 +408,9 @@ public class TaskRepository : Repository<DomainTask>, IAppTaskRepository
             }
 
             var normalizedSearch = searchTerm.ToLowerInvariant().Trim();
-            
+
             return await _dbSet
-                .Where(t => t.UserId == userId 
+                .Where(t => t.UserId == userId
                            && (EF.Functions.Like(t.Title.ToLower(), $"%{normalizedSearch}%") ||
                                (t.Description != null && EF.Functions.Like(t.Description.ToLower(), $"%{normalizedSearch}%"))))
                 .OrderByDescending(t => EF.Functions.Like(t.Title.ToLower(), $"%{normalizedSearch}%") ? 2 : 1) // Title matches first
@@ -589,34 +589,34 @@ public class TaskRepository : Repository<DomainTask>, IAppTaskRepository
     {
         return filter.SortBy switch
         {
-            TaskSortBy.CreatedAt => filter.SortDescending 
-                ? query.OrderByDescending(t => t.CreatedAt) 
+            TaskSortBy.CreatedAt => filter.SortDescending
+                ? query.OrderByDescending(t => t.CreatedAt)
                 : query.OrderBy(t => t.CreatedAt),
-            
-            TaskSortBy.UpdatedAt => filter.SortDescending 
-                ? query.OrderByDescending(t => t.UpdatedAt) 
+
+            TaskSortBy.UpdatedAt => filter.SortDescending
+                ? query.OrderByDescending(t => t.UpdatedAt)
                 : query.OrderBy(t => t.UpdatedAt),
-            
-            TaskSortBy.DueDate => filter.SortDescending 
-                ? query.OrderByDescending(t => t.DueDate) 
+
+            TaskSortBy.DueDate => filter.SortDescending
+                ? query.OrderByDescending(t => t.DueDate)
                 : query.OrderBy(t => t.DueDate),
-            
-            TaskSortBy.Priority => filter.SortDescending 
-                ? query.OrderByDescending(t => t.Priority) 
+
+            TaskSortBy.Priority => filter.SortDescending
+                ? query.OrderByDescending(t => t.Priority)
                 : query.OrderBy(t => t.Priority),
-            
-            TaskSortBy.Title => filter.SortDescending 
-                ? query.OrderByDescending(t => t.Title) 
+
+            TaskSortBy.Title => filter.SortDescending
+                ? query.OrderByDescending(t => t.Title)
                 : query.OrderBy(t => t.Title),
-            
-            TaskSortBy.Status => filter.SortDescending 
-                ? query.OrderByDescending(t => t.Status) 
+
+            TaskSortBy.Status => filter.SortDescending
+                ? query.OrderByDescending(t => t.Status)
                 : query.OrderBy(t => t.Status),
-            
-            TaskSortBy.Category => filter.SortDescending 
-                ? query.OrderByDescending(t => t.Category) 
+
+            TaskSortBy.Category => filter.SortDescending
+                ? query.OrderByDescending(t => t.Category)
                 : query.OrderBy(t => t.Category),
-            
+
             _ => query.OrderByDescending(t => t.UpdatedAt)
         };
     }
@@ -688,17 +688,17 @@ public class TaskRepository : Repository<DomainTask>, IAppTaskRepository
     private bool HasOverdueTasks(DomainTask root, IEnumerable<DomainTask> descendants)
     {
         var today = DateTime.UtcNow.Date;
-        
-        if (root.DueDate.HasValue && root.DueDate.Value.Date < today && 
-            root.Status != (int)DomainTaskStatus.Completed && 
+
+        if (root.DueDate.HasValue && root.DueDate.Value.Date < today &&
+            root.Status != (int)DomainTaskStatus.Completed &&
             root.Status != (int)DomainTaskStatus.Archived)
         {
             return true;
         }
 
-        return descendants.Any(t => t.DueDate.HasValue && 
-                                  t.DueDate.Value.Date < today && 
-                                  t.Status != (int)DomainTaskStatus.Completed && 
+        return descendants.Any(t => t.DueDate.HasValue &&
+                                  t.DueDate.Value.Date < today &&
+                                  t.Status != (int)DomainTaskStatus.Completed &&
                                   t.Status != (int)DomainTaskStatus.Archived);
     }
 
@@ -780,9 +780,9 @@ public class TaskRepository : Repository<DomainTask>, IAppTaskRepository
         try
         {
             var sixMonthsAgo = DateTime.UtcNow.AddMonths(-6);
-            
+
             return await _dbSet
-                .Where(t => t.UserId == userId && 
+                .Where(t => t.UserId == userId &&
                            (t.Status == (int)DomainTaskStatus.Completed ||
                             (t.Status == (int)DomainTaskStatus.Pending && t.CreatedAt < sixMonthsAgo)))
                 .Where(t => t.Status != (int)DomainTaskStatus.Archived)
@@ -847,7 +847,7 @@ public class TaskRepository : Repository<DomainTask>, IAppTaskRepository
             if (updatedCount > 0)
             {
                 await _context.SaveChangesAsync(cancellationToken);
-                _logger.LogInformation("Bulk updated {UpdatedCount} tasks to status {Status} for user {UserId}", 
+                _logger.LogInformation("Bulk updated {UpdatedCount} tasks to status {Status} for user {UserId}",
                     updatedCount, newStatus, userId);
             }
 
@@ -984,7 +984,7 @@ public class TaskRepository : Repository<DomainTask>, IAppTaskRepository
             {
                 UserId = userId,
                 TotalTasks = tasks.Count,
-                ActiveTasks = tasks.Count(t => t.Status != (int)DomainTaskStatus.Completed && 
+                ActiveTasks = tasks.Count(t => t.Status != (int)DomainTaskStatus.Completed &&
                                                t.Status != (int)DomainTaskStatus.Archived),
                 CompletedTasks = tasks.Count(t => t.Status == (int)DomainTaskStatus.Completed),
                 ArchivedTasks = tasks.Count(t => t.Status == (int)DomainTaskStatus.Archived),
@@ -994,8 +994,8 @@ public class TaskRepository : Repository<DomainTask>, IAppTaskRepository
                 Period = TimeSpan.FromDays(365) // Default to last year
             };
 
-            statistics.CompletionPercentage = statistics.TotalTasks > 0 
-                ? (decimal)statistics.CompletedTasks / statistics.TotalTasks * 100 
+            statistics.CompletionPercentage = statistics.TotalTasks > 0
+                ? (decimal)statistics.CompletedTasks / statistics.TotalTasks * 100
                 : 0;
 
             // Calculate category statistics
@@ -1006,7 +1006,7 @@ public class TaskRepository : Repository<DomainTask>, IAppTaskRepository
                     Category = g.Key,
                     TotalTasks = g.Count(),
                     CompletedTasks = g.Count(t => t.Status == (int)DomainTaskStatus.Completed),
-                    ActiveTasks = g.Count(t => t.Status != (int)DomainTaskStatus.Completed && 
+                    ActiveTasks = g.Count(t => t.Status != (int)DomainTaskStatus.Completed &&
                                                t.Status != (int)DomainTaskStatus.Archived),
                     CompletionPercentage = g.Any() ? (decimal)g.Count(t => t.Status == (int)DomainTaskStatus.Completed) / g.Count() * 100 : 0
                 });
@@ -1019,7 +1019,7 @@ public class TaskRepository : Repository<DomainTask>, IAppTaskRepository
                     Priority = g.Key,
                     TotalTasks = g.Count(),
                     CompletedTasks = g.Count(t => t.Status == (int)DomainTaskStatus.Completed),
-                    ActiveTasks = g.Count(t => t.Status != (int)DomainTaskStatus.Completed && 
+                    ActiveTasks = g.Count(t => t.Status != (int)DomainTaskStatus.Completed &&
                                                t.Status != (int)DomainTaskStatus.Archived),
                     OverdueTasks = g.Count(t => t.IsOverdue)
                 });
@@ -1062,7 +1062,7 @@ public class TaskRepository : Repository<DomainTask>, IAppTaskRepository
                     Date = date,
                     CompletedTasks = dailyGroups.GetValueOrDefault(date, 0),
                     CreatedTasks = tasks.Count(t => t.CreatedAt.Date == date),
-                    ActiveTasks = tasks.Count(t => t.CreatedAt.Date <= date && 
+                    ActiveTasks = tasks.Count(t => t.CreatedAt.Date <= date &&
                                                    (t.Status != (int)DomainTaskStatus.Completed || t.UpdatedAt.Date > date))
                 });
             }
@@ -1101,7 +1101,7 @@ public class TaskRepository : Repository<DomainTask>, IAppTaskRepository
         {
             var cutoffDate = DateTime.UtcNow.Subtract(inactivePeriod);
             return await _dbSet
-                .Where(t => t.UserId == userId && 
+                .Where(t => t.UserId == userId &&
                            t.UpdatedAt < cutoffDate &&
                            t.Status != (int)DomainTaskStatus.Completed &&
                            t.Status != (int)DomainTaskStatus.Archived)
@@ -1161,8 +1161,8 @@ public class TaskRepository : Repository<DomainTask>, IAppTaskRepository
                     // Tasks with updated date before created date
                     t.UpdatedAt < t.CreatedAt ||
                     // Tasks with due dates way in the past but still pending
-                    (t.Status == (int)DomainTaskStatus.Pending && 
-                     t.DueDate.HasValue && 
+                    (t.Status == (int)DomainTaskStatus.Pending &&
+                     t.DueDate.HasValue &&
                      t.DueDate.Value < DateTime.UtcNow.AddYears(-1))
                 ))
                 .ToListAsync(cancellationToken);
@@ -1202,7 +1202,7 @@ public class TaskRepository : Repository<DomainTask>, IAppTaskRepository
         {
             var today = DateTime.UtcNow.Date;
             var tomorrow = today.AddDays(1);
-            
+
             return await _dbSet
                 .Where(t => t.UserId == userId &&
                            t.Status != (int)DomainTaskStatus.Completed &&
@@ -1226,7 +1226,7 @@ public class TaskRepository : Repository<DomainTask>, IAppTaskRepository
         {
             var thirtyDaysAgo = DateTime.UtcNow.AddDays(-30);
             var completedTasks = await _dbSet
-                .Where(t => t.UserId == userId && 
+                .Where(t => t.UserId == userId &&
                            t.Status == (int)DomainTaskStatus.Completed &&
                            t.UpdatedAt >= thirtyDaysAgo)
                 .Select(t => new { t.CreatedAt, t.UpdatedAt })
@@ -1264,7 +1264,7 @@ public class TaskRepository : Repository<DomainTask>, IAppTaskRepository
     private bool CanTransitionToStatus(DomainTask task, DomainTaskStatus newStatus)
     {
         var currentStatus = (DomainTaskStatus)task.Status;
-        
+
         // Basic transition validation
         return newStatus.Value switch
         {

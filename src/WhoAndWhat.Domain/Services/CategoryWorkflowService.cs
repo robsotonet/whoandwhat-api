@@ -771,7 +771,7 @@ public class CategoryWorkflowService
         {
             // Set action execution details
             action.ExecutedAt = DateTime.UtcNow;
-            
+
             // Process the action based on its type
             return action.Type switch
             {
@@ -876,7 +876,7 @@ public class WorkflowResult
         UpdatedTask = updatedTask;
         Exception = exception;
         HasChanges = updatedTask != null;
-        
+
         if (!isSuccess && !string.IsNullOrEmpty(message))
         {
             ErrorMessages.Add(message);

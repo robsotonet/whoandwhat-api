@@ -176,14 +176,16 @@ public class DockerConfigurationTests : IAsyncLifetime
     {
         var currentDirectory = Directory.GetCurrentDirectory();
         var directory = new DirectoryInfo(currentDirectory);
-        
+
         while (directory != null && !directory.GetFiles("*.sln").Any())
         {
             directory = directory.Parent;
         }
 
         if (directory == null)
+        {
             throw new InvalidOperationException("Could not find solution root directory");
+        }
 
         return directory.FullName;
     }

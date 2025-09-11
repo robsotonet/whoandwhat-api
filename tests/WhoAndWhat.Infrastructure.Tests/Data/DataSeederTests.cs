@@ -94,7 +94,7 @@ public class DataSeederTests : IDisposable
 
         var devUserCount = users.Count(u => u.Email == "dev@example.com");
         var testUserCount = users.Count(u => u.Email == "test@example.com");
-        
+
         devUserCount.Should().Be(1, "Should have exactly 1 dev user, not duplicates");
         testUserCount.Should().Be(1, "Should have exactly 1 test user, not duplicates");
     }
@@ -109,15 +109,15 @@ public class DataSeederTests : IDisposable
         var options = new DbContextOptionsBuilder<ApplicationDbContext>()
             .UseInMemoryDatabase(databaseName: "PersistenceTest")
             .Options;
-        
+
         using var newContext = new ApplicationDbContext(options);
-        
+
         // Add users to new context and verify
         await DataSeeder.SeedDatabaseAsync(newContext);
-        
+
         var persistedUsers = await newContext.Users.ToListAsync();
         persistedUsers.Should().HaveCount(2, "Users should persist in database");
-        
+
         persistedUsers.Should().Contain(u => u.Email == "dev@example.com");
         persistedUsers.Should().Contain(u => u.Email == "test@example.com");
     }
@@ -137,14 +137,14 @@ public class DataSeederTests : IDisposable
             user.Id.Should().NotBe(Guid.Empty, "User should have valid ID");
             user.CreatedAt.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromMinutes(1), "CreatedAt should be recent");
             user.UpdatedAt.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromMinutes(1), "UpdatedAt should be recent");
-            
+
             // Verify user is active by default
             user.IsActive.Should().BeTrue("User should be active by default");
             user.IsLocked.Should().BeFalse("User should not be locked by default");
-            
+
             // Verify email is verified for dev environment
             user.IsEmailVerified.Should().BeTrue("Users should be verified in development");
-            
+
             // Verify authentication fields
             user.PasswordHash.Should().NotBeNullOrEmpty("Password hash should be set");
         }
@@ -167,7 +167,7 @@ public class DataSeederTests : IDisposable
             user.Email.Should().NotBeNullOrEmpty();
             user.Username.Should().NotBeNullOrEmpty();
             user.PasswordHash.Should().NotBeNullOrEmpty("UserDomainService should hash passwords");
-            
+
             // Verify email format (basic validation)
             user.Email.Should().Contain("@", "Email should have valid format");
             user.Email.Should().Contain(".", "Email should have domain");
@@ -182,10 +182,10 @@ public class DataSeederTests : IDisposable
 
         // Assert
         var users = await _context.Users.ToListAsync();
-        
+
         var devUser = users.First(u => u.Email == "dev@example.com");
         var testUser = users.First(u => u.Email == "test@example.com");
-        
+
         devUser.PreferredLanguage.Should().Be(Language.en, "Dev user should prefer English");
         testUser.PreferredLanguage.Should().Be(Language.es, "Test user should prefer Spanish");
     }

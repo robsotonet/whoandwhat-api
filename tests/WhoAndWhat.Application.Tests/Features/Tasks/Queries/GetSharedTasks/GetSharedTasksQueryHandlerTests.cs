@@ -16,7 +16,7 @@ public class GetSharedTasksQueryHandlerTests
     private readonly Mock<IContactRepository> _mockContactRepository;
     private readonly Mock<ILogger<GetSharedTasksQueryHandler>> _mockLogger;
     private readonly GetSharedTasksQueryHandler _handler;
-    
+
     private readonly Guid _testUserId = Guid.NewGuid();
     private readonly Guid _testContactId1 = Guid.NewGuid();
     private readonly Guid _testContactId2 = Guid.NewGuid();
@@ -27,7 +27,7 @@ public class GetSharedTasksQueryHandlerTests
         _mockTaskRepository = new Mock<IAppTaskRepository>();
         _mockContactRepository = new Mock<IContactRepository>();
         _mockLogger = new Mock<ILogger<GetSharedTasksQueryHandler>>();
-        
+
         _handler = new GetSharedTasksQueryHandler(
             _mockTaskRepository.Object,
             _mockContactRepository.Object,
@@ -39,7 +39,7 @@ public class GetSharedTasksQueryHandlerTests
     {
         // Arrange - Given the current implementation limitation noted in the handler
         var query = new GetSharedTasksQuery(_testUserId);
-        
+
         SetupUserContacts(new List<Contact> { CreateTestContact(_testContactId1, "John Doe") });
 
         // Act
@@ -52,7 +52,7 @@ public class GetSharedTasksQueryHandlerTests
         result.Value.TotalCount.Should().Be(0);
         result.Value.Page.Should().Be(1);
         result.Value.PageSize.Should().Be(20);
-        
+
         VerifyLogMessage(LogLevel.Information, "Getting shared tasks for user");
         VerifyLogMessage(LogLevel.Warning, "GetTasksForContactAsync not fully implemented");
         VerifyLogMessage(LogLevel.Information, "Found 0 shared tasks for user");
@@ -65,7 +65,7 @@ public class GetSharedTasksQueryHandlerTests
     [InlineData("observer", false, false, false, true)]
     [InlineData("unknown", false, false, false, true)]
     [InlineData("", false, false, false, true)]
-    public async Task ApplyAuthorizationRules_DifferentRoles_ShouldSetCorrectPermissions(
+    public Task ApplyAuthorizationRules_DifferentRoles_ShouldSetCorrectPermissions(
         string role, bool canEdit, bool canDelete, bool canComment, bool canViewDetails)
     {
         // Arrange
@@ -77,7 +77,7 @@ public class GetSharedTasksQueryHandlerTests
         };
 
         // Act - Using reflection to access the private method for authorization testing
-        var method = typeof(GetSharedTasksQueryHandler).GetMethod("ApplyAuthorizationRules", 
+        var method = typeof(GetSharedTasksQueryHandler).GetMethod("ApplyAuthorizationRules",
             System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
         method?.Invoke(_handler, new object[] { sharedTask });
 
@@ -86,10 +86,11 @@ public class GetSharedTasksQueryHandlerTests
         sharedTask.CanDelete.Should().Be(canDelete, $"CanDelete should be {canDelete} for role {role}");
         sharedTask.CanComment.Should().Be(canComment, $"CanComment should be {canComment} for role {role}");
         sharedTask.CanViewDetails.Should().Be(canViewDetails, $"CanViewDetails should be {canViewDetails} for role {role}");
+        return Task.CompletedTask;
     }
 
     [Fact]
-    public async Task ApplyAuthorizationRules_CaseInsensitiveRoles_ShouldWorkCorrectly()
+    public Task ApplyAuthorizationRules_CaseInsensitiveRoles_ShouldWorkCorrectly()
     {
         // Arrange
         var testCases = new[]
@@ -104,7 +105,7 @@ public class GetSharedTasksQueryHandlerTests
             ("Observer", false, false, false, true)
         };
 
-        var method = typeof(GetSharedTasksQueryHandler).GetMethod("ApplyAuthorizationRules", 
+        var method = typeof(GetSharedTasksQueryHandler).GetMethod("ApplyAuthorizationRules",
             System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
 
         foreach (var (role, canEdit, canDelete, canComment, canViewDetails) in testCases)
@@ -126,6 +127,8 @@ public class GetSharedTasksQueryHandlerTests
             sharedTask.CanComment.Should().Be(canComment, $"CanComment should be {canComment} for role {role}");
             sharedTask.CanViewDetails.Should().Be(canViewDetails, $"CanViewDetails should be {canViewDetails} for role {role}");
         }
+
+        return Task.CompletedTask;
     }
 
     [Fact]
@@ -133,7 +136,7 @@ public class GetSharedTasksQueryHandlerTests
     {
         // Arrange
         var query = new GetSharedTasksQuery(_testUserId, Role: "Owner");
-        
+
         SetupUserContacts(new List<Contact> { CreateTestContact(_testContactId1, "John Doe") });
 
         // Act
@@ -150,7 +153,7 @@ public class GetSharedTasksQueryHandlerTests
     {
         // Arrange
         var query = new GetSharedTasksQuery(_testUserId, ContactId: _testContactId1);
-        
+
         SetupUserContacts(new List<Contact> { CreateTestContact(_testContactId1, "John Doe") });
 
         // Act
@@ -166,7 +169,7 @@ public class GetSharedTasksQueryHandlerTests
     {
         // Arrange
         var query = new GetSharedTasksQuery(_testUserId, Status: (int)AppTaskStatus.InProgress, Category: (int)AppTaskCategory.ToDo);
-        
+
         SetupUserContacts(new List<Contact> { CreateTestContact(_testContactId1, "John Doe") });
 
         // Act
@@ -182,7 +185,7 @@ public class GetSharedTasksQueryHandlerTests
     {
         // Arrange
         var query = new GetSharedTasksQuery(_testUserId, SearchTerm: "important task");
-        
+
         SetupUserContacts(new List<Contact> { CreateTestContact(_testContactId1, "John Doe") });
 
         // Act
@@ -198,7 +201,7 @@ public class GetSharedTasksQueryHandlerTests
     {
         // Arrange
         var query = new GetSharedTasksQuery(_testUserId, PageNumber: 2, PageSize: 10);
-        
+
         SetupUserContacts(new List<Contact> { CreateTestContact(_testContactId1, "John Doe") });
 
         // Act
@@ -221,7 +224,7 @@ public class GetSharedTasksQueryHandlerTests
             CreateTestContact(_testContactId2, "Jane Smith")
         };
         var query = new GetSharedTasksQuery(_testUserId);
-        
+
         SetupUserContacts(contacts);
 
         // Act
@@ -229,7 +232,7 @@ public class GetSharedTasksQueryHandlerTests
 
         // Assert
         result.IsSuccess.Should().BeTrue();
-        
+
         // Verify that FindContactsAsync was called to get user's contacts
         _mockContactRepository.Verify(x => x.FindContactsAsync("", _testUserId, false, It.IsAny<CancellationToken>()), Times.Once);
         VerifyLogMessage(LogLevel.Information, "Getting shared tasks for user");
@@ -240,7 +243,7 @@ public class GetSharedTasksQueryHandlerTests
     {
         // Arrange
         var query = new GetSharedTasksQuery(_testUserId);
-        
+
         SetupUserContacts(new List<Contact>()); // No contacts
 
         // Act
@@ -258,7 +261,7 @@ public class GetSharedTasksQueryHandlerTests
     {
         // Arrange
         var query = new GetSharedTasksQuery(_testUserId);
-        
+
         _mockContactRepository.Setup(x => x.FindContactsAsync("", _testUserId, false, It.IsAny<CancellationToken>()))
             .ThrowsAsync(new Exception("Database connection error"));
 
@@ -284,7 +287,7 @@ public class GetSharedTasksQueryHandlerTests
             PageNumber: 2,
             PageSize: 5,
             SearchTerm: "urgent task");
-        
+
         SetupUserContacts(new List<Contact> { CreateTestContact(_testContactId1, "John Doe") });
 
         // Act
@@ -303,7 +306,7 @@ public class GetSharedTasksQueryHandlerTests
         // Arrange
         var contacts = new List<Contact> { CreateTestContact(_testContactId1, "John Doe") };
         var query = new GetSharedTasksQuery(_testUserId);
-        
+
         SetupUserContacts(contacts);
 
         // Act
@@ -321,7 +324,7 @@ public class GetSharedTasksQueryHandlerTests
     {
         // Arrange
         var query = new GetSharedTasksQuery(_testUserId, SearchTerm: searchTerm);
-        
+
         SetupUserContacts(new List<Contact> { CreateTestContact(_testContactId1, "John Doe") });
 
         // Act
@@ -337,7 +340,7 @@ public class GetSharedTasksQueryHandlerTests
     {
         // Arrange
         var query = new GetSharedTasksQuery(_testUserId); // Uses default Page=1, PageSize=20
-        
+
         SetupUserContacts(new List<Contact> { CreateTestContact(_testContactId1, "John Doe") });
 
         // Act
@@ -349,15 +352,15 @@ public class GetSharedTasksQueryHandlerTests
         result.Value.PageSize.Should().Be(20);
     }
 
-    [Fact] 
+    [Fact]
     public async Task MapToSharedTaskDto_ShouldSetCorrectAuthorizationFlags()
     {
         // This test verifies the authorization logic is applied during mapping
         // Note: Due to private method access limitations, this is tested indirectly through Handle
-        
+
         // Arrange
         var query = new GetSharedTasksQuery(_testUserId);
-        
+
         SetupUserContacts(new List<Contact> { CreateTestContact(_testContactId1, "John Doe") });
 
         // Act
@@ -386,7 +389,7 @@ public class GetSharedTasksQueryHandlerTests
         };
     }
 
-    private AppTask CreateTestTask(Guid taskId, string title, AppTaskStatus? status = null, 
+    private AppTask CreateTestTask(Guid taskId, string title, AppTaskStatus? status = null,
         AppTaskCategory? category = null, Priority? priority = null)
     {
         return new AppTask

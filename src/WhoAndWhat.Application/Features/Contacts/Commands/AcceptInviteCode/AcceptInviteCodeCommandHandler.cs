@@ -4,8 +4,8 @@ using WhoAndWhat.Application.Common;
 using WhoAndWhat.Application.DTOs.Contacts;
 using WhoAndWhat.Application.Interfaces;
 using WhoAndWhat.Domain.Entities;
-using WhoAndWhat.Domain.ValueObjects;
 using WhoAndWhat.Domain.Validators;
+using WhoAndWhat.Domain.ValueObjects;
 
 namespace WhoAndWhat.Application.Features.Contacts.Commands.AcceptInviteCode;
 
@@ -29,7 +29,7 @@ public class AcceptInviteCodeCommandHandler : IRequestHandler<AcceptInviteCodeCo
     {
         try
         {
-            _logger.LogInformation("Processing invite code {InviteCode} for user {UserId}", 
+            _logger.LogInformation("Processing invite code {InviteCode} for user {UserId}",
                 request.InviteCode, request.UserId);
 
             // Validate invite code format
@@ -49,7 +49,7 @@ public class AcceptInviteCodeCommandHandler : IRequestHandler<AcceptInviteCodeCo
             // Cannot accept your own invite code
             if (originalContact.UserId == request.UserId)
             {
-                _logger.LogWarning("User {UserId} tried to accept their own invite code {InviteCode}", 
+                _logger.LogWarning("User {UserId} tried to accept their own invite code {InviteCode}",
                     request.UserId, request.InviteCode);
                 return Result<ContactDto>.Failure("You cannot add yourself as a contact");
             }
@@ -58,7 +58,7 @@ public class AcceptInviteCodeCommandHandler : IRequestHandler<AcceptInviteCodeCo
             var existingContact = await CheckForExistingContactAsync(originalContact, request.UserId, cancellationToken);
             if (existingContact != null)
             {
-                _logger.LogInformation("Contact already exists for user {UserId} with email {Email}", 
+                _logger.LogInformation("Contact already exists for user {UserId} with email {Email}",
                     request.UserId, originalContact.Email);
                 return Result<ContactDto>.Failure("You already have this contact in your list");
             }
@@ -92,7 +92,7 @@ public class AcceptInviteCodeCommandHandler : IRequestHandler<AcceptInviteCodeCo
 
             if (saveResult == 0)
             {
-                _logger.LogError("Failed to save contact from invite code {InviteCode} for user {UserId}", 
+                _logger.LogError("Failed to save contact from invite code {InviteCode} for user {UserId}",
                     request.InviteCode, request.UserId);
                 return Result<ContactDto>.Failure("Failed to add contact from invite code");
             }
@@ -114,14 +114,14 @@ public class AcceptInviteCodeCommandHandler : IRequestHandler<AcceptInviteCodeCo
                 AssociatedTasks = new List<ContactTaskDto>()
             };
 
-            _logger.LogInformation("Successfully added contact {ContactId} from invite code {InviteCode} for user {UserId}", 
+            _logger.LogInformation("Successfully added contact {ContactId} from invite code {InviteCode} for user {UserId}",
                 newContact.Id, request.InviteCode, request.UserId);
 
             return Result<ContactDto>.Success(contactDto);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error processing invite code {InviteCode} for user {UserId}", 
+            _logger.LogError(ex, "Error processing invite code {InviteCode} for user {UserId}",
                 request.InviteCode, request.UserId);
             return Result<ContactDto>.Failure($"Error processing invite code: {ex.Message}");
         }
