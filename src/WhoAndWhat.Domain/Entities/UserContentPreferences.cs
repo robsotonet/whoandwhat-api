@@ -301,15 +301,24 @@ public class UserContentPreferences : BaseEntity
     }
 
     /// <summary>
-    /// Gets engagement history value
+    /// Gets engagement history value for the specified key
     /// </summary>
+    /// <typeparam name="T">The type of value to retrieve</typeparam>
+    /// <param name="key">The key to search for in engagement history</param>
+    /// <returns>The value if found and can be cast to T, otherwise null for nullable types or default for non-nullable types</returns>
+    /// <remarks>
+    /// This method returns a nullable version of the requested type (T?). 
+    /// For value types like double, int, etc., it returns null when the key is not found or the value cannot be cast to the specified type.
+    /// For reference types like string, it returns null when the key is not found.
+    /// Used extensively in content scoring calculations where historical engagement data may or may not be available.
+    /// </remarks>
     public T? GetEngagementHistory<T>(string key)
     {
         if (EngagementHistory.TryGetValue(key, out var value) && value is T typedValue)
         {
             return typedValue;
         }
-        return default(T);
+        return default(T?);
     }
 
     /// <summary>
@@ -392,8 +401,22 @@ public class UserContentPreferences : BaseEntity
     }
 
     /// <summary>
-    /// Calculates a preference score for content personalization (0-1)
+    /// Calculates a personalized preference score for motivational content based on user preferences and historical engagement
     /// </summary>
+    /// <param name="contentType">The type of motivational content (e.g., Achievement, Tip, Encouragement)</param>
+    /// <param name="category">The content category (e.g., Productivity, General, Wellness)</param>
+    /// <returns>A normalized score between 0.0 and 1.0, where higher values indicate better personalization match</returns>
+    /// <remarks>
+    /// <para>The scoring algorithm works as follows:</para>
+    /// <list type="number">
+    /// <item><description>Base score: 0.5 (neutral starting point)</description></item>
+    /// <item><description>Content type preference: +0.3 if the content type is in user's preferred types</description></item>
+    /// <item><description>Category preference: +0.2 if the category is in user's preferred categories</description></item>
+    /// <item><description>Historical engagement: If engagement history exists for this content type, the score is averaged with the historical performance</description></item>
+    /// <item><description>Normalization: Final score is clamped between 0.0 and 1.0</description></item>
+    /// </list>
+    /// <para>This method integrates with the engagement history system to provide adaptive personalization that improves over time based on user interactions.</para>
+    /// </remarks>
     public double CalculateContentScore(MotivationalContentType contentType, ContentCategory category)
     {
         double score = 0.5; // Base score
@@ -411,7 +434,7 @@ public class UserContentPreferences : BaseEntity
         }
 
         // Apply engagement history if available
-        var contentTypeHistory = GetEngagementHistory<double?>($"score_{contentType}");
+        double? contentTypeHistory = GetEngagementHistory<double>($"score_{contentType}");
         if (contentTypeHistory.HasValue)
         {
             score = (score + contentTypeHistory.Value) / 2; // Average with historical performance

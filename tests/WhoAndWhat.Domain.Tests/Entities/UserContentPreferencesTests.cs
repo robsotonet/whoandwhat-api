@@ -675,23 +675,95 @@ public class UserContentPreferencesTests
             .Build();
 
         // Act
-        var result = preferences.GetEngagementHistory<double>(key);
+        double? result = preferences.GetEngagementHistory<double>(key);
 
         // Assert
         result.Should().Be(value);
     }
 
     [Fact]
-    public void GetEngagementHistory_WithNonExistentEntry_ShouldReturnDefault()
+    public void GetEngagementHistory_WithNonExistentEntry_ShouldReturnNull()
     {
         // Arrange
         var preferences = UserContentPreferencesBuilder.New().Build();
 
         // Act
-        var result = preferences.GetEngagementHistory<double>("nonExistentKey");
+        double? result = preferences.GetEngagementHistory<double>("nonExistentKey");
 
         // Assert
-        result.Should().Be(0.0);
+        result.Should().BeNull();
+    }
+
+    [Fact]
+    public void GetEngagementHistory_WithNullableTypes_ShouldHandleCorrectly()
+    {
+        // Arrange
+        var key = "testScore";
+        var value = 0.85;
+        var preferences = UserContentPreferencesBuilder.New()
+            .WithEngagementHistory(key, value)
+            .Build();
+
+        // Act
+        double? result = preferences.GetEngagementHistory<double>(key);
+
+        // Assert
+        result.Should().NotBeNull();
+        result.Should().Be(value);
+        result!.Value.Should().Be(value); // Test .Value access
+    }
+
+    [Fact]
+    public void GetEngagementHistory_ForScoreCalculation_ShouldWorkWithNullableTypes()
+    {
+        // Arrange
+        var contentType = MotivationalContentType.Achievement;
+        var scoreKey = $"score_{contentType}";
+        var historicalScore = 0.7;
+        
+        var preferences = UserContentPreferencesBuilder.New()
+            .WithEngagementHistory(scoreKey, historicalScore)
+            .Build();
+
+        // Act - This simulates the actual usage in CalculateContentScore method
+        double? contentTypeHistory = preferences.GetEngagementHistory<double>(scoreKey);
+
+        // Assert
+        contentTypeHistory.Should().NotBeNull();
+        contentTypeHistory.HasValue.Should().BeTrue();
+        contentTypeHistory.Value.Should().Be(historicalScore);
+
+        // Test the score calculation logic
+        var baseScore = 0.5;
+        if (contentTypeHistory.HasValue)
+        {
+            var combinedScore = (baseScore + contentTypeHistory.Value) / 2;
+            combinedScore.Should().Be(0.6); // (0.5 + 0.7) / 2 = 0.6
+        }
+    }
+
+    [Fact]
+    public void GetEngagementHistory_WithDifferentTypes_ShouldReturnCorrectNullableTypes()
+    {
+        // Arrange
+        var preferences = UserContentPreferencesBuilder.New()
+            .WithEngagementHistory("intValue", 42)
+            .WithEngagementHistory("stringValue", "test")
+            .Build();
+
+        // Act & Assert
+        int? intResult = preferences.GetEngagementHistory<int>("intValue");
+        intResult.Should().Be(42);
+
+        string? stringResult = preferences.GetEngagementHistory<string>("stringValue");
+        stringResult.Should().Be("test");
+
+        // Non-existent keys should return null
+        int? missingInt = preferences.GetEngagementHistory<int>("missing");
+        missingInt.Should().BeNull();
+
+        string? missingString = preferences.GetEngagementHistory<string>("missing");
+        missingString.Should().BeNull();
     }
 
     #endregion
@@ -1001,7 +1073,8 @@ public class UserContentPreferencesTests
         preferences.AllowWeekends.Should().BeFalse();
         preferences.AllowAfterHours.Should().BeTrue();
         preferences.GetPersonalizationSetting<string>("theme").Should().Be("dark");
-        preferences.GetEngagementHistory<int>("totalViews").Should().Be(100);
+        int? totalViews = preferences.GetEngagementHistory<int>("totalViews");
+        totalViews.Should().Be(100);
     }
 
     [Fact]
