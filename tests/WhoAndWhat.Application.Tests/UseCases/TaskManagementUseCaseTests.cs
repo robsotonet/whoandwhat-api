@@ -2,6 +2,7 @@ using FluentAssertions;
 using Microsoft.Extensions.Logging;
 using Moq;
 using WhoAndWhat.Application.Common;
+using WhoAndWhat.Application.DTOs;
 using WhoAndWhat.Application.DTOs.Tasks;
 using WhoAndWhat.Application.Features.Tasks.Commands.CreateTask;
 using WhoAndWhat.Application.Features.Tasks.Commands.UpdateTask;
@@ -17,6 +18,7 @@ using WhoAndWhat.Domain.ValueObjects;
 using Xunit;
 using DomainTask = WhoAndWhat.Domain.Entities.AppTask;
 using AppTaskUpdateRequest = WhoAndWhat.Domain.Services.AppTaskUpdateRequest;
+using TaskSearchCriteria = WhoAndWhat.Domain.ValueObjects.AppTaskSearchCriteria;
 
 namespace WhoAndWhat.Application.Tests.UseCases;
 
@@ -69,9 +71,9 @@ public class TaskManagementUseCaseTests
         _mockCategoryService.Setup(x => x.ValidateTaskCreation(It.IsAny<DomainTask>()))
             .Returns(validationResult);
 
-        _mockRepository.Setup(x => x.AddAsync(It.IsAny<DomainTask>()))
+        _mockRepository.Setup(x => x.AddAsync(It.IsAny<DomainTask>(), It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
-        _mockRepository.Setup(x => x.SaveChangesAsync())
+        _mockRepository.Setup(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()))
             .Returns(Task.FromResult(1));
 
         var handler = new CreateTaskCommandHandler(
@@ -91,8 +93,8 @@ public class TaskManagementUseCaseTests
         result.Value.Category.Should().Be(0);
         result.Value.Priority.Should().Be(1);
 
-        _mockRepository.Verify(x => x.AddAsync(It.IsAny<DomainTask>()), Times.Once);
-        _mockRepository.Verify(x => x.SaveChangesAsync(), Times.Once);
+        _mockRepository.Verify(x => x.AddAsync(It.IsAny<DomainTask>(), It.IsAny<CancellationToken>()), Times.Once);
+        _mockRepository.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
@@ -128,8 +130,8 @@ public class TaskManagementUseCaseTests
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("Title is required");
 
-        _mockRepository.Verify(x => x.AddAsync(It.IsAny<DomainTask>()), Times.Never);
-        _mockRepository.Verify(x => x.SaveChangesAsync(), Times.Never);
+        _mockRepository.Verify(x => x.AddAsync(It.IsAny<DomainTask>(), It.IsAny<CancellationToken>()), Times.Never);
+        _mockRepository.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]
@@ -154,10 +156,10 @@ public class TaskManagementUseCaseTests
             .Returns(validationResult);
 
         DomainTask savedTask = null!;
-        _mockRepository.Setup(x => x.AddAsync(It.IsAny<DomainTask>()))
-            .Callback<DomainTask>(task => savedTask = task)
+        _mockRepository.Setup(x => x.AddAsync(It.IsAny<DomainTask>(), It.IsAny<CancellationToken>()))
+            .Callback<DomainTask, CancellationToken>((task, _) => savedTask = task)
             .Returns(Task.CompletedTask);
-        _mockRepository.Setup(x => x.SaveChangesAsync())
+        _mockRepository.Setup(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()))
             .Returns(Task.FromResult(1));
 
         var handler = new CreateTaskCommandHandler(
@@ -212,16 +214,16 @@ public class TaskManagementUseCaseTests
             UserId: _testUserId
         );
 
-        _mockRepository.Setup(x => x.GetByIdAsync(taskId))
+        _mockRepository.Setup(x => x.GetByIdAsync(taskId, It.IsAny<CancellationToken>()))
             .Returns(Task.FromResult<DomainTask?>(existingTask));
 
         var validationResult = ValidationResult.Success();
         _mockCategoryService.Setup(x => x.ValidateTaskUpdate(It.IsAny<DomainTask>(), It.IsAny<AppTaskUpdateRequest>()))
             .Returns(validationResult);
 
-        _mockRepository.Setup(x => x.UpdateAsync(It.IsAny<DomainTask>()))
+        _mockRepository.Setup(x => x.UpdateAsync(It.IsAny<DomainTask>(), It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
-        _mockRepository.Setup(x => x.SaveChangesAsync())
+        _mockRepository.Setup(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()))
             .Returns(Task.FromResult(1));
 
         var handler = new UpdateTaskCommandHandler(
@@ -241,8 +243,8 @@ public class TaskManagementUseCaseTests
         result.Value.Status.Should().Be(1);
         result.Value.Priority.Should().Be(2);
 
-        _mockRepository.Verify(x => x.UpdateAsync(It.IsAny<DomainTask>()), Times.Once);
-        _mockRepository.Verify(x => x.SaveChangesAsync(), Times.Once);
+        _mockRepository.Verify(x => x.UpdateAsync(It.IsAny<DomainTask>(), It.IsAny<CancellationToken>()), Times.Once);
+        _mockRepository.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
@@ -264,7 +266,7 @@ public class TaskManagementUseCaseTests
             UserId: _testUserId
         );
 
-        _mockRepository.Setup(x => x.GetByIdAsync(taskId))
+        _mockRepository.Setup(x => x.GetByIdAsync(taskId, It.IsAny<CancellationToken>()))
             .Returns(Task.FromResult<DomainTask?>(null));
 
         var handler = new UpdateTaskCommandHandler(
@@ -280,8 +282,8 @@ public class TaskManagementUseCaseTests
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("not found");
 
-        _mockRepository.Verify(x => x.UpdateAsync(It.IsAny<DomainTask>()), Times.Never);
-        _mockRepository.Verify(x => x.SaveChangesAsync(), Times.Never);
+        _mockRepository.Verify(x => x.UpdateAsync(It.IsAny<DomainTask>(), It.IsAny<CancellationToken>()), Times.Never);
+        _mockRepository.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]
@@ -314,7 +316,7 @@ public class TaskManagementUseCaseTests
             UserId: _testUserId // Different from task owner
         );
 
-        _mockRepository.Setup(x => x.GetByIdAsync(taskId))
+        _mockRepository.Setup(x => x.GetByIdAsync(taskId, It.IsAny<CancellationToken>()))
             .Returns(Task.FromResult<DomainTask?>(existingTask));
 
         var handler = new UpdateTaskCommandHandler(
@@ -330,8 +332,8 @@ public class TaskManagementUseCaseTests
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("not found");
 
-        _mockRepository.Verify(x => x.UpdateAsync(It.IsAny<DomainTask>()), Times.Never);
-        _mockRepository.Verify(x => x.SaveChangesAsync(), Times.Never);
+        _mockRepository.Verify(x => x.UpdateAsync(It.IsAny<DomainTask>(), It.IsAny<CancellationToken>()), Times.Never);
+        _mockRepository.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
 
     #endregion
@@ -355,12 +357,12 @@ public class TaskManagementUseCaseTests
 
         var command = new DeleteTaskCommand(taskId, _testUserId, HardDelete: false);
 
-        _mockRepository.Setup(x => x.GetByIdAsync(taskId))
+        _mockRepository.Setup(x => x.GetByIdAsync(taskId, It.IsAny<CancellationToken>()))
             .Returns(Task.FromResult<DomainTask?>(existingTask));
 
-        _mockRepository.Setup(x => x.UpdateAsync(It.IsAny<DomainTask>()))
+        _mockRepository.Setup(x => x.UpdateAsync(It.IsAny<DomainTask>(), It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
-        _mockRepository.Setup(x => x.SaveChangesAsync())
+        _mockRepository.Setup(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()))
             .Returns(Task.FromResult(1));
 
         var handler = new DeleteTaskCommandHandler(
@@ -374,8 +376,8 @@ public class TaskManagementUseCaseTests
         // Assert
         result.IsSuccess.Should().BeTrue();
 
-        _mockRepository.Verify(x => x.UpdateAsync(It.IsAny<DomainTask>()), Times.Once);
-        _mockRepository.Verify(x => x.SaveChangesAsync(), Times.Once);
+        _mockRepository.Verify(x => x.UpdateAsync(It.IsAny<DomainTask>(), It.IsAny<CancellationToken>()), Times.Once);
+        _mockRepository.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
@@ -385,7 +387,7 @@ public class TaskManagementUseCaseTests
         var taskId = Guid.NewGuid();
         var command = new DeleteTaskCommand(taskId, _testUserId, HardDelete: false);
 
-        _mockRepository.Setup(x => x.GetByIdAsync(taskId))
+        _mockRepository.Setup(x => x.GetByIdAsync(taskId, It.IsAny<CancellationToken>()))
             .Returns(Task.FromResult<DomainTask?>(null));
 
         var handler = new DeleteTaskCommandHandler(
@@ -400,8 +402,8 @@ public class TaskManagementUseCaseTests
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("not found");
 
-        _mockRepository.Verify(x => x.UpdateAsync(It.IsAny<DomainTask>()), Times.Never);
-        _mockRepository.Verify(x => x.SaveChangesAsync(), Times.Never);
+        _mockRepository.Verify(x => x.UpdateAsync(It.IsAny<DomainTask>(), It.IsAny<CancellationToken>()), Times.Never);
+        _mockRepository.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]
@@ -421,12 +423,12 @@ public class TaskManagementUseCaseTests
 
         var command = new DeleteTaskCommand(taskId, _testUserId, HardDelete: true);
 
-        _mockRepository.Setup(x => x.GetByIdAsync(taskId))
+        _mockRepository.Setup(x => x.GetByIdAsync(taskId, It.IsAny<CancellationToken>()))
             .Returns(Task.FromResult<DomainTask?>(existingTask));
 
-        _mockRepository.Setup(x => x.DeleteAsync(It.IsAny<DomainTask>()))
+        _mockRepository.Setup(x => x.DeleteAsync(It.IsAny<DomainTask>(), It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
-        _mockRepository.Setup(x => x.SaveChangesAsync())
+        _mockRepository.Setup(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()))
             .Returns(Task.FromResult(1));
 
         var handler = new DeleteTaskCommandHandler(
@@ -441,8 +443,8 @@ public class TaskManagementUseCaseTests
         result.IsSuccess.Should().BeTrue();
 
         // Verify hard delete was called
-        _mockRepository.Verify(x => x.DeleteAsync(existingTask), Times.Once);
-        _mockRepository.Verify(x => x.UpdateAsync(It.IsAny<DomainTask>()), Times.Never);
+        _mockRepository.Verify(x => x.DeleteAsync(existingTask, It.IsAny<CancellationToken>()), Times.Once);
+        _mockRepository.Verify(x => x.UpdateAsync(It.IsAny<DomainTask>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
     #endregion
@@ -485,13 +487,14 @@ public class TaskManagementUseCaseTests
             PageNumber: 1
         );
 
-        _mockRepository.Setup(x => x.GetPagedAsync(
+        _mockRepository.Setup(x => x.SearchAsync(
             It.IsAny<TaskSearchCriteria>(),
             It.IsAny<int>(),
             It.IsAny<int>(),
             It.IsAny<string>(),
-            It.IsAny<bool>()))
-            .Returns(Task.FromResult((tasks, 2)));
+            It.IsAny<bool>(),
+            It.IsAny<CancellationToken>()))
+            .ReturnsAsync(PagedResult<DomainTask>.Create(tasks, tasks.Count, 1, 10));
 
         var handler = new GetTasksQueryHandler(
             _mockRepository.Object,
@@ -536,13 +539,14 @@ public class TaskManagementUseCaseTests
             PageNumber: 1
         );
 
-        _mockRepository.Setup(x => x.GetPagedAsync(
+        _mockRepository.Setup(x => x.SearchAsync(
             It.Is<TaskSearchCriteria>(c => c.Categories != null && c.Categories.Contains(AppTaskCategory.ToDo)),
             It.IsAny<int>(),
             It.IsAny<int>(),
             It.IsAny<string>(),
-            It.IsAny<bool>()))
-            .Returns(Task.FromResult((tasks, 1)));
+            It.IsAny<bool>(),
+            It.IsAny<CancellationToken>()))
+            .ReturnsAsync(PagedResult<DomainTask>.Create(tasks, tasks.Count, 1, 10));
 
         var handler = new GetTasksQueryHandler(
             _mockRepository.Object,
@@ -580,13 +584,14 @@ public class TaskManagementUseCaseTests
             PageNumber: 2
         );
 
-        _mockRepository.Setup(x => x.GetPagedAsync(
+        _mockRepository.Setup(x => x.SearchAsync(
             It.IsAny<TaskSearchCriteria>(),
-            5,
             2,
+            5,
             It.IsAny<string>(),
-            It.IsAny<bool>()))
-            .Returns(Task.FromResult((allTasks.Skip(5).Take(5).ToList(), 15)));
+            It.IsAny<bool>(),
+            It.IsAny<CancellationToken>()))
+            .ReturnsAsync(PagedResult<DomainTask>.Create(allTasks.Skip(5).Take(5).ToList(), 15, 2, 5));
 
         var handler = new GetTasksQueryHandler(
             _mockRepository.Object,
@@ -628,7 +633,7 @@ public class TaskManagementUseCaseTests
 
         var query = new GetTaskQuery(taskId, _testUserId, IncludeSubtasks: true);
 
-        _mockRepository.Setup(x => x.GetByIdAsync(taskId))
+        _mockRepository.Setup(x => x.GetByIdAsync(taskId, It.IsAny<CancellationToken>()))
             .Returns(Task.FromResult<DomainTask?>(task));
 
         var handler = new GetTaskQueryHandler(
@@ -653,7 +658,7 @@ public class TaskManagementUseCaseTests
         var taskId = Guid.NewGuid();
         var query = new GetTaskQuery(taskId, _testUserId, IncludeSubtasks: false);
 
-        _mockRepository.Setup(x => x.GetByIdAsync(taskId))
+        _mockRepository.Setup(x => x.GetByIdAsync(taskId, It.IsAny<CancellationToken>()))
             .Returns(Task.FromResult<DomainTask?>(null));
 
         var handler = new GetTaskQueryHandler(
@@ -699,7 +704,7 @@ public class TaskManagementUseCaseTests
             UserId: _testUserId
         );
 
-        _mockRepository.Setup(x => x.GetByIdAsync(taskId))
+        _mockRepository.Setup(x => x.GetByIdAsync(taskId, It.IsAny<CancellationToken>()))
             .Returns(Task.FromResult<DomainTask?>(existingTask));
 
         var validationResult = ValidationResult.Success();
@@ -708,9 +713,9 @@ public class TaskManagementUseCaseTests
             It.IsAny<AppTaskUpdateRequest>()))
             .Returns(validationResult);
 
-        _mockRepository.Setup(x => x.UpdateAsync(It.IsAny<DomainTask>()))
+        _mockRepository.Setup(x => x.UpdateAsync(It.IsAny<DomainTask>(), It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
-        _mockRepository.Setup(x => x.SaveChangesAsync())
+        _mockRepository.Setup(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()))
             .Returns(Task.FromResult(1));
 
         var handler = new ConvertTaskCommandHandler(
@@ -727,8 +732,8 @@ public class TaskManagementUseCaseTests
         result.Value.Should().NotBeNull();
         result.Value.Category.Should().Be(4); // Project
 
-        _mockRepository.Verify(x => x.UpdateAsync(It.IsAny<DomainTask>()), Times.Once);
-        _mockRepository.Verify(x => x.SaveChangesAsync(), Times.Once);
+        _mockRepository.Verify(x => x.UpdateAsync(It.IsAny<DomainTask>(), It.IsAny<CancellationToken>()), Times.Once);
+        _mockRepository.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
@@ -754,7 +759,7 @@ public class TaskManagementUseCaseTests
             UserId: _testUserId
         );
 
-        _mockRepository.Setup(x => x.GetByIdAsync(taskId))
+        _mockRepository.Setup(x => x.GetByIdAsync(taskId, It.IsAny<CancellationToken>()))
             .Returns(Task.FromResult<DomainTask?>(existingTask));
 
         var validationResult = ValidationResult.Failure("Cannot convert from Appointment to ToDo");
@@ -776,8 +781,8 @@ public class TaskManagementUseCaseTests
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("Cannot convert");
 
-        _mockRepository.Verify(x => x.UpdateAsync(It.IsAny<DomainTask>()), Times.Never);
-        _mockRepository.Verify(x => x.SaveChangesAsync(), Times.Never);
+        _mockRepository.Verify(x => x.UpdateAsync(It.IsAny<DomainTask>(), It.IsAny<CancellationToken>()), Times.Never);
+        _mockRepository.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
 
     #endregion

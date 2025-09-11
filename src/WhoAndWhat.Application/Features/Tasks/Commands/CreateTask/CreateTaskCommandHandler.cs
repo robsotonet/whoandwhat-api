@@ -113,7 +113,7 @@ public class CreateTaskCommandHandler : IRequestHandler<CreateTaskCommand, Resul
             Category = task.Category,
             CategoryName = category.GetDisplayName(),
             Status = task.Status,
-            StatusName = status.Name,
+            StatusName = status.GetDisplayName(),
             Priority = task.Priority,
             PriorityName = priority.Name,
             DueDate = task.DueDate,

@@ -1363,4 +1363,118 @@ public class TaskRepository : Repository<DomainTask>, IAppTaskRepository
     }
 
     #endregion
+
+    #region Contact-Enhanced Retrieval Methods
+
+    public async Task<DomainTask?> GetTaskWithContactsAsync(Guid taskId, Guid userId, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            return await _dbSet
+                .Include(t => t.TaskContacts)
+                    .ThenInclude(tc => tc.Contact)
+                .FirstOrDefaultAsync(t => t.Id == taskId && t.UserId == userId && !t.IsDeleted, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving task {TaskId} with contacts for user {UserId}", taskId, userId);
+            return null;
+        }
+    }
+
+    public async Task<DomainTask?> GetTaskWithSubtasksAndContactsAsync(Guid taskId, Guid userId, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            return await _dbSet
+                .Include(t => t.Subtasks.Where(st => !st.IsDeleted))
+                    .ThenInclude(st => st.TaskContacts)
+                        .ThenInclude(tc => tc.Contact)
+                .Include(t => t.TaskContacts)
+                    .ThenInclude(tc => tc.Contact)
+                .FirstOrDefaultAsync(t => t.Id == taskId && t.UserId == userId && !t.IsDeleted, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving task {TaskId} with subtasks and contacts for user {UserId}", taskId, userId);
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Gets tasks with pagination support for testing compatibility
+    /// </summary>
+    public async Task<(IList<DomainTask>, int)> GetPagedAsync(AppTaskSearchCriteria searchCriteria, int pageSize, int pageNumber, string sortBy, bool sortDescending, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var query = _dbSet.Where(t => !t.IsDeleted);
+
+            // Apply search criteria filters
+            if (searchCriteria.UserId.HasValue)
+            {
+                query = query.Where(t => t.UserId == searchCriteria.UserId.Value);
+            }
+
+            if (searchCriteria.Categories?.Any() == true)
+            {
+                query = query.Where(t => searchCriteria.Categories.Contains(t.Category));
+            }
+
+            if (searchCriteria.Statuses?.Any() == true)
+            {
+                query = query.Where(t => searchCriteria.Statuses.Contains(t.Status));
+            }
+
+            if (searchCriteria.Priorities?.Any() == true)
+            {
+                query = query.Where(t => searchCriteria.Priorities.Contains(t.Priority));
+            }
+
+            if (!string.IsNullOrEmpty(searchCriteria.SearchTerm))
+            {
+                query = query.Where(t => EF.Functions.ILike(t.Title, $"%{searchCriteria.SearchTerm}%") ||
+                                        EF.Functions.ILike(t.Description ?? "", $"%{searchCriteria.SearchTerm}%"));
+            }
+
+            if (searchCriteria.DueDateFrom.HasValue)
+            {
+                query = query.Where(t => t.DueDate >= searchCriteria.DueDateFrom.Value);
+            }
+
+            if (searchCriteria.DueDateTo.HasValue)
+            {
+                query = query.Where(t => t.DueDate <= searchCriteria.DueDateTo.Value);
+            }
+
+            // Get total count
+            int totalCount = await query.CountAsync(cancellationToken);
+
+            // Apply sorting
+            query = sortBy.ToLowerInvariant() switch
+            {
+                "title" => sortDescending ? query.OrderByDescending(t => t.Title) : query.OrderBy(t => t.Title),
+                "duedate" => sortDescending ? query.OrderByDescending(t => t.DueDate) : query.OrderBy(t => t.DueDate),
+                "priority" => sortDescending ? query.OrderByDescending(t => t.Priority) : query.OrderBy(t => t.Priority),
+                "status" => sortDescending ? query.OrderByDescending(t => t.Status) : query.OrderBy(t => t.Status),
+                "createdat" => sortDescending ? query.OrderByDescending(t => t.CreatedAt) : query.OrderBy(t => t.CreatedAt),
+                _ => sortDescending ? query.OrderByDescending(t => t.UpdatedAt) : query.OrderBy(t => t.UpdatedAt)
+            };
+
+            // Apply pagination
+            var tasks = await query
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync(cancellationToken);
+
+            return (tasks, totalCount);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting paged tasks with criteria");
+            return (new List<DomainTask>(), 0);
+        }
+    }
+
+    #endregion
 }

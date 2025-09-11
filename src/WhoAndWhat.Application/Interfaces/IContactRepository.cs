@@ -1,11 +1,11 @@
 using WhoAndWhat.Domain.Entities;
 
-namespace WhoAndWhat.Domain.Repositories;
+namespace WhoAndWhat.Application.Interfaces;
 
 /// <summary>
 /// Repository interface for Contact entities with soft delete support
 /// </summary>
-public interface IContactRepository
+public interface IContactRepository : IRepository<Contact>
 {
     /// <summary>
     /// Gets a contact by ID including soft deleted contacts
@@ -87,4 +87,12 @@ public interface IContactRepository
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>List of matching contacts</returns>
     public Task<IEnumerable<Contact>> FindContactsAsync(string query, Guid userId, bool includeDeleted = false, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Finds a contact by invite code
+    /// </summary>
+    /// <param name="inviteCode">The invite code to search for</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>The contact with the matching invite code, or null if not found</returns>
+    public Task<Contact?> FindContactByInviteCodeAsync(string inviteCode, CancellationToken cancellationToken = default);
 }

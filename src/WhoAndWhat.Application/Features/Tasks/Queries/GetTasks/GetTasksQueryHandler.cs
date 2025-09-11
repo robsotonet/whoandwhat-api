@@ -86,7 +86,7 @@ public class GetTasksQueryHandler : IRequestHandler<GetTasksQuery, Result<PagedR
             Category = task.Category,
             CategoryName = category.GetDisplayName(),
             Status = task.Status,
-            StatusName = status.Name,
+            StatusName = status.GetDisplayName(),
             Priority = task.Priority,
             PriorityName = priority.Name,
             DueDate = task.DueDate,
@@ -100,6 +100,8 @@ public class GetTasksQueryHandler : IRequestHandler<GetTasksQuery, Result<PagedR
             {
                 TaskId = tc.TaskId,
                 ContactId = tc.ContactId,
+                ContactName = tc.Contact?.Name ?? string.Empty,
+                ContactEmail = tc.Contact?.Email ?? string.Empty,
                 Role = tc.Role
             }).ToList() ?? new List<TaskContactDto>()
         };

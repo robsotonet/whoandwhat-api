@@ -13,6 +13,7 @@ public class Contact : BaseEntity
     public User User { get; set; } = null!;
 
     public ICollection<AppTask> Tasks { get; set; } = new List<AppTask>();
+    public ICollection<TaskContact> TaskContacts { get; set; } = new List<TaskContact>();
 
     /// <summary>
     /// Checks if the contact can be soft deleted

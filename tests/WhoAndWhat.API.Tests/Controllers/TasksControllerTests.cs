@@ -14,6 +14,7 @@ using System.Text.Json;
 using WhoAndWhat.Application.DTOs.Tasks;
 using WhoAndWhat.Application.DTOs.Authentication;
 using WhoAndWhat.Application.DTOs;
+using WhoAndWhat.Application.DTOs.Contacts;
 using WhoAndWhat.Application.Interfaces;
 using WhoAndWhat.Application.Services;
 using WhoAndWhat.Domain.Services;
@@ -65,6 +66,7 @@ public class TasksControllerTests : IClassFixture<WebApplicationFactory<Program>
 
                 // Register missing services required for task management
                 services.AddScoped<IAppTaskRepository, TaskRepository>();
+                services.AddScoped<IContactRepository, ContactRepository>();
                 services.AddScoped<CategoryBusinessRuleService>();
                 services.AddScoped<CategoryWorkflowService>();
                 services.AddScoped<ITaskApplicationService, TaskApplicationService>();
@@ -114,6 +116,28 @@ public class TasksControllerTests : IClassFixture<WebApplicationFactory<Program>
         var responseContent = await response.Content.ReadAsStringAsync();
         
         return JsonSerializer.Deserialize<TaskDto>(responseContent, _jsonOptions)!;
+    }
+
+    private async Task<ContactDto> CreateTestContactAsync(string token, string name = "Test Contact")
+    {
+        var createRequest = new CreateContactRequest
+        {
+            Name = name,
+            Email = $"{name.Replace(" ", "").ToLower()}@test.com",
+            Phone = "+1234567890",
+            RelationshipType = 2 // Colleague
+        };
+
+        var content = new StringContent(
+            JsonSerializer.Serialize(createRequest, _jsonOptions),
+            Encoding.UTF8,
+            "application/json");
+
+        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        var response = await _client.PostAsync("/api/v1/contacts", content);
+        var responseContent = await response.Content.ReadAsStringAsync();
+        
+        return JsonSerializer.Deserialize<ContactDto>(responseContent, _jsonOptions)!;
     }
 
     #endregion
@@ -1152,6 +1176,562 @@ public class TasksControllerTests : IClassFixture<WebApplicationFactory<Program>
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+
+    #endregion
+
+    #region Task-Contact Management Tests
+
+    [Fact]
+    public async Task LinkContactToTask_Should_Return_Created_With_Valid_Request()
+    {
+        // Arrange
+        var token = await AuthenticationTestHelper.GetAuthTokenAsync(_client);
+        var task = await CreateTestTaskAsync(token);
+        var contact = await CreateTestContactAsync(token);
+        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        
+        var linkRequest = new LinkContactToTaskRequest
+        {
+            ContactId = contact.Id,
+            Role = "Collaborator",
+            Notes = "Test collaboration"
+        };
+
+        var content = new StringContent(
+            JsonSerializer.Serialize(linkRequest, _jsonOptions),
+            Encoding.UTF8,
+            "application/json");
+
+        // Act
+        var response = await _client.PostAsync($"/api/v1/tasks/{task.Id}/contacts", content);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        var responseContent = await response.Content.ReadAsStringAsync();
+        var result = JsonSerializer.Deserialize<TaskContactDto>(responseContent, _jsonOptions);
+        result!.ContactId.Should().Be(contact.Id);
+        result.Role.Should().Be("Collaborator");
+        result.TaskId.Should().Be(task.Id);
+    }
+
+    [Fact]
+    public async Task LinkContactToTask_Should_Return_BadRequest_With_Invalid_Role()
+    {
+        // Arrange
+        var token = await AuthenticationTestHelper.GetAuthTokenAsync(_client);
+        var task = await CreateTestTaskAsync(token);
+        var contact = await CreateTestContactAsync(token);
+        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        
+        var linkRequest = new LinkContactToTaskRequest
+        {
+            ContactId = contact.Id,
+            Role = "InvalidRole", // Invalid role
+            Notes = "Test"
+        };
+
+        var content = new StringContent(
+            JsonSerializer.Serialize(linkRequest, _jsonOptions),
+            Encoding.UTF8,
+            "application/json");
+
+        // Act
+        var response = await _client.PostAsync($"/api/v1/tasks/{task.Id}/contacts", content);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
+    public async Task LinkContactToTask_Should_Return_NotFound_With_Invalid_Task_Id()
+    {
+        // Arrange
+        var token = await AuthenticationTestHelper.GetAuthTokenAsync(_client);
+        var contact = await CreateTestContactAsync(token);
+        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        var invalidTaskId = Guid.NewGuid();
+        
+        var linkRequest = new LinkContactToTaskRequest
+        {
+            ContactId = contact.Id,
+            Role = "Observer"
+        };
+
+        var content = new StringContent(
+            JsonSerializer.Serialize(linkRequest, _jsonOptions),
+            Encoding.UTF8,
+            "application/json");
+
+        // Act
+        var response = await _client.PostAsync($"/api/v1/tasks/{invalidTaskId}/contacts", content);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    [Fact]
+    public async Task LinkContactToTask_Should_Return_NotFound_With_Invalid_Contact_Id()
+    {
+        // Arrange
+        var token = await AuthenticationTestHelper.GetAuthTokenAsync(_client);
+        var task = await CreateTestTaskAsync(token);
+        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        var invalidContactId = Guid.NewGuid();
+        
+        var linkRequest = new LinkContactToTaskRequest
+        {
+            ContactId = invalidContactId,
+            Role = "Reviewer"
+        };
+
+        var content = new StringContent(
+            JsonSerializer.Serialize(linkRequest, _jsonOptions),
+            Encoding.UTF8,
+            "application/json");
+
+        // Act
+        var response = await _client.PostAsync($"/api/v1/tasks/{task.Id}/contacts", content);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    [Fact]
+    public async Task LinkContactToTask_Should_Return_BadRequest_When_Contact_Already_Linked()
+    {
+        // Arrange
+        var token = await AuthenticationTestHelper.GetAuthTokenAsync(_client);
+        var task = await CreateTestTaskAsync(token);
+        var contact = await CreateTestContactAsync(token);
+        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        
+        // First link
+        var linkRequest = new LinkContactToTaskRequest
+        {
+            ContactId = contact.Id,
+            Role = "Owner"
+        };
+
+        var content = new StringContent(
+            JsonSerializer.Serialize(linkRequest, _jsonOptions),
+            Encoding.UTF8,
+            "application/json");
+
+        await _client.PostAsync($"/api/v1/tasks/{task.Id}/contacts", content);
+
+        // Act - Try to link again
+        var secondResponse = await _client.PostAsync($"/api/v1/tasks/{task.Id}/contacts", content);
+
+        // Assert
+        secondResponse.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
+    public async Task LinkContactToTask_Should_Return_Unauthorized_Without_Token()
+    {
+        // Arrange
+        var taskId = Guid.NewGuid();
+        var linkRequest = new LinkContactToTaskRequest
+        {
+            ContactId = Guid.NewGuid(),
+            Role = "Collaborator"
+        };
+
+        var content = new StringContent(
+            JsonSerializer.Serialize(linkRequest, _jsonOptions),
+            Encoding.UTF8,
+            "application/json");
+
+        // Act
+        var response = await _client.PostAsync($"/api/v1/tasks/{taskId}/contacts", content);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+
+    [Fact]
+    public async Task UnlinkContactFromTask_Should_Return_NoContent_With_Valid_Request()
+    {
+        // Arrange
+        var token = await AuthenticationTestHelper.GetAuthTokenAsync(_client);
+        var task = await CreateTestTaskAsync(token);
+        var contact = await CreateTestContactAsync(token);
+        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        
+        // First link the contact
+        var linkRequest = new LinkContactToTaskRequest
+        {
+            ContactId = contact.Id,
+            Role = "Collaborator"
+        };
+
+        var linkContent = new StringContent(
+            JsonSerializer.Serialize(linkRequest, _jsonOptions),
+            Encoding.UTF8,
+            "application/json");
+
+        await _client.PostAsync($"/api/v1/tasks/{task.Id}/contacts", linkContent);
+
+        // Act - Unlink the contact
+        var response = await _client.DeleteAsync($"/api/v1/tasks/{task.Id}/contacts/{contact.Id}");
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        
+        // Verify contact is no longer linked
+        var getResponse = await _client.GetAsync($"/api/v1/tasks/{task.Id}/contacts");
+        var contacts = JsonSerializer.Deserialize<List<TaskContactDto>>(
+            await getResponse.Content.ReadAsStringAsync(), _jsonOptions);
+        contacts!.Should().NotContain(c => c.ContactId == contact.Id);
+    }
+
+    [Fact]
+    public async Task UnlinkContactFromTask_Should_Return_NotFound_With_Invalid_Task_Id()
+    {
+        // Arrange
+        var token = await AuthenticationTestHelper.GetAuthTokenAsync(_client);
+        var contact = await CreateTestContactAsync(token);
+        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        var invalidTaskId = Guid.NewGuid();
+
+        // Act
+        var response = await _client.DeleteAsync($"/api/v1/tasks/{invalidTaskId}/contacts/{contact.Id}");
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    [Fact]
+    public async Task UnlinkContactFromTask_Should_Return_NotFound_With_Non_Linked_Contact()
+    {
+        // Arrange
+        var token = await AuthenticationTestHelper.GetAuthTokenAsync(_client);
+        var task = await CreateTestTaskAsync(token);
+        var contact = await CreateTestContactAsync(token);
+        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+        // Act - Try to unlink contact that was never linked
+        var response = await _client.DeleteAsync($"/api/v1/tasks/{task.Id}/contacts/{contact.Id}");
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    [Fact]
+    public async Task UpdateContactRole_Should_Return_Ok_With_Valid_Request()
+    {
+        // Arrange
+        var token = await AuthenticationTestHelper.GetAuthTokenAsync(_client);
+        var task = await CreateTestTaskAsync(token);
+        var contact = await CreateTestContactAsync(token);
+        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        
+        // First link the contact
+        var linkRequest = new LinkContactToTaskRequest
+        {
+            ContactId = contact.Id,
+            Role = "Collaborator"
+        };
+
+        var linkContent = new StringContent(
+            JsonSerializer.Serialize(linkRequest, _jsonOptions),
+            Encoding.UTF8,
+            "application/json");
+
+        await _client.PostAsync($"/api/v1/tasks/{task.Id}/contacts", linkContent);
+
+        // Act - Update the role
+        var updateRequest = new UpdateContactRoleRequest
+        {
+            Role = "Owner",
+            Notes = "Promoting to owner"
+        };
+
+        var updateContent = new StringContent(
+            JsonSerializer.Serialize(updateRequest, _jsonOptions),
+            Encoding.UTF8,
+            "application/json");
+
+        var response = await _client.PutAsync($"/api/v1/tasks/{task.Id}/contacts/{contact.Id}", updateContent);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var responseContent = await response.Content.ReadAsStringAsync();
+        var result = JsonSerializer.Deserialize<TaskContactDto>(responseContent, _jsonOptions);
+        result!.Role.Should().Be("Owner");
+        result.ContactId.Should().Be(contact.Id);
+        result.TaskId.Should().Be(task.Id);
+    }
+
+    [Fact]
+    public async Task UpdateContactRole_Should_Return_BadRequest_With_Invalid_Role()
+    {
+        // Arrange
+        var token = await AuthenticationTestHelper.GetAuthTokenAsync(_client);
+        var task = await CreateTestTaskAsync(token);
+        var contact = await CreateTestContactAsync(token);
+        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        
+        // First link the contact
+        var linkRequest = new LinkContactToTaskRequest
+        {
+            ContactId = contact.Id,
+            Role = "Collaborator"
+        };
+
+        var linkContent = new StringContent(
+            JsonSerializer.Serialize(linkRequest, _jsonOptions),
+            Encoding.UTF8,
+            "application/json");
+
+        await _client.PostAsync($"/api/v1/tasks/{task.Id}/contacts", linkContent);
+
+        // Act - Try to update with invalid role
+        var updateRequest = new UpdateContactRoleRequest
+        {
+            Role = "InvalidRole"
+        };
+
+        var updateContent = new StringContent(
+            JsonSerializer.Serialize(updateRequest, _jsonOptions),
+            Encoding.UTF8,
+            "application/json");
+
+        var response = await _client.PutAsync($"/api/v1/tasks/{task.Id}/contacts/{contact.Id}", updateContent);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
+    public async Task UpdateContactRole_Should_Return_NotFound_With_Non_Linked_Contact()
+    {
+        // Arrange
+        var token = await AuthenticationTestHelper.GetAuthTokenAsync(_client);
+        var task = await CreateTestTaskAsync(token);
+        var contact = await CreateTestContactAsync(token);
+        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+        // Act - Try to update role for contact that was never linked
+        var updateRequest = new UpdateContactRoleRequest
+        {
+            Role = "Owner"
+        };
+
+        var updateContent = new StringContent(
+            JsonSerializer.Serialize(updateRequest, _jsonOptions),
+            Encoding.UTF8,
+            "application/json");
+
+        var response = await _client.PutAsync($"/api/v1/tasks/{task.Id}/contacts/{contact.Id}", updateContent);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    [Fact]
+    public async Task GetTaskContacts_Should_Return_Ok_With_Linked_Contacts()
+    {
+        // Arrange
+        var token = await AuthenticationTestHelper.GetAuthTokenAsync(_client);
+        var task = await CreateTestTaskAsync(token);
+        var contact1 = await CreateTestContactAsync(token, "Contact 1");
+        var contact2 = await CreateTestContactAsync(token, "Contact 2");
+        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        
+        // Link both contacts
+        var linkRequest1 = new LinkContactToTaskRequest
+        {
+            ContactId = contact1.Id,
+            Role = "Owner"
+        };
+
+        var linkRequest2 = new LinkContactToTaskRequest
+        {
+            ContactId = contact2.Id,
+            Role = "Reviewer"
+        };
+
+        var linkContent1 = new StringContent(
+            JsonSerializer.Serialize(linkRequest1, _jsonOptions),
+            Encoding.UTF8,
+            "application/json");
+
+        var linkContent2 = new StringContent(
+            JsonSerializer.Serialize(linkRequest2, _jsonOptions),
+            Encoding.UTF8,
+            "application/json");
+
+        await _client.PostAsync($"/api/v1/tasks/{task.Id}/contacts", linkContent1);
+        await _client.PostAsync($"/api/v1/tasks/{task.Id}/contacts", linkContent2);
+
+        // Act
+        var response = await _client.GetAsync($"/api/v1/tasks/{task.Id}/contacts");
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var responseContent = await response.Content.ReadAsStringAsync();
+        var contacts = JsonSerializer.Deserialize<List<TaskContactDto>>(responseContent, _jsonOptions);
+        contacts!.Should().HaveCount(2);
+        contacts.Should().Contain(c => c.ContactId == contact1.Id && c.Role == "Owner");
+        contacts.Should().Contain(c => c.ContactId == contact2.Id && c.Role == "Reviewer");
+    }
+
+    [Fact]
+    public async Task GetTaskContacts_Should_Return_Empty_List_With_No_Linked_Contacts()
+    {
+        // Arrange
+        var token = await AuthenticationTestHelper.GetAuthTokenAsync(_client);
+        var task = await CreateTestTaskAsync(token);
+        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+        // Act
+        var response = await _client.GetAsync($"/api/v1/tasks/{task.Id}/contacts");
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var responseContent = await response.Content.ReadAsStringAsync();
+        var contacts = JsonSerializer.Deserialize<List<TaskContactDto>>(responseContent, _jsonOptions);
+        contacts!.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task GetTaskContacts_Should_Return_NotFound_With_Invalid_Task_Id()
+    {
+        // Arrange
+        var token = await AuthenticationTestHelper.GetAuthTokenAsync(_client);
+        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        var invalidTaskId = Guid.NewGuid();
+
+        // Act
+        var response = await _client.GetAsync($"/api/v1/tasks/{invalidTaskId}/contacts");
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    [Fact]
+    public async Task TaskContactManagement_Should_Support_Full_Lifecycle()
+    {
+        // Arrange
+        var token = await AuthenticationTestHelper.GetAuthTokenAsync(_client);
+        var task = await CreateTestTaskAsync(token, "Lifecycle Test Task");
+        var contact = await CreateTestContactAsync(token, "Lifecycle Contact");
+        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        
+        // Act & Assert - Full lifecycle test
+        
+        // 1. Initially no contacts
+        var initialResponse = await _client.GetAsync($"/api/v1/tasks/{task.Id}/contacts");
+        var initialContacts = JsonSerializer.Deserialize<List<TaskContactDto>>(
+            await initialResponse.Content.ReadAsStringAsync(), _jsonOptions);
+        initialContacts!.Should().BeEmpty();
+
+        // 2. Link contact as Collaborator
+        var linkRequest = new LinkContactToTaskRequest
+        {
+            ContactId = contact.Id,
+            Role = "Collaborator",
+            Notes = "Initial collaboration"
+        };
+
+        var linkContent = new StringContent(
+            JsonSerializer.Serialize(linkRequest, _jsonOptions),
+            Encoding.UTF8,
+            "application/json");
+
+        var linkResponse = await _client.PostAsync($"/api/v1/tasks/{task.Id}/contacts", linkContent);
+        linkResponse.StatusCode.Should().Be(HttpStatusCode.Created);
+
+        // 3. Verify contact is linked
+        var afterLinkResponse = await _client.GetAsync($"/api/v1/tasks/{task.Id}/contacts");
+        var linkedContacts = JsonSerializer.Deserialize<List<TaskContactDto>>(
+            await afterLinkResponse.Content.ReadAsStringAsync(), _jsonOptions);
+        linkedContacts!.Should().HaveCount(1);
+        linkedContacts[0].Role.Should().Be("Collaborator");
+
+        // 4. Update role to Owner
+        var updateRequest = new UpdateContactRoleRequest
+        {
+            Role = "Owner",
+            Notes = "Promoted to owner"
+        };
+
+        var updateContent = new StringContent(
+            JsonSerializer.Serialize(updateRequest, _jsonOptions),
+            Encoding.UTF8,
+            "application/json");
+
+        var updateResponse = await _client.PutAsync($"/api/v1/tasks/{task.Id}/contacts/{contact.Id}", updateContent);
+        updateResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        // 5. Verify role was updated
+        var afterUpdateResponse = await _client.GetAsync($"/api/v1/tasks/{task.Id}/contacts");
+        var updatedContacts = JsonSerializer.Deserialize<List<TaskContactDto>>(
+            await afterUpdateResponse.Content.ReadAsStringAsync(), _jsonOptions);
+        updatedContacts![0].Role.Should().Be("Owner");
+
+        // 6. Unlink contact
+        var unlinkResponse = await _client.DeleteAsync($"/api/v1/tasks/{task.Id}/contacts/{contact.Id}");
+        unlinkResponse.StatusCode.Should().Be(HttpStatusCode.NoContent);
+
+        // 7. Verify contact is no longer linked
+        var finalResponse = await _client.GetAsync($"/api/v1/tasks/{task.Id}/contacts");
+        var finalContacts = JsonSerializer.Deserialize<List<TaskContactDto>>(
+            await finalResponse.Content.ReadAsStringAsync(), _jsonOptions);
+        finalContacts!.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task TaskContactManagement_Should_Support_Multiple_Role_Types()
+    {
+        // Arrange
+        var token = await AuthenticationTestHelper.GetAuthTokenAsync(_client);
+        var task = await CreateTestTaskAsync(token);
+        var owner = await CreateTestContactAsync(token, "Owner Contact");
+        var collaborator = await CreateTestContactAsync(token, "Collaborator Contact");
+        var reviewer = await CreateTestContactAsync(token, "Reviewer Contact");
+        var observer = await CreateTestContactAsync(token, "Observer Contact");
+        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+        var roles = new[]
+        {
+            (owner.Id, "Owner"),
+            (collaborator.Id, "Collaborator"),
+            (reviewer.Id, "Reviewer"),
+            (observer.Id, "Observer")
+        };
+
+        // Act - Link all contacts with different roles
+        foreach (var (contactId, role) in roles)
+        {
+            var linkRequest = new LinkContactToTaskRequest
+            {
+                ContactId = contactId,
+                Role = role,
+                Notes = $"Testing {role} role"
+            };
+
+            var content = new StringContent(
+                JsonSerializer.Serialize(linkRequest, _jsonOptions),
+                Encoding.UTF8,
+                "application/json");
+
+            var response = await _client.PostAsync($"/api/v1/tasks/{task.Id}/contacts", content);
+            response.StatusCode.Should().Be(HttpStatusCode.Created);
+        }
+
+        // Assert - Verify all roles are correctly assigned
+        var getResponse = await _client.GetAsync($"/api/v1/tasks/{task.Id}/contacts");
+        var contacts = JsonSerializer.Deserialize<List<TaskContactDto>>(
+            await getResponse.Content.ReadAsStringAsync(), _jsonOptions);
+        
+        contacts!.Should().HaveCount(4);
+        foreach (var (contactId, expectedRole) in roles)
+        {
+            contacts.Should().Contain(c => c.ContactId == contactId && c.Role == expectedRole);
+        }
     }
 
     #endregion

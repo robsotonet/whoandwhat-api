@@ -10,6 +10,7 @@ using WhoAndWhat.Domain.ValueObjects;
 using Xunit;
 using DomainTask = WhoAndWhat.Domain.Entities.AppTask;
 using DomainTaskStatus = WhoAndWhat.Domain.ValueObjects.AppTaskStatus;
+using TaskSearchCriteria = WhoAndWhat.Domain.ValueObjects.AppTaskSearchCriteria;
 
 namespace WhoAndWhat.Application.Tests.Features.Tasks.Queries;
 
@@ -82,7 +83,8 @@ public class GetTasksQueryHandlerTests
             TestPageNumber,
             TestPageSize,
             "UpdatedAt",
-            true))
+            true,
+            It.IsAny<CancellationToken>()))
             .ReturnsAsync(pagedResult);
 
         // Act
@@ -109,7 +111,8 @@ public class GetTasksQueryHandlerTests
             TestPageNumber,
             TestPageSize,
             "UpdatedAt",
-            true), Times.Once);
+            true,
+            It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
@@ -128,7 +131,8 @@ public class GetTasksQueryHandlerTests
             TestPageNumber,
             TestPageSize,
             "UpdatedAt",
-            true))
+            true,
+            It.IsAny<CancellationToken>()))
             .ReturnsAsync(pagedResult);
 
         // Act
@@ -141,7 +145,8 @@ public class GetTasksQueryHandlerTests
             TestPageNumber,
             TestPageSize,
             "UpdatedAt",
-            true), Times.Once);
+            true,
+            It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
@@ -160,7 +165,8 @@ public class GetTasksQueryHandlerTests
             TestPageNumber,
             TestPageSize,
             "UpdatedAt",
-            true))
+            true,
+            It.IsAny<CancellationToken>()))
             .ReturnsAsync(pagedResult);
 
         // Act
@@ -173,7 +179,8 @@ public class GetTasksQueryHandlerTests
             TestPageNumber,
             TestPageSize,
             "UpdatedAt",
-            true), Times.Once);
+            true,
+            It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
@@ -193,7 +200,8 @@ public class GetTasksQueryHandlerTests
             TestPageNumber,
             TestPageSize,
             "UpdatedAt",
-            true))
+            true,
+            It.IsAny<CancellationToken>()))
             .ReturnsAsync(pagedResult);
 
         // Act
@@ -207,7 +215,8 @@ public class GetTasksQueryHandlerTests
             TestPageNumber,
             TestPageSize,
             "UpdatedAt",
-            true), Times.Once);
+            true,
+            It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
@@ -234,7 +243,8 @@ public class GetTasksQueryHandlerTests
             TestPageNumber,
             TestPageSize,
             "UpdatedAt",
-            true))
+            true,
+            It.IsAny<CancellationToken>()))
             .ReturnsAsync(pagedResult);
 
         // Act
@@ -251,7 +261,8 @@ public class GetTasksQueryHandlerTests
             TestPageNumber,
             TestPageSize,
             "UpdatedAt",
-            true), Times.Once);
+            true,
+            It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
@@ -278,7 +289,8 @@ public class GetTasksQueryHandlerTests
             TestPageNumber,
             TestPageSize,
             "UpdatedAt",
-            true))
+            true,
+            It.IsAny<CancellationToken>()))
             .ReturnsAsync(pagedResult);
 
         // Act
@@ -297,7 +309,8 @@ public class GetTasksQueryHandlerTests
             TestPageNumber,
             TestPageSize,
             "UpdatedAt",
-            true), Times.Once);
+            true,
+            It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
@@ -320,7 +333,8 @@ public class GetTasksQueryHandlerTests
             3,
             5,
             "Title",
-            false))
+            false,
+            It.IsAny<CancellationToken>()))
             .ReturnsAsync(pagedResult);
 
         // Act
@@ -336,7 +350,8 @@ public class GetTasksQueryHandlerTests
             3,
             5,
             "Title",
-            false), Times.Once);
+            false,
+            It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
@@ -354,7 +369,8 @@ public class GetTasksQueryHandlerTests
             TestPageNumber,
             TestPageSize,
             "UpdatedAt", // Default value
-            true))
+            true,
+            It.IsAny<CancellationToken>()))
             .ReturnsAsync(pagedResult);
 
         // Act
@@ -367,7 +383,8 @@ public class GetTasksQueryHandlerTests
             TestPageNumber,
             TestPageSize,
             "UpdatedAt",
-            true), Times.Once);
+            true,
+            It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
@@ -420,7 +437,8 @@ public class GetTasksQueryHandlerTests
             TestPageNumber,
             TestPageSize,
             "UpdatedAt",
-            true))
+            true,
+            It.IsAny<CancellationToken>()))
             .ReturnsAsync(pagedResult);
 
         // Act
@@ -466,7 +484,8 @@ public class GetTasksQueryHandlerTests
             TestPageNumber,
             TestPageSize,
             "UpdatedAt",
-            true))
+            true,
+            It.IsAny<CancellationToken>()))
             .ReturnsAsync(pagedResult);
 
         // Act
@@ -508,7 +527,8 @@ public class GetTasksQueryHandlerTests
             TestPageNumber,
             TestPageSize,
             "UpdatedAt",
-            true))
+            true,
+            It.IsAny<CancellationToken>()))
             .ReturnsAsync(pagedResult);
 
         // Act
@@ -535,7 +555,8 @@ public class GetTasksQueryHandlerTests
             TestPageNumber,
             TestPageSize,
             "UpdatedAt",
-            true))
+            true,
+            It.IsAny<CancellationToken>()))
             .ThrowsAsync(new Exception("Database connection failed"));
 
         // Act
@@ -595,7 +616,8 @@ public class GetTasksQueryHandlerTests
             TestPageNumber,
             TestPageSize,
             "UpdatedAt",
-            true))
+            true,
+            It.IsAny<CancellationToken>()))
             .ReturnsAsync(pagedResult);
 
         // Act

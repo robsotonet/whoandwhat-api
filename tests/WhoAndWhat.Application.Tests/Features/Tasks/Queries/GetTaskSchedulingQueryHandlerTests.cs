@@ -52,7 +52,8 @@ public class GetTaskSchedulingQueryHandlerTests
             1,
             40,
             "DueDate",
-            false))
+            false,
+            It.IsAny<CancellationToken>()))
             .ReturnsAsync(pagedResult);
 
         _mockCategoryBusinessRuleService.Setup(x => x.GetSchedulingSuggestions(It.IsAny<IEnumerable<DomainTask>>()))
@@ -93,7 +94,8 @@ public class GetTaskSchedulingQueryHandlerTests
             1,
             40,
             "DueDate",
-            false))
+            false,
+            It.IsAny<CancellationToken>()))
             .ReturnsAsync(pagedResult);
 
         _mockCategoryBusinessRuleService.Setup(x => x.GetSchedulingSuggestions(It.IsAny<IEnumerable<DomainTask>>()))
@@ -113,7 +115,8 @@ public class GetTaskSchedulingQueryHandlerTests
             1,
             40, // MaxSuggestions * 2
             "DueDate",
-            false), Times.Once);
+            false,
+            It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
@@ -133,7 +136,8 @@ public class GetTaskSchedulingQueryHandlerTests
             1,
             4, // MaxSuggestions * 2
             "DueDate",
-            false))
+            false,
+            It.IsAny<CancellationToken>()))
             .ReturnsAsync(pagedResult);
 
         _mockCategoryBusinessRuleService.Setup(x => x.GetSchedulingSuggestions(It.IsAny<IEnumerable<DomainTask>>()))
@@ -162,7 +166,8 @@ public class GetTaskSchedulingQueryHandlerTests
             1,
             40,
             "DueDate",
-            false))
+            false,
+            It.IsAny<CancellationToken>()))
             .ReturnsAsync(pagedResult);
 
         // Act
@@ -209,7 +214,7 @@ public class GetTaskSchedulingQueryHandlerTests
 
         var schedulingResult = new SchedulingSuggestions { Suggestions = suggestions };
 
-        _mockTaskRepository.Setup(x => x.SearchAsync(It.IsAny<AppTaskSearchCriteria>(), 1, 40, "DueDate", false))
+        _mockTaskRepository.Setup(x => x.SearchAsync(It.IsAny<AppTaskSearchCriteria>(), 1, 40, "DueDate", false, It.IsAny<CancellationToken>()))
             .ReturnsAsync(pagedResult);
 
         _mockCategoryBusinessRuleService.Setup(x => x.GetSchedulingSuggestions(It.IsAny<IEnumerable<DomainTask>>()))
@@ -257,7 +262,7 @@ public class GetTaskSchedulingQueryHandlerTests
 
         var schedulingResult = new SchedulingSuggestions { Suggestions = new List<SchedulingSuggestion> { suggestion } };
 
-        _mockTaskRepository.Setup(x => x.SearchAsync(It.IsAny<AppTaskSearchCriteria>(), 1, 40, "DueDate", false))
+        _mockTaskRepository.Setup(x => x.SearchAsync(It.IsAny<AppTaskSearchCriteria>(), 1, 40, "DueDate", false, It.IsAny<CancellationToken>()))
             .ReturnsAsync(pagedResult);
 
         _mockCategoryBusinessRuleService.Setup(x => x.GetSchedulingSuggestions(It.IsAny<IEnumerable<DomainTask>>()))
@@ -291,7 +296,8 @@ public class GetTaskSchedulingQueryHandlerTests
             1,
             40,
             "DueDate",
-            false))
+            false,
+            It.IsAny<CancellationToken>()))
             .ThrowsAsync(new Exception("Database connection failed"));
 
         // Act
@@ -313,7 +319,7 @@ public class GetTaskSchedulingQueryHandlerTests
         var tasks = CreateSampleTasks(userId);
         var pagedResult = PagedResult<DomainTask>.Create(tasks, tasks.Count, 1, 40);
 
-        _mockTaskRepository.Setup(x => x.SearchAsync(It.IsAny<AppTaskSearchCriteria>(), 1, 40, "DueDate", false))
+        _mockTaskRepository.Setup(x => x.SearchAsync(It.IsAny<AppTaskSearchCriteria>(), 1, 40, "DueDate", false, It.IsAny<CancellationToken>()))
             .ReturnsAsync(pagedResult);
 
         _mockCategoryBusinessRuleService.Setup(x => x.GetSchedulingSuggestions(It.IsAny<IEnumerable<DomainTask>>()))
@@ -338,7 +344,7 @@ public class GetTaskSchedulingQueryHandlerTests
         var pagedResult = PagedResult<DomainTask>.Create(tasks, tasks.Count, 1, 40);
         var schedulingSuggestions = CreateSchedulingSuggestions(tasks);
 
-        _mockTaskRepository.Setup(x => x.SearchAsync(It.IsAny<AppTaskSearchCriteria>(), 1, 40, "DueDate", false))
+        _mockTaskRepository.Setup(x => x.SearchAsync(It.IsAny<AppTaskSearchCriteria>(), 1, 40, "DueDate", false, It.IsAny<CancellationToken>()))
             .ReturnsAsync(pagedResult);
 
         _mockCategoryBusinessRuleService.Setup(x => x.GetSchedulingSuggestions(It.IsAny<IEnumerable<DomainTask>>()))
@@ -359,7 +365,8 @@ public class GetTaskSchedulingQueryHandlerTests
             1,
             40,
             "DueDate",
-            false), Times.Once);
+            false,
+            It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
@@ -374,7 +381,7 @@ public class GetTaskSchedulingQueryHandlerTests
 
         var emptySuggestions = new SchedulingSuggestions { Suggestions = new List<SchedulingSuggestion>() };
 
-        _mockTaskRepository.Setup(x => x.SearchAsync(It.IsAny<AppTaskSearchCriteria>(), 1, 40, "DueDate", false))
+        _mockTaskRepository.Setup(x => x.SearchAsync(It.IsAny<AppTaskSearchCriteria>(), 1, 40, "DueDate", false, It.IsAny<CancellationToken>()))
             .ReturnsAsync(pagedResult);
 
         _mockCategoryBusinessRuleService.Setup(x => x.GetSchedulingSuggestions(It.IsAny<IEnumerable<DomainTask>>()))
@@ -405,7 +412,8 @@ public class GetTaskSchedulingQueryHandlerTests
             1,
             10, // Should be customMaxSuggestions * 2
             "DueDate",
-            false))
+            false,
+            It.IsAny<CancellationToken>()))
             .ReturnsAsync(pagedResult);
 
         _mockCategoryBusinessRuleService.Setup(x => x.GetSchedulingSuggestions(It.IsAny<IEnumerable<DomainTask>>()))
@@ -422,7 +430,8 @@ public class GetTaskSchedulingQueryHandlerTests
             1,
             10, // Verify that customMaxSuggestions * 2 was used
             "DueDate",
-            false), Times.Once);
+            false,
+            It.IsAny<CancellationToken>()), Times.Once);
     }
 
     // Helper methods

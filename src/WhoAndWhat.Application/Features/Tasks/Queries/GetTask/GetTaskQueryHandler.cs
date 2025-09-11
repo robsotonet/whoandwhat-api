@@ -28,10 +28,10 @@ public class GetTaskQueryHandler : IRequestHandler<GetTaskQuery, Result<TaskDto>
         try
         {
             var task = request.IncludeSubtasks
-                ? await _taskRepository.GetByIdWithSubtasksAsync(request.TaskId)
-                : await _taskRepository.GetByIdAsync(request.TaskId);
+                ? await _taskRepository.GetTaskWithSubtasksAndContactsAsync(request.TaskId, request.UserId)
+                : await _taskRepository.GetTaskWithContactsAsync(request.TaskId, request.UserId);
 
-            if (task == null || task.UserId != request.UserId)
+            if (task == null)
             {
                 return Result<TaskDto>.Failure("Task not found");
             }
@@ -60,7 +60,7 @@ public class GetTaskQueryHandler : IRequestHandler<GetTaskQuery, Result<TaskDto>
             Category = task.Category,
             CategoryName = category.GetDisplayName(),
             Status = task.Status,
-            StatusName = status.Name,
+            StatusName = status.GetDisplayName(),
             Priority = task.Priority,
             PriorityName = priority.Name,
             DueDate = task.DueDate,
@@ -74,6 +74,8 @@ public class GetTaskQueryHandler : IRequestHandler<GetTaskQuery, Result<TaskDto>
             {
                 TaskId = tc.TaskId,
                 ContactId = tc.ContactId,
+                ContactName = tc.Contact?.Name ?? string.Empty,
+                ContactEmail = tc.Contact?.Email ?? string.Empty,
                 Role = tc.Role
             }).ToList() ?? new List<TaskContactDto>()
         };

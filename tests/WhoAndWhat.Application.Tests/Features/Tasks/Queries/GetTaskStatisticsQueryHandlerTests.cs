@@ -105,7 +105,8 @@ public class GetTaskStatisticsQueryHandlerTests
                 c.UserId == userId &&
                 c.CreatedFrom == fromDate &&
                 c.CreatedTo == toDate &&
-                c.IncludeArchived == true)), 
+                c.IncludeArchived == true),
+            It.IsAny<CancellationToken>()), 
             Times.AtLeastOnce);
     }
 
@@ -132,7 +133,8 @@ public class GetTaskStatisticsQueryHandlerTests
             It.Is<AppTaskSearchCriteria>(c => 
                 c.UserId == userId &&
                 c.Categories != null &&
-                c.Categories.Contains((int)AppTaskCategory.ToDo))))
+                c.Categories.Contains((int)AppTaskCategory.ToDo)),
+            It.IsAny<CancellationToken>()))
             .ReturnsAsync(todoStats);
 
         SetupOtherCategoryStatisticsMocks(userId);
@@ -178,7 +180,8 @@ public class GetTaskStatisticsQueryHandlerTests
             It.Is<AppTaskSearchCriteria>(c => 
                 c.UserId == userId &&
                 c.Priorities != null &&
-                c.Priorities.Contains((int)Priority.Urgent))))
+                c.Priorities.Contains((int)Priority.Urgent)),
+            It.IsAny<CancellationToken>()))
             .ReturnsAsync(urgentStats);
 
         SetupOtherPriorityStatisticsMocks(userId);
@@ -253,7 +256,8 @@ public class GetTaskStatisticsQueryHandlerTests
         _mockTaskRepository.Setup(x => x.GetStatisticsAsync(
             It.Is<AppTaskSearchCriteria>(c => 
                 c.Categories != null &&
-                c.Categories.Contains((int)AppTaskCategory.Idea))))
+                c.Categories.Contains((int)AppTaskCategory.Idea)),
+            It.IsAny<CancellationToken>()))
             .ReturnsAsync(emptyCategory);
 
         SetupOtherCategoryStatisticsMocks(userId);
@@ -330,7 +334,7 @@ public class GetTaskStatisticsQueryHandlerTests
         var userId = Guid.NewGuid();
         var query = new GetTaskStatisticsQuery(userId);
 
-        _mockTaskRepository.Setup(x => x.GetStatisticsAsync(It.IsAny<AppTaskSearchCriteria>()))
+        _mockTaskRepository.Setup(x => x.GetStatisticsAsync(It.IsAny<AppTaskSearchCriteria>(), It.IsAny<CancellationToken>()))
             .ThrowsAsync(new Exception("Database connection failed"));
 
         // Act
@@ -391,7 +395,8 @@ public class GetTaskStatisticsQueryHandlerTests
 
         // Verify that all calls included archived tasks
         _mockTaskRepository.Verify(x => x.GetStatisticsAsync(
-            It.Is<AppTaskSearchCriteria>(c => c.IncludeArchived == true)), 
+            It.Is<AppTaskSearchCriteria>(c => c.IncludeArchived == true),
+            It.IsAny<CancellationToken>()), 
             Times.AtLeast(1 + AppTaskCategory.GetAll().Count() + Priority.GetAll().Count()));
     }
 
@@ -405,7 +410,8 @@ public class GetTaskStatisticsQueryHandlerTests
                 c.CreatedTo == to &&
                 c.IncludeArchived == true &&
                 c.Categories == null &&
-                c.Priorities == null)))
+                c.Priorities == null),
+            It.IsAny<CancellationToken>()))
             .ReturnsAsync(stats);
     }
 
@@ -428,7 +434,8 @@ public class GetTaskStatisticsQueryHandlerTests
                     c.CreatedTo == to &&
                     c.IncludeArchived == true &&
                     c.Categories != null &&
-                    c.Categories.Contains(category.Value))))
+                    c.Categories.Contains(category.Value)),
+                It.IsAny<CancellationToken>()))
                 .ReturnsAsync(categoryStats);
         }
     }
@@ -441,7 +448,8 @@ public class GetTaskStatisticsQueryHandlerTests
             _mockTaskRepository.Setup(x => x.GetStatisticsAsync(
                 It.Is<AppTaskSearchCriteria>(c => 
                     c.Categories != null &&
-                    c.Categories.Contains(category.Value))))
+                    c.Categories.Contains(category.Value)),
+                It.IsAny<CancellationToken>()))
                 .ReturnsAsync(categoryStats);
         }
     }
@@ -464,7 +472,8 @@ public class GetTaskStatisticsQueryHandlerTests
                     c.CreatedTo == to &&
                     c.IncludeArchived == true &&
                     c.Priorities != null &&
-                    c.Priorities.Contains(priority.Value))))
+                    c.Priorities.Contains(priority.Value)),
+                It.IsAny<CancellationToken>()))
                 .ReturnsAsync(priorityStats);
         }
     }
@@ -477,7 +486,8 @@ public class GetTaskStatisticsQueryHandlerTests
             _mockTaskRepository.Setup(x => x.GetStatisticsAsync(
                 It.Is<AppTaskSearchCriteria>(c => 
                     c.Priorities != null &&
-                    c.Priorities.Contains(priority.Value))))
+                    c.Priorities.Contains(priority.Value)),
+                It.IsAny<CancellationToken>()))
                 .ReturnsAsync(priorityStats);
         }
     }
@@ -490,7 +500,8 @@ public class GetTaskStatisticsQueryHandlerTests
             _mockTaskRepository.Setup(x => x.GetStatisticsAsync(
                 It.Is<AppTaskSearchCriteria>(c => 
                     c.Categories != null &&
-                    c.Categories.Contains(category.Value))))
+                    c.Categories.Contains(category.Value)),
+                It.IsAny<CancellationToken>()))
                 .ReturnsAsync(emptyStats);
         }
     }
@@ -503,7 +514,8 @@ public class GetTaskStatisticsQueryHandlerTests
             _mockTaskRepository.Setup(x => x.GetStatisticsAsync(
                 It.Is<AppTaskSearchCriteria>(c => 
                     c.Priorities != null &&
-                    c.Priorities.Contains(priority.Value))))
+                    c.Priorities.Contains(priority.Value)),
+                It.IsAny<CancellationToken>()))
                 .ReturnsAsync(emptyStats);
         }
     }
