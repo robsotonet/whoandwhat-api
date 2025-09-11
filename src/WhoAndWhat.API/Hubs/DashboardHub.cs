@@ -196,6 +196,127 @@ public class DashboardHub : Hub
     }
 
     /// <summary>
+    /// Acknowledges receipt of motivational content
+    /// </summary>
+    /// <param name="deliveryId">Delivery log ID</param>
+    /// <param name="contentId">Content ID</param>
+    /// <param name="engagementType">Type of engagement (viewed, clicked, etc.)</param>
+    /// <param name="viewDuration">How long user viewed the content</param>
+    public async Task AcknowledgeMotivationalContent(string deliveryId, string contentId, string engagementType, int? viewDurationSeconds = null)
+    {
+        try
+        {
+            var userId = GetUserIdFromContext();
+            if (!userId.HasValue)
+            {
+                await Clients.Caller.SendAsync("Error", "User not authenticated");
+                return;
+            }
+
+            if (!Guid.TryParse(deliveryId, out var deliveryGuid) || !Guid.TryParse(contentId, out var contentGuid))
+            {
+                await Clients.Caller.SendAsync("Error", "Invalid delivery ID or content ID");
+                return;
+            }
+
+            if (!Enum.TryParse<WhoAndWhat.Domain.Entities.ContentEngagementType>(engagementType, true, out var engagement))
+            {
+                await Clients.Caller.SendAsync("Error", "Invalid engagement type");
+                return;
+            }
+
+            // Get the motivational content service from DI
+            var contentService = Context.GetHttpContext()?.RequestServices
+                .GetService<WhoAndWhat.Application.Interfaces.IMotivationalContentService>();
+
+            if (contentService != null)
+            {
+                TimeSpan? viewDuration = viewDurationSeconds.HasValue 
+                    ? TimeSpan.FromSeconds(viewDurationSeconds.Value) 
+                    : null;
+
+                var success = await contentService.LogContentEngagementAsync(
+                    userId.Value,
+                    contentGuid,
+                    engagement,
+                    deliveryGuid,
+                    viewDuration: viewDuration);
+
+                if (success)
+                {
+                    await Clients.Caller.SendAsync("ContentEngagementRecorded", new
+                    {
+                        deliveryId,
+                        contentId,
+                        engagementType,
+                        timestamp = DateTime.UtcNow
+                    });
+
+                    _logger.LogDebug("Recorded content engagement {EngagementType} for user {UserId} on content {ContentId}",
+                        engagementType, userId.Value, contentId);
+                }
+                else
+                {
+                    await Clients.Caller.SendAsync("Error", "Failed to record content engagement");
+                }
+            }
+            else
+            {
+                await Clients.Caller.SendAsync("Error", "Content service not available");
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error acknowledging motivational content for connection {ConnectionId}", Context.ConnectionId);
+            await Clients.Caller.SendAsync("Error", "Failed to acknowledge content");
+        }
+    }
+
+    /// <summary>
+    /// Requests immediate motivational content delivery
+    /// </summary>
+    /// <param name="triggerReason">Reason for requesting content (dashboard_view, manual_request, etc.)</param>
+    public async Task RequestMotivationalContent(string triggerReason = "manual_request")
+    {
+        try
+        {
+            var userId = GetUserIdFromContext();
+            if (!userId.HasValue)
+            {
+                await Clients.Caller.SendAsync("Error", "User not authenticated");
+                return;
+            }
+
+            // Get the content scheduling service from DI
+            var schedulingService = Context.GetHttpContext()?.RequestServices
+                .GetService<WhoAndWhat.Application.Services.ContentSchedulingService>();
+
+            if (schedulingService != null)
+            {
+                await schedulingService.TriggerContentDeliveryAsync(userId.Value, triggerReason);
+                
+                await Clients.Caller.SendAsync("ContentRequested", new
+                {
+                    triggerReason,
+                    timestamp = DateTime.UtcNow
+                });
+
+                _logger.LogDebug("Triggered content delivery for user {UserId} with reason '{TriggerReason}'",
+                    userId.Value, triggerReason);
+            }
+            else
+            {
+                await Clients.Caller.SendAsync("Error", "Content scheduling service not available");
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error requesting motivational content for connection {ConnectionId}", Context.ConnectionId);
+            await Clients.Caller.SendAsync("Error", "Failed to request content");
+        }
+    }
+
+    /// <summary>
     /// Request productivity metrics for a specific period
     /// </summary>
     /// <param name="period">Time period for metrics</param>

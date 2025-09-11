@@ -123,6 +123,9 @@ try
     // SignalR for real-time updates
     builder.Services.AddSignalRConfiguration(builder.Configuration);
 
+    // Motivational Content Management
+    builder.Services.AddMotivationalContentServices(builder.Configuration);
+
     builder.Services.AddControllers(options =>
     {
         options.SuppressAsyncSuffixInActionNames = false;

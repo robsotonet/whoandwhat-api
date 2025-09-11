@@ -23,6 +23,12 @@ public class DashboardPerformanceMonitoringService : IHostedService, IDisposable
     private readonly ConcurrentQueue<DashboardPerformanceSnapshot> _performanceHistory = new();
     private readonly ConcurrentDictionary<string, PerformanceThreshold> _thresholds = new();
     private readonly ConcurrentDictionary<string, DateTime> _lastAlerts = new();
+    
+    /// <summary>
+    /// Cache the latest performance snapshot for O(1) access instead of O(n) LastOrDefault() enumeration.
+    /// Thread-safe with volatile semantics to ensure visibility across threads.
+    /// </summary>
+    private volatile DashboardPerformanceSnapshot? _latestSnapshot;
 
     public DashboardPerformanceMonitoringService(
         IDashboardCacheService dashboardCacheService,
@@ -88,6 +94,9 @@ public class DashboardPerformanceMonitoringService : IHostedService, IDisposable
             };
 
             _performanceHistory.Enqueue(snapshot);
+            
+            // Update latest snapshot for efficient access (O(1) vs O(n) enumeration)
+            _latestSnapshot = snapshot;
 
             // Keep only last 288 snapshots (24 hours at 5-minute intervals)
             while (_performanceHistory.Count > 288)
@@ -121,7 +130,8 @@ public class DashboardPerformanceMonitoringService : IHostedService, IDisposable
                 return;
             }
 
-            var latestSnapshot = _performanceHistory.LastOrDefault();
+            // Use cached latest snapshot for O(1) access instead of O(n) enumeration
+            var latestSnapshot = _latestSnapshot;
             if (latestSnapshot == null)
             {
                 return;

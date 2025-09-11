@@ -65,7 +65,7 @@ public class GetSharedTasksQueryHandlerTests
     [InlineData("observer", false, false, false, true)]
     [InlineData("unknown", false, false, false, true)]
     [InlineData("", false, false, false, true)]
-    public Task ApplyAuthorizationRules_DifferentRoles_ShouldSetCorrectPermissions(
+    public void ApplyAuthorizationRules_DifferentRoles_ShouldSetCorrectPermissions(
         string role, bool canEdit, bool canDelete, bool canComment, bool canViewDetails)
     {
         // Arrange
@@ -86,11 +86,10 @@ public class GetSharedTasksQueryHandlerTests
         sharedTask.CanDelete.Should().Be(canDelete, $"CanDelete should be {canDelete} for role {role}");
         sharedTask.CanComment.Should().Be(canComment, $"CanComment should be {canComment} for role {role}");
         sharedTask.CanViewDetails.Should().Be(canViewDetails, $"CanViewDetails should be {canViewDetails} for role {role}");
-        return Task.CompletedTask;
     }
 
     [Fact]
-    public Task ApplyAuthorizationRules_CaseInsensitiveRoles_ShouldWorkCorrectly()
+    public void ApplyAuthorizationRules_CaseInsensitiveRoles_ShouldWorkCorrectly()
     {
         // Arrange
         var testCases = new[]
@@ -127,8 +126,6 @@ public class GetSharedTasksQueryHandlerTests
             sharedTask.CanComment.Should().Be(canComment, $"CanComment should be {canComment} for role {role}");
             sharedTask.CanViewDetails.Should().Be(canViewDetails, $"CanViewDetails should be {canViewDetails} for role {role}");
         }
-
-        return Task.CompletedTask;
     }
 
     [Fact]
