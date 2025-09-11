@@ -1,6 +1,7 @@
 using MediatR;
 using Microsoft.Extensions.Logging;
 using WhoAndWhat.Application.Common;
+using WhoAndWhat.Application.DTOs;
 using WhoAndWhat.Application.Interfaces;
 using WhoAndWhat.Domain.ValueObjects;
 
@@ -34,7 +35,9 @@ public sealed class GetOverdueTasksQueryHandler
             var today = DateTime.UtcNow.Date;
 
             // Get all tasks for the user
-            var allTasks = await _taskRepository.GetTasksByUserIdAsync(request.UserId, cancellationToken);
+            var filter = new TaskFilter();
+            filter.PageSize = 10000; // Get all tasks
+            var (allTasks, _) = await _taskRepository.GetTasksByUserIdAsync(request.UserId, filter, cancellationToken);
             
             // Filter to overdue tasks (active tasks with due date in the past)
             var overdueTasks = allTasks
@@ -47,13 +50,13 @@ public sealed class GetOverdueTasksQueryHandler
 
             // Apply additional filters
             if (!string.IsNullOrWhiteSpace(request.CategoryFilter) && 
-                Enum.TryParse<AppTaskCategory>(request.CategoryFilter, true, out var categoryFilter))
+                AppTaskCategory.TryFromName(request.CategoryFilter, out var categoryFilter) && categoryFilter != null)
             {
                 overdueTasks = overdueTasks.Where(t => t.Category == (int)categoryFilter).ToList();
             }
 
             if (!string.IsNullOrWhiteSpace(request.PriorityFilter) && 
-                Enum.TryParse<Priority>(request.PriorityFilter, true, out var priorityFilter))
+                Priority.TryFromName(request.PriorityFilter, out var priorityFilter) && priorityFilter != null)
             {
                 overdueTasks = overdueTasks.Where(t => t.Priority == (int)priorityFilter).ToList();
             }
@@ -76,7 +79,7 @@ public sealed class GetOverdueTasksQueryHandler
             var summary = CalculateSummary(overdueTasks, today);
 
             // Calculate analytics
-            var analytics = await CalculateAnalytics(overdueTasks, allTasks, today, cancellationToken);
+            var analytics = await CalculateAnalytics(overdueTasks, allTasks.ToList(), today, cancellationToken);
 
             var response = new GetOverdueTasksResponse(
                 Tasks: taskDtos,
@@ -109,18 +112,18 @@ public sealed class GetOverdueTasksQueryHandler
             Priority: ((Priority)task.Priority).ToString(),
             DueDate: task.DueDate.Value,
             DaysOverdue: daysOverdue,
-            CreatedDate: task.CreatedDate,
-            LastModifiedDate: task.LastModifiedDate,
-            Tags: task.Tags ?? new List<string>(),
-            HasReminders: task.ReminderDate.HasValue,
+            CreatedDate: task.CreatedAt,
+            LastModifiedDate: task.UpdatedAt,
+            Tags: new List<string>(), // Tags not implemented yet
+            HasReminders: false, // Reminders not implemented yet
             UrgencyLevel: urgencyLevel
         );
     }
 
     private string CalculateUrgencyLevel(int priority, int daysOverdue)
     {
-        // High urgency: Critical priority OR more than 7 days overdue
-        if (priority == (int)Priority.Critical || daysOverdue > 7)
+        // High urgency: Urgent priority OR more than 7 days overdue
+        if (priority == (int)Priority.Urgent || daysOverdue > 7)
             return "High";
 
         // Medium urgency: High priority OR more than 3 days overdue
@@ -232,14 +235,15 @@ public sealed class GetOverdueTasksQueryHandler
                                                !t.IsDeleted);
 
             // Tasks that were resolved on this date (completed overdue tasks)
-            var resolved = allTasks.Count(t => t.CompletedDate?.Date == date && 
+            var resolved = allTasks.Count(t => t.UpdatedAt.Date == date && 
+                                             t.Status == (int)AppTaskStatus.Completed &&
                                              t.DueDate.HasValue && 
                                              t.DueDate.Value.Date < date);
 
             // Total overdue at end of day (simplified calculation)
             var totalOverdue = allTasks.Count(t => t.DueDate.HasValue && 
                                                  t.DueDate.Value.Date <= date && 
-                                                 (!t.CompletedDate.HasValue || t.CompletedDate.Value.Date > date) &&
+                                                 t.Status != (int)AppTaskStatus.Completed &&
                                                  t.Status != (int)AppTaskStatus.Archived &&
                                                  !t.IsDeleted);
 

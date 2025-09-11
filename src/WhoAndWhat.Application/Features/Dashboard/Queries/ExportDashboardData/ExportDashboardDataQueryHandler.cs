@@ -3,8 +3,10 @@ using Microsoft.Extensions.Logging;
 using System.Text;
 using System.Text.Json;
 using WhoAndWhat.Application.Common;
+using WhoAndWhat.Application.DTOs;
 using WhoAndWhat.Application.Interfaces;
 using WhoAndWhat.Domain.Entities;
+using WhoAndWhat.Domain.ValueObjects;
 
 namespace WhoAndWhat.Application.Features.Dashboard.Queries.ExportDashboardData;
 
@@ -105,7 +107,7 @@ public sealed class ExportDashboardDataQueryHandler
         if (dataTypes.Contains("tasks"))
         {
             var taskFilter = CreateTaskFilter(userId, options);
-            var tasks = await _taskRepository.GetTasksAsync(taskFilter, cancellationToken);
+            var (tasks, _) = await _taskRepository.GetTasksByUserIdAsync(userId, taskFilter, cancellationToken);
             data.Tasks = tasks.ToList();
             data.RecordCounts["tasks"] = data.Tasks.Count;
         }
@@ -136,17 +138,20 @@ public sealed class ExportDashboardDataQueryHandler
 
     private TaskFilter CreateTaskFilter(Guid userId, ExportOptionsDto options)
     {
-        return new TaskFilter
+        var filter = new TaskFilter
         {
-            UserId = userId,
             StartDate = options.StartDate,
             EndDate = options.EndDate,
-            Categories = options.IncludeCategories?.ToList(),
-            Priorities = options.IncludePriorities?.ToList(),
-            Statuses = options.IncludeStatuses?.ToList(),
-            IncludeDeleted = options.IncludeDeleted,
-            IncludeArchived = options.IncludeArchived
+            IncludeDeleted = options.IncludeDeleted
         };
+        
+        if (options.IncludeCategories?.Any() == true)
+        {
+            filter.Categories = options.IncludeCategories.ToList();
+        }
+        
+        filter.PageSize = 10000; // Get all matching tasks
+        return filter;
     }
 
     private async Task<DashboardMetricsExport> CalculateDashboardMetrics(
@@ -155,21 +160,21 @@ public sealed class ExportDashboardDataQueryHandler
         CancellationToken cancellationToken)
     {
         var filter = CreateTaskFilter(userId, options);
-        var tasks = await _taskRepository.GetTasksAsync(filter, cancellationToken);
+        var (tasks, _) = await _taskRepository.GetTasksByUserIdAsync(userId, filter, cancellationToken);
 
         var totalTasks = tasks.Count();
-        var completedTasks = tasks.Count(t => t.Status == TaskStatus.Completed);
-        var overdueTasks = tasks.Count(t => t.DueDate.HasValue && t.DueDate < DateTime.UtcNow && t.Status != TaskStatus.Completed);
+        var completedTasks = tasks.Count(t => t.Status == (int)AppTaskStatus.Completed);
+        var overdueTasks = tasks.Count(t => t.DueDate.HasValue && t.DueDate < DateTime.UtcNow && t.Status != (int)AppTaskStatus.Completed);
         
         var completionRate = totalTasks > 0 ? (double)completedTasks / totalTasks * 100 : 0;
         var overdueRate = totalTasks > 0 ? (double)overdueTasks / totalTasks * 100 : 0;
 
         var categoryBreakdown = tasks
-            .GroupBy(t => t.Category.ToString())
+            .GroupBy(t => ((AppTaskCategory)t.Category).ToString())
             .ToDictionary(g => g.Key, g => g.Count());
 
         var priorityBreakdown = tasks
-            .GroupBy(t => t.Priority.ToString())
+            .GroupBy(t => ((Priority)t.Priority).ToString())
             .ToDictionary(g => g.Key, g => g.Count());
 
         return new DashboardMetricsExport(
@@ -191,11 +196,11 @@ public sealed class ExportDashboardDataQueryHandler
         CancellationToken cancellationToken)
     {
         var filter = CreateTaskFilter(userId, options);
-        var tasks = await _taskRepository.GetTasksAsync(filter, cancellationToken);
+        var (tasks, _) = await _taskRepository.GetTasksByUserIdAsync(userId, filter, cancellationToken);
 
         var completedTasks = tasks
-            .Where(t => t.Status == TaskStatus.Completed && t.CompletedAt.HasValue)
-            .OrderBy(t => t.CompletedAt!.Value.Date)
+            .Where(t => t.Status == (int)AppTaskStatus.Completed)
+            .OrderBy(t => t.UpdatedAt.Date)
             .ToList();
 
         var streaks = new List<ProductivityStreakExport>();
@@ -205,7 +210,7 @@ public sealed class ExportDashboardDataQueryHandler
         var lastCompletionDate = DateTime.MinValue;
 
         var dailyCompletions = completedTasks
-            .GroupBy(t => t.CompletedAt!.Value.Date)
+            .GroupBy(t => t.UpdatedAt.Date)
             .ToDictionary(g => g.Key, g => g.Count());
 
         foreach (var date in dailyCompletions.Keys.OrderBy(d => d))
@@ -227,8 +232,8 @@ public sealed class ExportDashboardDataQueryHandler
                         StartDate: currentStreakStart,
                         EndDate: lastCompletionDate,
                         Duration: currentStreak,
-                        TasksCompleted: completedTasks.Count(t => t.CompletedAt!.Value.Date >= currentStreakStart && 
-                                                                t.CompletedAt.Value.Date <= lastCompletionDate)
+                        TasksCompleted: completedTasks.Count(t => t.UpdatedAt.Date >= currentStreakStart && 
+                                                                t.UpdatedAt.Date <= lastCompletionDate)
                     ));
                 }
                 currentStreak = 1;
@@ -244,8 +249,8 @@ public sealed class ExportDashboardDataQueryHandler
                 StartDate: currentStreakStart,
                 EndDate: lastCompletionDate,
                 Duration: currentStreak,
-                TasksCompleted: completedTasks.Count(t => t.CompletedAt!.Value.Date >= currentStreakStart && 
-                                                        t.CompletedAt.Value.Date <= lastCompletionDate)
+                TasksCompleted: completedTasks.Count(t => t.UpdatedAt.Date >= currentStreakStart && 
+                                                        t.UpdatedAt.Date <= lastCompletionDate)
             ));
         }
 
@@ -258,7 +263,7 @@ public sealed class ExportDashboardDataQueryHandler
         CancellationToken cancellationToken)
     {
         var filter = CreateTaskFilter(userId, options);
-        var tasks = await _taskRepository.GetTasksAsync(filter, cancellationToken);
+        var (tasks, _) = await _taskRepository.GetTasksByUserIdAsync(userId, filter, cancellationToken);
 
         var analytics = new List<AnalyticsExport>();
 
@@ -273,8 +278,8 @@ public sealed class ExportDashboardDataQueryHandler
                 Details: new Dictionary<string, object>
                 {
                     ["tasksCreated"] = g.Count(),
-                    ["tasksCompleted"] = g.Count(t => t.Status == TaskStatus.Completed),
-                    ["completionRate"] = g.Any() ? (double)g.Count(t => t.Status == TaskStatus.Completed) / g.Count() * 100 : 0
+                    ["tasksCompleted"] = g.Count(t => t.Status == (int)AppTaskStatus.Completed),
+                    ["completionRate"] = g.Any() ? (double)g.Count(t => t.Status == (int)AppTaskStatus.Completed) / g.Count() * 100 : 0
                 }
             ))
             .ToList();
@@ -313,7 +318,7 @@ public sealed class ExportDashboardDataQueryHandler
         // Export tasks
         foreach (var task in data.Tasks ?? new List<AppTask>())
         {
-            csv.AppendLine($"Task,{task.CreatedAt:yyyy-MM-dd},{EscapeCsv(task.Title)},{task.Category},{task.Priority},{task.Status},{task.DueDate:yyyy-MM-dd},{task.CompletedAt:yyyy-MM-dd},{EscapeCsv(task.Description ?? "")}");
+            csv.AppendLine($"Task,{task.CreatedAt:yyyy-MM-dd},{EscapeCsv(task.Title)},{(AppTaskCategory)task.Category},{(Priority)task.Priority},{(AppTaskStatus)task.Status},{task.DueDate:yyyy-MM-dd},{task.UpdatedAt:yyyy-MM-dd},{EscapeCsv(task.Description ?? "")}");
         }
 
         // Export metrics as summary rows
@@ -343,12 +348,12 @@ public sealed class ExportDashboardDataQueryHandler
                 t.Id,
                 t.Title,
                 t.Description,
-                Category = t.Category.ToString(),
-                Priority = t.Priority.ToString(),
-                Status = t.Status.ToString(),
+                Category = ((AppTaskCategory)t.Category).ToString(),
+                Priority = ((Priority)t.Priority).ToString(),
+                Status = ((AppTaskStatus)t.Status).ToString(),
                 t.CreatedAt,
                 t.DueDate,
-                t.CompletedAt,
+                CompletedAt = t.Status == (int)AppTaskStatus.Completed ? t.UpdatedAt : (DateTime?)null,
                 t.Tags
             }) ?? new object[0],
             Metrics = data.Metrics,
@@ -450,14 +455,3 @@ internal sealed record ExportFile(
     string ContentType
 );
 
-internal sealed class TaskFilter
-{
-    public Guid UserId { get; set; }
-    public DateTime? StartDate { get; set; }
-    public DateTime? EndDate { get; set; }
-    public List<string>? Categories { get; set; }
-    public List<string>? Priorities { get; set; }
-    public List<string>? Statuses { get; set; }
-    public bool IncludeDeleted { get; set; }
-    public bool IncludeArchived { get; set; }
-}

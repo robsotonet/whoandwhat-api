@@ -1,6 +1,7 @@
 using MediatR;
 using Microsoft.Extensions.Logging;
 using WhoAndWhat.Application.Common;
+using WhoAndWhat.Application.DTOs;
 using WhoAndWhat.Application.Interfaces;
 using WhoAndWhat.Domain.ValueObjects;
 
@@ -36,28 +37,30 @@ public sealed class GetCompletionStatsQueryHandler
             var (startDate, endDate) = GetDateRange(request.Period);
             
             // Get all tasks for the user
-            var allTasks = await _taskRepository.GetTasksByUserIdAsync(request.UserId, cancellationToken);
-            
-            // Filter tasks for the specified period
-            var periodTasks = allTasks
-                .Where(t => t.CreatedDate >= startDate && t.CreatedDate <= endDate)
-                .ToList();
+            var filter = new TaskFilter 
+            { 
+                CreatedAfter = startDate,
+                CreatedBefore = endDate,
+                PageSize = 10000
+            };
+            var (allTasksResult, _) = await _taskRepository.GetTasksByUserIdAsync(request.UserId, filter, cancellationToken);
+            var periodTasks = allTasksResult.ToList();
 
             var completedTasks = periodTasks
-                .Where(t => t.Status == (int)AppTaskStatus.Completed && t.CompletedDate.HasValue)
+                .Where(t => t.Status == (int)AppTaskStatus.Completed)
                 .ToList();
 
             // Calculate overview statistics
             var overview = CalculateOverview(periodTasks, completedTasks);
 
             // Calculate trends
-            var trends = CalculateTrends(allTasks, startDate, endDate);
+            var trends = CalculateTrends(periodTasks, startDate, endDate);
 
             // Calculate breakdown statistics
             var breakdown = CalculateBreakdown(periodTasks, completedTasks);
 
             // Calculate comparison with previous period
-            var comparison = await CalculateComparison(allTasks, startDate, endDate, request.Period);
+            var comparison = await CalculateComparison(allTasksResult.ToList(), startDate, endDate, request.Period);
 
             // Generate insights and recommendations
             var insights = GenerateInsights(periodTasks, completedTasks, overview, breakdown);
@@ -117,13 +120,12 @@ public sealed class GetCompletionStatsQueryHandler
 
         // On-time completion rate
         var tasksWithDueDates = completedTasks.Where(t => t.DueDate.HasValue).ToList();
-        var onTimeTasks = tasksWithDueDates.Count(t => t.CompletedDate <= t.DueDate);
+        var onTimeTasks = tasksWithDueDates.Count(t => t.UpdatedAt <= t.DueDate);
         var onTimeRate = tasksWithDueDates.Count > 0 ? (double)onTimeTasks / tasksWithDueDates.Count * 100 : 0.0;
 
         // Average completion time
         var completionTimes = completedTasks
-            .Where(t => t.CompletedDate.HasValue)
-            .Select(t => t.CompletedDate!.Value - t.CreatedDate)
+            .Select(t => t.UpdatedAt - t.CreatedAt)
             .ToList();
 
         var averageCompletionTime = completionTimes.Any() 
@@ -131,8 +133,8 @@ public sealed class GetCompletionStatsQueryHandler
             : TimeSpan.Zero;
 
         // Ahead of schedule vs late
-        var aheadOfSchedule = tasksWithDueDates.Count(t => t.CompletedDate < t.DueDate);
-        var late = tasksWithDueDates.Count(t => t.CompletedDate > t.DueDate);
+        var aheadOfSchedule = tasksWithDueDates.Count(t => t.UpdatedAt < t.DueDate);
+        var late = tasksWithDueDates.Count(t => t.UpdatedAt > t.DueDate);
 
         return new CompletionOverview(
             TotalTasksCreated: totalCreated,

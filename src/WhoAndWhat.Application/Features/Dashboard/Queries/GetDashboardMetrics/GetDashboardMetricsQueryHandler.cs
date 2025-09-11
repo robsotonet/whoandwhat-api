@@ -1,6 +1,7 @@
 using MediatR;
 using Microsoft.Extensions.Logging;
 using WhoAndWhat.Application.Common;
+using WhoAndWhat.Application.DTOs;
 using WhoAndWhat.Application.Interfaces;
 using WhoAndWhat.Domain.ValueObjects;
 
@@ -37,21 +38,23 @@ public sealed class GetDashboardMetricsQueryHandler
             var startOfMonth = new DateTime(today.Year, today.Month, 1);
 
             // Get all tasks for the user
-            var allTasks = await _taskRepository.GetTasksByUserIdAsync(request.UserId, cancellationToken);
+            var filter = new TaskFilter();
+            filter.PageSize = 10000; // Get all tasks
+            var (allTasks, _) = await _taskRepository.GetTasksByUserIdAsync(request.UserId, filter, cancellationToken);
             var activeTasks = allTasks.Where(t => !t.IsDeleted && t.Status != (int)AppTaskStatus.Archived).ToList();
             var completedTasks = allTasks.Where(t => t.Status == (int)AppTaskStatus.Completed).ToList();
 
             // Calculate basic metrics
-            var completedToday = completedTasks.Count(t => t.CompletedDate?.Date == today);
-            var completedThisWeek = completedTasks.Count(t => t.CompletedDate >= startOfWeek);
-            var completedThisMonth = completedTasks.Count(t => t.CompletedDate >= startOfMonth);
+            var completedToday = completedTasks.Count(t => t.UpdatedAt.Date == today);
+            var completedThisWeek = completedTasks.Count(t => t.UpdatedAt >= startOfWeek);
+            var completedThisMonth = completedTasks.Count(t => t.UpdatedAt >= startOfMonth);
             
             var totalActive = activeTasks.Count;
             var overdueTasks = activeTasks.Count(t => t.DueDate.HasValue && t.DueDate.Value.Date < today);
             
             // On-time completion metrics
             var tasksWithDueDates = completedTasks.Where(t => t.DueDate.HasValue).ToList();
-            var onTimeTasks = tasksWithDueDates.Count(t => t.CompletedDate <= t.DueDate);
+            var onTimeTasks = tasksWithDueDates.Count(t => t.UpdatedAt <= t.DueDate);
             var lateTasks = tasksWithDueDates.Count - onTimeTasks;
 
             // Calculate rates
@@ -61,7 +64,7 @@ public sealed class GetDashboardMetricsQueryHandler
 
             // Category breakdown
             var categoryStats = new TaskCategoryStats(
-                TodoTasks: activeTasks.Count(t => t.Category == (int)AppTaskCategory.Todo),
+                TodoTasks: activeTasks.Count(t => t.Category == (int)AppTaskCategory.ToDo),
                 IdeaTasks: activeTasks.Count(t => t.Category == (int)AppTaskCategory.Idea),
                 AppointmentTasks: activeTasks.Count(t => t.Category == (int)AppTaskCategory.Appointment),
                 BillReminderTasks: activeTasks.Count(t => t.Category == (int)AppTaskCategory.BillReminder),
@@ -70,11 +73,11 @@ public sealed class GetDashboardMetricsQueryHandler
 
             // Priority breakdown
             var priorityStats = new TaskPriorityStats(
-                CriticalTasks: activeTasks.Count(t => t.Priority == (int)Priority.Critical),
+                CriticalTasks: activeTasks.Count(t => t.Priority == (int)Priority.Urgent),
                 HighTasks: activeTasks.Count(t => t.Priority == (int)Priority.High),
                 MediumTasks: activeTasks.Count(t => t.Priority == (int)Priority.Medium),
                 LowTasks: activeTasks.Count(t => t.Priority == (int)Priority.Low),
-                NoneTasks: activeTasks.Count(t => t.Priority == (int)Priority.None)
+                NoneTasks: 0 // Priority.None doesn't exist, using 0 as placeholder
             );
 
             // Calculate productivity trends
@@ -112,8 +115,8 @@ public sealed class GetDashboardMetricsQueryHandler
     {
         // Calculate daily averages
         var last30Days = completedTasks
-            .Where(t => t.CompletedDate >= today.AddDays(-30))
-            .GroupBy(t => t.CompletedDate!.Value.Date)
+            .Where(t => t.UpdatedAt >= today.AddDays(-30))
+            .GroupBy(t => t.UpdatedAt.Date)
             .Select(g => g.Count())
             .DefaultIfEmpty(0);
 
@@ -129,7 +132,7 @@ public sealed class GetDashboardMetricsQueryHandler
         for (int i = 6; i >= 0; i--)
         {
             var date = today.AddDays(-i);
-            var dayCompleted = completedTasks.Count(t => t.CompletedDate?.Date == date);
+            var dayCompleted = completedTasks.Count(t => t.UpdatedAt.Date == date);
             
             // For creation count, we'd need to track CreatedDate - using a placeholder
             var dayCreated = dayCompleted + new Random().Next(0, 3); // Placeholder logic
@@ -151,7 +154,7 @@ public sealed class GetDashboardMetricsQueryHandler
             var weekEnd = weekStart.AddDays(7);
             
             var weekCompleted = completedTasks.Count(t => 
-                t.CompletedDate >= weekStart && t.CompletedDate < weekEnd);
+                t.UpdatedAt >= weekStart && t.UpdatedAt < weekEnd);
             
             // Placeholder for created tasks
             var weekCreated = weekCompleted + new Random().Next(0, 10);
@@ -184,7 +187,7 @@ public sealed class GetDashboardMetricsQueryHandler
 
         while (true)
         {
-            var hasTasksOnDate = completedTasks.Any(t => t.CompletedDate?.Date == currentDate);
+            var hasTasksOnDate = completedTasks.Any(t => t.UpdatedAt.Date == currentDate);
             if (!hasTasksOnDate)
                 break;
 
@@ -200,8 +203,7 @@ public sealed class GetDashboardMetricsQueryHandler
         if (!completedTasks.Any()) return 0;
 
         var dates = completedTasks
-            .Where(t => t.CompletedDate.HasValue)
-            .Select(t => t.CompletedDate!.Value.Date)
+            .Select(t => t.UpdatedAt.Date)
             .Distinct()
             .OrderBy(d => d)
             .ToList();

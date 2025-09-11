@@ -1,6 +1,7 @@
 using MediatR;
 using Microsoft.Extensions.Logging;
 using WhoAndWhat.Application.Common;
+using WhoAndWhat.Application.DTOs;
 using WhoAndWhat.Application.Interfaces;
 using WhoAndWhat.Domain.ValueObjects;
 
@@ -32,10 +33,12 @@ public sealed class GetProductivityStreakQueryHandler
             _logger.LogInformation("Getting productivity streak for user {UserId}", request.UserId);
 
             // Get all completed tasks for the user
-            var allTasks = await _taskRepository.GetTasksByUserIdAsync(request.UserId, cancellationToken);
+            var filter = TaskFilter.ForCompletedTasks();
+            filter.PageSize = 10000; // Get all completed tasks
+            var (allTasks, _) = await _taskRepository.GetTasksByUserIdAsync(request.UserId, filter, cancellationToken);
             var completedTasks = allTasks
-                .Where(t => t.Status == (int)AppTaskStatus.Completed && t.CompletedDate.HasValue)
-                .OrderBy(t => t.CompletedDate)
+                .Where(t => t.Status == (int)AppTaskStatus.Completed)
+                .OrderBy(t => t.UpdatedAt)
                 .ToList();
 
             if (!completedTasks.Any())
@@ -45,7 +48,7 @@ public sealed class GetProductivityStreakQueryHandler
 
             var today = DateTime.UtcNow.Date;
             var activeDates = completedTasks
-                .Select(t => t.CompletedDate!.Value.Date)
+                .Select(t => t.UpdatedAt.Date)
                 .Distinct()
                 .OrderBy(d => d)
                 .ToList();
@@ -56,7 +59,7 @@ public sealed class GetProductivityStreakQueryHandler
             var bestMonthlyStreak = CalculateBestMonthlyStreak(activeDates);
 
             // Get streak dates
-            var lastCompletionDate = completedTasks.Max(t => t.CompletedDate);
+            var lastCompletionDate = completedTasks.Any() ? completedTasks.Max(t => t.UpdatedAt) : (DateTime?)null;
             var streakStartDate = currentStreak > 0 ? today.AddDays(-(currentStreak - 1)) : (DateTime?)null;
 
             // Calculate milestones
@@ -213,8 +216,8 @@ public sealed class GetProductivityStreakQueryHandler
     private StreakStats CalculateWeeklyStats(List<Domain.Entities.AppTask> completedTasks, DateTime today)
     {
         var weekStart = today.AddDays(-(int)today.DayOfWeek);
-        var weekTasks = completedTasks.Where(t => t.CompletedDate >= weekStart).ToList();
-        var activeDays = weekTasks.Select(t => t.CompletedDate!.Value.Date).Distinct().Count();
+        var weekTasks = completedTasks.Where(t => t.UpdatedAt >= weekStart).ToList();
+        var activeDays = weekTasks.Select(t => t.UpdatedAt.Date).Distinct().Count();
         
         return new StreakStats(
             TotalDays: 7,
@@ -229,8 +232,8 @@ public sealed class GetProductivityStreakQueryHandler
     {
         var monthStart = new DateTime(today.Year, today.Month, 1);
         var daysInMonth = DateTime.DaysInMonth(today.Year, today.Month);
-        var monthTasks = completedTasks.Where(t => t.CompletedDate >= monthStart).ToList();
-        var activeDays = monthTasks.Select(t => t.CompletedDate!.Value.Date).Distinct().Count();
+        var monthTasks = completedTasks.Where(t => t.UpdatedAt >= monthStart).ToList();
+        var activeDays = monthTasks.Select(t => t.UpdatedAt.Date).Distinct().Count();
         
         return new StreakStats(
             TotalDays: daysInMonth,
@@ -253,7 +256,7 @@ public sealed class GetProductivityStreakQueryHandler
         {
             var date = today.AddDays(-i);
             var hasActivity = activeDates.Contains(date);
-            var completedCount = completedTasks.Count(t => t.CompletedDate?.Date == date);
+            var completedCount = completedTasks.Count(t => t.UpdatedAt.Date == date);
             var isPartOfCurrentStreak = i < currentStreak;
 
             last30Days.Add(new DailyStreakPoint(

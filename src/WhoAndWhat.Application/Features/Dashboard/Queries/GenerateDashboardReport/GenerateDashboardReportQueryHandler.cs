@@ -3,8 +3,10 @@ using Microsoft.Extensions.Logging;
 using System.Text;
 using System.Text.Json;
 using WhoAndWhat.Application.Common;
+using WhoAndWhat.Application.DTOs;
 using WhoAndWhat.Application.Interfaces;
 using WhoAndWhat.Domain.Entities;
+using WhoAndWhat.Domain.ValueObjects;
 
 namespace WhoAndWhat.Application.Features.Dashboard.Queries.GenerateDashboardReport;
 
@@ -111,12 +113,18 @@ public sealed class GenerateDashboardReportQueryHandler
         var endDate = options.EndDate ?? DateTime.Today;
 
         // Get tasks for the period
-        var tasks = await _taskRepository.GetTasksByUserIdAsync(userId, cancellationToken);
-        var filteredTasks = tasks.Where(t => t.CreatedAt >= startDate && t.CreatedAt <= endDate).ToList();
+        var filter = new TaskFilter 
+        { 
+            CreatedAfter = startDate,
+            CreatedBefore = endDate,
+            PageSize = 10000
+        };
+        var (tasks, _) = await _taskRepository.GetTasksByUserIdAsync(userId, filter, cancellationToken);
+        var filteredTasks = tasks.ToList();
 
         // Calculate basic metrics
         var totalTasks = filteredTasks.Count;
-        var completedTasks = filteredTasks.Count(t => t.Status == TaskStatus.Completed);
+        var completedTasks = filteredTasks.Count(t => t.Status == (int)AppTaskStatus.Completed);
         var completionRate = totalTasks > 0 ? (double)completedTasks / totalTasks * 100 : 0;
 
         // Calculate productivity streak
