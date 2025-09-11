@@ -1,9 +1,9 @@
+using System.Security.Claims;
 using FluentAssertions;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Moq;
-using System.Security.Claims;
 using WhoAndWhat.API.Controllers.v1;
 using WhoAndWhat.Application.Common;
 using WhoAndWhat.Application.DTOs.Authentication;
@@ -30,7 +30,7 @@ public class PasswordControllerTests
         _passwordResetServiceMock = new Mock<IPasswordResetService>();
         _emailServiceMock = new Mock<IEmailService>();
         _loggerMock = new Mock<ILogger<PasswordController>>();
-        
+
         _controller = new PasswordController(
             _userServiceMock.Object,
             _emailServiceMock.Object,
@@ -43,7 +43,7 @@ public class PasswordControllerTests
         };
         var identity = new ClaimsIdentity(claims, "TestAuth");
         var principal = new ClaimsPrincipal(identity);
-        
+
         _controller.ControllerContext = new ControllerContext
         {
             HttpContext = new DefaultHttpContext
@@ -77,7 +77,7 @@ public class PasswordControllerTests
         result.Should().BeOfType<OkObjectResult>();
         var okResult = result as OkObjectResult;
         var response = okResult!.Value.Should().BeOfType<MessageResponse>().Subject;
-        
+
         response.Message.Should().Contain("If an account with that email address exists");
         response.Success.Should().BeTrue();
     }
@@ -101,13 +101,13 @@ public class PasswordControllerTests
         result.Should().BeOfType<OkObjectResult>();
         var okResult = result as OkObjectResult;
         var response = okResult!.Value.Should().BeOfType<MessageResponse>().Subject;
-        
+
         response.Message.Should().Contain("If an account with that email address exists");
         response.Success.Should().BeTrue();
-        
+
         // Verify that no email was sent for non-existent user
         _emailServiceMock.Verify(x => x.SendPasswordResetEmailAsync(
-            It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), 
+            It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()),
             Times.Never);
     }
 
@@ -135,7 +135,7 @@ public class PasswordControllerTests
         result.Should().BeOfType<OkObjectResult>();
         var okResult = result as OkObjectResult;
         var response = okResult!.Value.Should().BeOfType<MessageResponse>().Subject;
-        
+
         response.Message.Should().Contain("successfully reset");
         response.Success.Should().BeTrue();
     }
@@ -164,7 +164,7 @@ public class PasswordControllerTests
         result.Should().BeOfType<BadRequestObjectResult>();
         var badRequestResult = result as BadRequestObjectResult;
         var problemDetails = badRequestResult!.Value.Should().BeOfType<ProblemDetails>().Subject;
-        
+
         problemDetails.Detail.Should().Be("Invalid or expired reset token");
     }
 
@@ -191,7 +191,7 @@ public class PasswordControllerTests
         result.Should().BeOfType<OkObjectResult>();
         var okResult = result as OkObjectResult;
         var response = okResult!.Value.Should().BeOfType<MessageResponse>().Subject;
-        
+
         response.Message.Should().Contain("successfully changed");
         response.Success.Should().BeTrue();
     }
@@ -219,7 +219,7 @@ public class PasswordControllerTests
         result.Should().BeOfType<BadRequestObjectResult>();
         var badRequestResult = result as BadRequestObjectResult;
         var problemDetails = badRequestResult!.Value.Should().BeOfType<ProblemDetails>().Subject;
-        
+
         problemDetails.Detail.Should().Be("Current password is incorrect");
     }
 
@@ -245,7 +245,7 @@ public class PasswordControllerTests
         result.Should().BeOfType<OkObjectResult>();
         var okResult = result as OkObjectResult;
         var response = okResult!.Value.Should().BeOfType<MessageResponse>().Subject;
-        
+
         response.Message.Should().Contain("successfully verified");
         response.Success.Should().BeTrue();
     }
@@ -272,7 +272,7 @@ public class PasswordControllerTests
         result.Should().BeOfType<BadRequestObjectResult>();
         var badRequestResult = result as BadRequestObjectResult;
         var problemDetails = badRequestResult!.Value.Should().BeOfType<ProblemDetails>().Subject;
-        
+
         problemDetails.Detail.Should().Be("Invalid or expired verification token");
     }
 
@@ -284,7 +284,7 @@ public class PasswordControllerTests
             _userServiceMock.Object,
             _emailServiceMock.Object,
             _loggerMock.Object);
-        
+
         controllerWithoutAuth.ControllerContext = new ControllerContext
         {
             HttpContext = new DefaultHttpContext()

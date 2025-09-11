@@ -1,9 +1,9 @@
+using System.Security.Claims;
 using FluentAssertions;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Moq;
-using System.Security.Claims;
 using WhoAndWhat.API.Controllers.v1;
 using WhoAndWhat.Application.Common;
 using WhoAndWhat.Application.DTOs.Authentication;
@@ -34,7 +34,7 @@ public class UserAccountControllerTests
         };
         var identity = new ClaimsIdentity(claims, "TestAuth");
         var principal = new ClaimsPrincipal(identity);
-        
+
         _controller.ControllerContext = new ControllerContext
         {
             HttpContext = new DefaultHttpContext
@@ -50,7 +50,7 @@ public class UserAccountControllerTests
         // Arrange
         var user = new User("test@example.com", "testuser", Language.en);
         user.RecordLoginAttempt(true); // This sets LastLoginAt to DateTime.UtcNow
-        
+
         _userServiceMock.Setup(x => x.GetUserByIdAsync(_userId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(user);
 
@@ -61,7 +61,7 @@ public class UserAccountControllerTests
         result.Should().BeOfType<OkObjectResult>();
         var okResult = result as OkObjectResult;
         var response = okResult!.Value.Should().BeOfType<CurrentUserResponse>().Subject;
-        
+
         response.UserId.Should().Be(user.Id);
         response.Email.Should().Be("test@example.com");
         response.Username.Should().Be("testuser");
@@ -109,7 +109,7 @@ public class UserAccountControllerTests
         result.Should().BeOfType<OkObjectResult>();
         var okResult = result as OkObjectResult;
         var response = okResult!.Value.Should().BeOfType<UpdateProfileResponse>().Subject;
-        
+
         response.UserId.Should().Be(_userId);
         response.Username.Should().Be("newusername");
         response.PreferredLanguage.Should().Be("es");
@@ -151,7 +151,7 @@ public class UserAccountControllerTests
         };
 
         var user = new User("test@example.com", "testuser", Language.en);
-        
+
         _userServiceMock.Setup(x => x.GetUserByIdAsync(_userId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(user);
         _userServiceMock.Setup(x => x.ValidatePasswordAsync(_userId, request.CurrentPassword, It.IsAny<CancellationToken>()))
@@ -166,7 +166,7 @@ public class UserAccountControllerTests
         result.Should().BeOfType<OkObjectResult>();
         var okResult = result as OkObjectResult;
         var response = okResult!.Value.Should().BeOfType<MessageResponse>().Subject;
-        
+
         response.Success.Should().BeTrue();
         response.Message.Should().Contain("successfully deactivated");
     }
@@ -182,7 +182,7 @@ public class UserAccountControllerTests
         };
 
         var user = new User("test@example.com", "testuser", Language.en);
-        
+
         _userServiceMock.Setup(x => x.GetUserByIdAsync(_userId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(user);
         _userServiceMock.Setup(x => x.ValidatePasswordAsync(_userId, request.CurrentPassword, It.IsAny<CancellationToken>()))
@@ -221,13 +221,13 @@ public class UserAccountControllerTests
         _userServiceMock.Setup(x => x.GetUserByIdAsync(_userId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(user);
         _userServiceMock.Setup(x => x.ExportUserDataAsync(
-            _userId, 
-            request.Format, 
-            request.IncludeProfile, 
-            request.IncludeTasks, 
-            request.IncludeProjects, 
-            request.IncludeContacts, 
-            request.IncludeOAuthAccounts, 
+            _userId,
+            request.Format,
+            request.IncludeProfile,
+            request.IncludeTasks,
+            request.IncludeProjects,
+            request.IncludeContacts,
+            request.IncludeOAuthAccounts,
             It.IsAny<CancellationToken>()))
             .ReturnsAsync(exportResult);
 
@@ -257,13 +257,13 @@ public class UserAccountControllerTests
         _userServiceMock.Setup(x => x.GetUserByIdAsync(_userId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(user);
         _userServiceMock.Setup(x => x.ExportUserDataAsync(
-            It.IsAny<Guid>(), 
-            It.IsAny<string>(), 
-            It.IsAny<bool>(), 
-            It.IsAny<bool>(), 
-            It.IsAny<bool>(), 
-            It.IsAny<bool>(), 
-            It.IsAny<bool>(), 
+            It.IsAny<Guid>(),
+            It.IsAny<string>(),
+            It.IsAny<bool>(),
+            It.IsAny<bool>(),
+            It.IsAny<bool>(),
+            It.IsAny<bool>(),
+            It.IsAny<bool>(),
             It.IsAny<CancellationToken>()))
             .ReturnsAsync(exportResult);
 

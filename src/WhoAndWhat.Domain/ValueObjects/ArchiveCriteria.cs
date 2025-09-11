@@ -134,12 +134,12 @@ public record ArchiveCriteria : IEquatable<ArchiveCriteria>
         {
             return false;
         }
-        
+
         if (ReferenceEquals(this, other))
         {
             return true;
         }
-        
+
         return MinimumCompletedAge == other.MinimumCompletedAge &&
                MinimumCanceledAge == other.MinimumCanceledAge &&
                IncludeActiveProjectTasks == other.IncludeActiveProjectTasks &&
@@ -160,13 +160,13 @@ public record ArchiveCriteria : IEquatable<ArchiveCriteria>
         hash.Add(MaxArchiveBatchSize);
         hash.Add(UserId);
         hash.Add(MaxPriorityToArchive);
-        
+
         // Hash array contents
         foreach (var status in ArchivableStatuses)
         {
             hash.Add(status);
         }
-        
+
         return hash.ToHashCode();
     }
 }

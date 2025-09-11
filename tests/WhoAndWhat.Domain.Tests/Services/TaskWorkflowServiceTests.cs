@@ -1,7 +1,7 @@
 using FluentAssertions;
+using WhoAndWhat.Domain.Common;
 using WhoAndWhat.Domain.Services;
 using WhoAndWhat.Domain.ValueObjects;
-using WhoAndWhat.Domain.Common;
 using DomainTask = WhoAndWhat.Domain.Entities.AppTask;
 using DomainTaskStatus = WhoAndWhat.Domain.ValueObjects.AppTaskStatus;
 
@@ -39,9 +39,9 @@ public class AppTaskWorkflowServiceTests
     public void TransitionTaskStatus_Should_Succeed_For_Valid_Transition()
     {
         var task = CreateValidTask(DomainTaskStatus.Pending);
-        
+
         var result = _service.TransitionTaskStatus(task, DomainTaskStatus.InProgress);
-        
+
         result.IsValid.Should().BeTrue();
         result.Errors.Should().BeEmpty();
     }
@@ -50,9 +50,9 @@ public class AppTaskWorkflowServiceTests
     public void TransitionTaskStatus_Should_Fail_For_Invalid_Transition()
     {
         var task = CreateValidTask(DomainTaskStatus.Completed);
-        
+
         var result = _service.TransitionTaskStatus(task, DomainTaskStatus.Pending);
-        
+
         result.IsValid.Should().BeFalse();
         result.Errors.Should().Contain("Cannot transition from Completed to Pending");
     }
@@ -62,9 +62,9 @@ public class AppTaskWorkflowServiceTests
     {
         var task = CreateValidTask(DomainTaskStatus.InProgress, AppTaskCategory.Appointment);
         task.DueDate = DateTime.UtcNow.AddHours(2);
-        
+
         var result = _service.TransitionTaskStatus(task, DomainTaskStatus.Completed);
-        
+
         result.IsValid.Should().BeFalse();
         result.Errors.Should().Contain("Cannot mark appointment as completed before its scheduled time");
     }
@@ -74,9 +74,9 @@ public class AppTaskWorkflowServiceTests
     {
         var task = CreateValidTask(DomainTaskStatus.InProgress, AppTaskCategory.Appointment);
         task.DueDate = DateTime.UtcNow.AddHours(-1);
-        
+
         var result = _service.TransitionTaskStatus(task, DomainTaskStatus.Completed);
-        
+
         result.IsValid.Should().BeTrue();
     }
 
@@ -85,9 +85,9 @@ public class AppTaskWorkflowServiceTests
     {
         var task = CreateValidTask(DomainTaskStatus.InProgress, AppTaskCategory.BillReminder);
         task.DueDate = DateTime.UtcNow.AddDays(5);
-        
+
         var result = _service.TransitionTaskStatus(task, DomainTaskStatus.Completed);
-        
+
         result.IsValid.Should().BeFalse();
         result.Errors.Should().Contain("Bill reminders should not be completed more than a day before due date");
     }
@@ -101,9 +101,9 @@ public class AppTaskWorkflowServiceTests
             new() { Status = DomainTaskStatus.InProgress.Value },
             new() { Status = DomainTaskStatus.Completed.Value }
         };
-        
+
         var result = _service.TransitionTaskStatus(task, DomainTaskStatus.Completed, subtasks);
-        
+
         result.IsValid.Should().BeFalse();
         result.Errors.Should().Contain("Cannot complete project while 1 subtasks are still active");
     }
@@ -112,9 +112,9 @@ public class AppTaskWorkflowServiceTests
     public void TransitionTaskStatus_Should_Prevent_Archiving_Non_Completed_Task()
     {
         var task = CreateValidTask(DomainTaskStatus.InProgress);
-        
+
         var result = _service.TransitionTaskStatus(task, DomainTaskStatus.Archived);
-        
+
         result.IsValid.Should().BeFalse();
         result.Errors.Should().Contain("Only completed tasks can be archived (except for very old pending tasks)");
     }
@@ -124,9 +124,9 @@ public class AppTaskWorkflowServiceTests
     {
         var task = CreateValidTask(DomainTaskStatus.Pending);
         task.CreatedAt = DateTime.UtcNow.AddMonths(-7);
-        
+
         var result = _service.TransitionTaskStatus(task, DomainTaskStatus.Archived);
-        
+
         result.IsValid.Should().BeTrue();
     }
 
@@ -142,9 +142,9 @@ public class AppTaskWorkflowServiceTests
             CreateValidTask(DomainTaskStatus.InProgress, AppTaskCategory.Appointment)
         };
         tasks[0].DueDate = DateTime.UtcNow.AddHours(-3);
-        
+
         var updates = _service.AutoManageTaskStatuses(tasks).ToList();
-        
+
         updates.Should().HaveCount(1);
         updates[0].Task.Should().Be(tasks[0]);
         updates[0].NewStatus.Should().Be(DomainTaskStatus.Completed);
@@ -158,9 +158,9 @@ public class AppTaskWorkflowServiceTests
             CreateValidTask(DomainTaskStatus.InProgress, AppTaskCategory.Appointment)
         };
         tasks[0].DueDate = DateTime.UtcNow.AddHours(-1);
-        
+
         var updates = _service.AutoManageTaskStatuses(tasks).ToList();
-        
+
         updates.Should().BeEmpty();
     }
 
@@ -169,9 +169,9 @@ public class AppTaskWorkflowServiceTests
     {
         var task = CreateValidTask(DomainTaskStatus.Completed, AppTaskCategory.BillReminder);
         task.UpdatedAt = DateTime.UtcNow.AddDays(-35);
-        
+
         var updates = _service.AutoManageTaskStatuses(new[] { task }).ToList();
-        
+
         updates.Should().HaveCount(1);
         updates[0].NewStatus.Should().Be(DomainTaskStatus.Archived);
     }
@@ -180,9 +180,9 @@ public class AppTaskWorkflowServiceTests
     public void AutoManageTaskStatuses_Should_Not_Process_Already_Completed_Tasks()
     {
         var task = CreateValidTask(DomainTaskStatus.Completed);
-        
+
         var updates = _service.AutoManageTaskStatuses(new[] { task }).ToList();
-        
+
         updates.Should().BeEmpty();
     }
 
@@ -199,9 +199,9 @@ public class AppTaskWorkflowServiceTests
         };
         tasks[0].Priority = Priority.Low.Value;
         tasks[0].DueDate = DateTime.UtcNow.AddDays(1);
-        
+
         var suggestions = _service.SuggestPriorityEscalations(tasks).ToList();
-        
+
         suggestions.Should().HaveCount(1);
         suggestions[0].SuggestedPriority.Should().Be(Priority.High);
     }
@@ -212,9 +212,9 @@ public class AppTaskWorkflowServiceTests
         var task = CreateValidTask(DomainTaskStatus.Pending, AppTaskCategory.Appointment);
         task.Priority = Priority.Low.Value;
         task.DueDate = DateTime.UtcNow.AddHours(12);
-        
+
         var suggestions = _service.SuggestPriorityEscalations(new[] { task }).ToList();
-        
+
         suggestions.Should().HaveCount(1);
         suggestions[0].SuggestedPriority.Should().Be(Priority.High);
     }
@@ -225,9 +225,9 @@ public class AppTaskWorkflowServiceTests
         var task = CreateValidTask();
         task.Priority = Priority.Urgent.Value;
         task.DueDate = DateTime.UtcNow.AddDays(7);
-        
+
         var suggestions = _service.SuggestPriorityEscalations(new[] { task }).ToList();
-        
+
         suggestions.Should().BeEmpty();
     }
 
@@ -236,9 +236,9 @@ public class AppTaskWorkflowServiceTests
     {
         var task = CreateValidTask();
         task.DueDate = null;
-        
+
         var suggestions = _service.SuggestPriorityEscalations(new[] { task }).ToList();
-        
+
         suggestions.Should().BeEmpty();
     }
 
@@ -259,9 +259,9 @@ public class AppTaskWorkflowServiceTests
                 Priority = Priority.Medium.Value
             }
         };
-        
+
         var result = _service.ValidateTaskDependencies(parentTask, subtasks);
-        
+
         result.IsValid.Should().BeTrue();
     }
 
@@ -270,9 +270,9 @@ public class AppTaskWorkflowServiceTests
     {
         var parentTask = CreateValidTask(DomainTaskStatus.InProgress, AppTaskCategory.Appointment);
         var subtasks = new List<DomainTask> { new() };
-        
+
         var result = _service.ValidateTaskDependencies(parentTask, subtasks);
-        
+
         result.IsValid.Should().BeFalse();
         result.Errors.Should().Contain("Appointment tasks cannot have subtasks");
     }
@@ -282,7 +282,7 @@ public class AppTaskWorkflowServiceTests
     {
         var parentTask = CreateValidTask(DomainTaskStatus.InProgress, AppTaskCategory.Project);
         parentTask.DueDate = DateTime.UtcNow.AddDays(5);
-        
+
         var subtasks = new List<DomainTask>
         {
             new()
@@ -292,9 +292,9 @@ public class AppTaskWorkflowServiceTests
                 Priority = Priority.Medium.Value
             }
         };
-        
+
         var result = _service.ValidateTaskDependencies(parentTask, subtasks);
-        
+
         result.IsValid.Should().BeFalse();
         result.Errors.Should().Contain($"Subtasks cannot have due dates later than parent task ({parentTask.DueDate:yyyy-MM-dd})");
     }
@@ -304,7 +304,7 @@ public class AppTaskWorkflowServiceTests
     {
         var parentTask = CreateValidTask(DomainTaskStatus.InProgress, AppTaskCategory.Project);
         parentTask.Priority = Priority.Medium.Value;
-        
+
         var subtasks = new List<DomainTask>
         {
             new()
@@ -313,9 +313,9 @@ public class AppTaskWorkflowServiceTests
                 Priority = Priority.Urgent.Value
             }
         };
-        
+
         var result = _service.ValidateTaskDependencies(parentTask, subtasks);
-        
+
         result.IsValid.Should().BeFalse();
         result.Errors.Should().Contain("Subtasks should not have higher priority than their parent task");
     }
@@ -332,9 +332,9 @@ public class AppTaskWorkflowServiceTests
                 Priority = Priority.Medium.Value
             }
         };
-        
+
         var result = _service.ValidateTaskDependencies(parentTask, subtasks);
-        
+
         result.IsValid.Should().BeFalse();
         result.Errors.Should().Contain("Parent and child tasks must belong to the same user");
     }
@@ -347,9 +347,9 @@ public class AppTaskWorkflowServiceTests
     public void CalculateTaskCompletionScore_Should_Return_100_For_Completed_Task()
     {
         var task = CreateValidTask(DomainTaskStatus.Completed);
-        
+
         var score = _service.CalculateTaskCompletionScore(task);
-        
+
         score.Should().Be(100.0);
     }
 
@@ -357,9 +357,9 @@ public class AppTaskWorkflowServiceTests
     public void CalculateTaskCompletionScore_Should_Return_100_For_Archived_Task()
     {
         var task = CreateValidTask(DomainTaskStatus.Archived);
-        
+
         var score = _service.CalculateTaskCompletionScore(task);
-        
+
         score.Should().Be(100.0);
     }
 
@@ -367,9 +367,9 @@ public class AppTaskWorkflowServiceTests
     public void CalculateTaskCompletionScore_Should_Return_50_For_InProgress_Task_Without_Subtasks()
     {
         var task = CreateValidTask(DomainTaskStatus.InProgress);
-        
+
         var score = _service.CalculateTaskCompletionScore(task);
-        
+
         score.Should().Be(50.0);
     }
 
@@ -377,9 +377,9 @@ public class AppTaskWorkflowServiceTests
     public void CalculateTaskCompletionScore_Should_Return_0_For_Pending_Task()
     {
         var task = CreateValidTask(DomainTaskStatus.Pending);
-        
+
         var score = _service.CalculateTaskCompletionScore(task);
-        
+
         score.Should().Be(0.0);
     }
 
@@ -394,10 +394,10 @@ public class AppTaskWorkflowServiceTests
             new() { Status = DomainTaskStatus.Completed.Value },
             new() { Status = DomainTaskStatus.Pending.Value }
         };
-        
+
         var subtasks = task.Subtasks;
         var score = _service.CalculateTaskCompletionScore(task, subtasks);
-        
+
         score.Should().Be(75.0); // 3 out of 4 completed
     }
 
@@ -406,9 +406,9 @@ public class AppTaskWorkflowServiceTests
     {
         var task = CreateValidTask(DomainTaskStatus.InProgress);
         task.DueDate = DateTime.UtcNow.AddDays(-1);
-        
+
         var score = _service.CalculateTaskCompletionScore(task);
-        
+
         score.Should().Be(40.0); // 50 * 0.8 penalty
     }
 
@@ -417,9 +417,9 @@ public class AppTaskWorkflowServiceTests
     {
         var task = CreateValidTask(DomainTaskStatus.InProgress);
         task.UpdatedAt = DateTime.UtcNow.AddDays(-5);
-        
+
         var score = _service.CalculateTaskCompletionScore(task);
-        
+
         score.Should().Be(60.0); // 50 + (5 * 2) age bonus
     }
 
@@ -428,9 +428,9 @@ public class AppTaskWorkflowServiceTests
     {
         var task = CreateValidTask(DomainTaskStatus.InProgress);
         task.UpdatedAt = DateTime.UtcNow.AddDays(-20);
-        
+
         var score = _service.CalculateTaskCompletionScore(task);
-        
+
         score.Should().Be(70.0); // 50 + 20 (capped) age bonus
     }
 
@@ -443,9 +443,9 @@ public class AppTaskWorkflowServiceTests
         {
             new() { Status = DomainTaskStatus.Completed.Value }
         };
-        
+
         var score = _service.CalculateTaskCompletionScore(task, task.Subtasks);
-        
+
         score.Should().Be(100.0); // Capped at 100
     }
 

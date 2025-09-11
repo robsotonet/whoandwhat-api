@@ -17,7 +17,7 @@ public class AuthenticationUseCaseTests
         // - Test duplicate email validation
         // - Test password requirements validation
         // - Test email verification process
-        
+
         Assert.True(true, "Placeholder test - implement when RegisterUserCommandHandler is created");
     }
 
@@ -29,7 +29,7 @@ public class AuthenticationUseCaseTests
         // - Test failed login with invalid credentials
         // - Test account lockout after multiple failed attempts
         // - Test JWT token generation
-        
+
         Assert.True(true, "Placeholder test - implement when LoginUserCommandHandler is created");
     }
 
@@ -41,7 +41,7 @@ public class AuthenticationUseCaseTests
         // - Test password reset with valid token
         // - Test password reset with expired token
         // - Test password complexity validation
-        
+
         Assert.True(true, "Placeholder test - implement when ResetPasswordCommandHandler is created");
     }
 
@@ -52,7 +52,7 @@ public class AuthenticationUseCaseTests
         // - Test successful token refresh with valid refresh token
         // - Test failed token refresh with expired refresh token
         // - Test token rotation security
-        
+
         Assert.True(true, "Placeholder test - implement when RefreshTokenCommandHandler is created");
     }
 }

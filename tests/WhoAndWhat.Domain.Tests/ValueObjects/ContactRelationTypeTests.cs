@@ -69,7 +69,7 @@ public class ContactRelationTypeTests
     [InlineData("")]
     [InlineData(null)]
     [InlineData("Business")] // Not a valid enum value
-    public void ContactRelationType_Should_Throw_On_Invalid_Parse(string input)
+    public void ContactRelationType_Should_Throw_On_Invalid_Parse(string? input)
     {
         // Act & Assert
         Action act = () => Enum.Parse<ContactRelationType>(input, true);

@@ -1,3 +1,5 @@
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 using FluentAssertions;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
@@ -10,8 +12,6 @@ using WhoAndWhat.Domain.ValueObjects;
 using WhoAndWhat.Infrastructure.Configuration;
 using WhoAndWhat.Infrastructure.Data;
 using WhoAndWhat.Infrastructure.Services;
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
 using Task = System.Threading.Tasks.Task;
 
 namespace WhoAndWhat.Infrastructure.Tests;
@@ -385,13 +385,13 @@ public class JwtTokenServiceTests : IDisposable
         var mockLogger = new Mock<ILogger<JwtTokenService>>();
         var mockHttpContextAccessor = new Mock<IHttpContextAccessor>();
         var action = () => new JwtTokenService(Options.Create(invalidSettings), _context, mockLogger.Object, mockHttpContextAccessor.Object);
-        
+
         // Note: This would likely fail during token generation, not construction
         // So we test during token generation instead
         var service = new JwtTokenService(Options.Create(invalidSettings), _context, mockLogger.Object, mockHttpContextAccessor.Object);
         var user = new User("test@example.com", "testuser", Language.en);
         user.SetPassword("TestPassword123!");
-        
+
         var tokenGeneration = async () => await service.GenerateAccessTokenAsync(user);
         await tokenGeneration.Should().ThrowAsync<Exception>();
     }

@@ -27,12 +27,12 @@ public class GenerateContactQRQueryHandler : IRequestHandler<GenerateContactQRQu
     {
         try
         {
-            _logger.LogInformation("Generating QR code for contact {ContactId} for user {UserId}", 
+            _logger.LogInformation("Generating QR code for contact {ContactId} for user {UserId}",
                 request.ContactId, request.UserId);
 
             // Verify the contact exists and belongs to the user
             var contact = await _contactRepository.GetByIdAsync(request.ContactId, cancellationToken);
-            
+
             if (contact == null)
             {
                 _logger.LogWarning("Contact {ContactId} not found", request.ContactId);
@@ -41,7 +41,7 @@ public class GenerateContactQRQueryHandler : IRequestHandler<GenerateContactQRQu
 
             if (contact.UserId != request.UserId)
             {
-                _logger.LogWarning("Contact {ContactId} does not belong to user {UserId}", 
+                _logger.LogWarning("Contact {ContactId} does not belong to user {UserId}",
                     request.ContactId, request.UserId);
                 return Result<ContactQRCodeDto>.Failure("Contact not found");
             }
@@ -89,7 +89,7 @@ public class GenerateContactQRQueryHandler : IRequestHandler<GenerateContactQRQu
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error generating QR code for contact {ContactId} for user {UserId}", 
+            _logger.LogError(ex, "Error generating QR code for contact {ContactId} for user {UserId}",
                 request.ContactId, request.UserId);
             return Result<ContactQRCodeDto>.Failure($"Error generating QR code: {ex.Message}");
         }
@@ -99,7 +99,7 @@ public class GenerateContactQRQueryHandler : IRequestHandler<GenerateContactQRQu
     {
         using var qrGenerator = new QRCodeGenerator();
         using var qrCodeData = qrGenerator.CreateQrCode(payload, QRCodeGenerator.ECCLevel.Q);
-        
+
         return format switch
         {
             QRCodeFormat.PNG => GeneratePngQRCode(qrCodeData, size),
@@ -163,7 +163,7 @@ public class GenerateContactQRQueryHandler : IRequestHandler<GenerateContactQRQu
         // Simple signature generation - in production, use a proper signing key
         var data = $"{contactId}:{expiresAt:yyyy-MM-ddTHH:mm:ssZ}";
         var dataBytes = Encoding.UTF8.GetBytes(data);
-        
+
         using var sha256 = SHA256.Create();
         var hash = sha256.ComputeHash(dataBytes);
         return Convert.ToBase64String(hash);

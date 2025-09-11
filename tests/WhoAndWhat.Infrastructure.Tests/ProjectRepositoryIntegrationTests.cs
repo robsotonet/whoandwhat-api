@@ -14,9 +14,9 @@ using WhoAndWhat.Domain.ValueObjects;
 using WhoAndWhat.Infrastructure.Data;
 using WhoAndWhat.Infrastructure.Repositories;
 using Xunit;
-using Task = System.Threading.Tasks.Task;
 using DomainTask = WhoAndWhat.Domain.Entities.AppTask;
 using DomainTaskStatus = WhoAndWhat.Domain.ValueObjects.AppTaskStatus;
+using Task = System.Threading.Tasks.Task;
 
 namespace WhoAndWhat.Infrastructure.Tests;
 
@@ -36,11 +36,11 @@ public class ProjectRepositoryIntegrationTests : IDisposable
         var options = new DbContextOptionsBuilder<ApplicationDbContext>()
             .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
             .Options;
-        
+
         _context = new ApplicationDbContext(options);
         _baseRepository = new Repository<Project>(_context);
         _softDeleteService = new SoftDeleteService();
-        
+
         // Setup test data
         SetupTestData().GetAwaiter().GetResult();
     }
@@ -50,7 +50,7 @@ public class ProjectRepositoryIntegrationTests : IDisposable
         // Create test users
         _testUser = new User("test@test.com", "testuser", Language.en);
         _testUser.SetPassword("TestPassword123!");
-        
+
         _otherUser = new User("other@test.com", "otheruser", Language.en);
         _otherUser.SetPassword("TestPassword123!");
 
@@ -153,7 +153,7 @@ public class ProjectRepositoryIntegrationTests : IDisposable
         // Assert
         result.IsSuccess.Should().BeTrue();
         result.Message.Should().Contain("has been deleted");
-        
+
         project.IsDeleted.Should().BeTrue();
         project.DeletedAt.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromMinutes(1));
 
@@ -192,7 +192,7 @@ public class ProjectRepositoryIntegrationTests : IDisposable
         // Assert
         result.IsSuccess.Should().BeFalse();
         result.Message.Should().Contain("contains active tasks");
-        
+
         project.IsDeleted.Should().BeFalse();
         project.DeletedAt.Should().BeNull();
     }
@@ -220,9 +220,9 @@ public class ProjectRepositoryIntegrationTests : IDisposable
 
         // Assert
         result.IsSuccess.Should().BeTrue();
-        
+
         project.IsDeleted.Should().BeTrue();
-        
+
         // Completed task should also be deleted
         var deletedTask = await _context.Tasks.IgnoreQueryFilters()
             .FirstOrDefaultAsync(t => t.Id == completedTask.Id);
@@ -245,7 +245,7 @@ public class ProjectRepositoryIntegrationTests : IDisposable
         // Assert
         result.IsSuccess.Should().BeTrue();
         result.Message.Should().Contain("has been restored");
-        
+
         project.IsDeleted.Should().BeFalse();
         project.DeletedAt.Should().BeNull();
 
@@ -283,9 +283,9 @@ public class ProjectRepositoryIntegrationTests : IDisposable
         // Assert
         result.IsSuccess.Should().BeTrue();
         result.Message.Should().Contain("with 1 tasks");
-        
+
         project.IsDeleted.Should().BeFalse();
-        
+
         // Task should also be restored
         var restoredTask = await _context.Tasks.FindAsync(task.Id);
         restoredTask.Should().NotBeNull();
@@ -380,7 +380,7 @@ public class ProjectRepositoryIntegrationTests : IDisposable
 
         var contact = CreateTestContact("Test Contact", _testUser.Id);
         await _context.Contacts.AddAsync(contact);
-        
+
         await _context.SaveChangesAsync();
 
         // Add contact to project
@@ -410,7 +410,7 @@ public class ProjectRepositoryIntegrationTests : IDisposable
         {
             projects.Add(CreateTestProject($"Project {i}", _testUser.Id));
         }
-        
+
         await _context.Projects.AddRangeAsync(projects);
         await _context.SaveChangesAsync();
 
@@ -453,7 +453,7 @@ public class ProjectRepositoryIntegrationTests : IDisposable
         // Arrange
         var userProject = CreateTestProject("User Project", _testUser.Id);
         var otherProject = CreateTestProject("Other Project", _otherUser.Id);
-        
+
         await _context.Projects.AddRangeAsync(userProject, otherProject);
         await _context.SaveChangesAsync();
 
@@ -462,7 +462,7 @@ public class ProjectRepositoryIntegrationTests : IDisposable
 
         // Assert
         result.IsSuccess.Should().BeTrue(); // Service doesn't enforce user filtering
-        
+
         // But verify the project belongs to the other user
         otherProject.UserId.Should().Be(_otherUser.Id);
         otherProject.UserId.Should().NotBe(_testUser.Id);

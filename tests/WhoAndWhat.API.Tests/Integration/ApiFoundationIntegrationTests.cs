@@ -1,10 +1,10 @@
+using System.Net;
+using System.Text.Json;
 using FluentAssertions;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
-using System.Net;
-using System.Text.Json;
 using WhoAndWhat.API.Controllers.v1;
 using WhoAndWhat.Infrastructure.Data;
 using Xunit;
@@ -41,7 +41,7 @@ public class ApiFoundationIntegrationTests : IClassFixture<WebApplicationFactory
                 });
             });
         });
-        
+
         _client = _factory.CreateClient();
     }
 
@@ -59,7 +59,7 @@ public class ApiFoundationIntegrationTests : IClassFixture<WebApplicationFactory
 
         var content = await response.Content.ReadAsStringAsync();
         var healthResult = JsonSerializer.Deserialize<JsonElement>(content);
-        
+
         healthResult.GetProperty("status").GetString().Should().BeOneOf("Healthy", "Degraded");
         healthResult.GetProperty("timestamp").ValueKind.Should().Be(JsonValueKind.String);
         healthResult.GetProperty("checks").ValueKind.Should().Be(JsonValueKind.Array);
@@ -253,7 +253,7 @@ public class ApiFoundationIntegrationTests : IClassFixture<WebApplicationFactory
 
         var content = await response.Content.ReadAsStringAsync();
         var swaggerDoc = JsonSerializer.Deserialize<JsonElement>(content);
-        
+
         swaggerDoc.GetProperty("openapi").GetString().Should().StartWith("3.0");
         swaggerDoc.GetProperty("info").GetProperty("title").GetString().Should().Contain("WhoAndWhat");
         swaggerDoc.GetProperty("info").GetProperty("version").GetString().Should().Be("v1");
@@ -283,14 +283,14 @@ public class ApiFoundationIntegrationTests : IClassFixture<WebApplicationFactory
         // Assert
         // Security headers should be added first
         response.Headers.Should().ContainKey("X-Content-Type-Options");
-        
+
         // Response compression is optional in test environment
         // In production, compression would typically be applied by reverse proxy or middleware
         // For test environment, we just verify response is successful without requiring compression
-        
+
         // Content should be properly formatted JSON
         response.Content.Headers.ContentType?.MediaType.Should().Be("application/json");
-        
+
         // Response should be successful
         response.StatusCode.Should().Be(HttpStatusCode.OK);
     }

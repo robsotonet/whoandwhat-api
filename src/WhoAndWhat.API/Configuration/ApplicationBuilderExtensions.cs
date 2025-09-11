@@ -1,10 +1,10 @@
+using AspNetCoreRateLimit;
+using Hangfire;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
+using Microsoft.Extensions.Options;
 using Serilog;
 using WhoAndWhat.API.Middleware;
-using AspNetCoreRateLimit;
 using WhoAndWhat.Infrastructure.Configuration;
-using Microsoft.Extensions.Options;
-using Hangfire;
 
 namespace WhoAndWhat.API.Configuration;
 

@@ -1,12 +1,12 @@
+using System.Net;
+using System.Net.Http.Headers;
+using System.Text;
+using System.Text.Json;
 using FluentAssertions;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
-using System.Net;
-using System.Net.Http.Headers;
-using System.Text;
-using System.Text.Json;
 using WhoAndWhat.Application.DTOs.Authentication;
 using WhoAndWhat.Infrastructure.Data;
 using Xunit;
@@ -29,7 +29,7 @@ public class AuthControllerTests : IClassFixture<WebApplicationFactory<Program>>
             builder.UseEnvironment("Testing");
             // No service configuration needed - environment-conditional logic in Program.cs handles database setup
         });
-        
+
         _client = _factory.CreateClient();
         _jsonOptions = new JsonSerializerOptions
         {
@@ -96,7 +96,7 @@ public class AuthControllerTests : IClassFixture<WebApplicationFactory<Program>>
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
-        
+
         var responseContent = await response.Content.ReadAsStringAsync();
         responseContent.Should().Contain("Email");
     }
@@ -388,7 +388,7 @@ public class AuthControllerTests : IClassFixture<WebApplicationFactory<Program>>
         refreshResponse.RefreshToken.Should().NotBeNullOrEmpty();
         refreshResponse.TokenType.Should().Be("Bearer");
         refreshResponse.ExpiresIn.Should().BeGreaterThan(0);
-        
+
         // New tokens should be different from original
         refreshResponse.AccessToken.Should().NotBe(loginResponse.AccessToken);
         refreshResponse.RefreshToken.Should().NotBe(loginResponse.RefreshToken);
@@ -419,7 +419,7 @@ public class AuthControllerTests : IClassFixture<WebApplicationFactory<Program>>
         // Arrange - Register, login, then logout to revoke tokens
         await RegisterTestUser("revoked@example.com", "revokeduser", "TestPassword123!");
         var loginResponse = await LoginTestUser("revoked@example.com", "TestPassword123!");
-        
+
         // Logout to revoke all tokens
         await LogoutTestUser(loginResponse.AccessToken);
 

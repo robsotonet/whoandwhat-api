@@ -44,7 +44,7 @@ public class ApiInfoController : ControllerBase
             {
                 "/api/v1/apiinfo",
                 "/health",
-                "/health/live", 
+                "/health/live",
                 "/health/ready",
                 "/swagger"
             }

@@ -114,7 +114,7 @@ public class UpdateContactRoleCommandHandlerTests
         var contact = CreateValidContact(userId);
         var taskContact = CreateTaskContact(task.Id, contact.Id, "Collaborator");
         task.TaskContacts.Add(taskContact);
-        
+
         var command = CreateValidCommand(task.Id, contact.Id, userId, "Owner");
         SetupSuccessfulRoleUpdate(task, contact);
 
@@ -147,7 +147,7 @@ public class UpdateContactRoleCommandHandlerTests
         var contact = CreateValidContact(userId);
         var taskContact = CreateTaskContact(task.Id, contact.Id, fromRole);
         task.TaskContacts.Add(taskContact);
-        
+
         var command = CreateValidCommand(task.Id, contact.Id, userId, toRole);
         SetupSuccessfulRoleUpdate(task, contact);
 
@@ -169,7 +169,7 @@ public class UpdateContactRoleCommandHandlerTests
         var taskContact = CreateTaskContact(task.Id, contact.Id, "Reviewer", "Old notes");
         task.TaskContacts.Add(taskContact);
         var originalUpdateTime = taskContact.UpdatedAt;
-        
+
         var command = CreateValidCommand(task.Id, contact.Id, userId, "Owner", "New notes");
 
         AppTask capturedTask = null!;
@@ -189,7 +189,7 @@ public class UpdateContactRoleCommandHandlerTests
         // Assert
         result.IsSuccess.Should().BeTrue();
         capturedTask.Should().NotBeNull();
-        
+
         var updatedTaskContact = capturedTask.TaskContacts.First();
         updatedTaskContact.Role.Should().Be("Owner");
         updatedTaskContact.Notes.Should().Be("New notes");
@@ -207,7 +207,7 @@ public class UpdateContactRoleCommandHandlerTests
         var taskContact = CreateTaskContact(task.Id, contact.Id, "Collaborator");
         task.TaskContacts.Add(taskContact);
         var originalUpdateTime = task.UpdatedAt;
-        
+
         var command = CreateValidCommand(task.Id, contact.Id, userId, "Owner");
 
         AppTask capturedTask = null!;
@@ -239,7 +239,7 @@ public class UpdateContactRoleCommandHandlerTests
         var contact = CreateValidContact(userId);
         var taskContact = CreateTaskContact(task.Id, contact.Id, "Collaborator", "Original notes");
         task.TaskContacts.Add(taskContact);
-        
+
         var command = CreateValidCommand(task.Id, contact.Id, userId, "Owner", "Updated notes");
         SetupSuccessfulRoleUpdate(task, contact);
 
@@ -260,7 +260,7 @@ public class UpdateContactRoleCommandHandlerTests
         var contact = CreateValidContact(userId);
         var taskContact = CreateTaskContact(task.Id, contact.Id, "Collaborator", "Original notes");
         task.TaskContacts.Add(taskContact);
-        
+
         var command = CreateValidCommand(task.Id, contact.Id, userId, "Owner", null);
         SetupSuccessfulRoleUpdate(task, contact);
 
@@ -285,9 +285,9 @@ public class UpdateContactRoleCommandHandlerTests
         var contact = CreateValidContact(userId);
         var taskContact = CreateTaskContact(task.Id, contact.Id, "Owner");
         task.TaskContacts.Add(taskContact);
-        
+
         var command = CreateValidCommand(task.Id, contact.Id, userId, "Owner"); // Same role
-        
+
         _mockTaskRepository.Setup(x => x.GetByIdAsync(task.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(task);
         _mockContactRepository.Setup(x => x.GetByIdAsync(contact.Id, It.IsAny<CancellationToken>()))
@@ -299,7 +299,7 @@ public class UpdateContactRoleCommandHandlerTests
         // Assert
         result.IsSuccess.Should().BeTrue();
         result.Value.Role.Should().Be("Owner");
-        
+
         // Should not update or save when role is the same
         _mockTaskRepository.Verify(x => x.UpdateAsync(It.IsAny<AppTask>(), It.IsAny<CancellationToken>()), Times.Never);
         _mockTaskRepository.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
@@ -314,9 +314,9 @@ public class UpdateContactRoleCommandHandlerTests
         var contact = CreateValidContact(userId);
         var taskContact = CreateTaskContact(task.Id, contact.Id, "Owner");
         task.TaskContacts.Add(taskContact);
-        
+
         var command = CreateValidCommand(task.Id, contact.Id, userId, "OWNER"); // Different case
-        
+
         _mockTaskRepository.Setup(x => x.GetByIdAsync(task.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(task);
         _mockContactRepository.Setup(x => x.GetByIdAsync(contact.Id, It.IsAny<CancellationToken>()))
@@ -328,7 +328,7 @@ public class UpdateContactRoleCommandHandlerTests
         // Assert
         result.IsSuccess.Should().BeTrue();
         result.Value.Role.Should().Be("Owner");
-        
+
         // Should not update when role is effectively the same (case insensitive)
         _mockTaskRepository.Verify(x => x.UpdateAsync(It.IsAny<AppTask>(), It.IsAny<CancellationToken>()), Times.Never);
     }
@@ -343,7 +343,7 @@ public class UpdateContactRoleCommandHandlerTests
     [InlineData("   ")]
     [InlineData("InvalidRole")]
     [InlineData("Admin")] // Not a valid role
-    public async Task Handle_Should_Return_Failure_For_Invalid_Role(string invalidRole)
+    public async Task Handle_Should_Return_Failure_For_Invalid_Role(string? invalidRole)
     {
         // Arrange
         var command = CreateValidCommand(newRole: invalidRole);
@@ -354,7 +354,7 @@ public class UpdateContactRoleCommandHandlerTests
         // Assert
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("Invalid role");
-        
+
         _mockTaskRepository.Verify(x => x.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
@@ -376,7 +376,7 @@ public class UpdateContactRoleCommandHandlerTests
         // Assert
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("Task not found");
-        
+
         _mockContactRepository.Verify(x => x.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
@@ -388,7 +388,7 @@ public class UpdateContactRoleCommandHandlerTests
         var requestingUser = Guid.NewGuid();
         var task = CreateValidTask(taskOwner);
         var command = CreateValidCommand(task.Id, userId: requestingUser);
-        
+
         _mockTaskRepository.Setup(x => x.GetByIdAsync(command.TaskId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(task);
 
@@ -398,7 +398,7 @@ public class UpdateContactRoleCommandHandlerTests
         // Assert
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("Task not found");
-        
+
         _mockContactRepository.Verify(x => x.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
@@ -409,7 +409,7 @@ public class UpdateContactRoleCommandHandlerTests
         var userId = Guid.NewGuid();
         var task = CreateValidTask(userId, isArchived: true);
         var command = CreateValidCommand(task.Id, userId: userId);
-        
+
         _mockTaskRepository.Setup(x => x.GetByIdAsync(command.TaskId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(task);
 
@@ -419,7 +419,7 @@ public class UpdateContactRoleCommandHandlerTests
         // Assert
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("Cannot update contact role in archived or deleted task");
-        
+
         _mockContactRepository.Verify(x => x.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
@@ -430,7 +430,7 @@ public class UpdateContactRoleCommandHandlerTests
         var userId = Guid.NewGuid();
         var task = CreateValidTask(userId, isDeleted: true);
         var command = CreateValidCommand(task.Id, userId: userId);
-        
+
         _mockTaskRepository.Setup(x => x.GetByIdAsync(command.TaskId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(task);
 
@@ -453,7 +453,7 @@ public class UpdateContactRoleCommandHandlerTests
         var userId = Guid.NewGuid();
         var task = CreateValidTask(userId);
         var command = CreateValidCommand(task.Id, userId: userId);
-        
+
         _mockTaskRepository.Setup(x => x.GetByIdAsync(command.TaskId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(task);
         _mockContactRepository.Setup(x => x.GetByIdAsync(command.ContactId, It.IsAny<CancellationToken>()))
@@ -465,7 +465,7 @@ public class UpdateContactRoleCommandHandlerTests
         // Assert
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("Contact not found");
-        
+
         _mockTaskRepository.Verify(x => x.UpdateAsync(It.IsAny<AppTask>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
@@ -478,7 +478,7 @@ public class UpdateContactRoleCommandHandlerTests
         var task = CreateValidTask(taskOwner);
         var contact = CreateValidContact(contactOwner);
         var command = CreateValidCommand(task.Id, contact.Id, taskOwner);
-        
+
         _mockTaskRepository.Setup(x => x.GetByIdAsync(command.TaskId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(task);
         _mockContactRepository.Setup(x => x.GetByIdAsync(command.ContactId, It.IsAny<CancellationToken>()))
@@ -490,7 +490,7 @@ public class UpdateContactRoleCommandHandlerTests
         // Assert
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("Contact not found");
-        
+
         _mockTaskRepository.Verify(x => x.UpdateAsync(It.IsAny<AppTask>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
@@ -502,7 +502,7 @@ public class UpdateContactRoleCommandHandlerTests
         var task = CreateValidTask(userId);
         var contact = CreateValidContact(userId, isDeleted: true);
         var command = CreateValidCommand(task.Id, contact.Id, userId);
-        
+
         _mockTaskRepository.Setup(x => x.GetByIdAsync(command.TaskId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(task);
         _mockContactRepository.Setup(x => x.GetByIdAsync(command.ContactId, It.IsAny<CancellationToken>()))
@@ -514,7 +514,7 @@ public class UpdateContactRoleCommandHandlerTests
         // Assert
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("Cannot update role for deleted contact");
-        
+
         _mockTaskRepository.Verify(x => x.UpdateAsync(It.IsAny<AppTask>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
@@ -530,7 +530,7 @@ public class UpdateContactRoleCommandHandlerTests
         var task = CreateValidTask(userId);
         var contact = CreateValidContact(userId);
         var command = CreateValidCommand(task.Id, contact.Id, userId);
-        
+
         _mockTaskRepository.Setup(x => x.GetByIdAsync(command.TaskId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(task);
         _mockContactRepository.Setup(x => x.GetByIdAsync(command.ContactId, It.IsAny<CancellationToken>()))
@@ -542,7 +542,7 @@ public class UpdateContactRoleCommandHandlerTests
         // Assert
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("Contact is not linked to this task");
-        
+
         _mockTaskRepository.Verify(x => x.UpdateAsync(It.IsAny<AppTask>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
@@ -559,9 +559,9 @@ public class UpdateContactRoleCommandHandlerTests
         var contact = CreateValidContact(userId);
         var taskContact = CreateTaskContact(task.Id, contact.Id, "Collaborator");
         task.TaskContacts.Add(taskContact);
-        
+
         var command = CreateValidCommand(task.Id, contact.Id, userId, "Owner");
-        
+
         _mockTaskRepository.Setup(x => x.GetByIdAsync(command.TaskId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(task);
         _mockContactRepository.Setup(x => x.GetByIdAsync(command.ContactId, It.IsAny<CancellationToken>()))
@@ -590,7 +590,7 @@ public class UpdateContactRoleCommandHandlerTests
         var contact = CreateValidContact(userId);
         var taskContact = CreateTaskContact(task.Id, contact.Id, "Collaborator");
         task.TaskContacts.Add(taskContact);
-        
+
         var command = CreateValidCommand(task.Id, contact.Id, userId, "Owner");
         var cancellationToken = new CancellationToken();
         SetupSuccessfulRoleUpdate(task, contact);
@@ -618,7 +618,7 @@ public class UpdateContactRoleCommandHandlerTests
         var contact = CreateValidContact(userId);
         var taskContact = CreateTaskContact(task.Id, contact.Id, "Collaborator");
         task.TaskContacts.Add(taskContact);
-        
+
         var command = CreateValidCommand(task.Id, contact.Id, userId, "Owner");
         SetupSuccessfulRoleUpdate(task, contact);
 
@@ -665,9 +665,9 @@ public class UpdateContactRoleCommandHandlerTests
         var contact = CreateValidContact(userId);
         var taskContact = CreateTaskContact(task.Id, contact.Id, "Owner");
         task.TaskContacts.Add(taskContact);
-        
+
         var command = CreateValidCommand(task.Id, contact.Id, userId, "Owner");
-        
+
         _mockTaskRepository.Setup(x => x.GetByIdAsync(task.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(task);
         _mockContactRepository.Setup(x => x.GetByIdAsync(contact.Id, It.IsAny<CancellationToken>()))
@@ -697,9 +697,9 @@ public class UpdateContactRoleCommandHandlerTests
         var contact = CreateValidContact(userId);
         var taskContact = CreateTaskContact(task.Id, contact.Id, "Collaborator");
         task.TaskContacts.Add(taskContact);
-        
+
         var command = CreateValidCommand(task.Id, contact.Id, userId, "Owner");
-        
+
         _mockTaskRepository.Setup(x => x.GetByIdAsync(command.TaskId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(task);
         _mockContactRepository.Setup(x => x.GetByIdAsync(command.ContactId, It.IsAny<CancellationToken>()))

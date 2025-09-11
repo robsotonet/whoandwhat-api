@@ -1,16 +1,16 @@
+using System.Security.Claims;
+using Asp.Versioning;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Security.Claims;
-using MediatR;
-using Asp.Versioning;
+using WhoAndWhat.Application.DTOs.Contacts;
 using WhoAndWhat.Application.Features.Contacts.Commands.CreateContact;
-using WhoAndWhat.Application.Features.Contacts.Commands.UpdateContact;
 using WhoAndWhat.Application.Features.Contacts.Commands.DeleteContact;
-using WhoAndWhat.Application.Features.Contacts.Commands.RestoreContact;
 using WhoAndWhat.Application.Features.Contacts.Commands.PermanentlyDeleteContact;
+using WhoAndWhat.Application.Features.Contacts.Commands.RestoreContact;
+using WhoAndWhat.Application.Features.Contacts.Commands.UpdateContact;
 using WhoAndWhat.Application.Features.Contacts.Queries.GetContact;
 using WhoAndWhat.Application.Features.Contacts.Queries.GetContacts;
-using WhoAndWhat.Application.DTOs.Contacts;
 
 namespace WhoAndWhat.API.Controllers.v1;
 
@@ -83,7 +83,7 @@ public class ContactsController : ControllerBase
                 PageSize: pageSize
             );
 
-            _logger.LogInformation("Getting contacts for user {UserId} with search '{Search}', relationshipType {RelationshipType}", 
+            _logger.LogInformation("Getting contacts for user {UserId} with search '{Search}', relationshipType {RelationshipType}",
                 userId.Value, search, relationshipType);
 
             var result = await _mediator.Send(query, cancellationToken);
@@ -145,7 +145,7 @@ public class ContactsController : ControllerBase
             if (!result.IsSuccess)
             {
                 _logger.LogWarning("Failed to get contact {ContactId} for user {UserId}: {Error}", id, userId.Value, result.Error);
-                
+
                 if (result.Error == "Contact not found")
                 {
                     return NotFound(new ProblemDetails
@@ -279,7 +279,7 @@ public class ContactsController : ControllerBase
             if (!result.IsSuccess)
             {
                 _logger.LogWarning("Failed to update contact {ContactId} for user {UserId}: {Error}", id, userId.Value, result.Error);
-                
+
                 if (result.Error == "Contact not found")
                 {
                     return NotFound(new ProblemDetails
@@ -343,7 +343,7 @@ public class ContactsController : ControllerBase
             if (!result.IsSuccess)
             {
                 _logger.LogWarning("Failed to delete contact {ContactId} for user {UserId}: {Error}", id, userId.Value, result.Error);
-                
+
                 if (result.Error == "Contact not found")
                 {
                     return NotFound(new ProblemDetails
@@ -471,7 +471,7 @@ public class ContactsController : ControllerBase
             if (!result.IsSuccess)
             {
                 _logger.LogWarning("Failed to get tasks for contact {ContactId} for user {UserId}: {Error}", id, userId.Value, result.Error);
-                
+
                 if (result.Error == "Contact not found")
                 {
                     return NotFound(new ProblemDetails
@@ -540,11 +540,11 @@ public class ContactsController : ControllerBase
             var command = new RestoreContactCommand(id, userId.Value);
 
             var result = await _mediator.Send(command, cancellationToken);
-            
+
             if (!result.IsSuccess)
             {
                 _logger.LogWarning("Failed to restore contact {ContactId} for user {UserId}: {Error}", id, userId.Value, result.Error);
-                
+
                 if (result.Error == "Contact not found")
                 {
                     return NotFound(new ProblemDetails
@@ -615,11 +615,11 @@ public class ContactsController : ControllerBase
             var command = new PermanentlyDeleteContactCommand(id, userId.Value);
 
             var result = await _mediator.Send(command, cancellationToken);
-            
+
             if (!result.IsSuccess)
             {
                 _logger.LogWarning("Failed to permanently delete contact {ContactId} for user {UserId}: {Error}", id, userId.Value, result.Error);
-                
+
                 if (result.Error == "Contact not found")
                 {
                     return NotFound(new ProblemDetails

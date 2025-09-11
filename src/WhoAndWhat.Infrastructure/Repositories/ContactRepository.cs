@@ -195,16 +195,16 @@ public class ContactRepository : Repository<Contact>, IContactRepository
                 return Enumerable.Empty<Contact>();
             }
 
-            var queryable = includeDeleted 
+            var queryable = includeDeleted
                 ? _context.Contacts.IgnoreQueryFilters()
                 : _dbSet.AsQueryable();
 
             var searchTerm = query.Trim().ToLower();
-            
+
             return await queryable
                 .Where(c => c.UserId == userId)
                 .Where(c => includeDeleted || !c.IsDeleted)
-                .Where(c => 
+                .Where(c =>
                     c.Name.ToLower().Contains(searchTerm) ||
                     (c.Email != null && c.Email.ToLower().Contains(searchTerm)) ||
                     (c.Phone != null && c.Phone.Contains(searchTerm)))

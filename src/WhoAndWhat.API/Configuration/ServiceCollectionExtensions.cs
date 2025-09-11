@@ -1,26 +1,26 @@
-using Asp.Versioning;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.Extensions.Diagnostics.HealthChecks;
-using Microsoft.IdentityModel.Tokens;
-using Serilog;
-using Swashbuckle.AspNetCore.SwaggerGen;
-using Swashbuckle.AspNetCore.Annotations;
 using System.Reflection;
 using System.Security.Claims;
 using System.Text;
-using WhoAndWhat.API.Filters;
-using WhoAndWhat.Application.Interfaces;
-using WhoAndWhat.Application.Services;
-using WhoAndWhat.Infrastructure.Configuration;
-using Microsoft.Extensions.Configuration;
-using WhoAndWhat.Infrastructure.Data;
-using WhoAndWhat.Infrastructure.Services;
-using Microsoft.Extensions.Options;
-using WhoAndWhat.Infrastructure.Repositories;
+using Asp.Versioning;
 using AspNetCoreRateLimit;
 using Azure.Extensions.AspNetCore.Configuration.Secrets;
 using Azure.Identity;
 using Azure.Security.KeyVault.Secrets;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
+using Microsoft.Extensions.Options;
+using Microsoft.IdentityModel.Tokens;
+using Serilog;
+using Swashbuckle.AspNetCore.Annotations;
+using Swashbuckle.AspNetCore.SwaggerGen;
+using WhoAndWhat.API.Filters;
+using WhoAndWhat.Application.Interfaces;
+using WhoAndWhat.Application.Services;
+using WhoAndWhat.Infrastructure.Configuration;
+using WhoAndWhat.Infrastructure.Data;
+using WhoAndWhat.Infrastructure.Repositories;
+using WhoAndWhat.Infrastructure.Services;
 
 namespace WhoAndWhat.API.Configuration;
 
@@ -234,26 +234,26 @@ Users can export their data in JSON or CSV format including:
 
             // Configure response examples and schemas
             // Note: EnableAnnotations requires Swashbuckle.AspNetCore.Annotations package
-            
+
             // Add servers for different environments
             options.AddServer(new Microsoft.OpenApi.Models.OpenApiServer
             {
                 Url = "https://localhost:7071",
                 Description = "Development Server"
             });
-            
+
             options.AddServer(new Microsoft.OpenApi.Models.OpenApiServer
             {
                 Url = "https://api-dev.whoandwhat.com",
                 Description = "Development Environment"
             });
-            
+
             options.AddServer(new Microsoft.OpenApi.Models.OpenApiServer
             {
-                Url = "https://api-staging.whoandwhat.com", 
+                Url = "https://api-staging.whoandwhat.com",
                 Description = "Staging Environment"
             });
-            
+
             options.AddServer(new Microsoft.OpenApi.Models.OpenApiServer
             {
                 Url = "https://api.whoandwhat.com",
@@ -279,10 +279,10 @@ Users can export their data in JSON or CSV format including:
     {
         // Add Redis caching with health checks and performance monitoring
         services.AddRedisCaching(configuration);
-        
+
         // Optionally add cache warming (can be disabled via configuration)
         services.AddCacheWarming();
-        
+
         return services;
     }
 
@@ -299,15 +299,15 @@ Users can export their data in JSON or CSV format including:
             options.TaskListCacheExpirationMinutes = redisSettings.TaskListCacheExpirationMinutes;
             options.KeyPrefix = redisSettings.KeyPrefix;
         });
-        
+
         // Register the interface with the concrete implementation
         services.AddSingleton<WhoAndWhat.Application.Configuration.ICacheSettings>(provider =>
             provider.GetRequiredService<IOptions<WhoAndWhat.Application.Configuration.CacheSettings>>().Value);
-        
+
         // Register search repository and service
         services.AddScoped<ITaskSearchRepository, TaskSearchRepository>();
         services.AddScoped<ITaskSearchService, TaskSearchService>();
-        
+
         return services;
     }
 
@@ -318,13 +318,13 @@ Users can export their data in JSON or CSV format including:
     {
         // Configure archive settings
         services.Configure<ArchiveSettings>(configuration.GetSection(ArchiveSettings.SectionName));
-        
+
         // Register archive service
         services.AddScoped<ITaskArchiveService, TaskArchiveService>();
-        
+
         // Add Hangfire background job services
         services.AddHangfireServices(configuration);
-        
+
         return services;
     }
 
@@ -337,11 +337,11 @@ Users can export their data in JSON or CSV format including:
         {
             // For testing environment, use simple health checks without database dependency
             services.AddHealthChecks()
-                .AddCheck("database", () => HealthCheckResult.Healthy("InMemory database is always healthy"), 
+                .AddCheck("database", () => HealthCheckResult.Healthy("InMemory database is always healthy"),
                     tags: new[] { "database", "inmemory" })
-                .AddCheck("api", () => HealthCheckResult.Healthy("API is running"), 
+                .AddCheck("api", () => HealthCheckResult.Healthy("API is running"),
                     tags: new[] { "api", "self" })
-                .AddCheck("cache", () => HealthCheckResult.Healthy("In-memory cache is always healthy"), 
+                .AddCheck("cache", () => HealthCheckResult.Healthy("In-memory cache is always healthy"),
                     tags: new[] { "cache", "inmemory" });
         }
         else
@@ -353,7 +353,7 @@ Users can export their data in JSON or CSV format including:
                     name: "database",
                     failureStatus: HealthStatus.Degraded,
                     tags: new[] { "database", "postgresql" })
-                .AddCheck("api", () => HealthCheckResult.Healthy("API is running"), 
+                .AddCheck("api", () => HealthCheckResult.Healthy("API is running"),
                     tags: new[] { "api", "self" });
         }
 
@@ -393,22 +393,22 @@ Users can export their data in JSON or CSV format including:
                           // iOS app custom schemes
                           "whoandwhat://oauth/callback",
                           "whoandwhat-dev://oauth/callback",
-                          
+
                           // Android app custom schemes
                           "com.whoandwhat.app://oauth/callback",
                           "com.whoandwhat.app.dev://oauth/callback",
-                          
+
                           // Capacitor/Ionic local development
                           "http://localhost",
                           "http://localhost:3000",
                           "http://localhost:8080",
                           "http://localhost:8100",
                           "http://localhost:4200",
-                          
+
                           // Mobile app domains (production)
                           "https://app.whoandwhat.com",
                           "https://mobile.whoandwhat.com",
-                          
+
                           // Development app domains
                           "https://app-dev.whoandwhat.com",
                           "https://app-staging.whoandwhat.com")
@@ -416,9 +416,9 @@ Users can export their data in JSON or CSV format including:
                       .AllowAnyHeader()
                       .AllowCredentials()
                       .WithExposedHeaders(
-                          "X-Pagination", 
-                          "X-API-Version", 
-                          "X-Rate-Limit-Remaining", 
+                          "X-Pagination",
+                          "X-API-Version",
+                          "X-Rate-Limit-Remaining",
                           "X-Rate-Limit-Reset",
                           "X-Device-Type",
                           "X-App-Version")
@@ -444,9 +444,9 @@ Users can export their data in JSON or CSV format including:
                           "X-Client-Id")
                       .AllowCredentials()
                       .WithExposedHeaders(
-                          "X-Pagination", 
-                          "X-API-Version", 
-                          "X-Rate-Limit-Remaining", 
+                          "X-Pagination",
+                          "X-API-Version",
+                          "X-Rate-Limit-Remaining",
                           "X-Rate-Limit-Reset")
                       .SetPreflightMaxAge(TimeSpan.FromHours(1));
             });
@@ -460,11 +460,11 @@ Users can export their data in JSON or CSV format including:
                           "https://www.facebook.com",
                           "https://login.microsoftonline.com",
                           "https://appleid.apple.com",
-                          
+
                           // Local development
                           "http://localhost:5000",
                           "https://localhost:7071",
-                          
+
                           // Production domains
                           "https://api.whoandwhat.com",
                           "https://api-dev.whoandwhat.com")
@@ -517,7 +517,7 @@ Users can export their data in JSON or CSV format including:
         // Configure JWT settings
         var jwtSettings = new JwtSettings();
         configuration.GetSection(JwtSettings.SectionName).Bind(jwtSettings);
-        
+
         // Validate JWT settings
         if (string.IsNullOrEmpty(jwtSettings.SecretKey))
         {
@@ -576,14 +576,14 @@ Users can export their data in JSON or CSV format including:
                 OnTokenValidated = context =>
                 {
                     var logger = context.HttpContext.RequestServices.GetRequiredService<ILogger<JwtBearerEvents>>();
-                    logger.LogDebug("JWT token validated for user: {UserId}", 
+                    logger.LogDebug("JWT token validated for user: {UserId}",
                         context.Principal?.FindFirst(ClaimTypes.NameIdentifier)?.Value);
                     return Task.CompletedTask;
                 },
                 OnChallenge = context =>
                 {
                     var logger = context.HttpContext.RequestServices.GetRequiredService<ILogger<JwtBearerEvents>>();
-                    logger.LogWarning("JWT authentication challenge: {Error} - {Description}", 
+                    logger.LogWarning("JWT authentication challenge: {Error} - {Description}",
                         context.Error, context.ErrorDescription);
                     return Task.CompletedTask;
                 }
@@ -595,7 +595,7 @@ Users can export their data in JSON or CSV format including:
         {
             options.AddPolicy("RequireVerifiedEmail", policy =>
                 policy.RequireClaim("email_verified", "true"));
-            
+
             options.AddPolicy("RequireAuthentication", policy =>
                 policy.RequireAuthenticatedUser());
         });
@@ -611,7 +611,7 @@ Users can export their data in JSON or CSV format including:
         // Configure OAuth settings
         var oauthSettings = new OAuthSettings();
         configuration.GetSection(OAuthSettings.SectionName).Bind(oauthSettings);
-        
+
         services.Configure<OAuthSettings>(configuration.GetSection(OAuthSettings.SectionName));
 
         // Register OAuth services and repositories
@@ -635,7 +635,7 @@ Users can export their data in JSON or CSV format including:
                 options.Events.OnCreatingTicket = context =>
                 {
                     var logger = context.HttpContext.RequestServices.GetRequiredService<ILogger<string>>();
-                    logger.LogDebug("Google OAuth ticket created for user: {Email}", 
+                    logger.LogDebug("Google OAuth ticket created for user: {Email}",
                         context.Principal?.FindFirst(ClaimTypes.Email)?.Value);
                     return System.Threading.Tasks.Task.CompletedTask;
                 };
@@ -657,7 +657,7 @@ Users can export their data in JSON or CSV format including:
                 options.Events.OnCreatingTicket = context =>
                 {
                     var logger = context.HttpContext.RequestServices.GetRequiredService<ILogger<string>>();
-                    logger.LogDebug("Facebook OAuth ticket created for user: {Email}", 
+                    logger.LogDebug("Facebook OAuth ticket created for user: {Email}",
                         context.Principal?.FindFirst(ClaimTypes.Email)?.Value);
                     return System.Threading.Tasks.Task.CompletedTask;
                 };
@@ -665,9 +665,9 @@ Users can export their data in JSON or CSV format including:
         }
 
         // Configure Apple OAuth
-        if (!string.IsNullOrEmpty(oauthSettings.Apple.ClientId) && 
-            !string.IsNullOrEmpty(oauthSettings.Apple.TeamId) && 
-            !string.IsNullOrEmpty(oauthSettings.Apple.KeyId) && 
+        if (!string.IsNullOrEmpty(oauthSettings.Apple.ClientId) &&
+            !string.IsNullOrEmpty(oauthSettings.Apple.TeamId) &&
+            !string.IsNullOrEmpty(oauthSettings.Apple.KeyId) &&
             !string.IsNullOrEmpty(oauthSettings.Apple.PrivateKey))
         {
             authenticationBuilder.AddApple(options =>
@@ -675,7 +675,7 @@ Users can export their data in JSON or CSV format including:
                 options.ClientId = oauthSettings.Apple.ClientId;
                 options.TeamId = oauthSettings.Apple.TeamId;
                 options.KeyId = oauthSettings.Apple.KeyId;
-                options.PrivateKey = (keyId, cancellationToken) => 
+                options.PrivateKey = (keyId, cancellationToken) =>
                     Task.FromResult<ReadOnlyMemory<char>>(oauthSettings.Apple.PrivateKey.AsMemory());
                 options.CallbackPath = oauthSettings.CallbackUrl.Apple;
                 options.SaveTokens = true;
@@ -683,7 +683,7 @@ Users can export their data in JSON or CSV format including:
                 options.Events.OnCreatingTicket = context =>
                 {
                     var logger = context.HttpContext.RequestServices.GetRequiredService<ILogger<string>>();
-                    logger.LogDebug("Apple OAuth ticket created for user: {Email}", 
+                    logger.LogDebug("Apple OAuth ticket created for user: {Email}",
                         context.Principal?.FindFirst(ClaimTypes.Email)?.Value);
                     return System.Threading.Tasks.Task.CompletedTask;
                 };
@@ -712,7 +712,7 @@ Users can export their data in JSON or CSV format including:
 
         // Configure IP rate limiting
         services.Configure<IpRateLimitOptions>(configuration.GetSection("IpRateLimiting"));
-        
+
         // Configure client rate limiting
         services.Configure<ClientRateLimitOptions>(configuration.GetSection("ClientRateLimiting"));
 
@@ -735,7 +735,7 @@ Users can export their data in JSON or CSV format including:
     public static IServiceCollection AddAzureKeyVaultConfiguration(this IServiceCollection services, IConfiguration configuration)
     {
         var keyVaultEndpoint = configuration["KeyVault:Endpoint"];
-        
+
         if (!string.IsNullOrEmpty(keyVaultEndpoint))
         {
             // Register Azure Key Vault services for runtime access
@@ -745,7 +745,7 @@ Users can export their data in JSON or CSV format including:
                 return new SecretClient(new Uri(keyVaultEndpoint), credential);
             });
         }
-        
+
         return services;
     }
 
@@ -756,7 +756,7 @@ Users can export their data in JSON or CSV format including:
     {
         // Configure DDoS protection settings
         services.Configure<DDoSProtectionSettings>(configuration.GetSection(DDoSProtectionSettings.SectionName));
-        
+
         return services;
     }
 
@@ -767,7 +767,7 @@ Users can export their data in JSON or CSV format including:
     {
         // Configure security headers settings
         services.Configure<SecurityHeadersSettings>(configuration.GetSection(SecurityHeadersSettings.SectionName));
-        
+
         return services;
     }
 }

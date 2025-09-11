@@ -26,7 +26,7 @@ public class PermanentlyDeleteContactCommandHandler : IRequestHandler<Permanentl
 
             // Get the soft-deleted contact
             var contact = await _contactRepository.GetContactIncludingDeletedAsync(request.ContactId, request.UserId, cancellationToken);
-            
+
             if (contact == null)
             {
                 _logger.LogWarning("Contact {ContactId} not found for user {UserId}", request.ContactId, request.UserId);

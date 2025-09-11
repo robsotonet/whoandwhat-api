@@ -1,7 +1,7 @@
+using System.Text.Json;
 using FluentAssertions;
 using Microsoft.Extensions.Logging;
 using Moq;
-using System.Text.Json;
 using WhoAndWhat.Application.Common;
 using WhoAndWhat.Application.Interfaces;
 using WhoAndWhat.Application.Services;
@@ -318,7 +318,7 @@ public class UserServiceTests
         // Verify JSON content includes placeholder data structures
         var jsonContent = System.Text.Encoding.UTF8.GetString(result.Value.Data);
         var jsonData = JsonDocument.Parse(jsonContent);
-        
+
         jsonData.RootElement.TryGetProperty("profile", out _).Should().BeTrue();
         jsonData.RootElement.TryGetProperty("tasks", out _).Should().BeTrue();
         jsonData.RootElement.TryGetProperty("projects", out _).Should().BeTrue();

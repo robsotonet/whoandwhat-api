@@ -1,7 +1,7 @@
+using System.Security.Claims;
 using Asp.Versioning;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Security.Claims;
 using WhoAndWhat.Application.DTOs.Authentication;
 using WhoAndWhat.Application.Interfaces;
 

@@ -36,18 +36,18 @@ public class SharedTaskDto
     public DateTime? DueDate { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
-    
+
     // Contact relationship information
     public Guid ContactId { get; set; }
     public string ContactName { get; set; } = string.Empty;
     public string ContactRole { get; set; } = string.Empty;
     public DateTime LinkedAt { get; set; }
     public string? ContactNotes { get; set; }
-    
+
     // Task owner information
     public Guid TaskOwnerId { get; set; }
     public string TaskOwnerName { get; set; } = string.Empty;
-    
+
     // Authorization flags based on role
     public bool CanEdit { get; set; }
     public bool CanDelete { get; set; }

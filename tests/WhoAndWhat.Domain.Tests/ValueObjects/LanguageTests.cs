@@ -63,7 +63,7 @@ public class LanguageTests
     [InlineData(null)]
     [InlineData("english")] // Full name instead of code
     [InlineData("spanish")] // Full name instead of code
-    public void Language_Should_Throw_On_Invalid_Parse(string input)
+    public void Language_Should_Throw_On_Invalid_Parse(string? input)
     {
         // Act & Assert
         Action act = () => Enum.Parse<Language>(input, true);
@@ -149,7 +149,7 @@ public class LanguageTests
     {
         // This test demonstrates how language codes could be mapped to display names
         // This would typically be handled by localization resources
-        
+
         // Act
         string displayName = language switch
         {
@@ -169,12 +169,12 @@ public class LanguageTests
     {
         // This test demonstrates how language enum could map to culture codes
         // This would be useful for localization and formatting
-        
+
         // Act
         string cultureCode = language switch
         {
             Language.en => "en-US",
-            Language.es => "es-ES", 
+            Language.es => "es-ES",
             _ => "en-US" // Default fallback
         };
 

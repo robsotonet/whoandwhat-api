@@ -178,7 +178,7 @@ public class GetContactsQueryHandlerTests
         result.Value.Page.Should().Be(1);
         result.Value.PageSize.Should().Be(10);
         result.Value.TotalPages.Should().Be(1);
-        
+
         _mockContactRepository.Verify(x => x.FindContactsAsync(
             string.Empty, userId, false, It.IsAny<CancellationToken>()), Times.Once);
     }
@@ -220,7 +220,7 @@ public class GetContactsQueryHandlerTests
         result.IsSuccess.Should().BeTrue();
         var contactDto = result.Value.Contacts.First();
         var originalContact = testContacts.First();
-        
+
         contactDto.Id.Should().Be(originalContact.Id);
         contactDto.Name.Should().Be(originalContact.Name);
         contactDto.Email.Should().Be(originalContact.Email);
@@ -242,7 +242,7 @@ public class GetContactsQueryHandlerTests
         // Arrange
         var userId = Guid.NewGuid();
         var testContacts = CreateTestContacts(userId).Where(c => !c.IsDeleted).Take(2).ToList();
-        
+
         // Test with page size of 2
         var query = CreateValidGetContactsQuery(userId, pageNumber: 1, pageSize: 2);
         SetupSuccessfulGetContactsRepositoryMocks(testContacts); // Total 4 contacts
@@ -256,7 +256,7 @@ public class GetContactsQueryHandlerTests
         result.Value.TotalCount.Should().Be(4);
         result.Value.PageSize.Should().Be(2);
         result.Value.TotalPages.Should().Be(2); // 4 total / 2 page size = 2 pages
-        
+
         _mockContactRepository.Verify(x => x.FindContactsAsync(
             string.Empty, userId, false, It.IsAny<CancellationToken>()), Times.Once);
     }
@@ -267,7 +267,7 @@ public class GetContactsQueryHandlerTests
         // Arrange
         var userId = Guid.NewGuid();
         var testContacts = CreateTestContacts(userId).Where(c => !c.IsDeleted).Skip(2).Take(2).ToList();
-        
+
         // Test page 2 with page size of 2
         var query = CreateValidGetContactsQuery(userId, pageNumber: 2, pageSize: 2);
         SetupSuccessfulGetContactsRepositoryMocks(testContacts);
@@ -279,7 +279,7 @@ public class GetContactsQueryHandlerTests
         result.IsSuccess.Should().BeTrue();
         result.Value.Page.Should().Be(2);
         result.Value.TotalPages.Should().Be(2);
-        
+
         _mockContactRepository.Verify(x => x.FindContactsAsync(
             string.Empty, userId, false, It.IsAny<CancellationToken>()), Times.Once);
     }
@@ -303,7 +303,7 @@ public class GetContactsQueryHandlerTests
             // Arrange
             var userId = Guid.NewGuid();
             var query = CreateValidGetContactsQuery(userId, pageSize: testCase.PageSize);
-            
+
             // Create the right number of contacts for each test case
             var contacts = CreateTestContactsWithCount(userId, testCase.TotalCount);
             SetupSuccessfulGetContactsRepositoryMocks(contacts);
@@ -313,7 +313,7 @@ public class GetContactsQueryHandlerTests
 
             // Assert
             result.IsSuccess.Should().BeTrue();
-            result.Value.TotalPages.Should().Be(testCase.ExpectedPages, 
+            result.Value.TotalPages.Should().Be(testCase.ExpectedPages,
                 $"Expected {testCase.ExpectedPages} pages for {testCase.TotalCount} total items with page size {testCase.PageSize}");
         }
     }
@@ -348,7 +348,7 @@ public class GetContactsQueryHandlerTests
         result.IsSuccess.Should().BeTrue();
         result.Value.Contacts.Should().HaveCount(1);
         result.Value.Contacts.First().Name.Should().Contain("Alice");
-        
+
         _mockContactRepository.Verify(x => x.FindContactsAsync(
             searchTerm, userId, false, It.IsAny<CancellationToken>()), Times.Once);
     }
@@ -379,7 +379,7 @@ public class GetContactsQueryHandlerTests
         result.IsSuccess.Should().BeTrue();
         result.Value.Contacts.Should().HaveCount(1);
         result.Value.Contacts.First().Email.Should().Contain("smith");
-        
+
         _mockContactRepository.Verify(x => x.FindContactsAsync(
             searchTerm, userId, false, It.IsAny<CancellationToken>()), Times.Once);
     }
@@ -440,7 +440,7 @@ public class GetContactsQueryHandlerTests
         result.IsSuccess.Should().BeTrue();
         result.Value.Contacts.Should().HaveCount(allContacts.Count);
         result.Value.Contacts.Should().Contain(c => c.IsDeleted); // Should include soft-deleted contacts
-        
+
         _mockContactRepository.Verify(x => x.FindContactsAsync(
             string.Empty, userId, true, It.IsAny<CancellationToken>()), Times.Once);
     }
@@ -470,7 +470,7 @@ public class GetContactsQueryHandlerTests
         // Assert
         result.IsSuccess.Should().BeTrue();
         result.Value.Contacts.Should().OnlyContain(c => c.RelationshipType == relationshipType);
-        
+
         _mockContactRepository.Verify(x => x.FindContactsAsync(
             string.Empty, userId, false, It.IsAny<CancellationToken>()), Times.Once);
     }
@@ -490,7 +490,7 @@ public class GetContactsQueryHandlerTests
         // Assert
         result.IsSuccess.Should().BeTrue();
         result.Value.Contacts.Should().NotContain(c => c.IsDeleted);
-        
+
         _mockContactRepository.Verify(x => x.FindContactsAsync(
             string.Empty, userId, false, It.IsAny<CancellationToken>()), Times.Once);
     }
@@ -520,7 +520,7 @@ public class GetContactsQueryHandlerTests
         // Assert
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("User ID is required");
-        
+
         _mockContactRepository.Verify(x => x.FindContactsAsync(
             It.IsAny<string>(), It.IsAny<Guid>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()), Times.Never);
     }
@@ -549,7 +549,7 @@ public class GetContactsQueryHandlerTests
         // Assert
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("Page number must be greater than 0");
-        
+
         _mockContactRepository.Verify(x => x.FindContactsAsync(
             It.IsAny<string>(), It.IsAny<Guid>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()), Times.Never);
     }
@@ -578,7 +578,7 @@ public class GetContactsQueryHandlerTests
         // Assert
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("Page size must be between 1 and 100");
-        
+
         _mockContactRepository.Verify(x => x.FindContactsAsync(
             It.IsAny<string>(), It.IsAny<Guid>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()), Times.Never);
     }
@@ -602,7 +602,7 @@ public class GetContactsQueryHandlerTests
         // Assert
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("An error occurred while retrieving contacts");
-        
+
         _mockContactRepository.Verify(x => x.FindContactsAsync(
             It.IsAny<string>(), It.IsAny<Guid>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()), Times.Once);
     }
@@ -651,7 +651,7 @@ public class GetContactsQueryHandlerTests
 
         // Assert
         result.IsSuccess.Should().BeTrue();
-        
+
         // Should pass null or trimmed search term to repository
         _mockContactRepository.Verify(x => x.FindContactsAsync(
             It.Is<string>(s => string.IsNullOrWhiteSpace(s) || string.IsNullOrEmpty(s)), userId, false, It.IsAny<CancellationToken>()), Times.Once);
@@ -680,7 +680,7 @@ public class GetContactsQueryHandlerTests
 
         // Assert
         result.IsSuccess.Should().BeTrue();
-        
+
         _mockContactRepository.Verify(x => x.FindContactsAsync(
             longSearchTerm, userId, false, It.IsAny<CancellationToken>()), Times.Once);
     }
@@ -762,7 +762,7 @@ public class GetContactsQueryHandlerTests
         var query = CreateValidGetContactsQuery();
         var cancellationTokenSource = new CancellationTokenSource();
         cancellationTokenSource.Cancel(); // Cancel immediately
-        
+
         _mockContactRepository.Setup(x => x.FindContactsAsync(
             It.IsAny<string>(), It.IsAny<Guid>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()))
             .ThrowsAsync(new OperationCanceledException());

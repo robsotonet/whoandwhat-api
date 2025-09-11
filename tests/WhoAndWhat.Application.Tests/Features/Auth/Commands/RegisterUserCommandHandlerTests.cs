@@ -28,7 +28,7 @@ public class RegisterUserCommandHandlerTests
         _jwtTokenServiceMock = new Mock<IJwtTokenService>();
         _emailServiceMock = new Mock<IEmailService>();
         _loggerMock = new Mock<ILogger<RegisterUserCommandHandler>>();
-        
+
         _handler = new RegisterUserCommandHandler(
             _userServiceMock.Object,
             _accountVerificationServiceMock.Object,

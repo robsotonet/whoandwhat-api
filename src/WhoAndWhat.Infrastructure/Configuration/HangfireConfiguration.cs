@@ -11,11 +11,47 @@ namespace WhoAndWhat.Infrastructure.Configuration;
 /// <summary>
 /// Configuration for Hangfire background job processing
 /// </summary>
+/// <remarks>
+/// DEPRECATED: This configuration is obsolete and will be removed in v2.0.
+/// Migrate to ContentSchedulingService for improved background job processing with SignalR integration.
+/// </remarks>
 public static class HangfireConfiguration
 {
     /// <summary>
     /// Adds Hangfire services to the dependency injection container
     /// </summary>
+    /// <param name="services">Service collection to configure</param>
+    /// <param name="configuration">Application configuration</param>
+    /// <returns>Configured service collection</returns>
+    /// <remarks>
+    /// <para><strong>MIGRATION GUIDE:</strong></para>
+    /// <para>Replace Hangfire usage with ContentSchedulingService:</para>
+    /// <code>
+    /// // OLD: Hangfire configuration
+    /// services.AddHangfireServices(configuration);
+    /// 
+    /// // NEW: ContentSchedulingService configuration  
+    /// services.AddMotivationalContentServices(configuration);
+    /// // ContentSchedulingService is automatically registered as a hosted service
+    /// </code>
+    /// <para><strong>Background Job Migration:</strong></para>
+    /// <code>
+    /// // OLD: Hangfire job scheduling
+    /// BackgroundJob.Schedule(() => SomeMethod(), TimeSpan.FromMinutes(30));
+    /// 
+    /// // NEW: ContentSchedulingService handles scheduling automatically
+    /// // Jobs are triggered based on user activity and configurable intervals
+    /// await contentSchedulingService.TriggerContentDeliveryAsync(userId, "manual_request");
+    /// </code>
+    /// <para>ContentSchedulingService provides:</para>
+    /// <list type="bullet">
+    /// <item>Real-time content delivery via SignalR</item>
+    /// <item>Activity-based triggers (login, task completion, dashboard visits)</item>
+    /// <item>Automatic scheduling with configurable intervals</item>
+    /// <item>Better integration with dashboard and analytics</item>
+    /// </list>
+    /// </remarks>
+    [Obsolete("Use ContentSchedulingService with SignalR integration instead. Hangfire support will be removed in v2.0. See XML documentation for complete migration guide.")]
     public static IServiceCollection AddHangfireServices(
         this IServiceCollection services,
         IConfiguration configuration)

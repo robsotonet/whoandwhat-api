@@ -137,16 +137,16 @@ public class ArchiveCriteriaTests
         };
 
         // Act
-        var modifiedCriteria = originalCriteria with 
-        { 
+        var modifiedCriteria = originalCriteria with
+        {
             MinimumCompletedAge = TimeSpan.FromDays(60),
-            IncludeActiveProjectTasks = true 
+            IncludeActiveProjectTasks = true
         };
 
         // Assert
         originalCriteria.MinimumCompletedAge.Should().Be(TimeSpan.FromDays(90));
         originalCriteria.IncludeActiveProjectTasks.Should().BeFalse();
-        
+
         modifiedCriteria.MinimumCompletedAge.Should().Be(TimeSpan.FromDays(60));
         modifiedCriteria.IncludeActiveProjectTasks.Should().BeTrue();
         modifiedCriteria.MinimumCanceledAge.Should().Be(originalCriteria.MinimumCanceledAge);

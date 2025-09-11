@@ -25,7 +25,7 @@ public class UnlinkContactFromTaskCommandHandler : IRequestHandler<UnlinkContact
     {
         try
         {
-            _logger.LogInformation("Unlinking contact {ContactId} from task {TaskId} for user {UserId}", 
+            _logger.LogInformation("Unlinking contact {ContactId} from task {TaskId} for user {UserId}",
                 request.ContactId, request.TaskId, request.UserId);
 
             // Get and validate task
@@ -39,7 +39,7 @@ public class UnlinkContactFromTaskCommandHandler : IRequestHandler<UnlinkContact
             // Verify task ownership
             if (task.UserId != request.UserId)
             {
-                _logger.LogWarning("User {UserId} attempted to unlink contact from task {TaskId} owned by {OwnerId}", 
+                _logger.LogWarning("User {UserId} attempted to unlink contact from task {TaskId} owned by {OwnerId}",
                     request.UserId, request.TaskId, task.UserId);
                 return Result<bool>.Failure("Task not found");
             }
@@ -55,7 +55,7 @@ public class UnlinkContactFromTaskCommandHandler : IRequestHandler<UnlinkContact
             // Verify contact ownership
             if (contact.UserId != request.UserId)
             {
-                _logger.LogWarning("User {UserId} attempted to unlink contact {ContactId} owned by {OwnerId}", 
+                _logger.LogWarning("User {UserId} attempted to unlink contact {ContactId} owned by {OwnerId}",
                     request.UserId, request.ContactId, contact.UserId);
                 return Result<bool>.Failure("Contact not found");
             }
@@ -64,7 +64,7 @@ public class UnlinkContactFromTaskCommandHandler : IRequestHandler<UnlinkContact
             var existingLink = task.TaskContacts?.FirstOrDefault(tc => tc.ContactId == request.ContactId);
             if (existingLink == null)
             {
-                _logger.LogWarning("No existing relationship found between contact {ContactId} and task {TaskId}", 
+                _logger.LogWarning("No existing relationship found between contact {ContactId} and task {TaskId}",
                     request.ContactId, request.TaskId);
                 return Result<bool>.Failure("Contact is not linked to this task");
             }
@@ -83,14 +83,14 @@ public class UnlinkContactFromTaskCommandHandler : IRequestHandler<UnlinkContact
             await _taskRepository.SaveChangesAsync(cancellationToken);
 
             _logger.LogInformation("Successfully unlinked contact {ContactId} from task {TaskId} for user {UserId}. " +
-                                 "Contact had role '{Role}'", 
+                                 "Contact had role '{Role}'",
                 request.ContactId, request.TaskId, request.UserId, existingLink.Role);
 
             return Result<bool>.Success(true);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error unlinking contact {ContactId} from task {TaskId} for user {UserId}", 
+            _logger.LogError(ex, "Error unlinking contact {ContactId} from task {TaskId} for user {UserId}",
                 request.ContactId, request.TaskId, request.UserId);
             return Result<bool>.Failure($"Error unlinking contact from task: {ex.Message}");
         }

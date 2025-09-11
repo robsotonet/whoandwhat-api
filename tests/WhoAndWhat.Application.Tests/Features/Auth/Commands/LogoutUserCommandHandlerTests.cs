@@ -19,7 +19,7 @@ public class LogoutUserCommandHandlerTests
     {
         _jwtTokenServiceMock = new Mock<IJwtTokenService>();
         _loggerMock = new Mock<ILogger<LogoutUserCommandHandler>>();
-        
+
         _handler = new LogoutUserCommandHandler(
             _jwtTokenServiceMock.Object,
             _loggerMock.Object);
@@ -207,7 +207,7 @@ public class LogoutUserCommandHandlerTests
 
         // Assert
         var afterLogout = DateTime.UtcNow;
-        
+
         result.Should().NotBeNull();
         result.IsSuccess.Should().BeTrue();
         result.Value.LogoutAt.Should().BeAfter(beforeLogout);

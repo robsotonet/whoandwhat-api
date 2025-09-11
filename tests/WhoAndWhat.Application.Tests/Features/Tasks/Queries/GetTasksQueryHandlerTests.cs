@@ -44,7 +44,7 @@ public class GetTasksQueryHandlerTests
         var userId = Guid.NewGuid();
         var taskId1 = Guid.NewGuid();
         var taskId2 = Guid.NewGuid();
-        
+
         var tasks = new List<DomainTask>
         {
             new DomainTask
@@ -123,7 +123,7 @@ public class GetTasksQueryHandlerTests
         var searchText = "important task";
         var tasks = new List<DomainTask>();
         var pagedResult = PagedResult<DomainTask>.Create(tasks, 0, TestPageNumber, TestPageSize);
-        
+
         var query = new GetTasksQuery(userId, Search: searchText);
 
         _mockTaskRepository.Setup(x => x.SearchAsync(
@@ -157,7 +157,7 @@ public class GetTasksQueryHandlerTests
         var categories = new List<int> { (int)AppTaskCategory.ToDo, (int)AppTaskCategory.Project };
         var tasks = new List<DomainTask>();
         var pagedResult = PagedResult<DomainTask>.Create(tasks, 0, TestPageNumber, TestPageSize);
-        
+
         var query = new GetTasksQuery(userId, Categories: categories);
 
         _mockTaskRepository.Setup(x => x.SearchAsync(
@@ -192,7 +192,7 @@ public class GetTasksQueryHandlerTests
         var priorities = new List<int> { (int)Priority.High, (int)Priority.Urgent };
         var tasks = new List<DomainTask>();
         var pagedResult = PagedResult<DomainTask>.Create(tasks, 0, TestPageNumber, TestPageSize);
-        
+
         var query = new GetTasksQuery(userId, Statuses: statuses, Priorities: priorities);
 
         _mockTaskRepository.Setup(x => x.SearchAsync(
@@ -210,7 +210,7 @@ public class GetTasksQueryHandlerTests
         // Assert
         result.IsSuccess.Should().BeTrue();
         _mockTaskRepository.Verify(x => x.SearchAsync(
-            It.Is<AppTaskSearchCriteria>(c => 
+            It.Is<AppTaskSearchCriteria>(c =>
                 c.Statuses != null && c.Priorities != null),
             TestPageNumber,
             TestPageSize,
@@ -230,9 +230,9 @@ public class GetTasksQueryHandlerTests
         var createdTo = DateTime.UtcNow.Date;
         var tasks = new List<DomainTask>();
         var pagedResult = PagedResult<DomainTask>.Create(tasks, 0, TestPageNumber, TestPageSize);
-        
+
         var query = new GetTasksQuery(
-            userId, 
+            userId,
             DueDateFrom: dueDateFrom,
             DueDateTo: dueDateTo,
             CreatedFrom: createdFrom,
@@ -253,7 +253,7 @@ public class GetTasksQueryHandlerTests
         // Assert
         result.IsSuccess.Should().BeTrue();
         _mockTaskRepository.Verify(x => x.SearchAsync(
-            It.Is<AppTaskSearchCriteria>(c => 
+            It.Is<AppTaskSearchCriteria>(c =>
                 c.DueDateFrom == dueDateFrom &&
                 c.DueDateTo == dueDateTo &&
                 c.CreatedFrom == createdFrom &&
@@ -274,7 +274,7 @@ public class GetTasksQueryHandlerTests
         var parentTaskId = Guid.NewGuid();
         var tasks = new List<DomainTask>();
         var pagedResult = PagedResult<DomainTask>.Create(tasks, 0, TestPageNumber, TestPageSize);
-        
+
         var query = new GetTasksQuery(
             userId,
             ContactIds: contactIds,
@@ -299,7 +299,7 @@ public class GetTasksQueryHandlerTests
         // Assert
         result.IsSuccess.Should().BeTrue();
         _mockTaskRepository.Verify(x => x.SearchAsync(
-            It.Is<AppTaskSearchCriteria>(c => 
+            It.Is<AppTaskSearchCriteria>(c =>
                 c.ContactIds != null &&
                 c.HasDueDate == true &&
                 c.IsOverdue == false &&
@@ -320,7 +320,7 @@ public class GetTasksQueryHandlerTests
         var userId = Guid.NewGuid();
         var tasks = new List<DomainTask>();
         var pagedResult = PagedResult<DomainTask>.Create(tasks, 0, 3, 5);
-        
+
         var query = new GetTasksQuery(
             userId,
             SortBy: "Title",
@@ -361,7 +361,7 @@ public class GetTasksQueryHandlerTests
         var userId = Guid.NewGuid();
         var tasks = new List<DomainTask>();
         var pagedResult = PagedResult<DomainTask>.Create(tasks, 0, TestPageNumber, TestPageSize);
-        
+
         var query = new GetTasksQuery(userId, SortBy: null);
 
         _mockTaskRepository.Setup(x => x.SearchAsync(
@@ -447,7 +447,7 @@ public class GetTasksQueryHandlerTests
         // Assert
         result.IsSuccess.Should().BeTrue();
         result.Value.Items.Should().HaveCount(1);
-        
+
         var mappedTask = result.Value.Items.First();
         mappedTask.Id.Should().Be(taskId);
         mappedTask.Title.Should().Be("Parent Task");
@@ -505,7 +505,7 @@ public class GetTasksQueryHandlerTests
         // Arrange
         var userId = Guid.NewGuid();
         var taskId = Guid.NewGuid();
-        
+
         var task = new DomainTask
         {
             Id = taskId,
@@ -537,7 +537,7 @@ public class GetTasksQueryHandlerTests
         // Assert
         result.IsSuccess.Should().BeTrue();
         result.Value.Items.Should().HaveCount(1);
-        
+
         var mappedTask = result.Value.Items.First();
         mappedTask.Subtasks.Should().NotBeNull().And.BeEmpty();
         mappedTask.TaskContacts.Should().NotBeNull().And.BeEmpty();
@@ -626,7 +626,7 @@ public class GetTasksQueryHandlerTests
         // Assert
         result.IsSuccess.Should().BeTrue();
         result.Value.Items.Should().HaveCount(1);
-        
+
         var mappedTask = result.Value.Items.First();
         mappedTask.Id.Should().Be(taskId);
         mappedTask.Title.Should().Be("Complete Task");

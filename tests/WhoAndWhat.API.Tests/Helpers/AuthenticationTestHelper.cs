@@ -24,7 +24,7 @@ public static class AuthenticationTestHelper
         // Generate unique credentials for test isolation
         var uniqueEmail = $"test_{Guid.NewGuid():N}@example.com";
         var uniqueUsername = $"user_{Guid.NewGuid():N}";
-        
+
         // Register the test user
         var registerRequest = new RegisterRequest
         {
@@ -35,7 +35,7 @@ public static class AuthenticationTestHelper
         };
 
         var registerResponse = await RegisterUserAsync(client, registerRequest);
-        
+
         if (!IsSuccessStatusCode(registerResponse.StatusCode))
         {
             var errorContent = await registerResponse.Content.ReadAsStringAsync();
@@ -50,7 +50,7 @@ public static class AuthenticationTestHelper
         };
 
         var loginResponse = await LoginUserAsync(client, loginRequest);
-        
+
         if (loginResponse.StatusCode != HttpStatusCode.OK)
         {
             var errorContent = await loginResponse.Content.ReadAsStringAsync();
@@ -83,7 +83,7 @@ public static class AuthenticationTestHelper
         };
 
         var registerResponse = await RegisterUserAsync(client, registerRequest);
-        
+
         // If user already exists, just try to login
         if (registerResponse.StatusCode == HttpStatusCode.Conflict)
         {
@@ -94,7 +94,7 @@ public static class AuthenticationTestHelper
             };
 
             var loginResponse = await LoginUserAsync(client, loginRequest);
-            
+
             if (loginResponse.StatusCode != HttpStatusCode.OK)
             {
                 var errorContent = await loginResponse.Content.ReadAsStringAsync();
@@ -103,10 +103,10 @@ public static class AuthenticationTestHelper
 
             var loginContent = await loginResponse.Content.ReadAsStringAsync();
             var loginResult = JsonSerializer.Deserialize<LoginResponse>(loginContent, JsonOptions);
-            
+
             return loginResult!.AccessToken;
         }
-        
+
         if (!IsSuccessStatusCode(registerResponse.StatusCode))
         {
             var errorContent = await registerResponse.Content.ReadAsStringAsync();
@@ -175,8 +175,8 @@ public static class AuthenticationTestHelper
 
     private static bool IsSuccessStatusCode(HttpStatusCode statusCode)
     {
-        return statusCode == HttpStatusCode.OK || 
-               statusCode == HttpStatusCode.Created || 
+        return statusCode == HttpStatusCode.OK ||
+               statusCode == HttpStatusCode.Created ||
                statusCode == HttpStatusCode.NoContent;
     }
 }

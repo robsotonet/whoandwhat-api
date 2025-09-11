@@ -1,25 +1,25 @@
+using System.Security.Claims;
+using Asp.Versioning;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Security.Claims;
-using MediatR;
-using Asp.Versioning;
-using WhoAndWhat.Application.Features.Tasks.Commands.CreateTask;
-using WhoAndWhat.Application.Features.Tasks.Commands.UpdateTask;
-using WhoAndWhat.Application.Features.Tasks.Commands.DeleteTask;
+using WhoAndWhat.Application.Common;
+using WhoAndWhat.Application.DTOs;
+using WhoAndWhat.Application.DTOs.Tasks;
 using WhoAndWhat.Application.Features.Tasks.Commands.ConvertTask;
+using WhoAndWhat.Application.Features.Tasks.Commands.CreateTask;
+using WhoAndWhat.Application.Features.Tasks.Commands.DeleteTask;
 using WhoAndWhat.Application.Features.Tasks.Commands.ExecuteTaskAction;
 using WhoAndWhat.Application.Features.Tasks.Commands.LinkContactToTask;
 using WhoAndWhat.Application.Features.Tasks.Commands.UnlinkContactFromTask;
 using WhoAndWhat.Application.Features.Tasks.Commands.UpdateContactRole;
+using WhoAndWhat.Application.Features.Tasks.Commands.UpdateTask;
 using WhoAndWhat.Application.Features.Tasks.Queries.GetTask;
 using WhoAndWhat.Application.Features.Tasks.Queries.GetTasks;
+using WhoAndWhat.Application.Features.Tasks.Queries.GetTaskScheduling;
 using WhoAndWhat.Application.Features.Tasks.Queries.GetTaskStatistics;
 using WhoAndWhat.Application.Features.Tasks.Queries.GetTaskWorkflow;
-using WhoAndWhat.Application.Features.Tasks.Queries.GetTaskScheduling;
-using WhoAndWhat.Application.DTOs.Tasks;
-using WhoAndWhat.Application.DTOs;
 using WhoAndWhat.Domain.ValueObjects;
-using WhoAndWhat.Application.Common;
 
 namespace WhoAndWhat.API.Controllers.v1;
 
@@ -128,7 +128,7 @@ public class TasksController : ControllerBase
                 IncludeArchived: includeArchived
             );
 
-            _logger.LogInformation("Getting tasks for user {UserId} with search '{Search}', category {Category}, status {Status}", 
+            _logger.LogInformation("Getting tasks for user {UserId} with search '{Search}', category {Category}, status {Status}",
                 userId.Value, search, category, status);
 
             var result = await _mediator.Send(command, cancellationToken);
@@ -186,7 +186,7 @@ public class TasksController : ControllerBase
             if (!result.IsSuccess)
             {
                 _logger.LogWarning("Failed to get task {TaskId} for user {UserId}: {Error}", id, userId.Value, result.Error);
-                
+
                 if (result.Error.Contains("not found", StringComparison.OrdinalIgnoreCase))
                 {
                     return NotFound(new ProblemDetails
@@ -248,7 +248,7 @@ public class TasksController : ControllerBase
             if (!result.IsSuccess)
             {
                 _logger.LogWarning("Failed to get workflow for task {TaskId} for user {UserId}: {Error}", id, userId.Value, result.Error);
-                
+
                 if (result.Error.Contains("not found", StringComparison.OrdinalIgnoreCase))
                 {
                     return NotFound(new ProblemDetails
@@ -393,7 +393,7 @@ public class TasksController : ControllerBase
             if (!result.IsSuccess)
             {
                 _logger.LogWarning("Failed to update task {TaskId} for user {UserId}: {Error}", id, userId.Value, result.Error);
-                
+
                 if (result.Error.Contains("not found", StringComparison.OrdinalIgnoreCase))
                 {
                     return NotFound(new ProblemDetails
@@ -457,7 +457,7 @@ public class TasksController : ControllerBase
             if (!result.IsSuccess)
             {
                 _logger.LogWarning("Failed to delete task {TaskId} for user {UserId}: {Error}", id, userId.Value, result.Error);
-                
+
                 if (result.Error.Contains("not found", StringComparison.OrdinalIgnoreCase))
                 {
                     return NotFound(new ProblemDetails
@@ -575,7 +575,7 @@ public class TasksController : ControllerBase
             if (!result.IsSuccess)
             {
                 _logger.LogWarning("Failed to convert task {TaskId} to project for user {UserId}: {Error}", id, userId.Value, result.Error);
-                
+
                 if (result.Error.Contains("not found", StringComparison.OrdinalIgnoreCase))
                 {
                     return NotFound(new ProblemDetails
@@ -642,15 +642,15 @@ public class TasksController : ControllerBase
                 UserId: userId.Value
             );
 
-            _logger.LogInformation("Executing action '{ActionId}' for task {TaskId} for user {UserId}", 
+            _logger.LogInformation("Executing action '{ActionId}' for task {TaskId} for user {UserId}",
                 request.ActionId, id, userId.Value);
 
             var result = await _mediator.Send(command, cancellationToken);
             if (!result.IsSuccess)
             {
-                _logger.LogWarning("Failed to execute action '{ActionId}' for task {TaskId} for user {UserId}: {Error}", 
+                _logger.LogWarning("Failed to execute action '{ActionId}' for task {TaskId} for user {UserId}: {Error}",
                     request.ActionId, id, userId.Value, result.Error);
-                
+
                 if (result.Error.Contains("not found", StringComparison.OrdinalIgnoreCase))
                 {
                     return NotFound(new ProblemDetails
@@ -729,15 +729,15 @@ public class TasksController : ControllerBase
                 UserId: userId.Value
             );
 
-            _logger.LogInformation("Updating status for task {TaskId} to {Status} for user {UserId}", 
+            _logger.LogInformation("Updating status for task {TaskId} to {Status} for user {UserId}",
                 id, request.Status, userId.Value);
 
             var result = await _mediator.Send(command, cancellationToken);
             if (!result.IsSuccess)
             {
-                _logger.LogWarning("Failed to update task {TaskId} status for user {UserId}: {Error}", 
+                _logger.LogWarning("Failed to update task {TaskId} status for user {UserId}: {Error}",
                     id, userId.Value, result.Error);
-                
+
                 if (result.Error.Contains("not found", StringComparison.OrdinalIgnoreCase))
                 {
                     return NotFound(new ProblemDetails
@@ -987,7 +987,7 @@ public class TasksController : ControllerBase
                 });
             }
 
-            _logger.LogInformation("Performing batch operation {Operation} on {TaskCount} tasks for user {UserId}", 
+            _logger.LogInformation("Performing batch operation {Operation} on {TaskCount} tasks for user {UserId}",
                 request.Operation, request.TaskIds.Count(), userId.Value);
 
             var results = new List<TaskBatchItemResult>();
@@ -1005,7 +1005,7 @@ public class TasksController : ControllerBase
                     };
 
                     var result = await _mediator.Send(command, cancellationToken);
-                    
+
                     results.Add(new TaskBatchItemResult
                     {
                         TaskId = taskId,
@@ -1034,7 +1034,7 @@ public class TasksController : ControllerBase
                 Results = results
             };
 
-            _logger.LogInformation("Batch operation {Operation} completed: {Successful}/{Total} successful", 
+            _logger.LogInformation("Batch operation {Operation} completed: {Successful}/{Total} successful",
                 request.Operation, batchResult.SuccessfulTasks, batchResult.TotalTasks);
 
             return Ok(batchResult);
@@ -1083,7 +1083,7 @@ public class TasksController : ControllerBase
                 });
             }
 
-            _logger.LogInformation("Performing bulk status update to {NewStatus} on {TaskCount} tasks for user {UserId}", 
+            _logger.LogInformation("Performing bulk status update to {NewStatus} on {TaskCount} tasks for user {UserId}",
                 request.NewStatus, request.TaskIds.Count(), userId.Value);
 
             var results = new List<TaskBatchItemResult>();
@@ -1112,7 +1112,7 @@ public class TasksController : ControllerBase
                     );
 
                     var result = await _mediator.Send(command, cancellationToken);
-                    
+
                     results.Add(new TaskBatchItemResult
                     {
                         TaskId = taskId,
@@ -1141,7 +1141,7 @@ public class TasksController : ControllerBase
                 Results = results
             };
 
-            _logger.LogInformation("Bulk status update to {NewStatus} completed: {Successful}/{Total} successful", 
+            _logger.LogInformation("Bulk status update to {NewStatus} completed: {Successful}/{Total} successful",
                 request.NewStatus, batchResult.SuccessfulTasks, batchResult.TotalTasks);
 
             return Ok(batchResult);
@@ -1295,7 +1295,7 @@ public class TasksController : ControllerBase
 
             var query = new GetTaskSchedulingQuery(userId.Value, targetDate, maxSuggestions);
 
-            _logger.LogInformation("Getting task scheduling suggestions for user {UserId} for date {TargetDate}", 
+            _logger.LogInformation("Getting task scheduling suggestions for user {UserId} for date {TargetDate}",
                 userId.Value, targetDate?.ToString("yyyy-MM-dd") ?? "today");
 
             var result = await _mediator.Send(query, cancellationToken);
@@ -1367,7 +1367,7 @@ public class TasksController : ControllerBase
             {
                 _logger.LogWarning("Failed to link contact {ContactId} to task {TaskId} for user {UserId}: {Error}",
                     request.ContactId, taskId, userId.Value, result.Error);
-                    
+
                 if (result.Error.Contains("not found"))
                 {
                     return NotFound(new ProblemDetails
@@ -1442,7 +1442,7 @@ public class TasksController : ControllerBase
             {
                 _logger.LogWarning("Failed to unlink contact {ContactId} from task {TaskId} for user {UserId}: {Error}",
                     contactId, taskId, userId.Value, result.Error);
-                    
+
                 if (result.Error.Contains("not found"))
                 {
                     return NotFound(new ProblemDetails
@@ -1518,7 +1518,7 @@ public class TasksController : ControllerBase
             {
                 _logger.LogWarning("Failed to update contact {ContactId} role in task {TaskId} for user {UserId}: {Error}",
                     contactId, taskId, userId.Value, result.Error);
-                    
+
                 if (result.Error.Contains("not found"))
                 {
                     return NotFound(new ProblemDetails
@@ -1582,7 +1582,7 @@ public class TasksController : ControllerBase
             {
                 _logger.LogWarning("Failed to get task {TaskId} for user {UserId}: {Error}",
                     taskId, userId.Value, result.Error);
-                    
+
                 return NotFound(new ProblemDetails
                 {
                     Title = "Task not found",
@@ -1626,7 +1626,7 @@ public class TasksController : ControllerBase
         return string.Join(", ", new[]
         {
             $"'{TaskBatchOperations.Delete}'",
-            $"'{TaskBatchOperations.Complete}'", 
+            $"'{TaskBatchOperations.Complete}'",
             $"'{TaskBatchOperations.Archive}'"
         });
     }

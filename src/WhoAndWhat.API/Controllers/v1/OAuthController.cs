@@ -1,10 +1,10 @@
-using Asp.Versioning;
-using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Authentication.Google;
-using Microsoft.AspNetCore.Authentication.Facebook;
-using AspNet.Security.OAuth.Apple;
-using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
+using Asp.Versioning;
+using AspNet.Security.OAuth.Apple;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Facebook;
+using Microsoft.AspNetCore.Authentication.Google;
+using Microsoft.AspNetCore.Mvc;
 using WhoAndWhat.Application.DTOs.Authentication;
 using WhoAndWhat.Application.Interfaces;
 
@@ -47,7 +47,7 @@ public class OAuthController : ControllerBase
         {
             var redirectUrl = Url.Action(nameof(GoogleCallback), "OAuth", new { returnUrl });
             var properties = new AuthenticationProperties { RedirectUri = redirectUrl };
-            
+
             _logger.LogInformation("Initiating Google OAuth authentication");
             return Challenge(properties, GoogleDefaults.AuthenticationScheme);
         }
@@ -78,7 +78,7 @@ public class OAuthController : ControllerBase
         try
         {
             var authenticateResult = await HttpContext.AuthenticateAsync(GoogleDefaults.AuthenticationScheme);
-            
+
             if (!authenticateResult.Succeeded)
             {
                 _logger.LogWarning("Google OAuth authentication failed");
@@ -182,7 +182,7 @@ public class OAuthController : ControllerBase
         {
             var redirectUrl = Url.Action(nameof(FacebookCallback), "OAuth", new { returnUrl });
             var properties = new AuthenticationProperties { RedirectUri = redirectUrl };
-            
+
             _logger.LogInformation("Initiating Facebook OAuth authentication");
             return Challenge(properties, FacebookDefaults.AuthenticationScheme);
         }
@@ -213,7 +213,7 @@ public class OAuthController : ControllerBase
         try
         {
             var authenticateResult = await HttpContext.AuthenticateAsync(FacebookDefaults.AuthenticationScheme);
-            
+
             if (!authenticateResult.Succeeded)
             {
                 _logger.LogWarning("Facebook OAuth authentication failed");
@@ -317,7 +317,7 @@ public class OAuthController : ControllerBase
         {
             var redirectUrl = Url.Action(nameof(AppleCallback), "OAuth", new { returnUrl });
             var properties = new AuthenticationProperties { RedirectUri = redirectUrl };
-            
+
             _logger.LogInformation("Initiating Apple OAuth authentication");
             return Challenge(properties, AppleAuthenticationDefaults.AuthenticationScheme);
         }
@@ -348,7 +348,7 @@ public class OAuthController : ControllerBase
         try
         {
             var authenticateResult = await HttpContext.AuthenticateAsync(AppleAuthenticationDefaults.AuthenticationScheme);
-            
+
             if (!authenticateResult.Succeeded)
             {
                 _logger.LogWarning("Apple OAuth authentication failed");

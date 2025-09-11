@@ -6,8 +6,8 @@ using WhoAndWhat.Application.Features.Contacts.Commands.CreateContact;
 using WhoAndWhat.Application.Interfaces;
 using WhoAndWhat.Domain.Common;
 using WhoAndWhat.Domain.Entities;
-using WhoAndWhat.Domain.ValueObjects;
 using WhoAndWhat.Domain.Validators;
+using WhoAndWhat.Domain.ValueObjects;
 using Xunit;
 
 namespace WhoAndWhat.Application.Tests.Features.Contacts.Commands;
@@ -97,7 +97,7 @@ public class CreateContactCommandHandlerTests
         result.Value.Email.Should().Be("john.doe@example.com");
         result.Value.Phone.Should().Be("+1234567890");
         result.Value.RelationshipType.Should().Be(1);
-        
+
         _mockContactRepository.Verify(x => x.AddAsync(It.IsAny<Contact>(), It.IsAny<CancellationToken>()), Times.Once);
         _mockContactRepository.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
@@ -109,7 +109,7 @@ public class CreateContactCommandHandlerTests
         var userId = Guid.NewGuid();
         var command = new CreateContactCommand(
             Name: "Jane Smith",
-            Email: "jane.smith@example.com", 
+            Email: "jane.smith@example.com",
             Phone: "+0987654321",
             RelationshipType: 2, // Family
             UserId: userId
@@ -154,7 +154,7 @@ public class CreateContactCommandHandlerTests
         // Assert
         result.IsSuccess.Should().BeTrue();
         result.Value.Email.Should().BeNull();
-        
+
         _mockContactRepository.Verify(x => x.AddAsync(It.IsAny<Contact>(), It.IsAny<CancellationToken>()), Times.Once);
     }
 
@@ -177,7 +177,7 @@ public class CreateContactCommandHandlerTests
         // Assert
         result.IsSuccess.Should().BeTrue();
         result.Value.Phone.Should().BeNull();
-        
+
         _mockContactRepository.Verify(x => x.AddAsync(It.IsAny<Contact>(), It.IsAny<CancellationToken>()), Times.Once);
     }
 
@@ -189,7 +189,7 @@ public class CreateContactCommandHandlerTests
     [InlineData("", "john@example.com", "+123456", 1)]
     [InlineData(null, "john@example.com", "+123456", 1)]
     [InlineData("   ", "john@example.com", "+123456", 1)]
-    public async Task Handle_Should_Return_Failure_When_Name_Is_Invalid(string name, string email, string phone, int relationshipType)
+    public async Task Handle_Should_Return_Failure_When_Name_Is_Invalid(string? name, string email, string phone, int relationshipType)
     {
         // Arrange
         var command = new CreateContactCommand(
@@ -206,7 +206,7 @@ public class CreateContactCommandHandlerTests
         // Assert
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("must not be empty");
-        
+
         _mockContactRepository.Verify(x => x.AddAsync(It.IsAny<Contact>(), It.IsAny<CancellationToken>()), Times.Never);
         _mockContactRepository.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
@@ -233,7 +233,7 @@ public class CreateContactCommandHandlerTests
         // Assert
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("valid email address");
-        
+
         _mockContactRepository.Verify(x => x.AddAsync(It.IsAny<Contact>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
@@ -255,7 +255,7 @@ public class CreateContactCommandHandlerTests
         // Assert
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("User ID is required");
-        
+
         _mockContactRepository.Verify(x => x.AddAsync(It.IsAny<Contact>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
@@ -276,7 +276,7 @@ public class CreateContactCommandHandlerTests
         // Assert
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("Failed to create contact");
-        
+
         _mockContactRepository.Verify(x => x.AddAsync(It.IsAny<Contact>(), It.IsAny<CancellationToken>()), Times.Once);
         _mockContactRepository.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
@@ -295,7 +295,7 @@ public class CreateContactCommandHandlerTests
         // Assert
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("An error occurred while creating the contact");
-        
+
         _mockContactRepository.Verify(x => x.AddAsync(It.IsAny<Contact>(), It.IsAny<CancellationToken>()), Times.Once);
         _mockContactRepository.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
@@ -376,7 +376,7 @@ public class CreateContactCommandHandlerTests
         var command = CreateValidCommand();
         var cancellationTokenSource = new CancellationTokenSource();
         cancellationTokenSource.Cancel(); // Cancel immediately
-        
+
         _mockContactRepository.Setup(x => x.AddAsync(It.IsAny<Contact>(), It.IsAny<CancellationToken>()))
             .ThrowsAsync(new OperationCanceledException());
 

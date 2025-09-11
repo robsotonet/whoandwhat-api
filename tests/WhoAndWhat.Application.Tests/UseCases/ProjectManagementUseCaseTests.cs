@@ -17,7 +17,7 @@ public class ProjectManagementUseCaseTests
         // - Test project validation (name required, description length limits)
         // - Test initial status and progress settings
         // - Test user ownership assignment
-        
+
         Assert.True(true, "Placeholder test - implement when CreateProjectCommandHandler is created");
     }
 
@@ -29,7 +29,7 @@ public class ProjectManagementUseCaseTests
         // - Test validation on update
         // - Test user permission validation
         // - Test progress calculation based on tasks
-        
+
         Assert.True(true, "Placeholder test - implement when UpdateProjectCommandHandler is created");
     }
 
@@ -41,7 +41,7 @@ public class ProjectManagementUseCaseTests
         // - Test user permission validation
         // - Test handling of associated tasks (convert back to standalone tasks)
         // - Test cascade deletion rules
-        
+
         Assert.True(true, "Placeholder test - implement when DeleteProjectCommandHandler is created");
     }
 
@@ -53,7 +53,7 @@ public class ProjectManagementUseCaseTests
         // - Test filtering by status, progress range
         // - Test sorting by creation date, progress, name
         // - Test inclusion of task counts and statistics
-        
+
         Assert.True(true, "Placeholder test - implement when GetProjectsQueryHandler is created");
     }
 
@@ -65,7 +65,7 @@ public class ProjectManagementUseCaseTests
         // - Test permission validation (user can only view own projects)
         // - Test progress calculation accuracy
         // - Test performance with large numbers of tasks
-        
+
         Assert.True(true, "Placeholder test - implement when GetProjectDetailsQueryHandler is created");
     }
 
@@ -77,7 +77,7 @@ public class ProjectManagementUseCaseTests
         // - Test validation that user owns both task and project
         // - Test automatic progress recalculation
         // - Test handling of task already in another project
-        
+
         Assert.True(true, "Placeholder test - implement when AddTaskToProjectCommandHandler is created");
     }
 }

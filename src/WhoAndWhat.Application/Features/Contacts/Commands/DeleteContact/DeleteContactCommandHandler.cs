@@ -33,14 +33,14 @@ public class DeleteContactCommandHandler : IRequestHandler<DeleteContactCommand,
                 return Result<bool>.Failure("Contact ID is required");
             }
 
-            _logger.LogInformation("Attempting to delete contact {ContactId} for user {UserId}", 
+            _logger.LogInformation("Attempting to delete contact {ContactId} for user {UserId}",
                 request.ContactId, request.UserId);
 
             // Get the existing contact
             var existingContact = await _contactRepository.GetByIdAsync(request.ContactId, cancellationToken);
             if (existingContact == null)
             {
-                _logger.LogWarning("Contact {ContactId} not found for user {UserId}", 
+                _logger.LogWarning("Contact {ContactId} not found for user {UserId}",
                     request.ContactId, request.UserId);
                 return Result<bool>.Failure("Contact not found");
             }
@@ -48,7 +48,7 @@ public class DeleteContactCommandHandler : IRequestHandler<DeleteContactCommand,
             // Verify ownership
             if (existingContact.UserId != request.UserId)
             {
-                _logger.LogWarning("User {UserId} attempted to delete contact {ContactId} owned by {OwnerId}", 
+                _logger.LogWarning("User {UserId} attempted to delete contact {ContactId} owned by {OwnerId}",
                     request.UserId, request.ContactId, existingContact.UserId);
                 return Result<bool>.Failure("Contact not found");
             }
@@ -56,7 +56,7 @@ public class DeleteContactCommandHandler : IRequestHandler<DeleteContactCommand,
             // Check if contact is already soft deleted
             if (existingContact.IsDeleted)
             {
-                _logger.LogWarning("Contact {ContactId} is already deleted for user {UserId}", 
+                _logger.LogWarning("Contact {ContactId} is already deleted for user {UserId}",
                     request.ContactId, request.UserId);
                 return Result<bool>.Failure("Contact not found");
             }
@@ -67,7 +67,7 @@ public class DeleteContactCommandHandler : IRequestHandler<DeleteContactCommand,
 
             if (activeTaskCount > 0)
             {
-                _logger.LogWarning("Cannot delete contact {ContactId} - it has {ActiveTaskCount} active task associations", 
+                _logger.LogWarning("Cannot delete contact {ContactId} - it has {ActiveTaskCount} active task associations",
                     request.ContactId, activeTaskCount);
                 return Result<bool>.Failure($"Cannot delete contact because it is associated with {activeTaskCount} active task(s). Please remove the contact from all active tasks first.");
             }
@@ -78,7 +78,7 @@ public class DeleteContactCommandHandler : IRequestHandler<DeleteContactCommand,
 
             if (!deleteResult)
             {
-                _logger.LogError("Failed to soft delete contact {ContactId} for user {UserId}", 
+                _logger.LogError("Failed to soft delete contact {ContactId} for user {UserId}",
                     request.ContactId, request.UserId);
                 return Result<bool>.Failure("Failed to delete contact");
             }
@@ -86,14 +86,14 @@ public class DeleteContactCommandHandler : IRequestHandler<DeleteContactCommand,
             // Save changes
             await _contactRepository.SaveChangesAsync(cancellationToken);
 
-            _logger.LogInformation("Contact {ContactId} successfully soft deleted for user {UserId}", 
+            _logger.LogInformation("Contact {ContactId} successfully soft deleted for user {UserId}",
                 request.ContactId, request.UserId);
 
             return Result<bool>.Success(true);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error deleting contact {ContactId} for user {UserId}", 
+            _logger.LogError(ex, "Error deleting contact {ContactId} for user {UserId}",
                 request.ContactId, request.UserId);
             return Result<bool>.Failure($"Error deleting contact: {ex.Message}");
         }

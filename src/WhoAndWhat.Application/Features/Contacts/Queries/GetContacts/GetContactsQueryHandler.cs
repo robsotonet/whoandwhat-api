@@ -40,7 +40,7 @@ public class GetContactsQueryHandler : IRequestHandler<GetContactsQuery, Result<
                 return Result<ContactSearchResult>.Failure("Page number must be greater than 0");
             }
 
-            _logger.LogInformation("Getting contacts for user {UserId} with search: '{Search}'", 
+            _logger.LogInformation("Getting contacts for user {UserId} with search: '{Search}'",
                 request.UserId, request.Search);
 
             IEnumerable<Domain.Entities.Contact> contacts;
@@ -50,11 +50,11 @@ public class GetContactsQueryHandler : IRequestHandler<GetContactsQuery, Result<
             {
                 // Use search functionality
                 contacts = await _contactRepository.FindContactsAsync(
-                    request.Search, 
-                    request.UserId, 
-                    request.IncludeDeleted, 
+                    request.Search,
+                    request.UserId,
+                    request.IncludeDeleted,
                     cancellationToken);
-                
+
                 totalCount = contacts.Count();
             }
             else
@@ -94,7 +94,7 @@ public class GetContactsQueryHandler : IRequestHandler<GetContactsQuery, Result<
                 IncludeDeleted = request.IncludeDeleted
             };
 
-            _logger.LogInformation("Retrieved {Count} contacts for user {UserId}", 
+            _logger.LogInformation("Retrieved {Count} contacts for user {UserId}",
                 contactDtos.Count, request.UserId);
 
             return Result<ContactSearchResult>.Success(result);
@@ -107,7 +107,7 @@ public class GetContactsQueryHandler : IRequestHandler<GetContactsQuery, Result<
     }
 
     private async Task<IEnumerable<Domain.Entities.Contact>> GetAllContactsAsync(
-        GetContactsQuery request, 
+        GetContactsQuery request,
         CancellationToken cancellationToken)
     {
         // For now, we'll use a simple approach since we don't have a GetAllForUser method
@@ -120,13 +120,13 @@ public class GetContactsQueryHandler : IRequestHandler<GetContactsQuery, Result<
     }
 
     private static IEnumerable<Domain.Entities.Contact> ApplySorting(
-        IEnumerable<Domain.Entities.Contact> contacts, 
-        string? sortBy, 
+        IEnumerable<Domain.Entities.Contact> contacts,
+        string? sortBy,
         bool sortDescending)
     {
         var orderedContacts = sortBy?.ToLower() switch
         {
-            "name" => sortDescending 
+            "name" => sortDescending
                 ? contacts.OrderByDescending(c => c.Name)
                 : contacts.OrderBy(c => c.Name),
             "email" => sortDescending

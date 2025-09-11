@@ -23,7 +23,7 @@ public class LoginUserCommandHandlerTests
         _userServiceMock = new Mock<IUserService>();
         _jwtTokenServiceMock = new Mock<IJwtTokenService>();
         _loggerMock = new Mock<ILogger<LoginUserCommandHandler>>();
-        
+
         _handler = new LoginUserCommandHandler(
             _userServiceMock.Object,
             _jwtTokenServiceMock.Object,

@@ -177,7 +177,7 @@ public class CreateTaskCommandHandlerTests
         // Assert
         result.IsSuccess.Should().BeTrue();
         result.Value.TaskContacts.Should().HaveCount(2);
-        
+
         capturedTask.Should().NotBeNull();
         capturedTask.TaskContacts.Should().HaveCount(2);
         capturedTask.TaskContacts.All(tc => tc.Role == "Participant").Should().BeTrue();
@@ -207,7 +207,7 @@ public class CreateTaskCommandHandlerTests
         // Assert
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("Bill Reminder tasks must have a due date");
-        
+
         _mockTaskRepository.Verify(x => x.AddAsync(It.IsAny<DomainTask>(), It.IsAny<CancellationToken>()), Times.Never);
         _mockTaskRepository.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
@@ -277,7 +277,7 @@ public class CreateTaskCommandHandlerTests
         // Assert
         result.IsSuccess.Should().BeTrue();
         result.Value.ParentTaskId.Should().Be(parentTaskId);
-        
+
         capturedTask.Should().NotBeNull();
         capturedTask.ParentTaskId.Should().Be(parentTaskId);
     }
@@ -309,7 +309,7 @@ public class CreateTaskCommandHandlerTests
         // Assert
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Be("An error occurred while creating the task");
-        
+
         _mockLogger.Verify(
             x => x.Log(
                 LogLevel.Error,
@@ -352,7 +352,7 @@ public class CreateTaskCommandHandlerTests
         result.IsSuccess.Should().BeTrue();
         result.Value.Status.Should().Be((int)DomainTaskStatus.Pending);
         result.Value.StatusName.Should().Be("Pending");
-        
+
         capturedTask.Should().NotBeNull();
         capturedTask.Status.Should().Be((int)DomainTaskStatus.Pending);
     }
@@ -392,7 +392,7 @@ public class CreateTaskCommandHandlerTests
         result.Value.CreatedAt.Should().BeOnOrAfter(beforeExecution);
         result.Value.CreatedAt.Should().BeOnOrBefore(afterExecution);
         result.Value.UpdatedAt.Should().Be(result.Value.CreatedAt);
-        
+
         capturedTask.Should().NotBeNull();
         capturedTask.CreatedAt.Should().BeOnOrAfter(beforeExecution);
         capturedTask.CreatedAt.Should().BeOnOrBefore(afterExecution);
@@ -430,7 +430,7 @@ public class CreateTaskCommandHandlerTests
         // Assert
         result.IsSuccess.Should().BeTrue();
         result.Value.Id.Should().NotBeEmpty();
-        
+
         capturedTask.Should().NotBeNull();
         capturedTask.Id.Should().NotBeEmpty();
         capturedTask.Id.Should().Be(result.Value.Id);
@@ -458,7 +458,7 @@ public class CreateTaskCommandHandlerTests
         // Assert
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("Title is required");
-        
+
         _mockTaskRepository.Verify(x => x.AddAsync(It.IsAny<DomainTask>(), It.IsAny<CancellationToken>()), Times.Never);
         _mockTaskRepository.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
@@ -485,7 +485,7 @@ public class CreateTaskCommandHandlerTests
         // Assert
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("Title is required");
-        
+
         _mockTaskRepository.Verify(x => x.AddAsync(It.IsAny<DomainTask>(), It.IsAny<CancellationToken>()), Times.Never);
         _mockTaskRepository.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
@@ -513,7 +513,7 @@ public class CreateTaskCommandHandlerTests
         // Assert
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("Title cannot exceed");
-        
+
         _mockTaskRepository.Verify(x => x.AddAsync(It.IsAny<DomainTask>(), It.IsAny<CancellationToken>()), Times.Never);
         _mockTaskRepository.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
@@ -541,7 +541,7 @@ public class CreateTaskCommandHandlerTests
         // Assert
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("Description cannot exceed");
-        
+
         _mockTaskRepository.Verify(x => x.AddAsync(It.IsAny<DomainTask>(), It.IsAny<CancellationToken>()), Times.Never);
         _mockTaskRepository.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
@@ -568,7 +568,7 @@ public class CreateTaskCommandHandlerTests
         // Assert
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("Invalid category");
-        
+
         _mockTaskRepository.Verify(x => x.AddAsync(It.IsAny<DomainTask>(), It.IsAny<CancellationToken>()), Times.Never);
         _mockTaskRepository.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
@@ -595,7 +595,7 @@ public class CreateTaskCommandHandlerTests
         // Assert
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("Invalid priority");
-        
+
         _mockTaskRepository.Verify(x => x.AddAsync(It.IsAny<DomainTask>(), It.IsAny<CancellationToken>()), Times.Never);
         _mockTaskRepository.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
@@ -623,7 +623,7 @@ public class CreateTaskCommandHandlerTests
         // Assert
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("Due date cannot be in the past");
-        
+
         _mockTaskRepository.Verify(x => x.AddAsync(It.IsAny<DomainTask>(), It.IsAny<CancellationToken>()), Times.Never);
         _mockTaskRepository.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
@@ -684,7 +684,7 @@ public class CreateTaskCommandHandlerTests
         // Assert
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("Appointment tasks must have a due date");
-        
+
         _mockTaskRepository.Verify(x => x.AddAsync(It.IsAny<DomainTask>(), It.IsAny<CancellationToken>()), Times.Never);
         _mockTaskRepository.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
@@ -742,7 +742,7 @@ public class CreateTaskCommandHandlerTests
         // Assert
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("Project tasks cannot have a parent task");
-        
+
         _mockTaskRepository.Verify(x => x.AddAsync(It.IsAny<DomainTask>(), It.IsAny<CancellationToken>()), Times.Never);
         _mockTaskRepository.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
@@ -805,7 +805,7 @@ public class CreateTaskCommandHandlerTests
         // Assert
         result.IsSuccess.Should().BeTrue();
         result.Value.Category.Should().Be((int)AppTaskCategory.Idea);
-        
+
         // Verify warning was logged
         _mockLogger.Verify(
             x => x.Log(
@@ -879,7 +879,7 @@ public class CreateTaskCommandHandlerTests
         result.IsSuccess.Should().BeTrue();
         result.Value.Category.Should().Be((int)AppTaskCategory.BillReminder);
         result.Value.Priority.Should().BeGreaterOrEqualTo((int)Priority.Medium);
-        
+
         capturedTask.Should().NotBeNull();
         capturedTask.Priority.Should().BeGreaterOrEqualTo((int)Priority.Medium);
     }
@@ -920,7 +920,7 @@ public class CreateTaskCommandHandlerTests
         // Assert
         result.IsSuccess.Should().BeTrue();
         result.Value.Should().NotBeNull();
-        
+
         capturedTask.Should().NotBeNull();
         // Note: Metadata handling would depend on implementation
         // This test validates the command can handle metadata without errors
@@ -959,10 +959,10 @@ public class CreateTaskCommandHandlerTests
         // Assert
         result.IsSuccess.Should().BeTrue();
         result.Value.TaskContacts.Should().HaveCount(20);
-        
+
         capturedTask.Should().NotBeNull();
         capturedTask.TaskContacts.Should().HaveCount(20);
-        capturedTask.TaskContacts.Should().AllSatisfy(tc => 
+        capturedTask.TaskContacts.Should().AllSatisfy(tc =>
         {
             tc.Role.Should().Be("Participant");
             tc.TaskId.Should().Be(capturedTask.Id);
@@ -1003,7 +1003,7 @@ public class CreateTaskCommandHandlerTests
         result.IsSuccess.Should().BeTrue();
         // Implementation should handle duplicates - either allow all or deduplicate
         result.Value.TaskContacts.Should().NotBeEmpty();
-        
+
         capturedTask.Should().NotBeNull();
         capturedTask.TaskContacts.Should().NotBeEmpty();
     }
@@ -1041,7 +1041,7 @@ public class CreateTaskCommandHandlerTests
         result.IsSuccess.Should().BeTrue();
         result.Value.ParentTaskId.Should().Be(parentProjectId);
         result.Value.TaskContacts.Should().HaveCount(2);
-        
+
         capturedTask.Should().NotBeNull();
         capturedTask.ParentTaskId.Should().Be(parentProjectId);
         capturedTask.TaskContacts.Should().HaveCount(2);

@@ -186,7 +186,7 @@ public class OAuthAccountEntityTests
     [Theory]
     [InlineData(null)]
     [InlineData("")]
-    public void OAuthAccount_Should_Throw_When_Provider_Is_Invalid(string invalidProvider)
+    public void OAuthAccount_Should_Throw_When_Provider_Is_Invalid(string? invalidProvider)
     {
         var action = () => new OAuthAccount(
             Guid.NewGuid(),
@@ -200,7 +200,7 @@ public class OAuthAccountEntityTests
     [Theory]
     [InlineData(null)]
     [InlineData("")]
-    public void OAuthAccount_Should_Throw_When_ExternalId_Is_Invalid(string invalidExternalId)
+    public void OAuthAccount_Should_Throw_When_ExternalId_Is_Invalid(string? invalidExternalId)
     {
         var action = () => new OAuthAccount(
             Guid.NewGuid(),

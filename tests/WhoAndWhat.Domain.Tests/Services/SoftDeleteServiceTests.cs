@@ -50,7 +50,7 @@ public class SoftDeleteServiceTests
         var parentTask = CreateTestTask("Parent Task");
         var subtask1 = CreateTestTask("Subtask 1");
         var subtask2 = CreateTestTask("Subtask 2");
-        
+
         parentTask.Subtasks.Add(subtask1);
         parentTask.Subtasks.Add(subtask2);
 
@@ -197,7 +197,7 @@ public class SoftDeleteServiceTests
         var parentTask = CreateTestTask("Parent Task");
         var subtask = CreateTestTask("Subtask");
         parentTask.Subtasks.Add(subtask);
-        
+
         parentTask.SoftDelete();
         subtask.SoftDelete();
 
@@ -217,7 +217,7 @@ public class SoftDeleteServiceTests
         // Arrange
         var project = CreateTestProject("Test Project");
         project.SoftDelete();
-        
+
         var task = CreateTestTask("Task in Project");
         task.Project = project;
         task.SoftDelete();
@@ -355,7 +355,7 @@ public class SoftDeleteServiceTests
         var project = CreateTestProject("Project With Tasks");
         var task = CreateTestTask("Task to Restore");
         project.Tasks.Add(task);
-        
+
         project.SoftDelete();
         task.SoftDelete();
 

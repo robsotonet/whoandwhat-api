@@ -68,7 +68,7 @@ public class AppTaskSearchCriteria
         {
             errors.Add($"Search query must be at least {MinQueryLength} characters long");
         }
-        
+
         if (SearchText != null && (string.IsNullOrWhiteSpace(SearchText) || SearchText.Trim().Length < MinQueryLength))
         {
             errors.Add($"Search query must be at least {MinQueryLength} characters long");

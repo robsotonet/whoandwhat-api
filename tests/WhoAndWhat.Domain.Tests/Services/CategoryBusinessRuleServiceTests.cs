@@ -265,7 +265,7 @@ public class CategoryBusinessRuleServiceTests
         // Arrange
         var project = CreateTestTask("Software project", AppTaskCategory.Project);
         project.Status = (int)DomainTaskStatus.InProgress;
-        
+
         var subtask = CreateTestTask("Design database", AppTaskCategory.ToDo);
         subtask.Status = (int)DomainTaskStatus.InProgress;
         project.Subtasks.Add(subtask);
@@ -389,10 +389,10 @@ public class CategoryBusinessRuleServiceTests
             CreateCompletedTask("Todo 1", AppTaskCategory.ToDo),
             CreateCompletedTask("Todo 2", AppTaskCategory.ToDo),
             CreateTestTask("Todo 3", AppTaskCategory.ToDo),
-            
+
             CreateCompletedTask("Appt 1", AppTaskCategory.Appointment),
             CreateOverdueTask("Appt 2", AppTaskCategory.Appointment),
-            
+
             CreateTestTask("Idea 1", AppTaskCategory.Idea)
         };
 
@@ -401,7 +401,7 @@ public class CategoryBusinessRuleServiceTests
 
         // Assert
         metrics.Metrics.Should().HaveCount(3);
-        
+
         var todoMetric = metrics.Metrics.First(m => m.Category.Name == "ToDo");
         todoMetric.TotalTasks.Should().Be(3);
         todoMetric.CompletedTasks.Should().Be(2);
@@ -454,7 +454,7 @@ public class CategoryBusinessRuleServiceTests
 
         // Assert
         suggestions.Suggestions.Should().HaveCount(4);
-        
+
         var appointmentSuggestion = suggestions.Suggestions.First(s => s.Task.Category == (int)AppTaskCategory.Appointment);
         appointmentSuggestion.RecommendedDate.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromDays(1));
         appointmentSuggestion.EstimatedDuration.Should().Be(TimeSpan.FromHours(2));
@@ -491,7 +491,7 @@ public class CategoryBusinessRuleServiceTests
     private DomainTask CreateTestTask(string title, AppTaskCategory category, Priority priority = null!)
     {
         priority ??= Priority.Medium;
-        
+
         return new DomainTask
         {
             Id = Guid.NewGuid(),

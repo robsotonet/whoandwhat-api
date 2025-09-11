@@ -6,8 +6,8 @@ using WhoAndWhat.Application.Features.Contacts.Commands.UpdateContact;
 using WhoAndWhat.Application.Interfaces;
 using WhoAndWhat.Domain.Common;
 using WhoAndWhat.Domain.Entities;
-using WhoAndWhat.Domain.ValueObjects;
 using WhoAndWhat.Domain.Validators;
+using WhoAndWhat.Domain.ValueObjects;
 using Xunit;
 
 namespace WhoAndWhat.Application.Tests.Features.Contacts.Commands.UpdateContact;
@@ -111,7 +111,7 @@ public class UpdateContactCommandHandlerTests
         result.Value.Email.Should().Be("updated@example.com");
         result.Value.Phone.Should().Be("+0987654321");
         result.Value.RelationshipType.Should().Be(2);
-        
+
         _mockContactRepository.Verify(x => x.GetByIdAsync(existingContact.Id, It.IsAny<CancellationToken>()), Times.Once);
         _mockContactRepository.Verify(x => x.UpdateAsync(It.IsAny<Contact>(), It.IsAny<CancellationToken>()), Times.Once);
         _mockContactRepository.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
@@ -127,7 +127,7 @@ public class UpdateContactCommandHandlerTests
         var command = new UpdateContactCommand(
             ContactId: contactId,
             Name: "Jane Smith Updated",
-            Email: "jane.updated@example.com", 
+            Email: "jane.updated@example.com",
             Phone: "+5551234567",
             RelationshipType: 3, // Colleague
             UserId: userId
@@ -174,7 +174,7 @@ public class UpdateContactCommandHandlerTests
         // Assert
         result.IsSuccess.Should().BeTrue();
         result.Value.Email.Should().BeNull();
-        
+
         _mockContactRepository.Verify(x => x.UpdateAsync(It.IsAny<Contact>(), It.IsAny<CancellationToken>()), Times.Once);
     }
 
@@ -199,7 +199,7 @@ public class UpdateContactCommandHandlerTests
         // Assert
         result.IsSuccess.Should().BeTrue();
         result.Value.Phone.Should().BeNull();
-        
+
         _mockContactRepository.Verify(x => x.UpdateAsync(It.IsAny<Contact>(), It.IsAny<CancellationToken>()), Times.Once);
     }
 
@@ -211,7 +211,7 @@ public class UpdateContactCommandHandlerTests
     [InlineData("", "john@example.com", "+123456", 1)]
     [InlineData(null, "john@example.com", "+123456", 1)]
     [InlineData("   ", "john@example.com", "+123456", 1)]
-    public async Task Handle_Should_Return_Failure_When_Name_Is_Invalid(string name, string email, string phone, int relationshipType)
+    public async Task Handle_Should_Return_Failure_When_Name_Is_Invalid(string? name, string email, string phone, int relationshipType)
     {
         // Arrange
         var existingContact = CreateValidExistingContact();
@@ -233,7 +233,7 @@ public class UpdateContactCommandHandlerTests
         // Assert
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("must not be empty");
-        
+
         _mockContactRepository.Verify(x => x.GetByIdAsync(existingContact.Id, It.IsAny<CancellationToken>()), Times.Once);
         _mockContactRepository.Verify(x => x.UpdateAsync(It.IsAny<Contact>(), It.IsAny<CancellationToken>()), Times.Never);
         _mockContactRepository.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
@@ -266,7 +266,7 @@ public class UpdateContactCommandHandlerTests
         // Assert
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("valid email address");
-        
+
         _mockContactRepository.Verify(x => x.UpdateAsync(It.IsAny<Contact>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
@@ -290,7 +290,7 @@ public class UpdateContactCommandHandlerTests
         // Assert
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("User ID is required");
-        
+
         _mockContactRepository.Verify(x => x.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
@@ -313,7 +313,7 @@ public class UpdateContactCommandHandlerTests
         // Assert
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("Contact ID is required");
-        
+
         _mockContactRepository.Verify(x => x.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
@@ -335,7 +335,7 @@ public class UpdateContactCommandHandlerTests
         // Assert
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("Contact not found");
-        
+
         _mockContactRepository.Verify(x => x.GetByIdAsync(command.ContactId, It.IsAny<CancellationToken>()), Times.Once);
         _mockContactRepository.Verify(x => x.UpdateAsync(It.IsAny<Contact>(), It.IsAny<CancellationToken>()), Times.Never);
     }
@@ -348,7 +348,7 @@ public class UpdateContactCommandHandlerTests
         existingContact.IsDeleted = true;
         existingContact.DeletedAt = DateTime.UtcNow;
         var command = CreateValidUpdateCommand(existingContact.Id, existingContact.UserId);
-        
+
         _mockContactRepository.Setup(x => x.GetByIdAsync(command.ContactId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(existingContact);
 
@@ -358,7 +358,7 @@ public class UpdateContactCommandHandlerTests
         // Assert
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("Contact not found or has been deleted");
-        
+
         _mockContactRepository.Verify(x => x.UpdateAsync(It.IsAny<Contact>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
@@ -369,7 +369,7 @@ public class UpdateContactCommandHandlerTests
         var existingContact = CreateValidExistingContact();
         var differentUserId = Guid.NewGuid();
         var command = CreateValidUpdateCommand(existingContact.Id, differentUserId);
-        
+
         _mockContactRepository.Setup(x => x.GetByIdAsync(command.ContactId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(existingContact);
 
@@ -379,7 +379,7 @@ public class UpdateContactCommandHandlerTests
         // Assert
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("Contact not found");
-        
+
         _mockContactRepository.Verify(x => x.UpdateAsync(It.IsAny<Contact>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
@@ -393,7 +393,7 @@ public class UpdateContactCommandHandlerTests
         // Arrange
         var existingContact = CreateValidExistingContact();
         var command = CreateValidUpdateCommand(existingContact.Id, existingContact.UserId);
-        
+
         var otherContactWithSameEmail = new Contact
         {
             Id = Guid.NewGuid(),
@@ -414,7 +414,7 @@ public class UpdateContactCommandHandlerTests
         // Assert
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("A contact with this email already exists");
-        
+
         _mockContactRepository.Verify(x => x.UpdateAsync(It.IsAny<Contact>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
@@ -447,7 +447,7 @@ public class UpdateContactCommandHandlerTests
 
         // Assert
         result.IsSuccess.Should().BeTrue();
-        
+
         _mockContactRepository.Verify(x => x.UpdateAsync(It.IsAny<Contact>(), It.IsAny<CancellationToken>()), Times.Once);
     }
 
@@ -461,7 +461,7 @@ public class UpdateContactCommandHandlerTests
         // Arrange
         var existingContact = CreateValidExistingContact();
         var command = CreateValidUpdateCommand(existingContact.Id, existingContact.UserId);
-        
+
         _mockContactRepository.Setup(x => x.GetByIdAsync(command.ContactId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(existingContact);
         _mockContactRepository.Setup(x => x.UpdateAsync(It.IsAny<Contact>(), It.IsAny<CancellationToken>()))
@@ -475,7 +475,7 @@ public class UpdateContactCommandHandlerTests
         // Assert
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("Failed to update contact");
-        
+
         _mockContactRepository.Verify(x => x.UpdateAsync(It.IsAny<Contact>(), It.IsAny<CancellationToken>()), Times.Once);
         _mockContactRepository.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
@@ -486,7 +486,7 @@ public class UpdateContactCommandHandlerTests
         // Arrange
         var existingContact = CreateValidExistingContact();
         var command = CreateValidUpdateCommand(existingContact.Id, existingContact.UserId);
-        
+
         _mockContactRepository.Setup(x => x.GetByIdAsync(command.ContactId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(existingContact);
         _mockContactRepository.Setup(x => x.UpdateAsync(It.IsAny<Contact>(), It.IsAny<CancellationToken>()))
@@ -498,7 +498,7 @@ public class UpdateContactCommandHandlerTests
         // Assert
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("An error occurred while updating the contact");
-        
+
         _mockContactRepository.Verify(x => x.UpdateAsync(It.IsAny<Contact>(), It.IsAny<CancellationToken>()), Times.Once);
         _mockContactRepository.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
@@ -586,7 +586,7 @@ public class UpdateContactCommandHandlerTests
         var command = CreateValidUpdateCommand(existingContact.Id, existingContact.UserId);
         var cancellationTokenSource = new CancellationTokenSource();
         cancellationTokenSource.Cancel(); // Cancel immediately
-        
+
         _mockContactRepository.Setup(x => x.GetByIdAsync(command.ContactId, It.IsAny<CancellationToken>()))
             .ThrowsAsync(new OperationCanceledException());
 

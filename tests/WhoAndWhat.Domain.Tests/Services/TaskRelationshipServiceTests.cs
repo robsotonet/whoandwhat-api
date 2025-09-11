@@ -1,7 +1,7 @@
 using FluentAssertions;
+using WhoAndWhat.Domain.Common;
 using WhoAndWhat.Domain.Services;
 using WhoAndWhat.Domain.ValueObjects;
-using WhoAndWhat.Domain.Common;
 using DomainTask = WhoAndWhat.Domain.Entities.AppTask;
 using DomainTaskStatus = WhoAndWhat.Domain.ValueObjects.AppTaskStatus;
 
@@ -41,9 +41,9 @@ public class AppTaskRelationshipServiceTests
         var userId = Guid.NewGuid();
         var parentTask = CreateValidTask(AppTaskCategory.Project, userId: userId);
         var childTask = CreateValidTask(AppTaskCategory.ToDo, userId: userId);
-        
+
         var result = _service.EstablishParentChildRelationship(parentTask, childTask);
-        
+
         result.IsValid.Should().BeTrue();
         result.Errors.Should().BeEmpty();
     }
@@ -54,9 +54,9 @@ public class AppTaskRelationshipServiceTests
         var userId = Guid.NewGuid();
         var parentTask = CreateValidTask(AppTaskCategory.Appointment, userId: userId);
         var childTask = CreateValidTask(AppTaskCategory.ToDo, userId: userId);
-        
+
         var result = _service.EstablishParentChildRelationship(parentTask, childTask);
-        
+
         result.IsValid.Should().BeFalse();
         result.Errors.Should().Contain("Appointment tasks cannot have subtasks");
     }
@@ -68,9 +68,9 @@ public class AppTaskRelationshipServiceTests
         var parentTask = CreateValidTask(AppTaskCategory.Project, userId: userId);
         var childTask = CreateValidTask(AppTaskCategory.ToDo, userId: userId);
         childTask.ProjectId = Guid.NewGuid();
-        
+
         var result = _service.EstablishParentChildRelationship(parentTask, childTask);
-        
+
         result.IsValid.Should().BeFalse();
         result.Errors.Should().Contain("Task is already part of another project");
     }
@@ -81,9 +81,9 @@ public class AppTaskRelationshipServiceTests
         var userId = Guid.NewGuid();
         var parentTask = CreateValidTask(AppTaskCategory.Project, userId: userId);
         var childTask = CreateValidTask(AppTaskCategory.Project, userId: userId);
-        
+
         var result = _service.EstablishParentChildRelationship(parentTask, childTask);
-        
+
         result.IsValid.Should().BeFalse();
         result.Errors.Should().Contain("Projects cannot be subtasks of other tasks");
     }
@@ -94,12 +94,12 @@ public class AppTaskRelationshipServiceTests
         var userId = Guid.NewGuid();
         var parentTask = CreateValidTask(AppTaskCategory.Project, userId: userId);
         var childTask = CreateValidTask(AppTaskCategory.Project, userId: userId);
-        
+
         // Set up circular dependency
         parentTask.ProjectId = childTask.Id;
-        
+
         var result = _service.EstablishParentChildRelationship(parentTask, childTask);
-        
+
         result.IsValid.Should().BeFalse();
         result.Errors.Should().Contain("Cannot create circular dependency between tasks");
     }
@@ -109,9 +109,9 @@ public class AppTaskRelationshipServiceTests
     {
         var parentTask = CreateValidTask(AppTaskCategory.Project, userId: Guid.NewGuid());
         var childTask = CreateValidTask(AppTaskCategory.ToDo, userId: Guid.NewGuid());
-        
+
         var result = _service.EstablishParentChildRelationship(parentTask, childTask);
-        
+
         result.IsValid.Should().BeFalse();
         result.Errors.Should().Contain("Parent and child tasks must belong to the same user");
     }
@@ -122,12 +122,12 @@ public class AppTaskRelationshipServiceTests
         var userId = Guid.NewGuid();
         var parentTask = CreateValidTask(AppTaskCategory.Project, userId: userId);
         parentTask.DueDate = DateTime.UtcNow.AddDays(5);
-        
+
         var childTask = CreateValidTask(AppTaskCategory.ToDo, userId: userId);
         childTask.DueDate = DateTime.UtcNow.AddDays(10);
-        
+
         var result = _service.EstablishParentChildRelationship(parentTask, childTask);
-        
+
         result.IsValid.Should().BeFalse();
         result.Errors.Should().Contain($"Subtask due date ({childTask.DueDate:yyyy-MM-dd}) cannot be later than parent due date ({parentTask.DueDate:yyyy-MM-dd})");
     }
@@ -143,9 +143,9 @@ public class AppTaskRelationshipServiceTests
         var parentTask = CreateValidTask(AppTaskCategory.Project, DomainTaskStatus.InProgress, userId);
         var childTask = CreateValidTask(AppTaskCategory.ToDo, DomainTaskStatus.Pending, userId);
         childTask.ProjectId = parentTask.Id;
-        
+
         var result = _service.RemoveParentChildRelationship(parentTask, childTask);
-        
+
         result.IsValid.Should().BeTrue();
     }
 
@@ -155,9 +155,9 @@ public class AppTaskRelationshipServiceTests
         var userId = Guid.NewGuid();
         var parentTask = CreateValidTask(AppTaskCategory.Project, DomainTaskStatus.Completed, userId);
         var childTask = CreateValidTask(AppTaskCategory.ToDo, DomainTaskStatus.InProgress, userId);
-        
+
         var result = _service.RemoveParentChildRelationship(parentTask, childTask);
-        
+
         result.IsValid.Should().BeFalse();
         result.Errors.Should().Contain("Cannot remove active subtask from completed parent task");
     }
@@ -176,16 +176,16 @@ public class AppTaskRelationshipServiceTests
         child2.ProjectId = rootTask.Id;
         var grandchild = CreateValidTask(AppTaskCategory.ToDo);
         grandchild.ProjectId = child1.Id;
-        
+
         var allTasks = new[] { rootTask, child1, child2, grandchild };
-        
+
         var hierarchy = _service.BuildTaskHierarchy(rootTask, allTasks);
-        
+
         hierarchy.Root.Should().Be(rootTask);
         hierarchy.Children.Should().HaveCount(2);
         hierarchy.Children.Should().Contain(h => h.Root == child1);
         hierarchy.Children.Should().Contain(h => h.Root == child2);
-        
+
         var child1Hierarchy = hierarchy.Children.First(h => h.Root == child1);
         child1Hierarchy.Children.Should().HaveCount(1);
         child1Hierarchy.Children[0].Root.Should().Be(grandchild);
@@ -199,10 +199,10 @@ public class AppTaskRelationshipServiceTests
         child.ProjectId = rootTask.Id;
         var grandchild = CreateValidTask(AppTaskCategory.ToDo);
         grandchild.ProjectId = child.Id;
-        
+
         var allTasks = new[] { rootTask, child, grandchild };
         var hierarchy = _service.BuildTaskHierarchy(rootTask, allTasks);
-        
+
         hierarchy.Depth.Should().Be(3); // Root -> Child -> Grandchild
     }
 
@@ -212,10 +212,10 @@ public class AppTaskRelationshipServiceTests
         var rootTask = CreateValidTask(AppTaskCategory.Project);
         var child = CreateValidTask(AppTaskCategory.ToDo);
         child.ProjectId = rootTask.Id;
-        
+
         var allTasks = new[] { rootTask, child };
         var hierarchy = _service.BuildTaskHierarchy(rootTask, allTasks);
-        
+
         var flattenedTasks = hierarchy.AllTasks.ToList();
         flattenedTasks.Should().HaveCount(2);
         flattenedTasks.Should().Contain(rootTask);
@@ -232,15 +232,15 @@ public class AppTaskRelationshipServiceTests
         var rootTask = CreateValidTask(AppTaskCategory.Project, DomainTaskStatus.InProgress);
         rootTask.Priority = Priority.High.Value;
         rootTask.DueDate = DateTime.UtcNow.AddDays(10);
-        
+
         var child1 = CreateValidTask(AppTaskCategory.ToDo, DomainTaskStatus.Completed);
         child1.Priority = Priority.Medium.Value;
         child1.DueDate = DateTime.UtcNow.AddDays(5);
-        
+
         var child2 = CreateValidTask(AppTaskCategory.ToDo, DomainTaskStatus.Pending);
         child2.Priority = Priority.Urgent.Value;
         child2.DueDate = DateTime.UtcNow.AddDays(-1); // Overdue
-        
+
         var hierarchy = new TaskHierarchy
         {
             Root = rootTask,
@@ -250,9 +250,9 @@ public class AppTaskRelationshipServiceTests
                 new() { Root = child2, Children = new List<TaskHierarchy>() }
             }
         };
-        
+
         var metrics = _service.CalculateHierarchyMetrics(hierarchy);
-        
+
         metrics.TotalTasks.Should().Be(3);
         metrics.CompletedTasks.Should().Be(1);
         metrics.InProgressTasks.Should().Be(1);
@@ -275,9 +275,9 @@ public class AppTaskRelationshipServiceTests
             Root = rootTask,
             Children = new List<TaskHierarchy>()
         };
-        
+
         var metrics = _service.CalculateHierarchyMetrics(hierarchy);
-        
+
         metrics.TotalTasks.Should().Be(1);
         metrics.CompletionPercentage.Should().Be(0);
         metrics.IsOverdue.Should().BeFalse();
@@ -298,19 +298,19 @@ public class AppTaskRelationshipServiceTests
             new() { Status = DomainTaskStatus.Pending.Value, Priority = Priority.Urgent.Value, CreatedAt = DateTime.UtcNow.AddDays(-3) },
             new() { Status = DomainTaskStatus.InProgress.Value, Priority = Priority.High.Value, CreatedAt = DateTime.UtcNow.AddDays(-4) }
         };
-        
+
         var reordered = _service.ReorderSubtasks(parentTask, subtasks).ToList();
-        
+
         // Should be ordered: InProgress (High first), InProgress (Low), Pending (Urgent), Completed (High)
         reordered[0].Status.Should().Be(DomainTaskStatus.InProgress.Value);
         reordered[0].Priority.Should().Be(Priority.High.Value);
-        
+
         reordered[1].Status.Should().Be(DomainTaskStatus.InProgress.Value);
         reordered[1].Priority.Should().Be(Priority.Low.Value);
-        
+
         reordered[2].Status.Should().Be(DomainTaskStatus.Pending.Value);
         reordered[2].Priority.Should().Be(Priority.Urgent.Value);
-        
+
         reordered[3].Status.Should().Be(DomainTaskStatus.Completed.Value);
     }
 
@@ -320,24 +320,24 @@ public class AppTaskRelationshipServiceTests
         var parentTask = CreateValidTask(AppTaskCategory.Project);
         var subtasks = new List<DomainTask>
         {
-            new() 
-            { 
-                Status = DomainTaskStatus.Pending.Value, 
-                Priority = Priority.Medium.Value, 
+            new()
+            {
+                Status = DomainTaskStatus.Pending.Value,
+                Priority = Priority.Medium.Value,
                 DueDate = DateTime.UtcNow.AddDays(2),
                 CreatedAt = DateTime.UtcNow.AddDays(-1)
             },
-            new() 
-            { 
-                Status = DomainTaskStatus.Pending.Value, 
-                Priority = Priority.Medium.Value, 
+            new()
+            {
+                Status = DomainTaskStatus.Pending.Value,
+                Priority = Priority.Medium.Value,
                 DueDate = DateTime.UtcNow.AddDays(1),
                 CreatedAt = DateTime.UtcNow.AddDays(-2)
             }
         };
-        
+
         var reordered = _service.ReorderSubtasks(parentTask, subtasks).ToList();
-        
+
         reordered[0].DueDate.Should().Be(DateTime.UtcNow.AddDays(1).Date);
         reordered[1].DueDate.Should().Be(DateTime.UtcNow.AddDays(2).Date);
     }
@@ -350,9 +350,9 @@ public class AppTaskRelationshipServiceTests
     public void SuggestTaskBreakdown_Should_Suggest_Standard_Project_Phases()
     {
         var projectTask = CreateValidTask(AppTaskCategory.Project);
-        
+
         var suggestions = _service.SuggestTaskBreakdown(projectTask).ToList();
-        
+
         suggestions.Should().HaveCount(5);
         suggestions.Should().Contain(s => s.Title == "Planning Phase");
         suggestions.Should().Contain(s => s.Title == "Research Phase");
@@ -366,9 +366,9 @@ public class AppTaskRelationshipServiceTests
     {
         var projectTask = CreateValidTask(AppTaskCategory.Project);
         projectTask.DueDate = DateTime.UtcNow.AddDays(25);
-        
+
         var suggestions = _service.SuggestTaskBreakdown(projectTask).ToList();
-        
+
         suggestions.Should().AllSatisfy(s => s.SuggestedDueDate.Should().NotBeNull());
         suggestions[0].SuggestedDueDate.Should().BeBefore(suggestions[1].SuggestedDueDate!.Value);
         suggestions.Last().SuggestedDueDate.Should().BeCloseTo(projectTask.DueDate!.Value, TimeSpan.FromDays(1));
@@ -379,9 +379,9 @@ public class AppTaskRelationshipServiceTests
     {
         var ideaTask = CreateValidTask(AppTaskCategory.Idea);
         ideaTask.Description = new string('a', 150); // Long description
-        
+
         var suggestions = _service.SuggestTaskBreakdown(ideaTask).ToList();
-        
+
         suggestions.Should().HaveCount(3);
         suggestions.Should().Contain(s => s.Title == "Research the Idea");
         suggestions.Should().Contain(s => s.Title == "Create Action Plan");
@@ -393,9 +393,9 @@ public class AppTaskRelationshipServiceTests
     {
         var ideaTask = CreateValidTask(AppTaskCategory.Idea);
         ideaTask.Description = "Simple idea";
-        
+
         var suggestions = _service.SuggestTaskBreakdown(ideaTask).ToList();
-        
+
         suggestions.Should().BeEmpty();
     }
 
@@ -404,9 +404,9 @@ public class AppTaskRelationshipServiceTests
     {
         var todoTask = CreateValidTask(AppTaskCategory.ToDo);
         todoTask.Description = "Buy groceries and cook dinner, clean the house and do laundry";
-        
+
         var suggestions = _service.SuggestTaskBreakdown(todoTask).ToList();
-        
+
         suggestions.Should().HaveCountGreaterThan(0);
         suggestions.Should().AllSatisfy(s => s.Priority.Should().Be(Priority.Medium));
         suggestions.Should().AllSatisfy(s => s.Title.Length.Should().BeGreaterThan(5));
@@ -417,9 +417,9 @@ public class AppTaskRelationshipServiceTests
     {
         var todoTask = CreateValidTask(AppTaskCategory.ToDo);
         todoTask.Description = "Simple task";
-        
+
         var suggestions = _service.SuggestTaskBreakdown(todoTask).ToList();
-        
+
         suggestions.Should().BeEmpty();
     }
 
@@ -428,10 +428,10 @@ public class AppTaskRelationshipServiceTests
     {
         var appointmentTask = CreateValidTask(AppTaskCategory.Appointment);
         var billTask = CreateValidTask(AppTaskCategory.BillReminder);
-        
+
         var appointmentSuggestions = _service.SuggestTaskBreakdown(appointmentTask).ToList();
         var billSuggestions = _service.SuggestTaskBreakdown(billTask).ToList();
-        
+
         appointmentSuggestions.Should().BeEmpty();
         billSuggestions.Should().BeEmpty();
     }

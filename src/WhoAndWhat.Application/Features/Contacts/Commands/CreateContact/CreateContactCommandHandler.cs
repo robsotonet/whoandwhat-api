@@ -36,7 +36,7 @@ public class CreateContactCommandHandler : IRequestHandler<CreateContactCommand,
                 return Result<ContactDto>.Failure("User ID is required");
             }
 
-            _logger.LogInformation("Creating contact for user {UserId} with name '{Name}'", 
+            _logger.LogInformation("Creating contact for user {UserId} with name '{Name}'",
                 request.UserId, request.Name);
 
             // Validate relationship type
@@ -72,14 +72,14 @@ public class CreateContactCommandHandler : IRequestHandler<CreateContactCommand,
             if (!string.IsNullOrWhiteSpace(contact.Email))
             {
                 var existingContacts = await _contactRepository.FindContactsAsync(
-                    contact.Email, 
-                    request.UserId, 
-                    false, 
+                    contact.Email,
+                    request.UserId,
+                    false,
                     cancellationToken);
 
                 if (existingContacts.Any())
                 {
-                    _logger.LogWarning("Contact with email {Email} already exists for user {UserId}", 
+                    _logger.LogWarning("Contact with email {Email} already exists for user {UserId}",
                         contact.Email, request.UserId);
                     return Result<ContactDto>.Failure("A contact with this email already exists");
                 }
@@ -89,7 +89,7 @@ public class CreateContactCommandHandler : IRequestHandler<CreateContactCommand,
             await _contactRepository.AddAsync(contact, cancellationToken);
             await _contactRepository.SaveChangesAsync(cancellationToken);
 
-            _logger.LogInformation("Contact {ContactId} created successfully for user {UserId}", 
+            _logger.LogInformation("Contact {ContactId} created successfully for user {UserId}",
                 contact.Id, request.UserId);
 
             // Map to DTO

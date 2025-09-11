@@ -41,7 +41,7 @@ public class UpdateContactCommandHandler : IRequestHandler<UpdateContactCommand,
                 return Result<ContactDto>.Failure("Contact ID is required");
             }
 
-            _logger.LogInformation("Updating contact {ContactId} for user {UserId}", 
+            _logger.LogInformation("Updating contact {ContactId} for user {UserId}",
                 request.ContactId, request.UserId);
 
             // Validate relationship type
@@ -54,7 +54,7 @@ public class UpdateContactCommandHandler : IRequestHandler<UpdateContactCommand,
             var existingContact = await _contactRepository.GetByIdAsync(request.ContactId, cancellationToken);
             if (existingContact == null)
             {
-                _logger.LogWarning("Contact {ContactId} not found for user {UserId}", 
+                _logger.LogWarning("Contact {ContactId} not found for user {UserId}",
                     request.ContactId, request.UserId);
                 return Result<ContactDto>.Failure("Contact not found");
             }
@@ -62,7 +62,7 @@ public class UpdateContactCommandHandler : IRequestHandler<UpdateContactCommand,
             // Verify ownership
             if (existingContact.UserId != request.UserId)
             {
-                _logger.LogWarning("User {UserId} attempted to update contact {ContactId} owned by {OwnerId}", 
+                _logger.LogWarning("User {UserId} attempted to update contact {ContactId} owned by {OwnerId}",
                     request.UserId, request.ContactId, existingContact.UserId);
                 return Result<ContactDto>.Failure("Contact not found");
             }
@@ -70,7 +70,7 @@ public class UpdateContactCommandHandler : IRequestHandler<UpdateContactCommand,
             // Check if contact is soft deleted
             if (existingContact.IsDeleted)
             {
-                _logger.LogWarning("Attempted to update soft deleted contact {ContactId} for user {UserId}", 
+                _logger.LogWarning("Attempted to update soft deleted contact {ContactId} for user {UserId}",
                     request.ContactId, request.UserId);
                 return Result<ContactDto>.Failure("Contact not found");
             }
@@ -95,14 +95,14 @@ public class UpdateContactCommandHandler : IRequestHandler<UpdateContactCommand,
             if (!string.IsNullOrWhiteSpace(existingContact.Email))
             {
                 var contactsWithSameEmail = await _contactRepository.FindContactsAsync(
-                    existingContact.Email, 
-                    request.UserId, 
-                    false, 
+                    existingContact.Email,
+                    request.UserId,
+                    false,
                     cancellationToken);
 
                 if (contactsWithSameEmail.Any(c => c.Id != request.ContactId))
                 {
-                    _logger.LogWarning("Another contact with email {Email} already exists for user {UserId}", 
+                    _logger.LogWarning("Another contact with email {Email} already exists for user {UserId}",
                         existingContact.Email, request.UserId);
                     return Result<ContactDto>.Failure("A contact with this email already exists");
                 }
@@ -112,7 +112,7 @@ public class UpdateContactCommandHandler : IRequestHandler<UpdateContactCommand,
             await _contactRepository.UpdateAsync(existingContact, cancellationToken);
             await _contactRepository.SaveChangesAsync(cancellationToken);
 
-            _logger.LogInformation("Contact {ContactId} updated successfully for user {UserId}", 
+            _logger.LogInformation("Contact {ContactId} updated successfully for user {UserId}",
                 request.ContactId, request.UserId);
 
             // Map to DTO
@@ -122,7 +122,7 @@ public class UpdateContactCommandHandler : IRequestHandler<UpdateContactCommand,
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error updating contact {ContactId} for user {UserId}", 
+            _logger.LogError(ex, "Error updating contact {ContactId} for user {UserId}",
                 request.ContactId, request.UserId);
             return Result<ContactDto>.Failure($"Error updating contact: {ex.Message}");
         }

@@ -1,3 +1,7 @@
+using System.Net;
+using System.Net.Http.Headers;
+using System.Text;
+using System.Text.Json;
 using FluentAssertions;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -5,16 +9,12 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
-using System.Net;
-using System.Net.Http.Headers;
-using System.Text;
-using System.Text.Json;
+using WhoAndWhat.API.Tests.Helpers;
 using WhoAndWhat.Application.DTOs.Contacts;
 using WhoAndWhat.Application.Interfaces;
+using WhoAndWhat.Domain.Validators;
 using WhoAndWhat.Infrastructure.Data;
 using WhoAndWhat.Infrastructure.Repositories;
-using WhoAndWhat.Domain.Validators;
-using WhoAndWhat.API.Tests.Helpers;
 using Xunit;
 
 namespace WhoAndWhat.API.Tests.Controllers;
@@ -34,13 +34,13 @@ public class ContactsControllerTests : IClassFixture<WebApplicationFactory<Progr
         _factory = factory.WithWebHostBuilder(builder =>
         {
             builder.UseEnvironment("Testing");
-            
+
             // Override configuration for tests
             builder.ConfigureAppConfiguration((context, config) =>
             {
                 config.AddJsonFile("appsettings.Testing.json", optional: false);
             });
-            
+
             builder.ConfigureServices(services =>
             {
                 // Remove all existing database-related registrations
@@ -75,7 +75,7 @@ public class ContactsControllerTests : IClassFixture<WebApplicationFactory<Progr
                 }
             });
         });
-        
+
         _client = _factory.CreateClient();
         _jsonOptions = new JsonSerializerOptions
         {
@@ -103,7 +103,7 @@ public class ContactsControllerTests : IClassFixture<WebApplicationFactory<Progr
         _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
         var response = await _client.PostAsync("/api/v1/contacts", content);
         var responseContent = await response.Content.ReadAsStringAsync();
-        
+
         return JsonSerializer.Deserialize<ContactDto>(responseContent, _jsonOptions)!;
     }
 
@@ -144,7 +144,7 @@ public class ContactsControllerTests : IClassFixture<WebApplicationFactory<Progr
     {
         // Arrange
         var token = await AuthenticationTestHelper.GetAuthTokenAsync(_client);
-        
+
         // Create multiple contacts
         for (int i = 1; i <= 5; i++)
         {
@@ -173,7 +173,7 @@ public class ContactsControllerTests : IClassFixture<WebApplicationFactory<Progr
     {
         // Arrange
         var token = await AuthenticationTestHelper.GetAuthTokenAsync(_client);
-        
+
         // Create test contacts
         await CreateTestContactAsync(token, "John Smith", "john.smith@example.com");
         await CreateTestContactAsync(token, "Jane Doe", "jane.doe@example.com");
@@ -338,7 +338,7 @@ public class ContactsControllerTests : IClassFixture<WebApplicationFactory<Progr
     {
         // Arrange
         var token = await AuthenticationTestHelper.GetAuthTokenAsync(_client);
-        
+
         // Create first contact
         await CreateTestContactAsync(token, "John First", "duplicate@example.com");
 
@@ -481,7 +481,7 @@ public class ContactsControllerTests : IClassFixture<WebApplicationFactory<Progr
     {
         // Arrange
         var token = await AuthenticationTestHelper.GetAuthTokenAsync(_client);
-        
+
         // Create and delete contacts
         var contact1 = await CreateTestContactAsync(token, "Deleted 1", "deleted1@example.com");
         var contact2 = await CreateTestContactAsync(token, "Deleted 2", "deleted2@example.com");
@@ -713,7 +713,7 @@ public class ContactsControllerTests : IClassFixture<WebApplicationFactory<Progr
 
         // Note: This test assumes the contact has active task associations
         // In a real scenario, you'd create a task and link it to the contact first
-        
+
         // Act - Try to permanently delete contact with active tasks
         var response = await _client.DeleteAsync($"/api/v1/contacts/{contact.Id}/permanently");
 

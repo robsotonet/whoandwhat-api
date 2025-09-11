@@ -46,7 +46,7 @@ public class GenerateContactQRQueryHandlerTests
     }
 
     private static GenerateContactQRQuery CreateValidQuery(
-        Guid? contactId = null, 
+        Guid? contactId = null,
         Guid? userId = null,
         string? customMessage = null,
         int expirationHours = 24,
@@ -115,7 +115,7 @@ public class GenerateContactQRQueryHandlerTests
         result.Value.GeneratedAt.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(5));
 
         _mockContactRepository.Verify(
-            x => x.GetByIdAsync(contactId, It.IsAny<CancellationToken>()), 
+            x => x.GetByIdAsync(contactId, It.IsAny<CancellationToken>()),
             Times.Once);
     }
 
@@ -229,7 +229,7 @@ public class GenerateContactQRQueryHandlerTests
 
         // Assert
         result.IsSuccess.Should().BeTrue();
-        
+
         // Decode and verify payload
         var payloadBytes = Convert.FromBase64String(result.Value.EncodedPayload);
         var payloadJson = Encoding.UTF8.GetString(payloadBytes);
@@ -242,7 +242,7 @@ public class GenerateContactQRQueryHandlerTests
         payload.GetProperty("RelationshipType").GetInt32().Should().Be(contact.RelationshipType);
         payload.GetProperty("CustomMessage").GetString().Should().Be(customMessage);
         payload.GetProperty("Signature").GetString().Should().NotBeNullOrEmpty();
-        
+
         var expiresAtString = payload.GetProperty("ExpiresAt").GetString();
         DateTime.Parse(expiresAtString!).Should().BeAfter(DateTime.UtcNow);
     }
@@ -269,7 +269,7 @@ public class GenerateContactQRQueryHandlerTests
         result.Error.Should().Be("Contact not found");
 
         _mockContactRepository.Verify(
-            x => x.GetByIdAsync(contactId, It.IsAny<CancellationToken>()), 
+            x => x.GetByIdAsync(contactId, It.IsAny<CancellationToken>()),
             Times.Once);
     }
 
@@ -334,7 +334,7 @@ public class GenerateContactQRQueryHandlerTests
 
         // Assert
         _mockContactRepository.Verify(
-            x => x.GetByIdAsync(contactId, cancellationToken), 
+            x => x.GetByIdAsync(contactId, cancellationToken),
             Times.Once);
     }
 
@@ -347,7 +347,7 @@ public class GenerateContactQRQueryHandlerTests
         var contact = CreateValidContact(contactId, userId);
         contact.Email = null; // Optional field
         contact.Phone = null; // Optional field
-        
+
         var query = CreateValidQuery(contactId, userId);
 
         SetupSuccessfulContactLookup(contact);
@@ -387,13 +387,13 @@ public class GenerateContactQRQueryHandlerTests
         // Assert - Signatures should be similar for same contact and similar expiration time
         result1.IsSuccess.Should().BeTrue();
         result2.IsSuccess.Should().BeTrue();
-        
+
         // Both results should have valid signatures (not empty)
         var payload1 = JsonSerializer.Deserialize<JsonElement>(
             Encoding.UTF8.GetString(Convert.FromBase64String(result1.Value.EncodedPayload)));
         var payload2 = JsonSerializer.Deserialize<JsonElement>(
             Encoding.UTF8.GetString(Convert.FromBase64String(result2.Value.EncodedPayload)));
-        
+
         payload1.GetProperty("Signature").GetString().Should().NotBeNullOrEmpty();
         payload2.GetProperty("Signature").GetString().Should().NotBeNullOrEmpty();
     }

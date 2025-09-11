@@ -34,7 +34,7 @@ public class ServiceCollectionExtensionsTests
     private IConfiguration CreateConfigurationWithConnectionStrings(Dictionary<string, string?> connectionStrings)
     {
         var configData = new Dictionary<string, string?>();
-        
+
         foreach (var kvp in connectionStrings)
         {
             if (kvp.Value != null)
@@ -56,7 +56,7 @@ public class ServiceCollectionExtensionsTests
 
         // Assert
         var serviceProvider = _services.BuildServiceProvider();
-        
+
         // Verify that API versioning services are registered
         var apiVersioningServices = _services.Where(s => s.ServiceType.FullName?.Contains("Versioning") == true);
         apiVersioningServices.Should().NotBeEmpty("API versioning services should be registered");
@@ -70,7 +70,7 @@ public class ServiceCollectionExtensionsTests
 
         // Assert
         var serviceProvider = _services.BuildServiceProvider();
-        
+
         // Verify that Swagger services are registered
         var swaggerServices = _services.Where(s => s.ServiceType.FullName?.Contains("Swagger") == true);
         swaggerServices.Should().NotBeEmpty("Swagger services should be registered");
@@ -87,7 +87,7 @@ public class ServiceCollectionExtensionsTests
 
         // Assert
         var serviceProvider = _services.BuildServiceProvider();
-        
+
         // Verify that health check services are registered
         var healthCheckService = serviceProvider.GetService<HealthCheckService>();
         healthCheckService.Should().NotBeNull("HealthCheckService should be registered");
@@ -107,7 +107,7 @@ public class ServiceCollectionExtensionsTests
         var serviceProvider = _services.BuildServiceProvider();
         var healthCheckService = serviceProvider.GetService<HealthCheckService>();
         healthCheckService.Should().NotBeNull();
-        
+
         // Verify health check options are configured
         var healthCheckOptions = serviceProvider.GetService<IOptions<HealthCheckServiceOptions>>();
         healthCheckOptions.Should().NotBeNull();
@@ -121,7 +121,7 @@ public class ServiceCollectionExtensionsTests
 
         // Assert
         var serviceProvider = _services.BuildServiceProvider();
-        
+
         // Verify CORS services are registered
         var corsServices = _services.Where(s => s.ServiceType.FullName?.Contains("Cors") == true);
         corsServices.Should().NotBeEmpty("CORS services should be registered");
@@ -135,7 +135,7 @@ public class ServiceCollectionExtensionsTests
 
         // Assert
         var serviceProvider = _services.BuildServiceProvider();
-        
+
         // Verify that CORS policies are configured
         var corsOptions = serviceProvider.GetService<IOptions<Microsoft.AspNetCore.Cors.Infrastructure.CorsOptions>>();
         corsOptions.Should().NotBeNull("CORS options should be configured");
@@ -149,7 +149,7 @@ public class ServiceCollectionExtensionsTests
 
         // Assert
         var serviceProvider = _services.BuildServiceProvider();
-        
+
         // Verify response compression services are registered
         var compressionServices = _services.Where(s => s.ServiceType.FullName?.Contains("Compression") == true);
         compressionServices.Should().NotBeEmpty("Response compression services should be registered");
@@ -169,7 +169,7 @@ public class ServiceCollectionExtensionsTests
 
         // Assert
         var serviceProvider = _services.BuildServiceProvider();
-        
+
         // Verify Application Insights services are registered
         var appInsightsServices = _services.Where(s => s.ServiceType.FullName?.Contains("ApplicationInsights") == true);
         appInsightsServices.Should().NotBeEmpty("Application Insights services should be registered");
@@ -189,7 +189,7 @@ public class ServiceCollectionExtensionsTests
 
         // Assert
         var serviceProvider = _services.BuildServiceProvider();
-        
+
         // Verify Application Insights services are not registered when no connection string
         var appInsightsServices = _services.Where(s => s.ServiceType.FullName?.Contains("ApplicationInsights") == true);
         appInsightsServices.Should().BeEmpty("Application Insights services should not be registered without connection string");
@@ -209,7 +209,7 @@ public class ServiceCollectionExtensionsTests
 
         // Assert
         var serviceProvider = _services.BuildServiceProvider();
-        
+
         // Verify Application Insights services are not registered when connection string is empty
         var appInsightsServices = _services.Where(s => s.ServiceType.FullName?.Contains("ApplicationInsights") == true);
         appInsightsServices.Should().BeEmpty("Application Insights services should not be registered with empty connection string");
@@ -264,7 +264,7 @@ public class ServiceCollectionExtensionsTests
 
         // Assert
         var serviceProvider = _services.BuildServiceProvider();
-        
+
         // Verify API versioning is configured (service registration indicates configuration)
         var apiVersioningServices = _services.Where(s => s.ServiceType.FullName?.Contains("ApiVersioning") == true);
         apiVersioningServices.Should().NotBeEmpty("API versioning should be configured with URL path strategy");
@@ -283,7 +283,7 @@ public class ServiceCollectionExtensionsTests
 
         // Assert
         healthCheckService.Should().NotBeNull("Health check service should be configured");
-        
+
         // The configuration includes both 'api' and 'database' checks as per the implementation
         var options = serviceProvider.GetService<IOptions<HealthCheckServiceOptions>>();
         options.Should().NotBeNull("Health check options should be configured");

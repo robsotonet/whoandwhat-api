@@ -13,12 +13,12 @@ public class DDoSProtectionMiddleware
     private readonly RequestDelegate _next;
     private readonly DDoSProtectionSettings _settings;
     private readonly ILogger<DDoSProtectionMiddleware> _logger;
-    
+
     // Thread-safe collections for tracking request patterns
     private static readonly ConcurrentDictionary<string, RequestTracker> _ipTrackers = new();
     private static readonly ConcurrentDictionary<string, DateTime> _blockedIPs = new();
     private static readonly ConcurrentDictionary<string, SuspiciousPatternTracker> _patternTrackers = new();
-    
+
     // Timer for cleanup operations
     private static readonly Timer _cleanupTimer = new(CleanupExpiredEntries, null, TimeSpan.FromMinutes(1), TimeSpan.FromMinutes(1));
 
@@ -45,7 +45,7 @@ public class DDoSProtectionMiddleware
     public async Task InvokeAsync(HttpContext context)
     {
         var clientIP = GetClientIP(context);
-        
+
         // Skip protection for whitelisted IPs
         if (IsWhitelistedIP(clientIP))
         {
@@ -62,7 +62,7 @@ public class DDoSProtectionMiddleware
 
         // Analyze request patterns for suspicious activity
         var suspiciousScore = AnalyzeRequestPattern(context, clientIP);
-        
+
         // Update request tracking
         UpdateRequestTracking(clientIP, context, suspiciousScore);
 
@@ -112,8 +112,8 @@ public class DDoSProtectionMiddleware
     {
         if (IPAddress.TryParse(clientIP, out var ipAddress))
         {
-            return _settings.WhitelistedIPs.Any(whitelistedIP => 
-                IPAddress.TryParse(whitelistedIP, out var whiteIP) && 
+            return _settings.WhitelistedIPs.Any(whitelistedIP =>
+                IPAddress.TryParse(whitelistedIP, out var whiteIP) &&
                 whiteIP.Equals(ipAddress));
         }
         return false;
@@ -130,11 +130,11 @@ public class DDoSProtectionMiddleware
             {
                 return true;
             }
-            
+
             // Remove expired block
             _blockedIPs.TryRemove(clientIP, out _);
         }
-        
+
         return false;
     }
 
@@ -163,7 +163,7 @@ public class DDoSProtectionMiddleware
         // Check for excessive different endpoints access
         var patternTracker = _patternTrackers.GetOrAdd(clientIP, _ => new SuspiciousPatternTracker());
         patternTracker.RecordRequest(path, userAgent);
-        
+
         if (patternTracker.GetUniqueEndpointsInWindow(_settings.PatternAnalysisWindowMinutes) > _settings.MaxUniqueEndpointsThreshold)
         {
             suspiciousScore += _settings.ExcessiveEndpointsPenalty;
@@ -178,7 +178,7 @@ public class DDoSProtectionMiddleware
         // Check request frequency
         var tracker = _ipTrackers.GetOrAdd(clientIP, _ => new RequestTracker());
         var requestsInWindow = tracker.GetRequestCountInWindow(TimeSpan.FromMinutes(_settings.RequestFrequencyWindowMinutes));
-        
+
         if (requestsInWindow > _settings.MaxRequestsPerWindow)
         {
             suspiciousScore += _settings.HighFrequencyPenalty;
@@ -206,7 +206,7 @@ public class DDoSProtectionMiddleware
             var totalScore = tracker.GetAccumulatedSuspiciousScore(TimeSpan.FromMinutes(_settings.ScoreAccumulationWindowMinutes));
             return totalScore > _settings.BlockingThreshold;
         }
-        
+
         return currentScore > _settings.ImmediateBlockThreshold;
     }
 
@@ -216,7 +216,7 @@ public class DDoSProtectionMiddleware
     private void BlockIP(string clientIP)
     {
         _blockedIPs.TryAdd(clientIP, DateTime.UtcNow);
-        _logger.LogWarning("IP blocked due to suspicious activity: {ClientIP}, Block duration: {Duration} minutes", 
+        _logger.LogWarning("IP blocked due to suspicious activity: {ClientIP}, Block duration: {Duration} minutes",
             clientIP, _settings.BlockDurationMinutes);
     }
 
@@ -226,10 +226,10 @@ public class DDoSProtectionMiddleware
     private async Task HandleBlockedRequest(HttpContext context, string clientIP)
     {
         _logger.LogInformation("Blocked request from IP: {ClientIP}, Path: {Path}", clientIP, context.Request.Path);
-        
+
         context.Response.StatusCode = 429;
         context.Response.Headers.TryAdd("Retry-After", (_settings.BlockDurationMinutes * 60).ToString());
-        
+
         await context.Response.WriteAsync($"{{\"error\":\"Too many requests. IP temporarily blocked.\",\"retryAfter\":\"{_settings.BlockDurationMinutes} minutes\"}}");
     }
 
@@ -243,7 +243,7 @@ public class DDoSProtectionMiddleware
             "bot", "crawler", "spider", "scraper", "curl", "wget", "python", "java", "go-http-client",
             "scanner", "vulnerability", "nikto", "sqlmap", "nmap", "masscan"
         };
-        
+
         return botPatterns.Any(pattern => userAgent.Contains(pattern, StringComparison.OrdinalIgnoreCase));
     }
 
@@ -254,11 +254,11 @@ public class DDoSProtectionMiddleware
     {
         var suspiciousPaths = new[]
         {
-            ".php", ".asp", ".jsp", "wp-admin", "wp-login", "admin", "administrator", 
+            ".php", ".asp", ".jsp", "wp-admin", "wp-login", "admin", "administrator",
             "phpmyadmin", "xmlrpc", ".env", "config", "backup", "sql", "database",
             "shell", "cmd", "exec", "/etc/passwd", "web.config", ".htaccess"
         };
-        
+
         return suspiciousPaths.Any(pattern => path.Contains(pattern, StringComparison.OrdinalIgnoreCase));
     }
 
@@ -268,7 +268,7 @@ public class DDoSProtectionMiddleware
     private static void CleanupExpiredEntries(object? state)
     {
         var cutoffTime = DateTime.UtcNow.AddHours(-1);
-        
+
         // Clean up expired IP trackers
         foreach (var kvp in _ipTrackers.ToArray())
         {
@@ -305,7 +305,7 @@ public class RequestTracker
 {
     private readonly List<RequestRecord> _requests = new();
     private readonly object _lock = new();
-    
+
     /// <summary>
     /// Last activity timestamp for this IP address
     /// </summary>
@@ -321,7 +321,7 @@ public class RequestTracker
         {
             _requests.Add(new RequestRecord(DateTime.UtcNow, suspiciousScore));
             LastActivity = DateTime.UtcNow;
-            
+
             // Keep only recent requests (last 24 hours)
             var cutoff = DateTime.UtcNow.AddHours(-24);
             _requests.RemoveAll(r => r.Timestamp < cutoff);
@@ -366,7 +366,7 @@ public class SuspiciousPatternTracker
 {
     private readonly List<PatternRecord> _patterns = new();
     private readonly object _lock = new();
-    
+
     /// <summary>
     /// Last activity timestamp for this IP address pattern tracking
     /// </summary>
@@ -383,7 +383,7 @@ public class SuspiciousPatternTracker
         {
             _patterns.Add(new PatternRecord(DateTime.UtcNow, path, userAgent));
             LastActivity = DateTime.UtcNow;
-            
+
             // Keep only recent patterns (last 2 hours)
             var cutoff = DateTime.UtcNow.AddHours(-2);
             _patterns.RemoveAll(p => p.Timestamp < cutoff);

@@ -18,7 +18,7 @@ public class RefreshTokenCommandHandlerTests
     {
         _jwtTokenServiceMock = new Mock<IJwtTokenService>();
         _loggerMock = new Mock<ILogger<RefreshTokenCommandHandler>>();
-        
+
         _handler = new RefreshTokenCommandHandler(
             _jwtTokenServiceMock.Object,
             _loggerMock.Object);

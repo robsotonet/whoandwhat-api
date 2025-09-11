@@ -1,7 +1,7 @@
+using System.ComponentModel;
 using Microsoft.OpenApi.Any;
 using Microsoft.OpenApi.Models;
 using Swashbuckle.AspNetCore.SwaggerGen;
-using System.ComponentModel;
 
 namespace WhoAndWhat.API.Filters;
 
@@ -15,7 +15,7 @@ public class EnumSchemaFilter : ISchemaFilter
         if (context.Type.IsEnum)
         {
             schema.Enum.Clear();
-            
+
             var enumValues = new List<IOpenApiAny>();
             var enumDescriptions = new List<string>();
 

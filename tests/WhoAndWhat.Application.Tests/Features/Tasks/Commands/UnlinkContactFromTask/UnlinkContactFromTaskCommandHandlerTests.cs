@@ -111,7 +111,7 @@ public class UnlinkContactFromTaskCommandHandlerTests
         var contact = CreateValidContact(userId);
         var taskContact = CreateTaskContact(task.Id, contact.Id, "Owner");
         task.TaskContacts.Add(taskContact);
-        
+
         var command = CreateValidCommand(task.Id, contact.Id, userId);
         SetupSuccessfulUnlinking(task, contact);
 
@@ -135,7 +135,7 @@ public class UnlinkContactFromTaskCommandHandlerTests
         var contact = CreateValidContact(userId);
         var taskContact = CreateTaskContact(task.Id, contact.Id, "Reviewer");
         task.TaskContacts.Add(taskContact);
-        
+
         var command = CreateValidCommand(task.Id, contact.Id, userId);
 
         AppTask capturedTask = null!;
@@ -168,7 +168,7 @@ public class UnlinkContactFromTaskCommandHandlerTests
         var taskContact = CreateTaskContact(task.Id, contact.Id);
         task.TaskContacts.Add(taskContact);
         var originalUpdateTime = task.UpdatedAt;
-        
+
         var command = CreateValidCommand(task.Id, contact.Id, userId);
 
         AppTask capturedTask = null!;
@@ -199,12 +199,12 @@ public class UnlinkContactFromTaskCommandHandlerTests
         var task = CreateValidTask(userId);
         var contact1 = CreateValidContact(userId);
         var contact2 = CreateValidContact(userId);
-        
+
         var taskContact1 = CreateTaskContact(task.Id, contact1.Id, "Owner");
         var taskContact2 = CreateTaskContact(task.Id, contact2.Id, "Collaborator");
         task.TaskContacts.Add(taskContact1);
         task.TaskContacts.Add(taskContact2);
-        
+
         var command = CreateValidCommand(task.Id, contact1.Id, userId);
 
         AppTask capturedTask = null!;
@@ -246,7 +246,7 @@ public class UnlinkContactFromTaskCommandHandlerTests
         // Assert
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("Task not found");
-        
+
         _mockContactRepository.Verify(x => x.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
@@ -258,7 +258,7 @@ public class UnlinkContactFromTaskCommandHandlerTests
         var requestingUser = Guid.NewGuid(); // Different user
         var task = CreateValidTask(taskOwner);
         var command = CreateValidCommand(task.Id, userId: requestingUser);
-        
+
         _mockTaskRepository.Setup(x => x.GetByIdAsync(command.TaskId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(task);
 
@@ -268,7 +268,7 @@ public class UnlinkContactFromTaskCommandHandlerTests
         // Assert
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("Task not found");
-        
+
         _mockContactRepository.Verify(x => x.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
@@ -283,7 +283,7 @@ public class UnlinkContactFromTaskCommandHandlerTests
         var userId = Guid.NewGuid();
         var task = CreateValidTask(userId);
         var command = CreateValidCommand(task.Id, userId: userId);
-        
+
         _mockTaskRepository.Setup(x => x.GetByIdAsync(command.TaskId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(task);
         _mockContactRepository.Setup(x => x.GetByIdAsync(command.ContactId, It.IsAny<CancellationToken>()))
@@ -295,7 +295,7 @@ public class UnlinkContactFromTaskCommandHandlerTests
         // Assert
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("Contact not found");
-        
+
         _mockTaskRepository.Verify(x => x.UpdateAsync(It.IsAny<AppTask>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
@@ -308,7 +308,7 @@ public class UnlinkContactFromTaskCommandHandlerTests
         var task = CreateValidTask(taskOwner);
         var contact = CreateValidContact(contactOwner);
         var command = CreateValidCommand(task.Id, contact.Id, taskOwner);
-        
+
         _mockTaskRepository.Setup(x => x.GetByIdAsync(command.TaskId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(task);
         _mockContactRepository.Setup(x => x.GetByIdAsync(command.ContactId, It.IsAny<CancellationToken>()))
@@ -320,7 +320,7 @@ public class UnlinkContactFromTaskCommandHandlerTests
         // Assert
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("Contact not found");
-        
+
         _mockTaskRepository.Verify(x => x.UpdateAsync(It.IsAny<AppTask>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
@@ -336,7 +336,7 @@ public class UnlinkContactFromTaskCommandHandlerTests
         var task = CreateValidTask(userId);
         var contact = CreateValidContact(userId);
         var command = CreateValidCommand(task.Id, contact.Id, userId);
-        
+
         _mockTaskRepository.Setup(x => x.GetByIdAsync(command.TaskId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(task);
         _mockContactRepository.Setup(x => x.GetByIdAsync(command.ContactId, It.IsAny<CancellationToken>()))
@@ -348,7 +348,7 @@ public class UnlinkContactFromTaskCommandHandlerTests
         // Assert
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("Contact is not linked to this task");
-        
+
         _mockTaskRepository.Verify(x => x.UpdateAsync(It.IsAny<AppTask>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
@@ -361,7 +361,7 @@ public class UnlinkContactFromTaskCommandHandlerTests
         var contact = CreateValidContact(userId);
         task.TaskContacts = null; // No contacts collection
         var command = CreateValidCommand(task.Id, contact.Id, userId);
-        
+
         _mockTaskRepository.Setup(x => x.GetByIdAsync(command.TaskId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(task);
         _mockContactRepository.Setup(x => x.GetByIdAsync(command.ContactId, It.IsAny<CancellationToken>()))
@@ -373,7 +373,7 @@ public class UnlinkContactFromTaskCommandHandlerTests
         // Assert
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("Contact is not linked to this task");
-        
+
         _mockTaskRepository.Verify(x => x.UpdateAsync(It.IsAny<AppTask>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
@@ -390,9 +390,9 @@ public class UnlinkContactFromTaskCommandHandlerTests
         var contact = CreateValidContact(userId);
         var taskContact = CreateTaskContact(task.Id, contact.Id);
         task.TaskContacts.Add(taskContact);
-        
+
         var command = CreateValidCommand(task.Id, contact.Id, userId);
-        
+
         _mockTaskRepository.Setup(x => x.GetByIdAsync(command.TaskId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(task);
         _mockContactRepository.Setup(x => x.GetByIdAsync(command.ContactId, It.IsAny<CancellationToken>()))
@@ -422,7 +422,7 @@ public class UnlinkContactFromTaskCommandHandlerTests
         // Assert
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("Error unlinking contact from task");
-        
+
         _mockContactRepository.Verify(x => x.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
@@ -439,7 +439,7 @@ public class UnlinkContactFromTaskCommandHandlerTests
         var contact = CreateValidContact(userId);
         var taskContact = CreateTaskContact(task.Id, contact.Id);
         task.TaskContacts.Add(taskContact);
-        
+
         var command = CreateValidCommand(task.Id, contact.Id, userId);
         var cancellationToken = new CancellationToken();
         SetupSuccessfulUnlinking(task, contact);
@@ -461,7 +461,7 @@ public class UnlinkContactFromTaskCommandHandlerTests
         var command = CreateValidCommand();
         var cancellationTokenSource = new CancellationTokenSource();
         cancellationTokenSource.Cancel();
-        
+
         _mockTaskRepository.Setup(x => x.GetByIdAsync(command.TaskId, It.IsAny<CancellationToken>()))
             .ThrowsAsync(new OperationCanceledException());
 
@@ -486,7 +486,7 @@ public class UnlinkContactFromTaskCommandHandlerTests
         var contact = CreateValidContact(userId);
         var taskContact = CreateTaskContact(task.Id, contact.Id, "Owner");
         task.TaskContacts.Add(taskContact);
-        
+
         var command = CreateValidCommand(task.Id, contact.Id, userId);
         SetupSuccessfulUnlinking(task, contact);
 
@@ -522,7 +522,7 @@ public class UnlinkContactFromTaskCommandHandlerTests
         var task = CreateValidTask(userId);
         var contact = CreateValidContact(userId);
         var command = CreateValidCommand(task.Id, contact.Id, userId);
-        
+
         _mockTaskRepository.Setup(x => x.GetByIdAsync(command.TaskId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(task);
         _mockContactRepository.Setup(x => x.GetByIdAsync(command.ContactId, It.IsAny<CancellationToken>()))
@@ -551,9 +551,9 @@ public class UnlinkContactFromTaskCommandHandlerTests
         var contact = CreateValidContact(userId);
         var taskContact = CreateTaskContact(task.Id, contact.Id);
         task.TaskContacts.Add(taskContact);
-        
+
         var command = CreateValidCommand(task.Id, contact.Id, userId);
-        
+
         _mockTaskRepository.Setup(x => x.GetByIdAsync(command.TaskId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(task);
         _mockContactRepository.Setup(x => x.GetByIdAsync(command.ContactId, It.IsAny<CancellationToken>()))

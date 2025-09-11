@@ -1,13 +1,13 @@
+using System.Security.Claims;
+using Asp.Versioning;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Security.Claims;
-using MediatR;
-using Asp.Versioning;
-using WhoAndWhat.Application.Features.Auth.Commands.RegisterUser;
-using WhoAndWhat.Application.Features.Auth.Commands.LoginUser;
-using WhoAndWhat.Application.Features.Auth.Commands.RefreshToken;
-using WhoAndWhat.Application.Features.Auth.Commands.LogoutUser;
 using WhoAndWhat.Application.DTOs.Authentication;
+using WhoAndWhat.Application.Features.Auth.Commands.LoginUser;
+using WhoAndWhat.Application.Features.Auth.Commands.LogoutUser;
+using WhoAndWhat.Application.Features.Auth.Commands.RefreshToken;
+using WhoAndWhat.Application.Features.Auth.Commands.RegisterUser;
 
 namespace WhoAndWhat.API.Controllers.v1;
 
@@ -61,7 +61,7 @@ public class AuthController : ControllerBase
 
             if (!result.IsSuccess)
             {
-                _logger.LogWarning("User registration failed for email: {Email}. Error: {Error}", 
+                _logger.LogWarning("User registration failed for email: {Email}. Error: {Error}",
                     request.Email, result.Error);
 
                 return result.Error.Contains("already exists") || result.Error.Contains("already taken")
@@ -88,7 +88,7 @@ public class AuthController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "Unexpected error during user registration for email: {Email}", request.Email);
-            
+
             return StatusCode(StatusCodes.Status500InternalServerError, new ProblemDetails
             {
                 Title = "Registration Error",
@@ -119,7 +119,7 @@ public class AuthController : ControllerBase
 
             if (!result.IsSuccess)
             {
-                _logger.LogWarning("Login failed for email: {Email}. Error: {Error}", 
+                _logger.LogWarning("Login failed for email: {Email}. Error: {Error}",
                     request.Email, result.Error);
 
                 if (result.Error.Contains("locked"))
@@ -156,7 +156,7 @@ public class AuthController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "Unexpected error during user login for email: {Email}", request.Email);
-            
+
             return StatusCode(StatusCodes.Status500InternalServerError, new ProblemDetails
             {
                 Title = "Login Error",
@@ -204,7 +204,7 @@ public class AuthController : ControllerBase
             }
 
             _logger.LogInformation("Token refreshed successfully");
-            
+
             // Map TokenResult to RefreshTokenResponse
             var response = new RefreshTokenResponse
             {
@@ -215,13 +215,13 @@ public class AuthController : ControllerBase
                 ExpiresIn = result.Value.ExpiresIn,
                 IssuedAt = result.Value.IssuedAt
             };
-            
+
             return Ok(response);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Unexpected error during token refresh");
-            
+
             return StatusCode(StatusCodes.Status500InternalServerError, new ProblemDetails
             {
                 Title = "Token Refresh Error",
@@ -261,7 +261,7 @@ public class AuthController : ControllerBase
 
             if (!result.IsSuccess)
             {
-                _logger.LogWarning("Logout failed for user: {UserId}. Error: {Error}", 
+                _logger.LogWarning("Logout failed for user: {UserId}. Error: {Error}",
                     userId, result.Error);
 
                 return BadRequest(new ProblemDetails
@@ -278,7 +278,7 @@ public class AuthController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "Unexpected error during logout");
-            
+
             return StatusCode(StatusCodes.Status500InternalServerError, new ProblemDetails
             {
                 Title = "Logout Error",
@@ -328,7 +328,7 @@ public class AuthController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "Unexpected error getting current user information");
-            
+
             return Task.FromResult<IActionResult>(StatusCode(StatusCodes.Status500InternalServerError, new ProblemDetails
             {
                 Title = "User Information Error",
