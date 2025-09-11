@@ -140,14 +140,20 @@ public sealed class ExportDashboardDataQueryHandler
     {
         var filter = new TaskFilter
         {
-            StartDate = options.StartDate,
-            EndDate = options.EndDate,
+            CreatedAfter = options.StartDate,
+            CreatedBefore = options.EndDate,
             IncludeDeleted = options.IncludeDeleted
         };
         
         if (options.IncludeCategories?.Any() == true)
         {
-            filter.Categories = options.IncludeCategories.ToList();
+            // Convert string category names to AppTaskCategory value objects
+            var categories = options.IncludeCategories
+                .Select(name => AppTaskCategory.TryFromName(name, out var category) ? category : null)
+                .Where(category => category != null)
+                .Cast<AppTaskCategory>()
+                .ToList();
+            filter.Categories = categories;
         }
         
         filter.PageSize = 10000; // Get all matching tasks

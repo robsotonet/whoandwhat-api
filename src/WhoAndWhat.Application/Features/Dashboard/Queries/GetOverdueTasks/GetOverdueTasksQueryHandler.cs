@@ -164,7 +164,7 @@ public sealed class GetOverdueTasksQueryHandler
 
         return new OverdueTasksSummary(
             TotalOverdue: overdueTasks.Count,
-            CriticalPriorityCount: overdueTasks.Count(t => t.Priority == (int)Priority.Critical),
+            CriticalPriorityCount: overdueTasks.Count(t => t.Priority == (int)Priority.Urgent),
             HighPriorityCount: overdueTasks.Count(t => t.Priority == (int)Priority.High),
             MediumPriorityCount: overdueTasks.Count(t => t.Priority == (int)Priority.Medium),
             LowPriorityCount: overdueTasks.Count(t => t.Priority == (int)Priority.Low),
@@ -274,7 +274,7 @@ public sealed class GetOverdueTasksQueryHandler
             recommendations.Add("Review and adjust due dates to be more realistic");
         }
 
-        var criticalCount = overdueTasks.Count(t => t.Priority == (int)Priority.Critical);
+        var criticalCount = overdueTasks.Count(t => t.Priority == (int)Priority.Urgent);
         if (criticalCount > 0)
         {
             recommendations.Add($"Focus on {criticalCount} critical priority tasks first");

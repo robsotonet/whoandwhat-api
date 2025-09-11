@@ -116,7 +116,7 @@ public sealed class GetMotivationalContentQueryHandler
         return new PersonalizationInfoDto(
             0, // ContentDeliveredToday placeholder
             10, // MaxDailyContent placeholder
-            "9-17", // GetOptimalDeliveryHours placeholder
+            new List<int> { 9, 10, 11, 12, 13, 14, 15, 16, 17 }, // OptimalDeliveryHours placeholder
             "Productivity, Motivation", // PreferredContentTypes placeholder
             0.5 // CalculateEngagementScore placeholder
         );

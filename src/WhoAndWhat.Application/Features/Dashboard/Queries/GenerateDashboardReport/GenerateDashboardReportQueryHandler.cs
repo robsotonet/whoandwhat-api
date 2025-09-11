@@ -169,8 +169,8 @@ public sealed class GenerateDashboardReportQueryHandler
 
         // Completion trend insight
         var weeklyCompletions = tasks
-            .Where(t => t.Status == TaskStatus.Completed && t.CompletedAt.HasValue)
-            .GroupBy(t => GetWeekNumber(t.CompletedAt!.Value))
+            .Where(t => t.Status == (int)AppTaskStatus.Completed)
+            .GroupBy(t => GetWeekNumber(t.UpdatedAt))
             .Select(g => new { Week = g.Key, Count = g.Count() })
             .OrderBy(x => x.Week)
             .ToList();
@@ -192,7 +192,7 @@ public sealed class GenerateDashboardReportQueryHandler
         // Category distribution insight
         var categoryStats = tasks
             .GroupBy(t => t.Category.ToString())
-            .Select(g => new { Category = g.Key, Count = g.Count(), Completed = g.Count(t => t.Status == TaskStatus.Completed) })
+            .Select(g => new { Category = g.Key, Count = g.Count(), Completed = g.Count(t => t.Status == (int)AppTaskStatus.Completed) })
             .OrderByDescending(x => x.Count)
             .ToList();
 
@@ -221,9 +221,9 @@ public sealed class GenerateDashboardReportQueryHandler
             .Select(g => new { 
                 Priority = g.Key, 
                 Count = g.Count(), 
-                Completed = g.Count(t => t.Status == TaskStatus.Completed),
-                AvgCompletionTime = g.Where(t => t.CompletedAt.HasValue && t.CreatedAt != default)
-                    .Select(t => (t.CompletedAt!.Value - t.CreatedAt).TotalHours)
+                Completed = g.Count(t => t.Status == (int)AppTaskStatus.Completed),
+                AvgCompletionTime = g.Where(t => t.UpdatedAt.HasValue && t.CreatedAt != default)
+                    .Select(t => (t.UpdatedAt - t.CreatedAt).TotalHours)
                     .DefaultIfEmpty(0)
                     .Average()
             })
@@ -238,7 +238,7 @@ public sealed class GenerateDashboardReportQueryHandler
         ));
 
         // Add overdue analysis
-        var overdueTasks = tasks.Where(t => t.DueDate.HasValue && t.DueDate < DateTime.Now && t.Status != TaskStatus.Completed).ToList();
+        var overdueTasks = tasks.Where(t => t.DueDate.HasValue && t.DueDate < DateTime.Now && t.Status != (int)AppTaskStatus.Completed).ToList();
         if (overdueTasks.Any())
         {
             insights.Add(new ReportInsight(
@@ -283,8 +283,8 @@ public sealed class GenerateDashboardReportQueryHandler
 
         // Add completion velocity analysis
         var completionVelocity = tasks
-            .Where(t => t.Status == TaskStatus.Completed && t.CompletedAt.HasValue && t.CreatedAt != default)
-            .Select(t => (t.CompletedAt!.Value - t.CreatedAt).TotalHours)
+            .Where(t => t.Status == (int)AppTaskStatus.Completed && t.CreatedAt != default)
+            .Select(t => (t.UpdatedAt - t.CreatedAt).TotalHours)
             .ToList();
 
         if (completionVelocity.Any())
@@ -315,7 +315,7 @@ public sealed class GenerateDashboardReportQueryHandler
 
         // Completion rate recommendation
         var totalTasks = tasks.Count;
-        var completedTasks = tasks.Count(t => t.Status == TaskStatus.Completed);
+        var completedTasks = tasks.Count(t => t.Status == (int)AppTaskStatus.Completed);
         var completionRate = totalTasks > 0 ? (double)completedTasks / totalTasks * 100 : 0;
 
         if (completionRate < 70)
@@ -336,7 +336,7 @@ public sealed class GenerateDashboardReportQueryHandler
         }
 
         // Overdue tasks recommendation
-        var overdueTasks = tasks.Count(t => t.DueDate.HasValue && t.DueDate < DateTime.Now && t.Status != TaskStatus.Completed);
+        var overdueTasks = tasks.Count(t => t.DueDate.HasValue && t.DueDate < DateTime.Now && t.Status != (int)AppTaskStatus.Completed);
         if (overdueTasks > 0)
         {
             recommendations.Add(new ReportRecommendation(
@@ -385,8 +385,8 @@ public sealed class GenerateDashboardReportQueryHandler
 
         // Task completion trend chart
         var weeklyCompletions = tasks
-            .Where(t => t.Status == TaskStatus.Completed && t.CompletedAt.HasValue)
-            .GroupBy(t => GetWeekNumber(t.CompletedAt!.Value))
+            .Where(t => t.Status == (int)AppTaskStatus.Completed)
+            .GroupBy(t => GetWeekNumber(t.UpdatedAt))
             .Select(g => new { Week = g.Key, Count = g.Count() })
             .OrderBy(x => x.Week)
             .ToList();
@@ -416,8 +416,8 @@ public sealed class GenerateDashboardReportQueryHandler
     {
         var tasks = await _taskRepository.GetTasksByUserIdAsync(userId, cancellationToken);
         var completedTasks = tasks
-            .Where(t => t.Status == TaskStatus.Completed && t.CompletedAt.HasValue)
-            .OrderByDescending(t => t.CompletedAt!.Value.Date)
+            .Where(t => t.Status == (int)AppTaskStatus.Completed)
+            .OrderByDescending(t => t.UpdatedAt.Date)
             .ToList();
 
         var currentStreak = 0;
