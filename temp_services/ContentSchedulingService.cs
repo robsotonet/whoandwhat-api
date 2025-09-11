@@ -3,12 +3,11 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using WhoAndWhat.API.Hubs;
 using WhoAndWhat.Application.Interfaces;
 using WhoAndWhat.Domain.Entities;
 using WhoAndWhat.Infrastructure.Configuration;
 
-namespace WhoAndWhat.Application.Services;
+namespace WhoAndWhat.Infrastructure.Services;
 
 /// <summary>
 /// Background service for scheduling and delivering motivational content
@@ -16,8 +15,7 @@ namespace WhoAndWhat.Application.Services;
 public class ContentSchedulingService : BackgroundService
 {
     private readonly IServiceProvider _serviceProvider;
-    private readonly IHubContext<DashboardHub> _hubContext;
-    private readonly RedisCacheSettings _cacheSettings;
+    private readonly IDashboardHub _dashboardHub;
     private readonly ILogger<ContentSchedulingService> _logger;
 
     private Timer? _schedulingTimer;
@@ -30,13 +28,11 @@ public class ContentSchedulingService : BackgroundService
 
     public ContentSchedulingService(
         IServiceProvider serviceProvider,
-        IHubContext<DashboardHub> hubContext,
-        IOptions<RedisCacheSettings> cacheSettings,
+        IDashboardHub dashboardHub,
         ILogger<ContentSchedulingService> logger)
     {
         _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
-        _hubContext = hubContext ?? throw new ArgumentNullException(nameof(hubContext));
-        _cacheSettings = cacheSettings.Value ?? throw new ArgumentNullException(nameof(cacheSettings));
+        _dashboardHub = dashboardHub ?? throw new ArgumentNullException(nameof(dashboardHub));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
@@ -413,9 +409,8 @@ public class ContentSchedulingService : BackgroundService
                 contentResult.ABTestGroup,
                 cancellationToken);
 
-            // Deliver via SignalR
-            await _hubContext.Clients.Group($"dashboard:user:{userId}")
-                .SendAsync("MotivationalContentDelivery", new
+            // Deliver via Dashboard Hub
+            await _dashboardHub.SendMotivationalContentAsync(userId, new
                 {
                     deliveryId = deliveryLogId,
                     content = contentResult.Content,
@@ -477,9 +472,8 @@ public class ContentSchedulingService : BackgroundService
                     contentResult.ABTestGroup,
                     cancellationToken);
 
-                // Deliver via SignalR
-                await _hubContext.Clients.Group($"dashboard:user:{userId}")
-                    .SendAsync("MotivationalContentDelivery", new
+                // Deliver via Dashboard Hub
+                await _dashboardHub.SendMotivationalContentAsync(userId, new
                     {
                         deliveryId = deliveryLogId,
                         content = contentResult.Content,

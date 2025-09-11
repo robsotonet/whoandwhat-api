@@ -3,7 +3,6 @@ using System.Text;
 using Microsoft.Extensions.Logging;
 using WhoAndWhat.Application.Interfaces;
 using WhoAndWhat.Domain.Entities;
-using WhoAndWhat.Infrastructure.Repositories.Analytics;
 
 namespace WhoAndWhat.Application.Services;
 

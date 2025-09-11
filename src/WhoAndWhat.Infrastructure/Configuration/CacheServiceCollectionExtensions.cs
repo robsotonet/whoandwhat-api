@@ -6,7 +6,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using StackExchange.Redis;
 using WhoAndWhat.Application.Interfaces;
-using WhoAndWhat.Infrastructure.HealthChecks;
+// using WhoAndWhat.Infrastructure.HealthChecks; // Temporarily commented out
 using WhoAndWhat.Infrastructure.Services;
 
 namespace WhoAndWhat.Infrastructure.Configuration;
@@ -95,14 +95,17 @@ public static class CacheServiceCollectionExtensions
         // Register task cache service
         services.AddScoped<ITaskCacheService, TaskCacheService>();
         
-        // Register dashboard cache service
-        services.AddScoped<IDashboardCacheService, DashboardCacheService>();
+        // Register dashboard cache service (temporarily commented out)
+        // services.AddScoped<IDashboardCacheService, DashboardCacheService>();
         
-        // Register dashboard performance monitoring
+        // Register dashboard performance monitoring (temporarily commented out)
+        /*
         services.AddSingleton<DashboardPerformanceMonitoringService>();
         services.AddHostedService(provider => provider.GetRequiredService<DashboardPerformanceMonitoringService>());
+        */
 
-        // Add Redis health checks
+        // Add Redis health checks (temporarily commented out)
+        /*
         services.AddHealthChecks()
             .AddCheck<RedisHealthCheck>("redis_cache",
                 failureStatus: HealthStatus.Degraded,
@@ -110,6 +113,7 @@ public static class CacheServiceCollectionExtensions
             .AddDashboardCacheHealthCheck("dashboard_cache",
                 failureStatus: HealthStatus.Degraded,
                 tags: new[] { "cache", "dashboard", "performance" });
+        */
 
         return services;
     }
@@ -239,7 +243,7 @@ public class CacheWarmupService : BackgroundService
             var taskCacheService = scope.ServiceProvider.GetRequiredService<ITaskCacheService>();
 
             // Try to get dashboard cache service (might not be available in all configurations)
-            var dashboardCacheService = scope.ServiceProvider.GetService<IDashboardCacheService>();
+            // var dashboardCacheService = scope.ServiceProvider.GetService<IDashboardCacheService>(); // Temporarily commented out
 
             _logger.LogInformation("Starting cache warmup process");
             
@@ -247,17 +251,19 @@ public class CacheWarmupService : BackgroundService
             var warmedTaskItems = await taskCacheService.WarmCacheAsync(stoppingToken);
             _logger.LogInformation("Task cache warmup completed. Warmed {ItemCount} task cache items", warmedTaskItems);
 
-            // Warm dashboard cache if available
+            // Warm dashboard cache if available (temporarily commented out)
             var warmedDashboardItems = 0;
+            /*
             if (dashboardCacheService != null)
             {
                 warmedDashboardItems = await dashboardCacheService.WarmDashboardCacheAsync(stoppingToken);
                 _logger.LogInformation("Dashboard cache warmup completed. Warmed {ItemCount} dashboard cache items", warmedDashboardItems);
             }
-            else
-            {
-                _logger.LogDebug("Dashboard cache service not available, skipping dashboard cache warmup");
-            }
+            */
+            // else
+            // {
+            //     _logger.LogDebug("Dashboard cache service not available, skipping dashboard cache warmup");
+            // }
 
             var totalWarmedItems = warmedTaskItems + warmedDashboardItems;
             _logger.LogInformation("Cache warmup process completed. Total warmed items: {TotalItems} (Tasks: {TaskItems}, Dashboard: {DashboardItems})", 

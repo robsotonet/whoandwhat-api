@@ -223,7 +223,7 @@ public class ContentPerformanceMetrics
     public Dictionary<string, int> ChannelPerformance { get; set; } = new();
     public Dictionary<string, int> EngagementTypeBreakdown { get; set; } = new();
     public Dictionary<string, double> UserSegmentPerformance { get; set; } = new();
-    public ContentPerformanceTrend Trend { get; set; }
+    public ContentPerformanceTrend Trend { get; set; } = new();
     public DateTime LastUpdated { get; set; } = DateTime.UtcNow;
 }
 
