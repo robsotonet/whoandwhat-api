@@ -18,7 +18,7 @@ namespace WhoAndWhat.Application.Tests.Features.Contacts.Commands.ScanContactQR;
 public class ScanContactQRCommandHandlerTests
 {
     private readonly Mock<IContactRepository> _mockContactRepository;
-    private readonly Mock<ContactValidator> _mockContactValidator;
+    private readonly ContactValidator _contactValidator;
     private readonly Mock<ILogger<ScanContactQRCommandHandler>> _mockLogger;
     private readonly ScanContactQRCommandHandler _handler;
     
@@ -29,12 +29,12 @@ public class ScanContactQRCommandHandlerTests
     public ScanContactQRCommandHandlerTests()
     {
         _mockContactRepository = new Mock<IContactRepository>();
-        _mockContactValidator = new Mock<ContactValidator>();
+        _contactValidator = new ContactValidator();
         _mockLogger = new Mock<ILogger<ScanContactQRCommandHandler>>();
         
         _handler = new ScanContactQRCommandHandler(
             _mockContactRepository.Object,
-            _mockContactValidator.Object,
+            _contactValidator,
             _mockLogger.Object);
     }
 
@@ -47,7 +47,6 @@ public class ScanContactQRCommandHandlerTests
         var encodedPayload = EncodePayload(payload);
         var command = new ScanContactQRCommand(encodedPayload, _testUserId, "Custom notes");
 
-        SetupSuccessfulValidation();
         SetupSuccessfulSave();
         _mockContactRepository.Setup(x => x.FindContactsAsync("john@example.com", _testUserId, false, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new List<Contact>());
@@ -79,7 +78,6 @@ public class ScanContactQRCommandHandlerTests
         var encodedPayload = EncodePayload(payload);
         var command = new ScanContactQRCommand(encodedPayload, _testUserId);
 
-        SetupSuccessfulValidation();
         SetupSuccessfulSave();
 
         // Act
@@ -264,7 +262,6 @@ public class ScanContactQRCommandHandlerTests
         var encodedPayload = EncodePayload(payload);
         var command = new ScanContactQRCommand(encodedPayload, _testUserId);
 
-        SetupSuccessfulValidation();
         SetupSuccessfulSave();
 
         // Act
@@ -284,20 +281,16 @@ public class ScanContactQRCommandHandlerTests
         var encodedPayload = EncodePayload(payload);
         var command = new ScanContactQRCommand(encodedPayload, _testUserId);
 
-        _mockContactRepository.Setup(x => x.FindContactsAsync(It.IsAny<string>(), It.IsAny<Guid>(), false, It.IsAny<CancellationToken>()))
+        _mockContactRepository.Setup(x => x.FindContactsAsync("invalid-email", _testUserId, false, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new List<Contact>());
-
-        var validationResult = new FluentValidation.Results.ValidationResult();
-        validationResult.Errors.Add(new FluentValidation.Results.ValidationFailure("Email", "Invalid email format"));
-        _mockContactValidator.Setup(x => x.ValidateAsync(It.IsAny<Contact>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(validationResult);
 
         // Act
         var result = await _handler.Handle(command, CancellationToken.None);
 
         // Assert
         result.IsSuccess.Should().BeFalse();
-        result.Error.Should().Contain("Invalid contact data: Invalid email format");
+        result.Error.Should().Contain("Invalid contact data:");
+        result.Error.Should().Contain("email"); // Real validator will complain about email format
         
         VerifyLogMessage(LogLevel.Warning, "Contact validation failed");
         _mockContactRepository.Verify(x => x.AddAsync(It.IsAny<Contact>(), It.IsAny<CancellationToken>()), Times.Never);
@@ -312,7 +305,6 @@ public class ScanContactQRCommandHandlerTests
         var encodedPayload = EncodePayload(payload);
         var command = new ScanContactQRCommand(encodedPayload, _testUserId);
 
-        SetupSuccessfulValidation();
         _mockContactRepository.Setup(x => x.FindContactsAsync("john@example.com", _testUserId, false, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new List<Contact>());
         _mockContactRepository.Setup(x => x.AddAsync(It.IsAny<Contact>(), It.IsAny<CancellationToken>()))
@@ -365,7 +357,6 @@ public class ScanContactQRCommandHandlerTests
         var encodedPayload = EncodePayload(payload);
         var command = new ScanContactQRCommand(encodedPayload, _testUserId);
 
-        SetupSuccessfulValidation();
         SetupSuccessfulSave();
         _mockContactRepository.Setup(x => x.FindContactsAsync("test@example.com", _testUserId, false, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new List<Contact>());
@@ -388,7 +379,6 @@ public class ScanContactQRCommandHandlerTests
         var encodedPayload = EncodePayload(payload);
         var command = new ScanContactQRCommand(encodedPayload, _testUserId, "Command custom notes");
 
-        SetupSuccessfulValidation();
         SetupSuccessfulSave();
         _mockContactRepository.Setup(x => x.FindContactsAsync("john@example.com", _testUserId, false, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new List<Contact>());
@@ -422,7 +412,6 @@ public class ScanContactQRCommandHandlerTests
         var encodedPayload = EncodePayload(payload1);
         var command = new ScanContactQRCommand(encodedPayload, _testUserId);
 
-        SetupSuccessfulValidation();
         SetupSuccessfulSave();
         _mockContactRepository.Setup(x => x.FindContactsAsync("test@example.com", _testUserId, false, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new List<Contact>());
@@ -471,12 +460,6 @@ public class ScanContactQRCommandHandlerTests
         return Convert.ToBase64String(jsonBytes);
     }
 
-    private void SetupSuccessfulValidation()
-    {
-        var validationResult = new FluentValidation.Results.ValidationResult();
-        _mockContactValidator.Setup(x => x.ValidateAsync(It.IsAny<Contact>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(validationResult);
-    }
 
     private void SetupSuccessfulSave()
     {
