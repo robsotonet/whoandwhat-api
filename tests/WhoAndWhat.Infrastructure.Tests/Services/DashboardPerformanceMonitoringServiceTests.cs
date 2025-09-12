@@ -97,10 +97,11 @@ public class DashboardPerformanceMonitoringServiceTests : IDisposable
             _mockLogger.Object);
 
         // Act
-        var result = await serviceWithDisabledMonitoring.StartAsync(CancellationToken.None);
+        await serviceWithDisabledMonitoring.StartAsync(CancellationToken.None);
 
         // Assert
-        result.Should().Be(Task.CompletedTask);
+        // StartAsync should complete successfully without throwing
+        serviceWithDisabledMonitoring.Should().NotBeNull();
     }
 
     [Fact]
@@ -124,10 +125,11 @@ public class DashboardPerformanceMonitoringServiceTests : IDisposable
         await _service.StartAsync(CancellationToken.None);
 
         // Act
-        var result = await _service.StopAsync(CancellationToken.None);
+        await _service.StopAsync(CancellationToken.None);
 
         // Assert
-        result.Should().Be(Task.CompletedTask);
+        // StopAsync should complete successfully without throwing
+        _service.Should().NotBeNull();
     }
 
     [Fact]
@@ -183,11 +185,11 @@ public class DashboardPerformanceMonitoringServiceTests : IDisposable
         };
 
         _mockDashboardCacheService
-            .Setup(x => x.GetDashboardCacheMetricsAsync())
+            .Setup(x => x.GetDashboardCacheMetricsAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(dashboardMetrics);
 
         _mockTaskCacheService
-            .Setup(x => x.GetCacheMetricsAsync())
+            .Setup(x => x.GetCacheMetricsAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(taskMetrics);
 
         // Act
@@ -202,8 +204,8 @@ public class DashboardPerformanceMonitoringServiceTests : IDisposable
         _service.Should().NotBeNull("Service lifecycle should complete successfully");
         
         // Verify that the cache services were set up correctly for metrics collection
-        _mockDashboardCacheService.Verify(x => x.GetDashboardCacheMetricsAsync(), Times.Never());
-        _mockTaskCacheService.Verify(x => x.GetCacheMetricsAsync(), Times.Never());
+        _mockDashboardCacheService.Verify(x => x.GetDashboardCacheMetricsAsync(It.IsAny<CancellationToken>()), Times.Never());
+        _mockTaskCacheService.Verify(x => x.GetCacheMetricsAsync(It.IsAny<CancellationToken>()), Times.Never());
         
         // Note: The actual timer callbacks are private and run on background threads,
         // so we can't easily test them synchronously. This test validates the setup.

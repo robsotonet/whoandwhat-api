@@ -31,6 +31,7 @@ public class ContentDeliveryLog : BaseEntity
     {
         DeliveryContext = new Dictionary<string, object>();
         EngagementMetadata = new Dictionary<string, object>();
+        AnalyticsData = new Dictionary<string, object>();
     }
 
     private ContentDeliveryLog(
@@ -252,6 +253,144 @@ public class ContentDeliveryLog : BaseEntity
             DeviceType = DeviceType,
             IsSuccessful = IsSuccessfulDelivery()
         };
+    }
+
+    /// <summary>
+    /// Convenience property for accessing engagement time
+    /// </summary>
+    public DateTime? EngagedAt => EngagementAt;
+
+    /// <summary>
+    /// Convenience property for accessing personalization score
+    /// </summary>
+    public double? PersonalizedScore => PersonalizationScore;
+
+    /// <summary>
+    /// Convenience property for accessing engagement metadata  
+    /// </summary>
+    public Dictionary<string, object> EngagementContext => EngagementMetadata;
+
+    /// <summary>
+    /// Analytics data collection for advanced tracking
+    /// </summary>
+    public Dictionary<string, object> AnalyticsData { get; private set; } = new();
+
+    /// <summary>
+    /// Gets the engagement duration if available
+    /// </summary>
+    public TimeSpan? GetEngagementDuration() => ViewDuration;
+
+    /// <summary>
+    /// Checks if content has been engaged with
+    /// </summary>
+    public bool IsEngaged() => EngagementType.HasValue;
+
+    /// <summary>
+    /// Sets the A/B test group for this delivery
+    /// </summary>
+    public void SetABTestGroup(string abTestGroup)
+    {
+        ABTestGroup = abTestGroup;
+        MarkAsModified();
+    }
+
+    /// <summary>
+    /// Sets the personalization score for this delivery
+    /// </summary>
+    public void SetPersonalizedScore(double score)
+    {
+        PersonalizationScore = Math.Max(0.0, Math.Min(1.0, score));
+        WasPersonalized = true;
+        MarkAsModified();
+    }
+
+    /// <summary>
+    /// Adds analytics data
+    /// </summary>
+    public void AddAnalyticsData(string key, object value)
+    {
+        AnalyticsData[key] = value;
+        MarkAsModified();
+    }
+
+    /// <summary>
+    /// Updates delivery context information
+    /// </summary>
+    public void UpdateDeliveryContext(Dictionary<string, object> context)
+    {
+        foreach (var kvp in context)
+        {
+            DeliveryContext[kvp.Key] = kvp.Value;
+        }
+        MarkAsModified();
+    }
+
+    /// <summary>
+    /// Updates delivery context information with a single key-value pair
+    /// </summary>
+    public void UpdateDeliveryContext(string key, object value)
+    {
+        DeliveryContext[key] = value;
+        MarkAsModified();
+    }
+
+    /// <summary>
+    /// Gets delivery context value by key
+    /// </summary>
+    public T? GetDeliveryContextValue<T>(string key)
+    {
+        if (DeliveryContext.TryGetValue(key, out var value) && value is T typedValue)
+        {
+            return typedValue;
+        }
+        return default(T);
+    }
+
+    /// <summary>
+    /// Gets delivery context value by key (non-generic)
+    /// </summary>
+    public object? GetDeliveryContextValue(string key)
+    {
+        return DeliveryContext.TryGetValue(key, out var value) ? value : null;
+    }
+
+    /// <summary>
+    /// Checks if content was delivered within a specified time window
+    /// </summary>
+    public bool IsDeliveredWithinTime(TimeSpan timeWindow)
+    {
+        return DateTime.UtcNow - DeliveredAt <= timeWindow;
+    }
+
+    /// <summary>
+    /// Gets the time since content was delivered
+    /// </summary>
+    public TimeSpan GetTimeSinceDelivery()
+    {
+        return DateTime.UtcNow - DeliveredAt;
+    }
+
+    /// <summary>
+    /// Calculates engagement rate based on content type and engagement
+    /// </summary>
+    public double CalculateEngagementRate()
+    {
+        if (!EngagementType.HasValue)
+        {
+            return 0.0;
+        }
+
+        return GetEngagementScore();
+    }
+
+    /// <summary>
+    /// Determines if this represents high engagement
+    /// </summary>
+    public bool IsHighEngagement()
+    {
+        return EngagementType.HasValue && 
+               EngagementType.Value >= ContentEngagementType.Clicked &&
+               GetEngagementScore() >= 0.6;
     }
 
     public override bool CanSoftDelete()

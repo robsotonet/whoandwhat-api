@@ -29,9 +29,9 @@ public static class SignalRServiceCollectionExtensions
         var redisConnectionString = configuration.GetConnectionString("RedisSignalR");
         if (!string.IsNullOrEmpty(redisConnectionString))
         {
-            signalRBuilder.AddRedis(redisConnectionString, options =>
+            signalRBuilder.AddStackExchangeRedis(redisConnectionString, options =>
             {
-                options.Configuration.ChannelPrefix = "whoandwhat:signalr:";
+                options.Configuration.ChannelPrefix = StackExchange.Redis.RedisChannel.Literal("whoandwhat:signalr:");
             });
         }
 

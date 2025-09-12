@@ -18,7 +18,7 @@ public static class SeedingServiceCollectionExtensions
     {
         // Register individual seeders
         services.AddScoped<MotivationalContentSeeder>();
-        
+
         // Register main seeder
         services.AddScoped<IDataSeeder, DatabaseSeeder>();
 

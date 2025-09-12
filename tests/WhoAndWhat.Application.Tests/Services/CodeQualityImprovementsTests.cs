@@ -6,7 +6,7 @@ using System.Text;
 using WhoAndWhat.Application.Interfaces;
 using WhoAndWhat.Application.Services;
 using WhoAndWhat.Domain.Entities;
-using WhoAndWhat.Infrastructure.Repositories.Analytics;
+using WhoAndWhat.Infrastructure.Services;
 using Xunit;
 
 namespace WhoAndWhat.Application.Tests.Services;
@@ -19,7 +19,8 @@ public class CodeQualityImprovementsTests : IDisposable
     private readonly Mock<IRepository<MotivationalContent>> _mockContentRepository;
     private readonly Mock<IRepository<ContentDeliveryLog>> _mockDeliveryLogRepository;
     private readonly Mock<IRepository<UserContentPreferences>> _mockPreferencesRepository;
-    private readonly Mock<IAnalyticsRepository> _mockAnalyticsRepository;
+    private readonly Mock<IRepository<UserAnalytics>> _mockAnalyticsRepository;
+    private readonly Mock<IRepository<ProductivityStreak>> _mockStreakRepository;
     private readonly Mock<ILogger<MotivationalContentService>> _mockLogger;
     private readonly MotivationalContentService _service;
 
@@ -28,7 +29,8 @@ public class CodeQualityImprovementsTests : IDisposable
         _mockContentRepository = new Mock<IRepository<MotivationalContent>>();
         _mockDeliveryLogRepository = new Mock<IRepository<ContentDeliveryLog>>();
         _mockPreferencesRepository = new Mock<IRepository<UserContentPreferences>>();
-        _mockAnalyticsRepository = new Mock<IAnalyticsRepository>();
+        _mockAnalyticsRepository = new Mock<IRepository<UserAnalytics>>();
+        _mockStreakRepository = new Mock<IRepository<ProductivityStreak>>();
         _mockLogger = new Mock<ILogger<MotivationalContentService>>();
 
         _service = new MotivationalContentService(
@@ -36,6 +38,7 @@ public class CodeQualityImprovementsTests : IDisposable
             _mockDeliveryLogRepository.Object,
             _mockPreferencesRepository.Object,
             _mockAnalyticsRepository.Object,
+            _mockStreakRepository.Object,
             _mockLogger.Object);
     }
 
@@ -188,6 +191,7 @@ public class CodeQualityImprovementsTests : IDisposable
             _mockDeliveryLogRepository.Object,
             _mockPreferencesRepository.Object,
             _mockAnalyticsRepository.Object,
+            _mockStreakRepository.Object,
             _mockLogger.Object);
 
         var method = typeof(MotivationalContentService).GetMethod("ComputeDeterministicHash",

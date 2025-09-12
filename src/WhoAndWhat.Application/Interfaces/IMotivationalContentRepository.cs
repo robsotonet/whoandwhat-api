@@ -12,7 +12,7 @@ public interface IMotivationalContentRepository : IRepository<MotivationalConten
     /// </summary>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Count of active content items</returns>
-    Task<int> GetActiveContentCountAsync(CancellationToken cancellationToken = default);
+    public Task<int> GetActiveContentCountAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Gets active motivational content filtered by type and category
@@ -21,7 +21,7 @@ public interface IMotivationalContentRepository : IRepository<MotivationalConten
     /// <param name="category">Optional category filter</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>List of filtered active content</returns>
-    Task<IEnumerable<MotivationalContent>> GetActiveContentAsync(
+    public Task<IEnumerable<MotivationalContent>> GetActiveContentAsync(
         MotivationalContentType? contentType = null,
         ContentCategory? category = null,
         CancellationToken cancellationToken = default);
@@ -32,7 +32,7 @@ public interface IMotivationalContentRepository : IRepository<MotivationalConten
     /// <param name="targetConditions">Dictionary of targeting conditions to match</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>List of matching content</returns>
-    Task<IEnumerable<MotivationalContent>> GetContentByTargetingAsync(
+    public Task<IEnumerable<MotivationalContent>> GetContentByTargetingAsync(
         Dictionary<string, object> targetConditions,
         CancellationToken cancellationToken = default);
 
@@ -43,7 +43,7 @@ public interface IMotivationalContentRepository : IRepository<MotivationalConten
     /// <param name="endTime">End of time range</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>List of scheduled content</returns>
-    Task<IEnumerable<MotivationalContent>> GetScheduledContentAsync(
+    public Task<IEnumerable<MotivationalContent>> GetScheduledContentAsync(
         DateTime startTime,
         DateTime endTime,
         CancellationToken cancellationToken = default);
@@ -53,7 +53,7 @@ public interface IMotivationalContentRepository : IRepository<MotivationalConten
     /// </summary>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>List of A/B testing content</returns>
-    Task<IEnumerable<MotivationalContent>> GetABTestingContentAsync(CancellationToken cancellationToken = default);
+    public Task<IEnumerable<MotivationalContent>> GetABTestingContentAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Gets content ordered by priority (highest first)
@@ -61,7 +61,7 @@ public interface IMotivationalContentRepository : IRepository<MotivationalConten
     /// <param name="count">Number of items to return</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>List of high-priority content</returns>
-    Task<IEnumerable<MotivationalContent>> GetHighPriorityContentAsync(
+    public Task<IEnumerable<MotivationalContent>> GetHighPriorityContentAsync(
         int count = 10,
         CancellationToken cancellationToken = default);
 
@@ -72,7 +72,7 @@ public interface IMotivationalContentRepository : IRepository<MotivationalConten
     /// <param name="newPriority">New priority value</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>True if update was successful</returns>
-    Task<bool> UpdateContentPriorityAsync(
+    public Task<bool> UpdateContentPriorityAsync(
         Guid contentId,
         int newPriority,
         CancellationToken cancellationToken = default);
@@ -84,7 +84,7 @@ public interface IMotivationalContentRepository : IRepository<MotivationalConten
     /// <param name="reason">Reason for deactivation</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>True if deactivation was successful</returns>
-    Task<bool> DeactivateContentAsync(
+    public Task<bool> DeactivateContentAsync(
         Guid contentId,
         string reason,
         CancellationToken cancellationToken = default);

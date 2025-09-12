@@ -132,6 +132,14 @@ public class MotivationalContent : BaseEntity
     }
 
     /// <summary>
+    /// Adds a target condition (alias for SetTargetCondition)
+    /// </summary>
+    public void AddTargetCondition(string key, object value)
+    {
+        SetTargetCondition(key, value);
+    }
+
+    /// <summary>
     /// Configures A/B testing for this content
     /// </summary>
     public void ConfigureABTest(string testGroup, Dictionary<string, object>? configuration = null)
@@ -376,6 +384,26 @@ public class MotivationalContent : BaseEntity
             ABTestGroup = IsABTestEnabled ? ABTestGroup : null,
             Metadata = new Dictionary<string, object>(Metadata)
         };
+    }
+
+    /// <summary>
+    /// Schedules content for a specific delivery time
+    /// </summary>
+    public void ScheduleFor(DateTime scheduledTime)
+    {
+        if (scheduledTime < DateTime.UtcNow)
+        {
+            throw new ArgumentException("Scheduled time cannot be in the past");
+        }
+
+        var schedulingRule = new Dictionary<string, object>
+        {
+            ["scheduledDelivery"] = scheduledTime,
+            ["schedulingType"] = "specific_time"
+        };
+
+        SchedulingRules["specific_schedule"] = schedulingRule;
+        MarkAsModified();
     }
 
     public override bool CanSoftDelete()
