@@ -95,14 +95,12 @@ public static class CacheServiceCollectionExtensions
         // Register task cache service
         services.AddScoped<ITaskCacheService, TaskCacheService>();
         
-        // Register dashboard cache service (temporarily commented out)
-        // services.AddScoped<IDashboardCacheService, DashboardCacheService>();
+        // Register dashboard cache service
+        services.AddScoped<IDashboardCacheService, DashboardCacheService>();
         
-        // Register dashboard performance monitoring (temporarily commented out)
-        /*
+        // Register dashboard performance monitoring
         services.AddSingleton<DashboardPerformanceMonitoringService>();
         services.AddHostedService(provider => provider.GetRequiredService<DashboardPerformanceMonitoringService>());
-        */
 
         // Add Redis health checks (temporarily commented out)
         /*
@@ -242,8 +240,8 @@ public class CacheWarmupService : BackgroundService
             using var scope = _serviceProvider.CreateScope();
             var taskCacheService = scope.ServiceProvider.GetRequiredService<ITaskCacheService>();
 
-            // Try to get dashboard cache service (might not be available in all configurations)
-            // var dashboardCacheService = scope.ServiceProvider.GetService<IDashboardCacheService>(); // Temporarily commented out
+            // Get dashboard cache service
+            var dashboardCacheService = scope.ServiceProvider.GetService<IDashboardCacheService>();
 
             _logger.LogInformation("Starting cache warmup process");
             
@@ -251,19 +249,17 @@ public class CacheWarmupService : BackgroundService
             var warmedTaskItems = await taskCacheService.WarmCacheAsync(stoppingToken);
             _logger.LogInformation("Task cache warmup completed. Warmed {ItemCount} task cache items", warmedTaskItems);
 
-            // Warm dashboard cache if available (temporarily commented out)
+            // Warm dashboard cache if available
             var warmedDashboardItems = 0;
-            /*
             if (dashboardCacheService != null)
             {
                 warmedDashboardItems = await dashboardCacheService.WarmDashboardCacheAsync(stoppingToken);
                 _logger.LogInformation("Dashboard cache warmup completed. Warmed {ItemCount} dashboard cache items", warmedDashboardItems);
             }
-            */
-            // else
-            // {
-            //     _logger.LogDebug("Dashboard cache service not available, skipping dashboard cache warmup");
-            // }
+            else
+            {
+                _logger.LogDebug("Dashboard cache service not available, skipping dashboard cache warmup");
+            }
 
             var totalWarmedItems = warmedTaskItems + warmedDashboardItems;
             _logger.LogInformation("Cache warmup process completed. Total warmed items: {TotalItems} (Tasks: {TaskItems}, Dashboard: {DashboardItems})", 

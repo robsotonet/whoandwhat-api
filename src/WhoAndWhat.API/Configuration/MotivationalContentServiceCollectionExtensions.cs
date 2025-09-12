@@ -1,5 +1,5 @@
 using WhoAndWhat.Application.Interfaces;
-using WhoAndWhat.Application.Services;
+using WhoAndWhat.Infrastructure.Services;
 
 namespace WhoAndWhat.API.Configuration;
 
