@@ -4,10 +4,10 @@ using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using WhoAndWhat.Application.DTOs.Dashboard;
-using GetMotivationalContentQuery = WhoAndWhat.Application.Features.Dashboard.Queries.GetMotivationalContent;
+using WhoAndWhat.Application.Features.Dashboard.Queries.GetMotivationalContent;
 using WhoAndWhat.Application.Features.Dashboard.Queries.GetDashboardMetrics;
 using WhoAndWhat.Application.Features.Dashboard.Queries.GetProductivityStreak;
-using GetOverdueTasksQuery = WhoAndWhat.Application.Features.Dashboard.Queries.GetOverdueTasks;
+using WhoAndWhat.Application.Features.Dashboard.Queries.GetOverdueTasks;
 using WhoAndWhat.Application.Features.Dashboard.Queries.GetCompletionStats;
 using WhoAndWhat.Application.Features.Dashboard.Commands.UpdateDashboardSettings;
 using WhoAndWhat.Application.Features.Dashboard.Commands.ResetDashboardPreferences;
@@ -77,7 +77,7 @@ public class DashboardController : ControllerBase
                 userId, count, language);
 
             // Execute query
-            var query = new GetMotivationalContentQuery.GetMotivationalContentQuery(userId, count, language);
+            var query = new GetMotivationalContentQuery(userId, count, language);
             var result = await _mediator.Send(query, cancellationToken);
 
             if (!result.IsSuccess)
@@ -191,17 +191,7 @@ public class DashboardController : ControllerBase
         var userId = GetCurrentUserId();
         _logger.LogInformation("Getting dashboard metrics for user {UserId}", userId);
 
-        var query = new GetDashboardMetricsQuery(
-            UserId: userId,
-            StartDate: request.StartDate,
-            EndDate: request.EndDate,
-            TimeZone: request.TimeZone ?? "UTC",
-            IncludeCategories: request.IncludeCategories,
-            IncludePriorities: request.IncludePriorities,
-            IncludeInsights: request.IncludeInsights,
-            IncludeRecommendations: request.IncludeRecommendations,
-            IncludeMotivationalContent: request.IncludeMotivationalContent
-        );
+        var query = new GetDashboardMetricsQuery(userId);
 
         var result = await _mediator.Send(query, cancellationToken);
 
@@ -231,15 +221,7 @@ public class DashboardController : ControllerBase
         var userId = GetCurrentUserId();
         _logger.LogInformation("Getting productivity streak for user {UserId}", userId);
 
-        var query = new GetProductivityStreakQuery(
-            UserId: userId,
-            StartDate: request.StartDate,
-            EndDate: request.EndDate,
-            IncludeMilestones: request.IncludeMilestones,
-            IncludeHistory: request.IncludeHistory,
-            IncludeInsights: request.IncludeInsights,
-            MaxHistoryDays: request.MaxHistoryDays
-        );
+        var query = new GetProductivityStreakQuery(userId);
 
         var result = await _mediator.Send(query, cancellationToken);
 
@@ -268,16 +250,11 @@ public class DashboardController : ControllerBase
         var userId = GetCurrentUserId();
         _logger.LogInformation("Getting overdue tasks for user {UserId}", userId);
 
-        var query = new GetOverdueTasksQuery.GetOverdueTasksQuery(
+        var query = new GetOverdueTasksQuery(
             UserId: userId,
-            Categories: request.Categories,
-            Priorities: request.Priorities,
-            UrgencyLevels: request.UrgencyLevels,
-            MaxTasks: request.MaxTasks,
-            IncludeAnalysis: request.IncludeAnalysis,
-            IncludeRecommendations: request.IncludeRecommendations,
-            SortBy: request.SortBy,
-            SortOrder: request.SortOrder
+            Limit: request.MaxTasks,
+            CategoryFilter: request.Categories?.FirstOrDefault(),
+            PriorityFilter: request.Priorities?.FirstOrDefault()
         );
 
         var result = await _mediator.Send(query, cancellationToken);
@@ -307,16 +284,7 @@ public class DashboardController : ControllerBase
         var userId = GetCurrentUserId();
         _logger.LogInformation("Getting completion statistics for user {UserId}", userId);
 
-        var query = new GetCompletionStatsQuery(
-            UserId: userId,
-            StartDate: request.StartDate,
-            EndDate: request.EndDate,
-            Period: request.Period,
-            IncludeCategories: request.IncludeCategories,
-            IncludeTrends: request.IncludeTrends,
-            IncludeBreakdowns: request.IncludeBreakdowns,
-            IncludeInsights: request.IncludeInsights
-        );
+        var query = new GetCompletionStatsQuery(userId, request.Period ?? "month");
 
         var result = await _mediator.Send(query, cancellationToken);
 

@@ -70,12 +70,12 @@ public class DashboardCacheServiceScanTests : IDisposable
         // Mock SCAN command returning all keys in first iteration
         var scanResult = new RedisResult[]
         {
-            (RedisResult)"0", // cursor = 0 (scan complete)
-            (RedisResult)testKeys.Select(k => (RedisResult)k).ToArray()
+            RedisResult.Create((RedisValue)"0"), // cursor = 0 (scan complete)
+            RedisResult.Create(testKeys.Select(k => RedisResult.Create((RedisValue)k)).ToArray())
         };
         
         _mockServer.Setup(s => s.Execute("SCAN", It.IsAny<object[]>()))
-            .Returns((RedisResult)scanResult);
+            .Returns(RedisResult.Create(scanResult));
 
         _mockDatabase.Setup(d => d.KeyDeleteAsync(It.IsAny<RedisKey[]>(), It.IsAny<CommandFlags>()))
             .ReturnsAsync(testKeys.Length);
@@ -92,7 +92,7 @@ public class DashboardCacheServiceScanTests : IDisposable
         // Verify all keys were deleted
         _mockDatabase.Verify(d => d.KeyDeleteAsync(
             It.Is<RedisKey[]>(keys => keys.Length == testKeys.Length && 
-                                    keys.All(k => testKeys.Contains(k))), 
+                                    keys.All(k => testKeys.Contains(k.ToString()))), 
             It.IsAny<CommandFlags>()), Times.Once);
     }
 
@@ -110,18 +110,18 @@ public class DashboardCacheServiceScanTests : IDisposable
         var scanCalls = new Queue<RedisResult>();
         
         // First SCAN call (cursor 0 -> 123)
-        scanCalls.Enqueue((RedisResult)new RedisResult[]
+        scanCalls.Enqueue(RedisResult.Create(new RedisResult[]
         {
-            (RedisResult)"123", // next cursor
-            (RedisResult)firstBatchKeys.Select(k => (RedisResult)k).ToArray()
-        });
+            RedisResult.Create((RedisValue)"123"), // next cursor
+            RedisResult.Create(firstBatchKeys.Select(k => RedisResult.Create((RedisValue)k)).ToArray())
+        }));
         
         // Second SCAN call (cursor 123 -> 0, scan complete)
-        scanCalls.Enqueue((RedisResult)new RedisResult[]
+        scanCalls.Enqueue(RedisResult.Create(new RedisResult[]
         {
-            (RedisResult)"0", // cursor = 0 (scan complete)
-            (RedisResult)secondBatchKeys.Select(k => (RedisResult)k).ToArray()
-        });
+            RedisResult.Create((RedisValue)"0"), // cursor = 0 (scan complete)
+            RedisResult.Create(secondBatchKeys.Select(k => RedisResult.Create((RedisValue)k)).ToArray())
+        }));
         
         _mockServer.Setup(s => s.Execute("SCAN", It.IsAny<object[]>()))
             .Returns(() => scanCalls.Dequeue());
@@ -152,12 +152,12 @@ public class DashboardCacheServiceScanTests : IDisposable
         // Arrange - SCAN returns no keys
         var scanResult = new RedisResult[]
         {
-            (RedisResult)"0", // cursor = 0 (scan complete)
-            (RedisResult)new RedisResult[0] // empty keys array
+            RedisResult.Create((RedisValue)"0"), // cursor = 0 (scan complete)
+            RedisResult.Create(new RedisResult[0]) // empty keys array
         };
         
         _mockServer.Setup(s => s.Execute("SCAN", It.IsAny<object[]>()))
-            .Returns((RedisResult)scanResult);
+            .Returns(RedisResult.Create(scanResult));
 
         // Act
         var result = await _service.ClearAllDashboardCacheAsync();
@@ -184,12 +184,12 @@ public class DashboardCacheServiceScanTests : IDisposable
         
         var scanResult = new RedisResult[]
         {
-            (RedisResult)"123", // cursor != 0 (more data available)
-            (RedisResult)testKeys.Select(k => (RedisResult)k).ToArray()
+            RedisResult.Create((RedisValue)"123"), // cursor != 0 (more data available)
+            RedisResult.Create(testKeys.Select(k => RedisResult.Create((RedisValue)k)).ToArray())
         };
         
         _mockServer.Setup(s => s.Execute("SCAN", It.IsAny<object[]>()))
-            .Returns((RedisResult)scanResult)
+            .Returns(RedisResult.Create(scanResult))
             .Callback(() => cts.Cancel()); // Cancel after first SCAN
         
         _mockDatabase.Setup(d => d.KeyDeleteAsync(It.IsAny<RedisKey[]>(), It.IsAny<CommandFlags>()))
@@ -212,10 +212,10 @@ public class DashboardCacheServiceScanTests : IDisposable
     public async Task ClearAllDashboardCacheAsync_WithInvalidScanResponse_ShouldHandleGracefully()
     {
         // Arrange - Invalid SCAN response (missing array elements)
-        var invalidScanResult = new RedisResult[] { (RedisResult)"0" }; // Missing keys array
+        var invalidScanResult = new RedisResult[] { RedisResult.Create((RedisValue)"0") }; // Missing keys array
         
         _mockServer.Setup(s => s.Execute("SCAN", It.IsAny<object[]>()))
-            .Returns((RedisResult)invalidScanResult);
+            .Returns(RedisResult.Create(invalidScanResult));
 
         // Act
         var result = await _service.ClearAllDashboardCacheAsync();
@@ -243,12 +243,12 @@ public class DashboardCacheServiceScanTests : IDisposable
         // Arrange - SCAN response with invalid cursor
         var scanResult = new RedisResult[]
         {
-            (RedisResult)"invalid_cursor", // Invalid cursor value
-            (RedisResult)new RedisResult[] { (RedisResult)"test:dashboard:key1" }
+            RedisResult.Create((RedisValue)"invalid_cursor"), // Invalid cursor value
+            RedisResult.Create(new RedisResult[] { RedisResult.Create((RedisValue)"test:dashboard:key1") })
         };
         
         _mockServer.Setup(s => s.Execute("SCAN", It.IsAny<object[]>()))
-            .Returns((RedisResult)scanResult);
+            .Returns(RedisResult.Create(scanResult));
 
         // Act
         var result = await _service.ClearAllDashboardCacheAsync();
@@ -284,21 +284,21 @@ public class DashboardCacheServiceScanTests : IDisposable
         var thirdBatch = allKeys.Skip(200).ToArray();
         
         var scanCalls = new Queue<RedisResult>();
-        scanCalls.Enqueue((RedisResult)new RedisResult[]
+        scanCalls.Enqueue(RedisResult.Create(new RedisResult[]
         {
-            (RedisResult)"100",
-            (RedisResult)firstBatch.Select(k => (RedisResult)k).ToArray()
-        });
-        scanCalls.Enqueue((RedisResult)new RedisResult[]
+            RedisResult.Create((RedisValue)"100"),
+            RedisResult.Create(firstBatch.Select(k => RedisResult.Create((RedisValue)k)).ToArray())
+        }));
+        scanCalls.Enqueue(RedisResult.Create(new RedisResult[]
         {
-            (RedisResult)"200", 
-            (RedisResult)secondBatch.Select(k => (RedisResult)k).ToArray()
-        });
-        scanCalls.Enqueue((RedisResult)new RedisResult[]
+            RedisResult.Create((RedisValue)"200"), 
+            RedisResult.Create(secondBatch.Select(k => RedisResult.Create((RedisValue)k)).ToArray())
+        }));
+        scanCalls.Enqueue(RedisResult.Create(new RedisResult[]
         {
-            (RedisResult)"0", // scan complete
-            (RedisResult)thirdBatch.Select(k => (RedisResult)k).ToArray()
-        });
+            RedisResult.Create((RedisValue)"0"), // scan complete
+            RedisResult.Create(thirdBatch.Select(k => RedisResult.Create((RedisValue)k)).ToArray())
+        }));
         
         _mockServer.Setup(s => s.Execute("SCAN", It.IsAny<object[]>()))
             .Returns(() => scanCalls.Dequeue());
@@ -333,19 +333,19 @@ public class DashboardCacheServiceScanTests : IDisposable
         
         for (int i = 0; i < iterations - 1; i++)
         {
-            scanCalls.Enqueue((RedisResult)new RedisResult[]
+            scanCalls.Enqueue(RedisResult.Create(new RedisResult[]
             {
-                (RedisResult)(i + 1).ToString(),
-                (RedisResult)new RedisResult[] { (RedisResult)$"test:dashboard:key{i}" }
-            });
+                RedisResult.Create((RedisValue)(i + 1).ToString()),
+                RedisResult.Create(new RedisResult[] { RedisResult.Create((RedisValue)$"test:dashboard:key{i}") })
+            }));
         }
         
         // Final iteration
-        scanCalls.Enqueue((RedisResult)new RedisResult[]
+        scanCalls.Enqueue(RedisResult.Create(new RedisResult[]
         {
-            (RedisResult)"0",
-            (RedisResult)new RedisResult[] { (RedisResult)"test:dashboard:final" }
-        });
+            RedisResult.Create((RedisValue)"0"),
+            RedisResult.Create(new RedisResult[] { RedisResult.Create((RedisValue)"test:dashboard:final") })
+        }));
         
         _mockServer.Setup(s => s.Execute("SCAN", It.IsAny<object[]>()))
             .Returns(() => scanCalls.Dequeue());

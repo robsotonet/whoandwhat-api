@@ -69,12 +69,12 @@ public class DashboardCacheServiceTypeSafetyTests : IDisposable
         
         var scanResult = new RedisResult[]
         {
-            (RedisResult)"0", // cursor = 0 (scan complete)
-            (RedisResult)testKeys.Select(k => (RedisResult)k).ToArray()
+            RedisResult.Create((RedisValue)"0"), // cursor = 0 (scan complete)
+            RedisResult.Create(testKeys.Select(k => RedisResult.Create((RedisValue)k)).ToArray())
         };
         
         _mockServer.Setup(s => s.Execute("SCAN", It.IsAny<object[]>()))
-            .Returns((RedisResult)scanResult);
+            .Returns(RedisResult.Create(scanResult));
 
         _mockDatabase.Setup(d => d.KeyDeleteAsync(It.IsAny<RedisKey[]>(), It.IsAny<CommandFlags>()))
             .ReturnsAsync(testKeys.Length);
@@ -110,20 +110,20 @@ public class DashboardCacheServiceTypeSafetyTests : IDisposable
         // Arrange
         var keysWithNulls = new RedisResult[]
         {
-            (RedisResult)"test:dashboard:key1",
-            (RedisResult)RedisValue.Null,
-            (RedisResult)"test:dashboard:key2",
-            (RedisResult)RedisValue.Null
+            RedisResult.Create((RedisValue)"test:dashboard:key1"),
+            RedisResult.Create(RedisValue.Null),
+            RedisResult.Create((RedisValue)"test:dashboard:key2"),
+            RedisResult.Create(RedisValue.Null)
         };
         
         var scanResult = new RedisResult[]
         {
-            (RedisResult)"0", // cursor = 0 (scan complete)
-            (RedisResult)keysWithNulls
+            RedisResult.Create((RedisValue)"0"), // cursor = 0 (scan complete)
+            RedisResult.Create(keysWithNulls)
         };
         
         _mockServer.Setup(s => s.Execute("SCAN", It.IsAny<object[]>()))
-            .Returns((RedisResult)scanResult);
+            .Returns(RedisResult.Create(scanResult));
 
         _mockDatabase.Setup(d => d.KeyDeleteAsync(It.IsAny<RedisKey[]>(), It.IsAny<CommandFlags>()))
             .ReturnsAsync((RedisKey[] keys, CommandFlags _) => keys.Length);
@@ -159,22 +159,22 @@ public class DashboardCacheServiceTypeSafetyTests : IDisposable
         // Arrange - Mix of strings, integers, and other types
         var mixedResults = new RedisResult[]
         {
-            (RedisResult)"test:dashboard:key1",      // Valid string
-            (RedisResult)12345,                       // Invalid integer
-            (RedisResult)"test:dashboard:key2",      // Valid string
-            (RedisResult)new byte[] { 1, 2, 3 },     // Invalid byte array
-            (RedisResult)"",                          // Empty string (should be filtered)
-            (RedisResult)"test:dashboard:key3"       // Valid string
+            RedisResult.Create((RedisValue)"test:dashboard:key1"),      // Valid string
+            RedisResult.Create((RedisValue)12345),                       // Invalid integer
+            RedisResult.Create((RedisValue)"test:dashboard:key2"),      // Valid string
+            RedisResult.Create((RedisValue)new byte[] { 1, 2, 3 }),     // Invalid byte array
+            RedisResult.Create((RedisValue)""),                          // Empty string (should be filtered)
+            RedisResult.Create((RedisValue)"test:dashboard:key3")       // Valid string
         };
         
         var scanResult = new RedisResult[]
         {
-            (RedisResult)"0", // cursor = 0 (scan complete)
-            (RedisResult)mixedResults
+            RedisResult.Create((RedisValue)"0"), // cursor = 0 (scan complete)
+            RedisResult.Create(mixedResults)
         };
         
         _mockServer.Setup(s => s.Execute("SCAN", It.IsAny<object[]>()))
-            .Returns((RedisResult)scanResult);
+            .Returns(RedisResult.Create(scanResult));
 
         _mockDatabase.Setup(d => d.KeyDeleteAsync(It.IsAny<RedisKey[]>(), It.IsAny<CommandFlags>()))
             .ReturnsAsync((RedisKey[] keys, CommandFlags _) => keys.Length);
@@ -210,21 +210,21 @@ public class DashboardCacheServiceTypeSafetyTests : IDisposable
         // Arrange
         var keysWithEmpties = new RedisResult[]
         {
-            (RedisResult)"test:dashboard:key1",
-            (RedisResult)"",
-            (RedisResult)"test:dashboard:key2",
-            (RedisResult)"   ",  // Whitespace-only
-            (RedisResult)"test:dashboard:key3"
+            RedisResult.Create((RedisValue)"test:dashboard:key1"),
+            RedisResult.Create((RedisValue)""),
+            RedisResult.Create((RedisValue)"test:dashboard:key2"),
+            RedisResult.Create((RedisValue)"   "),  // Whitespace-only
+            RedisResult.Create((RedisValue)"test:dashboard:key3")
         };
         
         var scanResult = new RedisResult[]
         {
-            (RedisResult)"0", // cursor = 0 (scan complete)
-            (RedisResult)keysWithEmpties
+            RedisResult.Create((RedisValue)"0"), // cursor = 0 (scan complete)
+            RedisResult.Create(keysWithEmpties)
         };
         
         _mockServer.Setup(s => s.Execute("SCAN", It.IsAny<object[]>()))
-            .Returns((RedisResult)scanResult);
+            .Returns(RedisResult.Create(scanResult));
 
         _mockDatabase.Setup(d => d.KeyDeleteAsync(It.IsAny<RedisKey[]>(), It.IsAny<CommandFlags>()))
             .ReturnsAsync((RedisKey[] keys, CommandFlags _) => keys.Length);
@@ -252,12 +252,12 @@ public class DashboardCacheServiceTypeSafetyTests : IDisposable
         
         var scanResult = new RedisResult[]
         {
-            (RedisResult)"0",
-            (RedisResult)expectedKeys.Select(k => (RedisResult)k).ToArray()
+            RedisResult.Create((RedisValue)"0"),
+            RedisResult.Create(expectedKeys.Select(k => RedisResult.Create((RedisValue)k)).ToArray())
         };
         
         _mockServer.Setup(s => s.Execute("SCAN", It.IsAny<object[]>()))
-            .Returns((RedisResult)scanResult);
+            .Returns(RedisResult.Create(scanResult));
 
         // Use reflection to access the private helper method
         var method = typeof(DashboardCacheService).GetMethod("ScanKeysForPatternAsync",
@@ -285,12 +285,12 @@ public class DashboardCacheServiceTypeSafetyTests : IDisposable
         
         var scanResult = new RedisResult[]
         {
-            (RedisResult)"0",
-            (RedisResult)mockKeys.Select(k => (RedisResult)k).ToArray()
+            RedisResult.Create((RedisValue)"0"),
+            RedisResult.Create(mockKeys.Select(k => RedisResult.Create((RedisValue)k)).ToArray())
         };
         
         _mockServer.Setup(s => s.Execute("SCAN", It.IsAny<object[]>()))
-            .Returns((RedisResult)scanResult);
+            .Returns(RedisResult.Create(scanResult));
 
         _mockDatabase.Setup(d => d.KeyDeleteAsync(It.IsAny<RedisKey[]>(), It.IsAny<CommandFlags>()))
             .ReturnsAsync(1);
@@ -320,12 +320,12 @@ public class DashboardCacheServiceTypeSafetyTests : IDisposable
         
         var scanResult = new RedisResult[]
         {
-            (RedisResult)"0",
-            (RedisResult)largeKeySet.Select(k => (RedisResult)k).ToArray()
+            RedisResult.Create((RedisValue)"0"),
+            RedisResult.Create(largeKeySet.Select(k => RedisResult.Create((RedisValue)k)).ToArray())
         };
         
         _mockServer.Setup(s => s.Execute("SCAN", It.IsAny<object[]>()))
-            .Returns((RedisResult)scanResult);
+            .Returns(RedisResult.Create(scanResult));
 
         _mockDatabase.Setup(d => d.KeyDeleteAsync(It.IsAny<RedisKey[]>(), It.IsAny<CommandFlags>()))
             .ReturnsAsync((RedisKey[] keys, CommandFlags _) => keys.Length);
