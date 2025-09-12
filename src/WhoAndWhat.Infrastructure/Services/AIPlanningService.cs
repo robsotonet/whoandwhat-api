@@ -783,7 +783,8 @@ public class AIPlanningService : IAIPlanningService
     public void Dispose()
     {
         _rateLimitSemaphore?.Dispose();
-        _httpClient?.Dispose();
+        // HttpClient should not be disposed here as it's managed by the DI container and HttpClientFactory
+        // Disposing it manually can interfere with connection pooling and affect other HttpClient instances
     }
 }
 

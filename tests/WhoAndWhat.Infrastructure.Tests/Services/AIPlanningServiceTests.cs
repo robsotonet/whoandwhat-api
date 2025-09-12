@@ -387,6 +387,24 @@ public class AIPlanningServiceTests : IDisposable
         result.Should().BeNull();
     }
 
+    [Fact]
+    public void Dispose_Should_Not_Dispose_HttpClient()
+    {
+        // Arrange
+        var initialTimeout = _httpClient.Timeout;
+        
+        // Act
+        _aiPlanningService.Dispose();
+        
+        // Assert - HttpClient should still be usable after service disposal
+        // This verifies that the service doesn't dispose the HttpClient it doesn't own
+        _httpClient.Timeout.Should().Be(initialTimeout);
+        
+        // HttpClient should still be accessible and not throw ObjectDisposedException
+        var action = () => _ = _httpClient.BaseAddress;
+        action.Should().NotThrow<ObjectDisposedException>();
+    }
+
     public void Dispose()
     {
         if (!_disposed)

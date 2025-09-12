@@ -417,6 +417,64 @@ public class AICacheServiceTests : IDisposable
         result.Should().BeTrue();
     }
 
+    [Fact]
+    public void ComputeContentHash_Should_Generate_32_Character_Hash()
+    {
+        // Arrange - Use reflection to access the private ComputeContentHash method
+        var method = typeof(AICacheService).GetMethod("ComputeContentHash", 
+            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
+        var testContent = "This is a test content for hash generation";
+
+        // Act
+        var hash = (string)method!.Invoke(null, new object[] { testContent });
+
+        // Assert
+        hash.Should().NotBeNullOrEmpty();
+        hash.Length.Should().Be(32, "SHA256 hash should use first 32 characters to reduce collision probability");
+        hash.Should().MatchRegex("^[A-F0-9]{32}$", "Hash should be 32 hexadecimal characters");
+    }
+
+    [Fact]
+    public void ComputeContentHash_Should_Generate_Different_Hashes_For_Different_Content()
+    {
+        // Arrange
+        var method = typeof(AICacheService).GetMethod("ComputeContentHash", 
+            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
+        var content1 = "Content 1";
+        var content2 = "Content 2";
+
+        // Act
+        var hash1 = (string)method!.Invoke(null, new object[] { content1 });
+        var hash2 = (string)method!.Invoke(null, new object[] { content2 });
+
+        // Assert
+        hash1.Should().NotBe(hash2, "Different content should generate different hashes");
+        hash1.Length.Should().Be(32);
+        hash2.Length.Should().Be(32);
+    }
+
+    [Fact]
+    public async Task ClearAllAICacheAsync_Should_Handle_Null_Cursor_Safely()
+    {
+        // Arrange
+        var serverMock = new Mock<IServer>();
+        var endPoints = new EndPoint[] { new DnsEndPoint("localhost", 6379) };
+
+        _redisMock.Setup(x => x.GetEndPoints(It.IsAny<bool>())).Returns(endPoints);
+        _redisMock.Setup(x => x.GetServer(It.IsAny<EndPoint>(), It.IsAny<object>())).Returns(serverMock.Object);
+
+        // Return null cursor to test null safety improvements
+        serverMock.Setup(x => x.Execute("SCAN", It.IsAny<object[]>()))
+                  .Returns(RedisResult.Create(new RedisValue[] { RedisValue.Null, Array.Empty<RedisValue>() }));
+
+        // Act & Assert - Should not throw exception due to null cursor
+        var action = async () => await _aiCacheService.ClearAllAICacheAsync();
+        await action.Should().NotThrowAsync<NullReferenceException>("Null cursor should be handled safely");
+        
+        var result = await _aiCacheService.ClearAllAICacheAsync();
+        result.Should().BeTrue();
+    }
+
     public void Dispose()
     {
         if (!_disposed)

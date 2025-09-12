@@ -477,7 +477,9 @@ public class AICacheService : IAICacheService, IDisposable
 
                     if (!keys.IsNull)
                     {
-                        var redisKeys = ((RedisResult[])keys!).Where(k => !k.IsNull).Select(k => (RedisKey)k!).ToArray();
+                        var redisKeys = keys is RedisResult[] keyArray 
+                            ? keyArray.Where(k => !k.IsNull).Select(k => (RedisKey)k).ToArray()
+                            : Array.Empty<RedisKey>();
 
                         if (redisKeys.Any())
                         {
@@ -487,7 +489,7 @@ public class AICacheService : IAICacheService, IDisposable
                         }
                     }
 
-                    if (!long.TryParse((string?)nextCursor!, out cursor))
+                    if (!(nextCursor is string cursorStr && long.TryParse(cursorStr, out cursor)))
                     {
                         break;
                     }
@@ -551,7 +553,9 @@ public class AICacheService : IAICacheService, IDisposable
 
                 if (!keys.IsNull)
                 {
-                    var redisKeys = ((RedisResult[])keys!).Where(k => !k.IsNull).Select(k => (RedisKey)k!).ToArray();
+                    var redisKeys = keys is RedisResult[] keyArray 
+                        ? keyArray.Where(k => !k.IsNull).Select(k => (RedisKey)k).ToArray()
+                        : Array.Empty<RedisKey>();
 
                     if (redisKeys.Any())
                     {
@@ -559,7 +563,7 @@ public class AICacheService : IAICacheService, IDisposable
                     }
                 }
 
-                if (!long.TryParse((string?)nextCursor!, out cursor))
+                if (!(nextCursor is string cursorStr && long.TryParse(cursorStr, out cursor)))
                 {
                     break;
                 }
@@ -604,7 +608,7 @@ public class AICacheService : IAICacheService, IDisposable
     {
         using var sha256 = SHA256.Create();
         var hashBytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(content));
-        return Convert.ToHexString(hashBytes)[..16]; // Use first 16 characters for shorter key
+        return Convert.ToHexString(hashBytes)[..32]; // Use first 32 characters for balance between key length and collision resistance
     }
 
     #endregion
