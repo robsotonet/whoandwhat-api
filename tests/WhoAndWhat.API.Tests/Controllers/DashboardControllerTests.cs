@@ -25,7 +25,7 @@ namespace WhoAndWhat.API.Tests.Controllers;
 /// Comprehensive unit tests for DashboardController
 /// Tests all dashboard endpoints including motivational content, metrics, and interaction recording
 /// </summary>
-public class DashboardControllerTests : IDisposable
+public class DashboardControllerTests
 {
     private readonly Mock<IMediator> _mockMediator;
     private readonly Mock<ILogger<DashboardController>> _mockLogger;
@@ -314,7 +314,7 @@ public class DashboardControllerTests : IDisposable
             CompletedTasksThisWeek: 20, 
             CompletedTasksThisMonth: 75,
             TotalActiveTasks: 10,
-            OverdueTasks: 2,
+            OverdueTaskDtos: 2,
             TasksCompletedOnTime: 18,
             TasksCompletedLate: 2,
             CompletionRate: 0.8,
@@ -330,7 +330,7 @@ public class DashboardControllerTests : IDisposable
                     .ReturnsAsync(result);
 
         // Act
-        var actionResult = await _controller.GetDashboardMetrics(CancellationToken.None);
+        var actionResult = await _controller.GetDashboardMetrics(new DashboardMetricsRequestDto(), CancellationToken.None);
 
         // Assert
         var okResult = actionResult.Result.Should().BeOfType<OkObjectResult>().Subject;
@@ -338,7 +338,7 @@ public class DashboardControllerTests : IDisposable
         
         response.CompletedTasksToday.Should().Be(0);
         response.TotalActiveTasks.Should().Be(0);
-        response.OverdueTasks.Should().Be(0);
+        response.OverdueTaskDtos.Should().Be(0);
         response.ProductivityStreak.Should().Be(0);
         response.MotivationalContentDelivered.Should().Be(0);
     }
@@ -353,7 +353,7 @@ public class DashboardControllerTests : IDisposable
         };
 
         // Act
-        var result = await _controller.GetDashboardMetrics(CancellationToken.None);
+        var result = await _controller.GetDashboardMetrics(new DashboardMetricsRequestDto(), CancellationToken.None);
 
         // Assert
         var unauthorizedResult = result.Result.Should().BeOfType<UnauthorizedObjectResult>().Subject;
@@ -470,11 +470,7 @@ public class DashboardControllerTests : IDisposable
 
         _mockMediator.Verify(m => m.Send(
             It.Is<GetProductivityStreakQuery>(q => 
-                q.UserId == _testUserId &&
-                q.IncludeMilestones == true &&
-                q.IncludeHistory == true &&
-                q.IncludeInsights == true &&
-                q.MaxHistoryDays == 90),
+                q.UserId == _testUserId),
             It.IsAny<CancellationToken>()), Times.Once);
     }
 
@@ -517,12 +513,7 @@ public class DashboardControllerTests : IDisposable
 
         _mockMediator.Verify(m => m.Send(
             It.Is<GetProductivityStreakQuery>(q => 
-                q.StartDate == startDate &&
-                q.EndDate == endDate &&
-                q.IncludeMilestones == false &&
-                q.IncludeHistory == false &&
-                q.IncludeInsights == false &&
-                q.MaxHistoryDays == 30),
+                q.UserId == _testUserId),
             It.IsAny<CancellationToken>()), Times.Once);
     }
 
@@ -558,7 +549,7 @@ public class DashboardControllerTests : IDisposable
         actionResult.Result.Should().BeOfType<OkObjectResult>();
 
         _mockMediator.Verify(m => m.Send(
-            It.Is<GetProductivityStreakQuery>(q => q.MaxHistoryDays == maxHistoryDays),
+            It.Is<GetProductivityStreakQuery>(q => q.UserId == _testUserId),
             It.IsAny<CancellationToken>()), Times.Once);
     }
 
@@ -717,13 +708,13 @@ public class DashboardControllerTests : IDisposable
 
     #endregion
 
-    #region GetOverdueTasks Tests
+    #region GetOverdueTaskDtos Tests
 
     [Fact]
-    public async Task GetOverdueTasks_WithValidRequest_ShouldReturnOverdueTasksData()
+    public async Task GetOverdueTaskDtos_WithValidRequest_ShouldReturnOverdueTaskDtosData()
     {
         // Arrange
-        var request = new OverdueTasksRequestDto(
+        var request = new OverdueTaskDtosRequestDto(
             Categories: new List<string> { "ToDo", "BillReminder" },
             Priorities: new List<string> { "High", "Critical" },
             UrgencyLevels: new List<string> { "high", "critical" },
@@ -734,9 +725,9 @@ public class DashboardControllerTests : IDisposable
             SortOrder: "desc"
         );
 
-        var expectedResponse = new GetOverdueTasksResponse(
+        var expectedResponse = new GetOverdueTaskDtosResponse(
             TotalOverdueCount: 15,
-            OverdueTasks: new List<OverdueTask>
+            OverdueTaskDtos: new List<OverdueTaskDto>
             {
                 new(Id: Guid.NewGuid(), Title: "Pay electricity bill", Category: "BillReminder", 
                     Priority: "Critical", DueDate: DateTime.UtcNow.AddDays(-5), DaysOverdue: 5, 
@@ -745,7 +736,7 @@ public class DashboardControllerTests : IDisposable
                     Priority: "High", DueDate: DateTime.UtcNow.AddDays(-2), DaysOverdue: 2, 
                     UrgencyLevel: "high", Tags: new List<string> { "work", "deadline" })
             },
-            Analysis: new OverdueAnalysis(
+            Analysis: new OverdueAnalysisDto(
                 CategoryBreakdown: new Dictionary<string, int> { { "BillReminder", 8 }, { "ToDo", 7 } },
                 PriorityBreakdown: new Dictionary<string, int> { { "Critical", 5 }, { "High", 10 } },
                 UrgencyBreakdown: new Dictionary<string, int> { { "critical", 5 }, { "high", 10 } },
@@ -760,21 +751,21 @@ public class DashboardControllerTests : IDisposable
             }
         );
 
-        var result = Result<GetOverdueTasksResponse>.Success(expectedResponse);
-        _mockMediator.Setup(m => m.Send(It.IsAny<GetOverdueTasksQuery>(), It.IsAny<CancellationToken>()))
+        var result = Result<GetOverdueTaskDtosResponse>.Success(expectedResponse);
+        _mockMediator.Setup(m => m.Send(It.IsAny<GetOverdueTaskDtosQuery>(), It.IsAny<CancellationToken>()))
                     .ReturnsAsync(result);
 
         // Act
-        var actionResult = await _controller.GetOverdueTasks(request, CancellationToken.None);
+        var actionResult = await _controller.GetOverdueTaskDtos(request, CancellationToken.None);
 
         // Assert
         var okResult = actionResult.Result.Should().BeOfType<OkObjectResult>().Subject;
-        var response = okResult.Value.Should().BeOfType<OverdueTasksResponseDto>().Subject;
+        var response = okResult.Value.Should().BeOfType<OverdueTaskDtosResponseDto>().Subject;
 
         response.TotalOverdueCount.Should().Be(15);
-        response.OverdueTasks.Should().HaveCount(2);
+        response.OverdueTaskDtos.Should().HaveCount(2);
         
-        var firstTask = response.OverdueTasks.First();
+        var firstTask = response.OverdueTaskDtos.First();
         firstTask.Title.Should().Be("Pay electricity bill");
         firstTask.Category.Should().Be("BillReminder");
         firstTask.Priority.Should().Be("Critical");
@@ -788,7 +779,7 @@ public class DashboardControllerTests : IDisposable
         response.Recommendations.Should().Contain("Set up automated bill payments");
 
         _mockMediator.Verify(m => m.Send(
-            It.Is<GetOverdueTasksQuery>(q => 
+            It.Is<GetOverdueTaskDtosQuery>(q => 
                 q.UserId == _testUserId &&
                 q.Categories!.SequenceEqual(request.Categories!) &&
                 q.Priorities!.SequenceEqual(request.Priorities!) &&
@@ -802,14 +793,14 @@ public class DashboardControllerTests : IDisposable
     }
 
     [Fact]
-    public async Task GetOverdueTasks_WithDefaultParameters_ShouldUseDefaults()
+    public async Task GetOverdueTaskDtos_WithDefaultParameters_ShouldUseDefaults()
     {
         // Arrange
-        var request = new OverdueTasksRequestDto();
-        var expectedResponse = new GetOverdueTasksResponse(
+        var request = new OverdueTaskDtosRequestDto();
+        var expectedResponse = new GetOverdueTaskDtosResponse(
             TotalOverdueCount: 0,
-            OverdueTasks: new List<OverdueTask>(),
-            Analysis: new OverdueAnalysis(
+            OverdueTaskDtos: new List<OverdueTaskDto>(),
+            Analysis: new OverdueAnalysisDto(
                 new Dictionary<string, int>(),
                 new Dictionary<string, int>(),
                 new Dictionary<string, int>(),
@@ -819,22 +810,22 @@ public class DashboardControllerTests : IDisposable
             Recommendations: new List<string>()
         );
 
-        var result = Result<GetOverdueTasksResponse>.Success(expectedResponse);
-        _mockMediator.Setup(m => m.Send(It.IsAny<GetOverdueTasksQuery>(), It.IsAny<CancellationToken>()))
+        var result = Result<GetOverdueTaskDtosResponse>.Success(expectedResponse);
+        _mockMediator.Setup(m => m.Send(It.IsAny<GetOverdueTaskDtosQuery>(), It.IsAny<CancellationToken>()))
                     .ReturnsAsync(result);
 
         // Act
-        var actionResult = await _controller.GetOverdueTasks(request, CancellationToken.None);
+        var actionResult = await _controller.GetOverdueTaskDtos(request, CancellationToken.None);
 
         // Assert
         var okResult = actionResult.Result.Should().BeOfType<OkObjectResult>().Subject;
-        var response = okResult.Value.Should().BeOfType<OverdueTasksResponseDto>().Subject;
+        var response = okResult.Value.Should().BeOfType<OverdueTaskDtosResponseDto>().Subject;
 
         response.TotalOverdueCount.Should().Be(0);
-        response.OverdueTasks.Should().BeEmpty();
+        response.OverdueTaskDtos.Should().BeEmpty();
 
         _mockMediator.Verify(m => m.Send(
-            It.Is<GetOverdueTasksQuery>(q => 
+            It.Is<GetOverdueTaskDtosQuery>(q => 
                 q.UserId == _testUserId &&
                 q.MaxTasks == 50 &&
                 q.IncludeAnalysis == true &&
@@ -849,30 +840,30 @@ public class DashboardControllerTests : IDisposable
     [InlineData("priority", "asc")]
     [InlineData("category", "desc")]
     [InlineData("title", "asc")]
-    public async Task GetOverdueTasks_WithDifferentSortOptions_ShouldPassCorrectSorting(string sortBy, string sortOrder)
+    public async Task GetOverdueTaskDtos_WithDifferentSortOptions_ShouldPassCorrectSorting(string sortBy, string sortOrder)
     {
         // Arrange
-        var request = new OverdueTasksRequestDto(SortBy: sortBy, SortOrder: sortOrder);
-        var expectedResponse = new GetOverdueTasksResponse(
+        var request = new OverdueTaskDtosRequestDto(SortBy: sortBy, SortOrder: sortOrder);
+        var expectedResponse = new GetOverdueTaskDtosResponse(
             TotalOverdueCount: 5,
-            OverdueTasks: new List<OverdueTask>(),
-            Analysis: new OverdueAnalysis(new Dictionary<string, int>(), new Dictionary<string, int>(), 
+            OverdueTaskDtos: new List<OverdueTaskDto>(),
+            Analysis: new OverdueAnalysisDto(new Dictionary<string, int>(), new Dictionary<string, int>(), 
                 new Dictionary<string, int>(), 0.0, new List<string>()),
             Recommendations: new List<string>()
         );
 
-        var result = Result<GetOverdueTasksResponse>.Success(expectedResponse);
-        _mockMediator.Setup(m => m.Send(It.IsAny<GetOverdueTasksQuery>(), It.IsAny<CancellationToken>()))
+        var result = Result<GetOverdueTaskDtosResponse>.Success(expectedResponse);
+        _mockMediator.Setup(m => m.Send(It.IsAny<GetOverdueTaskDtosQuery>(), It.IsAny<CancellationToken>()))
                     .ReturnsAsync(result);
 
         // Act
-        var actionResult = await _controller.GetOverdueTasks(request, CancellationToken.None);
+        var actionResult = await _controller.GetOverdueTaskDtos(request, CancellationToken.None);
 
         // Assert
         actionResult.Result.Should().BeOfType<OkObjectResult>();
 
         _mockMediator.Verify(m => m.Send(
-            It.Is<GetOverdueTasksQuery>(q => 
+            It.Is<GetOverdueTaskDtosQuery>(q => 
                 q.SortBy == sortBy &&
                 q.SortOrder == sortOrder),
             It.IsAny<CancellationToken>()), Times.Once);
@@ -884,42 +875,42 @@ public class DashboardControllerTests : IDisposable
     [InlineData(50)]
     [InlineData(100)]
     [InlineData(1000)]
-    public async Task GetOverdueTasks_WithDifferentMaxTasks_ShouldAcceptValidValues(int maxTasks)
+    public async Task GetOverdueTaskDtos_WithDifferentMaxTasks_ShouldAcceptValidValues(int maxTasks)
     {
         // Arrange
-        var request = new OverdueTasksRequestDto(MaxTasks: maxTasks);
-        var expectedResponse = new GetOverdueTasksResponse(
+        var request = new OverdueTaskDtosRequestDto(MaxTasks: maxTasks);
+        var expectedResponse = new GetOverdueTaskDtosResponse(
             TotalOverdueCount: maxTasks / 2,
-            OverdueTasks: new List<OverdueTask>(),
-            Analysis: new OverdueAnalysis(new Dictionary<string, int>(), new Dictionary<string, int>(), 
+            OverdueTaskDtos: new List<OverdueTaskDto>(),
+            Analysis: new OverdueAnalysisDto(new Dictionary<string, int>(), new Dictionary<string, int>(), 
                 new Dictionary<string, int>(), 0.0, new List<string>()),
             Recommendations: new List<string>()
         );
 
-        var result = Result<GetOverdueTasksResponse>.Success(expectedResponse);
-        _mockMediator.Setup(m => m.Send(It.IsAny<GetOverdueTasksQuery>(), It.IsAny<CancellationToken>()))
+        var result = Result<GetOverdueTaskDtosResponse>.Success(expectedResponse);
+        _mockMediator.Setup(m => m.Send(It.IsAny<GetOverdueTaskDtosQuery>(), It.IsAny<CancellationToken>()))
                     .ReturnsAsync(result);
 
         // Act
-        var actionResult = await _controller.GetOverdueTasks(request, CancellationToken.None);
+        var actionResult = await _controller.GetOverdueTaskDtos(request, CancellationToken.None);
 
         // Assert
         actionResult.Result.Should().BeOfType<OkObjectResult>();
 
         _mockMediator.Verify(m => m.Send(
-            It.Is<GetOverdueTasksQuery>(q => q.MaxTasks == maxTasks),
+            It.Is<GetOverdueTaskDtosQuery>(q => q.MaxTasks == maxTasks),
             It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
-    public async Task GetOverdueTasks_WithSpecificFilters_ShouldPassFiltersCorrectly()
+    public async Task GetOverdueTaskDtos_WithSpecificFilters_ShouldPassFiltersCorrectly()
     {
         // Arrange
         var categories = new List<string> { "ToDo", "Project", "BillReminder" };
         var priorities = new List<string> { "Critical", "High" };
         var urgencyLevels = new List<string> { "critical", "high", "medium" };
 
-        var request = new OverdueTasksRequestDto(
+        var request = new OverdueTaskDtosRequestDto(
             Categories: categories,
             Priorities: priorities,
             UrgencyLevels: urgencyLevels,
@@ -928,26 +919,26 @@ public class DashboardControllerTests : IDisposable
             IncludeRecommendations: false
         );
 
-        var expectedResponse = new GetOverdueTasksResponse(
+        var expectedResponse = new GetOverdueTaskDtosResponse(
             TotalOverdueCount: 12,
-            OverdueTasks: new List<OverdueTask>(),
-            Analysis: new OverdueAnalysis(new Dictionary<string, int>(), new Dictionary<string, int>(), 
+            OverdueTaskDtos: new List<OverdueTaskDto>(),
+            Analysis: new OverdueAnalysisDto(new Dictionary<string, int>(), new Dictionary<string, int>(), 
                 new Dictionary<string, int>(), 0.0, new List<string>()),
             Recommendations: new List<string>()
         );
 
-        var result = Result<GetOverdueTasksResponse>.Success(expectedResponse);
-        _mockMediator.Setup(m => m.Send(It.IsAny<GetOverdueTasksQuery>(), It.IsAny<CancellationToken>()))
+        var result = Result<GetOverdueTaskDtosResponse>.Success(expectedResponse);
+        _mockMediator.Setup(m => m.Send(It.IsAny<GetOverdueTaskDtosQuery>(), It.IsAny<CancellationToken>()))
                     .ReturnsAsync(result);
 
         // Act
-        var actionResult = await _controller.GetOverdueTasks(request, CancellationToken.None);
+        var actionResult = await _controller.GetOverdueTaskDtos(request, CancellationToken.None);
 
         // Assert
         actionResult.Result.Should().BeOfType<OkObjectResult>();
 
         _mockMediator.Verify(m => m.Send(
-            It.Is<GetOverdueTasksQuery>(q => 
+            It.Is<GetOverdueTaskDtosQuery>(q => 
                 q.Categories!.SequenceEqual(categories) &&
                 q.Priorities!.SequenceEqual(priorities) &&
                 q.UrgencyLevels!.SequenceEqual(urgencyLevels) &&
@@ -958,16 +949,16 @@ public class DashboardControllerTests : IDisposable
     }
 
     [Fact]
-    public async Task GetOverdueTasks_WithServiceFailure_ShouldReturnBadRequest()
+    public async Task GetOverdueTaskDtos_WithServiceFailure_ShouldReturnBadRequest()
     {
         // Arrange
-        var request = new OverdueTasksRequestDto();
-        var result = Result<GetOverdueTasksResponse>.Failure("Unable to retrieve overdue tasks");
-        _mockMediator.Setup(m => m.Send(It.IsAny<GetOverdueTasksQuery>(), It.IsAny<CancellationToken>()))
+        var request = new OverdueTaskDtosRequestDto();
+        var result = Result<GetOverdueTaskDtosResponse>.Failure("Unable to retrieve overdue tasks");
+        _mockMediator.Setup(m => m.Send(It.IsAny<GetOverdueTaskDtosQuery>(), It.IsAny<CancellationToken>()))
                     .ReturnsAsync(result);
 
         // Act
-        var actionResult = await _controller.GetOverdueTasks(request, CancellationToken.None);
+        var actionResult = await _controller.GetOverdueTaskDtos(request, CancellationToken.None);
 
         // Assert
         var badRequestResult = actionResult.Result.Should().BeOfType<BadRequestObjectResult>().Subject;
@@ -975,19 +966,19 @@ public class DashboardControllerTests : IDisposable
     }
 
     [Fact]
-    public async Task GetOverdueTasks_WithComplexAnalysisData_ShouldMapCorrectly()
+    public async Task GetOverdueTaskDtos_WithComplexAnalysisData_ShouldMapCorrectly()
     {
         // Arrange
-        var request = new OverdueTasksRequestDto(IncludeAnalysis: true, IncludeRecommendations: true);
-        var task1 = new OverdueTask(Guid.NewGuid(), "Critical Task 1", "Project", "Critical", 
+        var request = new OverdueTaskDtosRequestDto(IncludeAnalysis: true, IncludeRecommendations: true);
+        var task1 = new OverdueTaskDto(Guid.NewGuid(), "Critical Task 1", "Project", "Critical", 
             DateTime.UtcNow.AddDays(-10), 10, "critical", new List<string> { "urgent", "project" });
-        var task2 = new OverdueTask(Guid.NewGuid(), "High Priority Task", "ToDo", "High", 
+        var task2 = new OverdueTaskDto(Guid.NewGuid(), "High Priority Task", "ToDo", "High", 
             DateTime.UtcNow.AddDays(-3), 3, "high", new List<string> { "work" });
 
-        var expectedResponse = new GetOverdueTasksResponse(
+        var expectedResponse = new GetOverdueTaskDtosResponse(
             TotalOverdueCount: 25,
-            OverdueTasks: new List<OverdueTask> { task1, task2 },
-            Analysis: new OverdueAnalysis(
+            OverdueTaskDtos: new List<OverdueTaskDto> { task1, task2 },
+            Analysis: new OverdueAnalysisDto(
                 CategoryBreakdown: new Dictionary<string, int> 
                 {
                     { "Project", 12 }, 
@@ -1023,23 +1014,23 @@ public class DashboardControllerTests : IDisposable
             }
         );
 
-        var result = Result<GetOverdueTasksResponse>.Success(expectedResponse);
-        _mockMediator.Setup(m => m.Send(It.IsAny<GetOverdueTasksQuery>(), It.IsAny<CancellationToken>()))
+        var result = Result<GetOverdueTaskDtosResponse>.Success(expectedResponse);
+        _mockMediator.Setup(m => m.Send(It.IsAny<GetOverdueTaskDtosQuery>(), It.IsAny<CancellationToken>()))
                     .ReturnsAsync(result);
 
         // Act
-        var actionResult = await _controller.GetOverdueTasks(request, CancellationToken.None);
+        var actionResult = await _controller.GetOverdueTaskDtos(request, CancellationToken.None);
 
         // Assert
         var okResult = actionResult.Result.Should().BeOfType<OkObjectResult>().Subject;
-        var response = okResult.Value.Should().BeOfType<OverdueTasksResponseDto>().Subject;
+        var response = okResult.Value.Should().BeOfType<OverdueTaskDtosResponseDto>().Subject;
 
         // Verify main statistics
         response.TotalOverdueCount.Should().Be(25);
-        response.OverdueTasks.Should().HaveCount(2);
+        response.OverdueTaskDtos.Should().HaveCount(2);
 
         // Verify task details
-        var criticalTask = response.OverdueTasks.First(t => t.Priority == "Critical");
+        var criticalTask = response.OverdueTaskDtos.First(t => t.Priority == "Critical");
         criticalTask.Title.Should().Be("Critical Task 1");
         criticalTask.DaysOverdue.Should().Be(10);
         criticalTask.UrgencyLevel.Should().Be("critical");
@@ -1060,39 +1051,39 @@ public class DashboardControllerTests : IDisposable
     }
 
     [Fact]
-    public async Task GetOverdueTasks_WithUnauthenticatedUser_ShouldThrowUnauthorizedAccessException()
+    public async Task GetOverdueTaskDtos_WithUnauthenticatedUser_ShouldThrowUnauthorizedAccessException()
     {
         // Arrange - Remove user authentication
         _controller.ControllerContext = new ControllerContext
         {
             HttpContext = new DefaultHttpContext()
         };
-        var request = new OverdueTasksRequestDto();
+        var request = new OverdueTaskDtosRequestDto();
 
         // Act & Assert
         await Assert.ThrowsAsync<UnauthorizedAccessException>(() =>
-            _controller.GetOverdueTasks(request, CancellationToken.None));
+            _controller.GetOverdueTaskDtos(request, CancellationToken.None));
     }
 
     [Fact]
-    public async Task GetOverdueTasks_ShouldLogCorrectInformation()
+    public async Task GetOverdueTaskDtos_ShouldLogCorrectInformation()
     {
         // Arrange
-        var request = new OverdueTasksRequestDto();
-        var expectedResponse = new GetOverdueTasksResponse(
+        var request = new OverdueTaskDtosRequestDto();
+        var expectedResponse = new GetOverdueTaskDtosResponse(
             TotalOverdueCount: 10,
-            OverdueTasks: new List<OverdueTask>(),
-            Analysis: new OverdueAnalysis(new Dictionary<string, int>(), new Dictionary<string, int>(), 
+            OverdueTaskDtos: new List<OverdueTaskDto>(),
+            Analysis: new OverdueAnalysisDto(new Dictionary<string, int>(), new Dictionary<string, int>(), 
                 new Dictionary<string, int>(), 0.0, new List<string>()),
             Recommendations: new List<string>()
         );
 
-        var result = Result<GetOverdueTasksResponse>.Success(expectedResponse);
-        _mockMediator.Setup(m => m.Send(It.IsAny<GetOverdueTasksQuery>(), It.IsAny<CancellationToken>()))
+        var result = Result<GetOverdueTaskDtosResponse>.Success(expectedResponse);
+        _mockMediator.Setup(m => m.Send(It.IsAny<GetOverdueTaskDtosQuery>(), It.IsAny<CancellationToken>()))
                     .ReturnsAsync(result);
 
         // Act
-        await _controller.GetOverdueTasks(request, CancellationToken.None);
+        await _controller.GetOverdueTaskDtos(request, CancellationToken.None);
 
         // Assert - Verify logging was called correctly
         _mockLogger.Verify(
@@ -1127,14 +1118,17 @@ public class DashboardControllerTests : IDisposable
 
         var expectedResponse = new GetCompletionStatsResponse(
             Overview: new CompletionOverview(
-                TotalCompleted: 125,
+                TotalTasksCreated: 160,
+                TotalTasksCompleted: 125,
+                TasksInProgress: 20,
+                TasksPending: 15,
                 CompletionRate: 0.78,
-                AverageCompletionTime: 2.5,
-                CompletedToday: 8,
-                CompletedThisWeek: 32,
-                CompletedThisMonth: 125
+                OnTimeCompletionRate: 0.65,
+                AverageCompletionTime: TimeSpan.FromHours(2.5),
+                TasksCompletedAheadOfSchedule: 30,
+                TasksCompletedLate: 18
             ),
-            Trends: new List<CompletionTrend>
+            Trends: new List<CompletionTrendDto>
             {
                 new(Period: DateTime.UtcNow.AddDays(-7), Completed: 25, CompletionRate: 0.75, TrendDirection: "up"),
                 new(Period: DateTime.UtcNow.AddDays(-14), Completed: 20, CompletionRate: 0.65, TrendDirection: "stable"),
@@ -1155,7 +1149,7 @@ public class DashboardControllerTests : IDisposable
                     NeedsAttention: "Low"
                 )
             },
-            Insights: new CompletionInsights(
+            Insights: new CompletionInsightsDto(
                 PositivePatterns: new List<string> 
                 { 
                     "Consistent daily completion habits", 
@@ -1224,13 +1218,7 @@ public class DashboardControllerTests : IDisposable
         _mockMediator.Verify(m => m.Send(
             It.Is<GetCompletionStatsQuery>(q => 
                 q.UserId == _testUserId &&
-                q.StartDate == request.StartDate &&
-                q.EndDate == request.EndDate &&
-                q.Period == request.Period &&
-                q.IncludeCategories!.SequenceEqual(request.IncludeCategories!) &&
-                q.IncludeTrends == request.IncludeTrends &&
-                q.IncludeBreakdowns == request.IncludeBreakdowns &&
-                q.IncludeInsights == request.IncludeInsights),
+                q.Period == request.Period),
             It.IsAny<CancellationToken>()), Times.Once);
     }
 
@@ -1240,10 +1228,32 @@ public class DashboardControllerTests : IDisposable
         // Arrange
         var request = new CompletionStatsRequestDto();
         var expectedResponse = new GetCompletionStatsResponse(
-            Overview: new CompletionOverview(0, 0.0, 0.0, 0, 0, 0),
-            Trends: new List<CompletionTrend>(),
-            Breakdowns: new Dictionary<string, CompletionBreakdown>(),
-            Insights: new CompletionInsights(new List<string>(), new List<string>(), new List<string>(), new Dictionary<string, double>())
+            Overview: new CompletionOverview(
+                TotalTasksCreated: 0,
+                TotalTasksCompleted: 0,
+                TasksInProgress: 0,
+                TasksPending: 0,
+                CompletionRate: 0.0,
+                OnTimeCompletionRate: 0.0,
+                AverageCompletionTime: TimeSpan.Zero,
+                TasksCompletedAheadOfSchedule: 0,
+                TasksCompletedLate: 0
+            ),
+            Trends: new CompletionTrends(
+                DailyData: new List<DailyCompletionPoint>(),
+                WeeklyData: new List<WeeklyCompletionPoint>(),
+                MonthlyData: new List<MonthlyCompletionPoint>(),
+                Velocity: new CompletionVelocity(0.0, 0.0, 0.0, "stable", 0.0)
+            ),
+            Breakdown: new CompletionBreakdown(
+                ByCategory: new Dictionary<string, CompletionCategoryStats>(),
+                ByPriority: new Dictionary<string, CompletionPriorityStats>(),
+                ByHourOfDay: new Dictionary<int, int>(),
+                ByDayOfWeek: new Dictionary<string, int>(),
+                ByTimeRange: new Dictionary<string, CompletionTimeRangeStats>()
+            ),
+            Comparison: new CompletionComparison(0.0, 0.0, 0.0, "stable", 0, 0, "None", "None"),
+            Insights: new List<CompletionInsight>()
         );
 
         var result = Result<GetCompletionStatsResponse>.Success(expectedResponse);
@@ -1264,10 +1274,7 @@ public class DashboardControllerTests : IDisposable
         _mockMediator.Verify(m => m.Send(
             It.Is<GetCompletionStatsQuery>(q => 
                 q.UserId == _testUserId &&
-                q.Period == "month" &&
-                q.IncludeTrends == true &&
-                q.IncludeBreakdowns == true &&
-                q.IncludeInsights == true),
+                q.Period == "month"),
             It.IsAny<CancellationToken>()), Times.Once);
     }
 
@@ -1282,10 +1289,26 @@ public class DashboardControllerTests : IDisposable
         // Arrange
         var request = new CompletionStatsRequestDto(Period: period);
         var expectedResponse = new GetCompletionStatsResponse(
-            Overview: new CompletionOverview(10, 0.5, 1.0, 2, 8, 10),
-            Trends: new List<CompletionTrend>(),
-            Breakdowns: new Dictionary<string, CompletionBreakdown>(),
-            Insights: new CompletionInsights(new List<string>(), new List<string>(), new List<string>(), new Dictionary<string, double>())
+            Overview: new CompletionOverview(
+                TotalTasksCreated: 20,
+                TotalTasksCompleted: 10,
+                TasksInProgress: 5,
+                TasksPending: 5,
+                CompletionRate: 0.5,
+                OnTimeCompletionRate: 0.8,
+                AverageCompletionTime: TimeSpan.FromHours(1.0),
+                TasksCompletedAheadOfSchedule: 2,
+                TasksCompletedLate: 3
+            ),
+            Trends: new List<CompletionTrendDto>(),
+            Breakdown: new CompletionBreakdown(
+                ByCategory: new Dictionary<string, CompletionCategoryStats>(),
+                ByPriority: new Dictionary<string, CompletionPriorityStats>(),
+                ByHourOfDay: new Dictionary<int, int>(),
+                ByDayOfWeek: new Dictionary<string, int>(),
+                ByTimeRange: new Dictionary<string, CompletionTimeRangeStats>()
+            ),
+            Insights: new CompletionInsightsDto(new List<string>(), new List<string>(), new List<string>(), new Dictionary<string, double>())
         );
 
         var result = Result<GetCompletionStatsResponse>.Success(expectedResponse);
@@ -1299,7 +1322,9 @@ public class DashboardControllerTests : IDisposable
         actionResult.Result.Should().BeOfType<OkObjectResult>();
 
         _mockMediator.Verify(m => m.Send(
-            It.Is<GetCompletionStatsQuery>(q => q.Period == period),
+            It.Is<GetCompletionStatsQuery>(q => 
+                q.UserId == _testUserId &&
+                q.Period == period),
             It.IsAny<CancellationToken>()), Times.Once);
     }
 
@@ -1319,10 +1344,26 @@ public class DashboardControllerTests : IDisposable
         );
 
         var expectedResponse = new GetCompletionStatsResponse(
-            Overview: new CompletionOverview(45, 0.68, 3.2, 0, 0, 45),
-            Trends: new List<CompletionTrend>(),
-            Breakdowns: new Dictionary<string, CompletionBreakdown>(),
-            Insights: new CompletionInsights(new List<string>(), new List<string>(), new List<string>(), new Dictionary<string, double>())
+            Overview: new CompletionOverview(
+                TotalTasksCreated: 66,
+                TotalTasksCompleted: 45,
+                TasksInProgress: 12,
+                TasksPending: 9,
+                CompletionRate: 0.68,
+                OnTimeCompletionRate: 0.75,
+                AverageCompletionTime: TimeSpan.FromHours(3.2),
+                TasksCompletedAheadOfSchedule: 15,
+                TasksCompletedLate: 8
+            ),
+            Trends: new List<CompletionTrendDto>(),
+            Breakdown: new CompletionBreakdown(
+                ByCategory: new Dictionary<string, CompletionCategoryStats>(),
+                ByPriority: new Dictionary<string, CompletionPriorityStats>(),
+                ByHourOfDay: new Dictionary<int, int>(),
+                ByDayOfWeek: new Dictionary<string, int>(),
+                ByTimeRange: new Dictionary<string, CompletionTimeRangeStats>()
+            ),
+            Insights: new CompletionInsightsDto(new List<string>(), new List<string>(), new List<string>(), new Dictionary<string, double>())
         );
 
         var result = Result<GetCompletionStatsResponse>.Success(expectedResponse);
@@ -1337,12 +1378,8 @@ public class DashboardControllerTests : IDisposable
 
         _mockMediator.Verify(m => m.Send(
             It.Is<GetCompletionStatsQuery>(q => 
-                q.StartDate == startDate &&
-                q.EndDate == endDate &&
-                q.Period == "week" &&
-                q.IncludeTrends == false &&
-                q.IncludeBreakdowns == false &&
-                q.IncludeInsights == false),
+                q.UserId == _testUserId &&
+                q.Period == "week"),
             It.IsAny<CancellationToken>()), Times.Once);
     }
 
@@ -1354,18 +1391,31 @@ public class DashboardControllerTests : IDisposable
         var request = new CompletionStatsRequestDto(IncludeCategories: categories);
 
         var expectedResponse = new GetCompletionStatsResponse(
-            Overview: new CompletionOverview(75, 0.82, 2.1, 5, 18, 75),
-            Trends: new List<CompletionTrend>(),
-            Breakdowns: new Dictionary<string, CompletionBreakdown>
-            {
-                ["category"] = new(
-                    Items: new Dictionary<string, int> { { "ToDo", 40 }, { "Project", 20 }, { "Appointment", 15 } },
-                    Rates: new Dictionary<string, double> { { "ToDo", 0.85 }, { "Project", 0.75 }, { "Appointment", 0.88 } },
-                    TopPerformer: "Appointment",
-                    NeedsAttention: "Project"
-                )
-            },
-            Insights: new CompletionInsights(new List<string>(), new List<string>(), new List<string>(), new Dictionary<string, double>())
+            Overview: new CompletionOverview(
+                TotalTasksCreated: 91,
+                TotalTasksCompleted: 75,
+                TasksInProgress: 10,
+                TasksPending: 6,
+                CompletionRate: 0.82,
+                OnTimeCompletionRate: 0.90,
+                AverageCompletionTime: TimeSpan.FromHours(2.1),
+                TasksCompletedAheadOfSchedule: 25,
+                TasksCompletedLate: 5
+            ),
+            Trends: new List<CompletionTrendDto>(),
+            Breakdown: new CompletionBreakdown(
+                ByCategory: new Dictionary<string, CompletionCategoryStats>
+                {
+                    ["ToDo"] = new CompletionCategoryStats(40, 34, 0.85, TimeSpan.FromHours(2.1), 2),
+                    ["Project"] = new CompletionCategoryStats(20, 15, 0.75, TimeSpan.FromHours(3.2), 5),
+                    ["Appointment"] = new CompletionCategoryStats(15, 13, 0.88, TimeSpan.FromHours(1.5), 1)
+                },
+                ByPriority: new Dictionary<string, CompletionPriorityStats>(),
+                ByHourOfDay: new Dictionary<int, int>(),
+                ByDayOfWeek: new Dictionary<string, int>(),
+                ByTimeRange: new Dictionary<string, CompletionTimeRangeStats>()
+            ),
+            Insights: new CompletionInsightsDto(new List<string>(), new List<string>(), new List<string>(), new Dictionary<string, double>())
         );
 
         var result = Result<GetCompletionStatsResponse>.Success(expectedResponse);
@@ -1384,7 +1434,8 @@ public class DashboardControllerTests : IDisposable
 
         _mockMediator.Verify(m => m.Send(
             It.Is<GetCompletionStatsQuery>(q => 
-                q.IncludeCategories!.SequenceEqual(categories)),
+                q.UserId == _testUserId &&
+                q.Period == "month"),
             It.IsAny<CancellationToken>()), Times.Once);
     }
 
@@ -1411,7 +1462,7 @@ public class DashboardControllerTests : IDisposable
         // Arrange
         var request = new CompletionStatsRequestDto(IncludeTrends: true, IncludeBreakdowns: true);
 
-        var trends = new List<CompletionTrend>
+        var trends = new List<CompletionTrendDto>
         {
             new(DateTime.UtcNow.AddDays(-28), 15, 0.60, "down"),
             new(DateTime.UtcNow.AddDays(-21), 18, 0.65, "stable"),
@@ -1419,27 +1470,53 @@ public class DashboardControllerTests : IDisposable
             new(DateTime.UtcNow.AddDays(-7), 25, 0.78, "up")
         };
 
-        var breakdowns = new Dictionary<string, CompletionBreakdown>
-        {
-            ["category"] = new(
-                Items: new Dictionary<string, int> { { "ToDo", 45 }, { "Project", 25 }, { "BillReminder", 20 }, { "Appointment", 15 } },
-                Rates: new Dictionary<string, double> { { "ToDo", 0.85 }, { "Project", 0.70 }, { "BillReminder", 0.90 }, { "Appointment", 0.95 } },
-                TopPerformer: "Appointment",
-                NeedsAttention: "Project"
-            ),
-            ["priority"] = new(
-                Items: new Dictionary<string, int> { { "Critical", 20 }, { "High", 35 }, { "Medium", 30 }, { "Low", 20 } },
-                Rates: new Dictionary<string, double> { { "Critical", 0.95 }, { "High", 0.88 }, { "Medium", 0.75 }, { "Low", 0.60 } },
-                TopPerformer: "Critical",
-                NeedsAttention: "Low"
-            )
-        };
+        var breakdown = new CompletionBreakdown(
+            ByCategory: new Dictionary<string, CompletionCategoryStats>
+            {
+                ["ToDo"] = new CompletionCategoryStats(45, 38, 0.85, TimeSpan.FromHours(2.2), 3),
+                ["Project"] = new CompletionCategoryStats(25, 17, 0.70, TimeSpan.FromHours(4.1), 6),
+                ["BillReminder"] = new CompletionCategoryStats(20, 18, 0.90, TimeSpan.FromHours(1.1), 1),
+                ["Appointment"] = new CompletionCategoryStats(15, 14, 0.95, TimeSpan.FromHours(0.8), 0)
+            },
+            ByPriority: new Dictionary<string, CompletionPriorityStats>
+            {
+                ["Critical"] = new CompletionPriorityStats(20, 19, 0.95, 0.92, TimeSpan.FromHours(1.5)),
+                ["High"] = new CompletionPriorityStats(35, 31, 0.88, 0.85, TimeSpan.FromHours(2.3)),
+                ["Medium"] = new CompletionPriorityStats(30, 22, 0.75, 0.70, TimeSpan.FromHours(3.0)),
+                ["Low"] = new CompletionPriorityStats(20, 12, 0.60, 0.55, TimeSpan.FromHours(2.9))
+            },
+            ByHourOfDay: new Dictionary<int, int>
+            {
+                [9] = 15, [10] = 20, [11] = 18, [14] = 22, [15] = 18, [16] = 12
+            },
+            ByDayOfWeek: new Dictionary<string, int>
+            {
+                ["Monday"] = 20, ["Tuesday"] = 18, ["Wednesday"] = 22, ["Thursday"] = 17, ["Friday"] = 15, ["Saturday"] = 8, ["Sunday"] = 5
+            },
+            ByTimeRange: new Dictionary<string, CompletionTimeRangeStats>
+            {
+                ["0-2h"] = new CompletionTimeRangeStats(40, 38.1, "0-2 hours"),
+                ["2-4h"] = new CompletionTimeRangeStats(42, 40.0, "2-4 hours"),
+                ["4-8h"] = new CompletionTimeRangeStats(18, 17.1, "4-8 hours"),
+                ["8h+"] = new CompletionTimeRangeStats(5, 4.8, "8+ hours")
+            }
+        );
 
         var expectedResponse = new GetCompletionStatsResponse(
-            Overview: new CompletionOverview(105, 0.78, 2.8, 12, 25, 105),
+            Overview: new CompletionOverview(
+                TotalTasksCreated: 135,
+                TotalTasksCompleted: 105,
+                TasksInProgress: 18,
+                TasksPending: 12,
+                CompletionRate: 0.78,
+                OnTimeCompletionRate: 0.85,
+                AverageCompletionTime: TimeSpan.FromHours(2.8),
+                TasksCompletedAheadOfSchedule: 35,
+                TasksCompletedLate: 12
+            ),
             Trends: trends,
-            Breakdowns: breakdowns,
-            Insights: new CompletionInsights(
+            Breakdown: breakdown,
+            Insights: new CompletionInsightsDto(
                 PositivePatterns: new List<string> { "Steady upward trend", "Excellent critical task completion" },
                 AreasForImprovement: new List<string> { "Project completion efficiency", "Low priority task delays" },
                 Recommendations: new List<string> { "Focus on project planning", "Batch low priority tasks" },
@@ -1466,10 +1543,10 @@ public class DashboardControllerTests : IDisposable
         latestTrend.TrendDirection.Should().Be("up");
 
         // Verify breakdowns mapping
-        response.Breakdowns.Should().HaveCount(2);
-        response.Breakdowns["category"].Items.Should().HaveCount(4);
-        response.Breakdowns["category"].TopPerformer.Should().Be("Appointment");
-        response.Breakdowns["priority"].NeedsAttention.Should().Be("Low");
+        response.Breakdown.ByCategory.Should().HaveCount(4);
+        response.Breakdown.ByPriority.Should().HaveCount(4);
+        response.Breakdown.ByCategory["ToDo"].CompletionRate.Should().Be(0.85);
+        response.Breakdown.ByPriority["Critical"].CompletionRate.Should().Be(0.95);
 
         // Verify insights
         response.Insights.PositivePatterns.Should().Contain("Steady upward trend");
@@ -1498,10 +1575,26 @@ public class DashboardControllerTests : IDisposable
         // Arrange
         var request = new CompletionStatsRequestDto();
         var expectedResponse = new GetCompletionStatsResponse(
-            Overview: new CompletionOverview(50, 0.65, 2.3, 3, 12, 50),
-            Trends: new List<CompletionTrend>(),
-            Breakdowns: new Dictionary<string, CompletionBreakdown>(),
-            Insights: new CompletionInsights(new List<string>(), new List<string>(), new List<string>(), new Dictionary<string, double>())
+            Overview: new CompletionOverview(
+                TotalTasksCreated: 77,
+                TotalTasksCompleted: 50,
+                TasksInProgress: 15,
+                TasksPending: 12,
+                CompletionRate: 0.65,
+                OnTimeCompletionRate: 0.72,
+                AverageCompletionTime: TimeSpan.FromHours(2.3),
+                TasksCompletedAheadOfSchedule: 18,
+                TasksCompletedLate: 9
+            ),
+            Trends: new List<CompletionTrendDto>(),
+            Breakdown: new CompletionBreakdown(
+                ByCategory: new Dictionary<string, CompletionCategoryStats>(),
+                ByPriority: new Dictionary<string, CompletionPriorityStats>(),
+                ByHourOfDay: new Dictionary<int, int>(),
+                ByDayOfWeek: new Dictionary<string, int>(),
+                ByTimeRange: new Dictionary<string, CompletionTimeRangeStats>()
+            ),
+            Insights: new CompletionInsightsDto(new List<string>(), new List<string>(), new List<string>(), new Dictionary<string, double>())
         );
 
         var result = Result<GetCompletionStatsResponse>.Success(expectedResponse);
@@ -2502,8 +2595,4 @@ public class DashboardControllerTests : IDisposable
 
     #endregion
 
-    public void Dispose()
-    {
-        _controller.Dispose();
-    }
 }
