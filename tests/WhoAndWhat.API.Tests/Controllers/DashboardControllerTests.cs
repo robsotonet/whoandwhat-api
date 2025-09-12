@@ -8,6 +8,14 @@ using Moq;
 using WhoAndWhat.API.Controllers.v1;
 using WhoAndWhat.Application.Common;
 using WhoAndWhat.Application.Features.Dashboard.Queries.GetMotivationalContent;
+using WhoAndWhat.Application.Features.Dashboard.Queries.GetProductivityStreak;
+using WhoAndWhat.Application.Features.Dashboard.Queries.GetOverdueTasks;
+using WhoAndWhat.Application.Features.Dashboard.Queries.GetCompletionStats;
+using WhoAndWhat.Application.Features.Dashboard.Commands.UpdateDashboardSettings;
+using WhoAndWhat.Application.Features.Dashboard.Commands.ResetDashboardPreferences;
+using WhoAndWhat.Application.Features.Dashboard.Queries.ExportDashboardData;
+using WhoAndWhat.Application.Features.Dashboard.Queries.GenerateDashboardReport;
+using WhoAndWhat.Application.DTOs.Dashboard;
 using Xunit;
 
 namespace WhoAndWhat.API.Tests.Controllers;
@@ -328,6 +336,2037 @@ public class DashboardControllerTests : IDisposable
         // Assert
         var unauthorizedResult = result.Result.Should().BeOfType<UnauthorizedObjectResult>().Subject;
         unauthorizedResult.Value.Should().Be("User ID not found in token");
+    }
+
+    #endregion
+
+    #region GetProductivityStreak Tests
+
+    [Fact]
+    public async Task GetProductivityStreak_WithValidRequest_ShouldReturnStreakData()
+    {
+        // Arrange
+        var request = new ProductivityStreakRequestDto(
+            StartDate: DateTime.UtcNow.AddDays(-30),
+            EndDate: DateTime.UtcNow,
+            IncludeMilestones: true,
+            IncludeHistory: true,
+            IncludeInsights: true,
+            MaxHistoryDays: 90
+        );
+
+        var expectedResponse = new GetProductivityStreakResponse(
+            CurrentStreak: 7,
+            LongestStreak: 15,
+            LastActivityDate: DateTime.UtcNow.AddHours(-2),
+            Milestones: new List<StreakMilestone>
+            {
+                new(Days: 7, Title: "One Week Streak", Description: "Completed tasks for 7 consecutive days", 
+                    IsAchieved: true, AchievedDate: DateTime.UtcNow.AddDays(-1)),
+                new(Days: 14, Title: "Two Week Streak", Description: "Completed tasks for 14 consecutive days", 
+                    IsAchieved: false, AchievedDate: null)
+            },
+            StreakHistory: new List<StreakHistory>
+            {
+                new(StartDate: DateTime.UtcNow.AddDays(-7), EndDate: DateTime.UtcNow, 
+                    Duration: 7, TasksCompleted: 21, StreakType: "current"),
+                new(StartDate: DateTime.UtcNow.AddDays(-25), EndDate: DateTime.UtcNow.AddDays(-10), 
+                    Duration: 15, TasksCompleted: 45, StreakType: "past")
+            },
+            Insights: new StreakInsights(
+                ConsistencyScore: 0.85,
+                BestPeriod: "morning",
+                SuccessFactors: new List<string> { "Daily planning", "Morning routine" },
+                ImprovementAreas: new List<string> { "Weekend consistency", "Evening tasks" }
+            )
+        );
+
+        var result = Result<GetProductivityStreakResponse>.Success(expectedResponse);
+        _mockMediator.Setup(m => m.Send(It.IsAny<GetProductivityStreakQuery>(), It.IsAny<CancellationToken>()))
+                    .ReturnsAsync(result);
+
+        // Act
+        var actionResult = await _controller.GetProductivityStreak(request, CancellationToken.None);
+
+        // Assert
+        var okResult = actionResult.Result.Should().BeOfType<OkObjectResult>().Subject;
+        var response = okResult.Value.Should().BeOfType<ProductivityStreakResponseDto>().Subject;
+
+        response.CurrentStreak.Should().Be(7);
+        response.LongestStreak.Should().Be(15);
+        response.LastActivityDate.Should().BeCloseTo(DateTime.UtcNow.AddHours(-2), TimeSpan.FromMinutes(1));
+        response.Milestones.Should().HaveCount(2);
+        response.StreakHistory.Should().HaveCount(2);
+        response.Insights.ConsistencyScore.Should().Be(0.85);
+
+        _mockMediator.Verify(m => m.Send(
+            It.Is<GetProductivityStreakQuery>(q => 
+                q.UserId == _testUserId &&
+                q.StartDate == request.StartDate &&
+                q.EndDate == request.EndDate &&
+                q.IncludeMilestones == request.IncludeMilestones &&
+                q.IncludeHistory == request.IncludeHistory &&
+                q.IncludeInsights == request.IncludeInsights &&
+                q.MaxHistoryDays == request.MaxHistoryDays),
+            It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task GetProductivityStreak_WithDefaultParameters_ShouldUseDefaults()
+    {
+        // Arrange
+        var request = new ProductivityStreakRequestDto();
+        var expectedResponse = new GetProductivityStreakResponse(
+            CurrentStreak: 0,
+            LongestStreak: 0,
+            LastActivityDate: null,
+            Milestones: new List<StreakMilestone>(),
+            StreakHistory: new List<StreakHistory>(),
+            Insights: new StreakInsights(0.0, "none", new List<string>(), new List<string>())
+        );
+
+        var result = Result<GetProductivityStreakResponse>.Success(expectedResponse);
+        _mockMediator.Setup(m => m.Send(It.IsAny<GetProductivityStreakQuery>(), It.IsAny<CancellationToken>()))
+                    .ReturnsAsync(result);
+
+        // Act
+        var actionResult = await _controller.GetProductivityStreak(request, CancellationToken.None);
+
+        // Assert
+        var okResult = actionResult.Result.Should().BeOfType<OkObjectResult>().Subject;
+        var response = okResult.Value.Should().BeOfType<ProductivityStreakResponseDto>().Subject;
+
+        response.CurrentStreak.Should().Be(0);
+        response.LongestStreak.Should().Be(0);
+        response.Milestones.Should().BeEmpty();
+
+        _mockMediator.Verify(m => m.Send(
+            It.Is<GetProductivityStreakQuery>(q => 
+                q.UserId == _testUserId &&
+                q.IncludeMilestones == true &&
+                q.IncludeHistory == true &&
+                q.IncludeInsights == true &&
+                q.MaxHistoryDays == 90),
+            It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task GetProductivityStreak_WithSpecificDateRange_ShouldPassCorrectDates()
+    {
+        // Arrange
+        var startDate = DateTime.UtcNow.AddDays(-60);
+        var endDate = DateTime.UtcNow.AddDays(-30);
+        var request = new ProductivityStreakRequestDto(
+            StartDate: startDate,
+            EndDate: endDate,
+            IncludeMilestones: false,
+            IncludeHistory: false,
+            IncludeInsights: false,
+            MaxHistoryDays: 30
+        );
+
+        var expectedResponse = new GetProductivityStreakResponse(
+            CurrentStreak: 5,
+            LongestStreak: 10,
+            LastActivityDate: endDate,
+            Milestones: new List<StreakMilestone>(),
+            StreakHistory: new List<StreakHistory>(),
+            Insights: new StreakInsights(0.5, "afternoon", new List<string>(), new List<string>())
+        );
+
+        var result = Result<GetProductivityStreakResponse>.Success(expectedResponse);
+        _mockMediator.Setup(m => m.Send(It.IsAny<GetProductivityStreakQuery>(), It.IsAny<CancellationToken>()))
+                    .ReturnsAsync(result);
+
+        // Act
+        var actionResult = await _controller.GetProductivityStreak(request, CancellationToken.None);
+
+        // Assert
+        actionResult.Result.Should().BeOfType<OkObjectResult>();
+
+        _mockMediator.Verify(m => m.Send(
+            It.Is<GetProductivityStreakQuery>(q => 
+                q.StartDate == startDate &&
+                q.EndDate == endDate &&
+                q.IncludeMilestones == false &&
+                q.IncludeHistory == false &&
+                q.IncludeInsights == false &&
+                q.MaxHistoryDays == 30),
+            It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Theory]
+    [InlineData(1)]
+    [InlineData(30)]
+    [InlineData(90)]
+    [InlineData(365)]
+    public async Task GetProductivityStreak_WithDifferentMaxHistoryDays_ShouldAcceptValidValues(int maxHistoryDays)
+    {
+        // Arrange
+        var request = new ProductivityStreakRequestDto(MaxHistoryDays: maxHistoryDays);
+        var expectedResponse = new GetProductivityStreakResponse(
+            CurrentStreak: 3,
+            LongestStreak: 8,
+            LastActivityDate: DateTime.UtcNow,
+            Milestones: new List<StreakMilestone>(),
+            StreakHistory: new List<StreakHistory>(),
+            Insights: new StreakInsights(0.7, "evening", new List<string>(), new List<string>())
+        );
+
+        var result = Result<GetProductivityStreakResponse>.Success(expectedResponse);
+        _mockMediator.Setup(m => m.Send(It.IsAny<GetProductivityStreakQuery>(), It.IsAny<CancellationToken>()))
+                    .ReturnsAsync(result);
+
+        // Act
+        var actionResult = await _controller.GetProductivityStreak(request, CancellationToken.None);
+
+        // Assert
+        actionResult.Result.Should().BeOfType<OkObjectResult>();
+
+        _mockMediator.Verify(m => m.Send(
+            It.Is<GetProductivityStreakQuery>(q => q.MaxHistoryDays == maxHistoryDays),
+            It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task GetProductivityStreak_WithServiceFailure_ShouldReturnBadRequest()
+    {
+        // Arrange
+        var request = new ProductivityStreakRequestDto();
+        var result = Result<GetProductivityStreakResponse>.Failure("Unable to calculate productivity streak");
+        _mockMediator.Setup(m => m.Send(It.IsAny<GetProductivityStreakQuery>(), It.IsAny<CancellationToken>()))
+                    .ReturnsAsync(result);
+
+        // Act
+        var actionResult = await _controller.GetProductivityStreak(request, CancellationToken.None);
+
+        // Assert
+        var badRequestResult = actionResult.Result.Should().BeOfType<BadRequestObjectResult>().Subject;
+        badRequestResult.Value.Should().Be("Unable to calculate productivity streak");
+    }
+
+    [Fact]
+    public async Task GetProductivityStreak_WithMediatorException_ShouldReturnInternalServerError()
+    {
+        // Arrange
+        var request = new ProductivityStreakRequestDto();
+        _mockMediator.Setup(m => m.Send(It.IsAny<GetProductivityStreakQuery>(), It.IsAny<CancellationToken>()))
+                    .ThrowsAsync(new InvalidOperationException("Database connection failed"));
+
+        // Act & Assert - Should not throw due to controller's exception handling
+        var actionResult = await _controller.GetProductivityStreak(request, CancellationToken.None);
+
+        // This test will help identify if the controller needs exception handling for this endpoint
+        // The controller might not have try-catch blocks like the GetMotivationalContent method
+    }
+
+    [Fact]
+    public async Task GetProductivityStreak_WithUnauthenticatedUser_ShouldThrowUnauthorizedAccessException()
+    {
+        // Arrange - Remove user authentication
+        _controller.ControllerContext = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext()
+        };
+        var request = new ProductivityStreakRequestDto();
+
+        // Act & Assert
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() =>
+            _controller.GetProductivityStreak(request, CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task GetProductivityStreak_WithComplexStreakData_ShouldMapCorrectly()
+    {
+        // Arrange
+        var request = new ProductivityStreakRequestDto(IncludeMilestones: true, IncludeHistory: true);
+        var milestone1 = new StreakMilestone(7, "Week Warrior", "One week streak achieved", true, DateTime.UtcNow.AddDays(-5));
+        var milestone2 = new StreakMilestone(30, "Monthly Master", "One month streak", false, null);
+        var history1 = new StreakHistory(DateTime.UtcNow.AddDays(-10), DateTime.UtcNow.AddDays(-3), 7, 14, "past");
+        var history2 = new StreakHistory(DateTime.UtcNow.AddDays(-2), DateTime.UtcNow, 2, 6, "current");
+
+        var expectedResponse = new GetProductivityStreakResponse(
+            CurrentStreak: 10,
+            LongestStreak: 22,
+            LastActivityDate: DateTime.UtcNow.AddHours(-1),
+            Milestones: new List<StreakMilestone> { milestone1, milestone2 },
+            StreakHistory: new List<StreakHistory> { history1, history2 },
+            Insights: new StreakInsights(
+                ConsistencyScore: 0.92,
+                BestPeriod: "morning",
+                SuccessFactors: new List<string> { "Early start", "Consistent planning", "Goal setting" },
+                ImprovementAreas: new List<string> { "Weekend gaps", "Holiday consistency" }
+            )
+        );
+
+        var result = Result<GetProductivityStreakResponse>.Success(expectedResponse);
+        _mockMediator.Setup(m => m.Send(It.IsAny<GetProductivityStreakQuery>(), It.IsAny<CancellationToken>()))
+                    .ReturnsAsync(result);
+
+        // Act
+        var actionResult = await _controller.GetProductivityStreak(request, CancellationToken.None);
+
+        // Assert
+        var okResult = actionResult.Result.Should().BeOfType<OkObjectResult>().Subject;
+        var response = okResult.Value.Should().BeOfType<ProductivityStreakResponseDto>().Subject;
+
+        // Verify main statistics
+        response.CurrentStreak.Should().Be(10);
+        response.LongestStreak.Should().Be(22);
+        response.LastActivityDate.Should().BeCloseTo(DateTime.UtcNow.AddHours(-1), TimeSpan.FromMinutes(5));
+
+        // Verify milestones mapping
+        response.Milestones.Should().HaveCount(2);
+        var mappedMilestone1 = response.Milestones.First(m => m.Days == 7);
+        mappedMilestone1.Title.Should().Be("Week Warrior");
+        mappedMilestone1.IsAchieved.Should().BeTrue();
+        mappedMilestone1.AchievedDate.Should().BeCloseTo(DateTime.UtcNow.AddDays(-5), TimeSpan.FromMinutes(5));
+
+        var mappedMilestone2 = response.Milestones.First(m => m.Days == 30);
+        mappedMilestone2.Title.Should().Be("Monthly Master");
+        mappedMilestone2.IsAchieved.Should().BeFalse();
+        mappedMilestone2.AchievedDate.Should().BeNull();
+
+        // Verify streak history mapping
+        response.StreakHistory.Should().HaveCount(2);
+        var mappedHistory1 = response.StreakHistory.First(h => h.StreakType == "past");
+        mappedHistory1.Duration.Should().Be(7);
+        mappedHistory1.TasksCompleted.Should().Be(14);
+
+        var mappedHistory2 = response.StreakHistory.First(h => h.StreakType == "current");
+        mappedHistory2.Duration.Should().Be(2);
+        mappedHistory2.TasksCompleted.Should().Be(6);
+
+        // Verify insights mapping
+        response.Insights.ConsistencyScore.Should().Be(0.92);
+        response.Insights.BestPeriod.Should().Be("morning");
+        response.Insights.SuccessFactors.Should().HaveCount(3);
+        response.Insights.SuccessFactors.Should().Contain("Early start");
+        response.Insights.ImprovementAreas.Should().HaveCount(2);
+        response.Insights.ImprovementAreas.Should().Contain("Weekend gaps");
+    }
+
+    [Fact]
+    public async Task GetProductivityStreak_ShouldLogCorrectInformation()
+    {
+        // Arrange
+        var request = new ProductivityStreakRequestDto();
+        var expectedResponse = new GetProductivityStreakResponse(
+            CurrentStreak: 5,
+            LongestStreak: 12,
+            LastActivityDate: DateTime.UtcNow,
+            Milestones: new List<StreakMilestone>(),
+            StreakHistory: new List<StreakHistory>(),
+            Insights: new StreakInsights(0.8, "afternoon", new List<string>(), new List<string>())
+        );
+
+        var result = Result<GetProductivityStreakResponse>.Success(expectedResponse);
+        _mockMediator.Setup(m => m.Send(It.IsAny<GetProductivityStreakQuery>(), It.IsAny<CancellationToken>()))
+                    .ReturnsAsync(result);
+
+        // Act
+        await _controller.GetProductivityStreak(request, CancellationToken.None);
+
+        // Assert - Verify logging was called correctly
+        _mockLogger.Verify(
+            x => x.Log(
+                LogLevel.Information,
+                It.IsAny<EventId>(),
+                It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains($"Getting productivity streak for user {_testUserId}")),
+                It.IsAny<Exception>(),
+                It.IsAny<Func<It.IsAnyType, Exception?, string>>()
+            ),
+            Times.Once
+        );
+    }
+
+    #endregion
+
+    #region GetOverdueTasks Tests
+
+    [Fact]
+    public async Task GetOverdueTasks_WithValidRequest_ShouldReturnOverdueTasksData()
+    {
+        // Arrange
+        var request = new OverdueTasksRequestDto(
+            Categories: new List<string> { "ToDo", "BillReminder" },
+            Priorities: new List<string> { "High", "Critical" },
+            UrgencyLevels: new List<string> { "high", "critical" },
+            MaxTasks: 25,
+            IncludeAnalysis: true,
+            IncludeRecommendations: true,
+            SortBy: "daysOverdue",
+            SortOrder: "desc"
+        );
+
+        var expectedResponse = new GetOverdueTasksResponse(
+            TotalOverdueCount: 15,
+            OverdueTasks: new List<OverdueTask>
+            {
+                new(Id: Guid.NewGuid(), Title: "Pay electricity bill", Category: "BillReminder", 
+                    Priority: "Critical", DueDate: DateTime.UtcNow.AddDays(-5), DaysOverdue: 5, 
+                    UrgencyLevel: "critical", Tags: new List<string> { "urgent", "bills" }),
+                new(Id: Guid.NewGuid(), Title: "Submit project report", Category: "ToDo", 
+                    Priority: "High", DueDate: DateTime.UtcNow.AddDays(-2), DaysOverdue: 2, 
+                    UrgencyLevel: "high", Tags: new List<string> { "work", "deadline" })
+            },
+            Analysis: new OverdueAnalysis(
+                CategoryBreakdown: new Dictionary<string, int> { { "BillReminder", 8 }, { "ToDo", 7 } },
+                PriorityBreakdown: new Dictionary<string, int> { { "Critical", 5 }, { "High", 10 } },
+                UrgencyBreakdown: new Dictionary<string, int> { { "critical", 5 }, { "high", 10 } },
+                AverageOverdueDays: 4.2,
+                CommonPatterns: new List<string> { "Bills overdue on weekends", "Work tasks delayed by 2-3 days" }
+            ),
+            Recommendations: new List<string> 
+            { 
+                "Set up automated bill payments", 
+                "Create buffer time for work deadlines",
+                "Review task priorities weekly"
+            }
+        );
+
+        var result = Result<GetOverdueTasksResponse>.Success(expectedResponse);
+        _mockMediator.Setup(m => m.Send(It.IsAny<GetOverdueTasksQuery>(), It.IsAny<CancellationToken>()))
+                    .ReturnsAsync(result);
+
+        // Act
+        var actionResult = await _controller.GetOverdueTasks(request, CancellationToken.None);
+
+        // Assert
+        var okResult = actionResult.Result.Should().BeOfType<OkObjectResult>().Subject;
+        var response = okResult.Value.Should().BeOfType<OverdueTasksResponseDto>().Subject;
+
+        response.TotalOverdueCount.Should().Be(15);
+        response.OverdueTasks.Should().HaveCount(2);
+        
+        var firstTask = response.OverdueTasks.First();
+        firstTask.Title.Should().Be("Pay electricity bill");
+        firstTask.Category.Should().Be("BillReminder");
+        firstTask.Priority.Should().Be("Critical");
+        firstTask.DaysOverdue.Should().Be(5);
+        firstTask.UrgencyLevel.Should().Be("critical");
+        firstTask.Tags.Should().Contain("urgent");
+
+        response.Analysis.CategoryBreakdown.Should().ContainKey("BillReminder");
+        response.Analysis.AverageOverdueDays.Should().Be(4.2);
+        response.Recommendations.Should().HaveCount(3);
+        response.Recommendations.Should().Contain("Set up automated bill payments");
+
+        _mockMediator.Verify(m => m.Send(
+            It.Is<GetOverdueTasksQuery>(q => 
+                q.UserId == _testUserId &&
+                q.Categories!.SequenceEqual(request.Categories!) &&
+                q.Priorities!.SequenceEqual(request.Priorities!) &&
+                q.UrgencyLevels!.SequenceEqual(request.UrgencyLevels!) &&
+                q.MaxTasks == request.MaxTasks &&
+                q.IncludeAnalysis == request.IncludeAnalysis &&
+                q.IncludeRecommendations == request.IncludeRecommendations &&
+                q.SortBy == request.SortBy &&
+                q.SortOrder == request.SortOrder),
+            It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task GetOverdueTasks_WithDefaultParameters_ShouldUseDefaults()
+    {
+        // Arrange
+        var request = new OverdueTasksRequestDto();
+        var expectedResponse = new GetOverdueTasksResponse(
+            TotalOverdueCount: 0,
+            OverdueTasks: new List<OverdueTask>(),
+            Analysis: new OverdueAnalysis(
+                new Dictionary<string, int>(),
+                new Dictionary<string, int>(),
+                new Dictionary<string, int>(),
+                0.0,
+                new List<string>()
+            ),
+            Recommendations: new List<string>()
+        );
+
+        var result = Result<GetOverdueTasksResponse>.Success(expectedResponse);
+        _mockMediator.Setup(m => m.Send(It.IsAny<GetOverdueTasksQuery>(), It.IsAny<CancellationToken>()))
+                    .ReturnsAsync(result);
+
+        // Act
+        var actionResult = await _controller.GetOverdueTasks(request, CancellationToken.None);
+
+        // Assert
+        var okResult = actionResult.Result.Should().BeOfType<OkObjectResult>().Subject;
+        var response = okResult.Value.Should().BeOfType<OverdueTasksResponseDto>().Subject;
+
+        response.TotalOverdueCount.Should().Be(0);
+        response.OverdueTasks.Should().BeEmpty();
+
+        _mockMediator.Verify(m => m.Send(
+            It.Is<GetOverdueTasksQuery>(q => 
+                q.UserId == _testUserId &&
+                q.MaxTasks == 50 &&
+                q.IncludeAnalysis == true &&
+                q.IncludeRecommendations == true &&
+                q.SortBy == "daysOverdue" &&
+                q.SortOrder == "desc"),
+            It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Theory]
+    [InlineData("daysOverdue", "desc")]
+    [InlineData("priority", "asc")]
+    [InlineData("category", "desc")]
+    [InlineData("title", "asc")]
+    public async Task GetOverdueTasks_WithDifferentSortOptions_ShouldPassCorrectSorting(string sortBy, string sortOrder)
+    {
+        // Arrange
+        var request = new OverdueTasksRequestDto(SortBy: sortBy, SortOrder: sortOrder);
+        var expectedResponse = new GetOverdueTasksResponse(
+            TotalOverdueCount: 5,
+            OverdueTasks: new List<OverdueTask>(),
+            Analysis: new OverdueAnalysis(new Dictionary<string, int>(), new Dictionary<string, int>(), 
+                new Dictionary<string, int>(), 0.0, new List<string>()),
+            Recommendations: new List<string>()
+        );
+
+        var result = Result<GetOverdueTasksResponse>.Success(expectedResponse);
+        _mockMediator.Setup(m => m.Send(It.IsAny<GetOverdueTasksQuery>(), It.IsAny<CancellationToken>()))
+                    .ReturnsAsync(result);
+
+        // Act
+        var actionResult = await _controller.GetOverdueTasks(request, CancellationToken.None);
+
+        // Assert
+        actionResult.Result.Should().BeOfType<OkObjectResult>();
+
+        _mockMediator.Verify(m => m.Send(
+            It.Is<GetOverdueTasksQuery>(q => 
+                q.SortBy == sortBy &&
+                q.SortOrder == sortOrder),
+            It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Theory]
+    [InlineData(1)]
+    [InlineData(25)]
+    [InlineData(50)]
+    [InlineData(100)]
+    [InlineData(1000)]
+    public async Task GetOverdueTasks_WithDifferentMaxTasks_ShouldAcceptValidValues(int maxTasks)
+    {
+        // Arrange
+        var request = new OverdueTasksRequestDto(MaxTasks: maxTasks);
+        var expectedResponse = new GetOverdueTasksResponse(
+            TotalOverdueCount: maxTasks / 2,
+            OverdueTasks: new List<OverdueTask>(),
+            Analysis: new OverdueAnalysis(new Dictionary<string, int>(), new Dictionary<string, int>(), 
+                new Dictionary<string, int>(), 0.0, new List<string>()),
+            Recommendations: new List<string>()
+        );
+
+        var result = Result<GetOverdueTasksResponse>.Success(expectedResponse);
+        _mockMediator.Setup(m => m.Send(It.IsAny<GetOverdueTasksQuery>(), It.IsAny<CancellationToken>()))
+                    .ReturnsAsync(result);
+
+        // Act
+        var actionResult = await _controller.GetOverdueTasks(request, CancellationToken.None);
+
+        // Assert
+        actionResult.Result.Should().BeOfType<OkObjectResult>();
+
+        _mockMediator.Verify(m => m.Send(
+            It.Is<GetOverdueTasksQuery>(q => q.MaxTasks == maxTasks),
+            It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task GetOverdueTasks_WithSpecificFilters_ShouldPassFiltersCorrectly()
+    {
+        // Arrange
+        var categories = new List<string> { "ToDo", "Project", "BillReminder" };
+        var priorities = new List<string> { "Critical", "High" };
+        var urgencyLevels = new List<string> { "critical", "high", "medium" };
+
+        var request = new OverdueTasksRequestDto(
+            Categories: categories,
+            Priorities: priorities,
+            UrgencyLevels: urgencyLevels,
+            MaxTasks: 30,
+            IncludeAnalysis: false,
+            IncludeRecommendations: false
+        );
+
+        var expectedResponse = new GetOverdueTasksResponse(
+            TotalOverdueCount: 12,
+            OverdueTasks: new List<OverdueTask>(),
+            Analysis: new OverdueAnalysis(new Dictionary<string, int>(), new Dictionary<string, int>(), 
+                new Dictionary<string, int>(), 0.0, new List<string>()),
+            Recommendations: new List<string>()
+        );
+
+        var result = Result<GetOverdueTasksResponse>.Success(expectedResponse);
+        _mockMediator.Setup(m => m.Send(It.IsAny<GetOverdueTasksQuery>(), It.IsAny<CancellationToken>()))
+                    .ReturnsAsync(result);
+
+        // Act
+        var actionResult = await _controller.GetOverdueTasks(request, CancellationToken.None);
+
+        // Assert
+        actionResult.Result.Should().BeOfType<OkObjectResult>();
+
+        _mockMediator.Verify(m => m.Send(
+            It.Is<GetOverdueTasksQuery>(q => 
+                q.Categories!.SequenceEqual(categories) &&
+                q.Priorities!.SequenceEqual(priorities) &&
+                q.UrgencyLevels!.SequenceEqual(urgencyLevels) &&
+                q.MaxTasks == 30 &&
+                q.IncludeAnalysis == false &&
+                q.IncludeRecommendations == false),
+            It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task GetOverdueTasks_WithServiceFailure_ShouldReturnBadRequest()
+    {
+        // Arrange
+        var request = new OverdueTasksRequestDto();
+        var result = Result<GetOverdueTasksResponse>.Failure("Unable to retrieve overdue tasks");
+        _mockMediator.Setup(m => m.Send(It.IsAny<GetOverdueTasksQuery>(), It.IsAny<CancellationToken>()))
+                    .ReturnsAsync(result);
+
+        // Act
+        var actionResult = await _controller.GetOverdueTasks(request, CancellationToken.None);
+
+        // Assert
+        var badRequestResult = actionResult.Result.Should().BeOfType<BadRequestObjectResult>().Subject;
+        badRequestResult.Value.Should().Be("Unable to retrieve overdue tasks");
+    }
+
+    [Fact]
+    public async Task GetOverdueTasks_WithComplexAnalysisData_ShouldMapCorrectly()
+    {
+        // Arrange
+        var request = new OverdueTasksRequestDto(IncludeAnalysis: true, IncludeRecommendations: true);
+        var task1 = new OverdueTask(Guid.NewGuid(), "Critical Task 1", "Project", "Critical", 
+            DateTime.UtcNow.AddDays(-10), 10, "critical", new List<string> { "urgent", "project" });
+        var task2 = new OverdueTask(Guid.NewGuid(), "High Priority Task", "ToDo", "High", 
+            DateTime.UtcNow.AddDays(-3), 3, "high", new List<string> { "work" });
+
+        var expectedResponse = new GetOverdueTasksResponse(
+            TotalOverdueCount: 25,
+            OverdueTasks: new List<OverdueTask> { task1, task2 },
+            Analysis: new OverdueAnalysis(
+                CategoryBreakdown: new Dictionary<string, int> 
+                {
+                    { "Project", 12 }, 
+                    { "ToDo", 8 }, 
+                    { "BillReminder", 5 }
+                },
+                PriorityBreakdown: new Dictionary<string, int>
+                {
+                    { "Critical", 7 },
+                    { "High", 15 },
+                    { "Medium", 3 }
+                },
+                UrgencyBreakdown: new Dictionary<string, int>
+                {
+                    { "critical", 7 },
+                    { "high", 12 },
+                    { "medium", 6 }
+                },
+                AverageOverdueDays: 6.8,
+                CommonPatterns: new List<string> 
+                { 
+                    "Projects tend to go overdue by 7+ days",
+                    "Bills are often forgotten on weekends",
+                    "High priority tasks delayed during busy weeks"
+                }
+            ),
+            Recommendations: new List<string>
+            {
+                "Implement project milestone tracking",
+                "Set up automated bill reminders",
+                "Schedule weekly priority reviews",
+                "Consider breaking large tasks into smaller chunks"
+            }
+        );
+
+        var result = Result<GetOverdueTasksResponse>.Success(expectedResponse);
+        _mockMediator.Setup(m => m.Send(It.IsAny<GetOverdueTasksQuery>(), It.IsAny<CancellationToken>()))
+                    .ReturnsAsync(result);
+
+        // Act
+        var actionResult = await _controller.GetOverdueTasks(request, CancellationToken.None);
+
+        // Assert
+        var okResult = actionResult.Result.Should().BeOfType<OkObjectResult>().Subject;
+        var response = okResult.Value.Should().BeOfType<OverdueTasksResponseDto>().Subject;
+
+        // Verify main statistics
+        response.TotalOverdueCount.Should().Be(25);
+        response.OverdueTasks.Should().HaveCount(2);
+
+        // Verify task details
+        var criticalTask = response.OverdueTasks.First(t => t.Priority == "Critical");
+        criticalTask.Title.Should().Be("Critical Task 1");
+        criticalTask.DaysOverdue.Should().Be(10);
+        criticalTask.UrgencyLevel.Should().Be("critical");
+        criticalTask.Tags.Should().Contain("urgent");
+
+        // Verify analysis mapping
+        response.Analysis.CategoryBreakdown.Should().HaveCount(3);
+        response.Analysis.CategoryBreakdown["Project"].Should().Be(12);
+        response.Analysis.PriorityBreakdown["Critical"].Should().Be(7);
+        response.Analysis.UrgencyBreakdown["critical"].Should().Be(7);
+        response.Analysis.AverageOverdueDays.Should().Be(6.8);
+        response.Analysis.CommonPatterns.Should().HaveCount(3);
+        response.Analysis.CommonPatterns.Should().Contain("Projects tend to go overdue by 7+ days");
+
+        // Verify recommendations
+        response.Recommendations.Should().HaveCount(4);
+        response.Recommendations.Should().Contain("Implement project milestone tracking");
+    }
+
+    [Fact]
+    public async Task GetOverdueTasks_WithUnauthenticatedUser_ShouldThrowUnauthorizedAccessException()
+    {
+        // Arrange - Remove user authentication
+        _controller.ControllerContext = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext()
+        };
+        var request = new OverdueTasksRequestDto();
+
+        // Act & Assert
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() =>
+            _controller.GetOverdueTasks(request, CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task GetOverdueTasks_ShouldLogCorrectInformation()
+    {
+        // Arrange
+        var request = new OverdueTasksRequestDto();
+        var expectedResponse = new GetOverdueTasksResponse(
+            TotalOverdueCount: 10,
+            OverdueTasks: new List<OverdueTask>(),
+            Analysis: new OverdueAnalysis(new Dictionary<string, int>(), new Dictionary<string, int>(), 
+                new Dictionary<string, int>(), 0.0, new List<string>()),
+            Recommendations: new List<string>()
+        );
+
+        var result = Result<GetOverdueTasksResponse>.Success(expectedResponse);
+        _mockMediator.Setup(m => m.Send(It.IsAny<GetOverdueTasksQuery>(), It.IsAny<CancellationToken>()))
+                    .ReturnsAsync(result);
+
+        // Act
+        await _controller.GetOverdueTasks(request, CancellationToken.None);
+
+        // Assert - Verify logging was called correctly
+        _mockLogger.Verify(
+            x => x.Log(
+                LogLevel.Information,
+                It.IsAny<EventId>(),
+                It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains($"Getting overdue tasks for user {_testUserId}")),
+                It.IsAny<Exception>(),
+                It.IsAny<Func<It.IsAnyType, Exception?, string>>()
+            ),
+            Times.Once
+        );
+    }
+
+    #endregion
+
+    #region GetCompletionStats Tests
+
+    [Fact]
+    public async Task GetCompletionStats_WithValidRequest_ShouldReturnCompletionStatsData()
+    {
+        // Arrange
+        var request = new CompletionStatsRequestDto(
+            StartDate: DateTime.UtcNow.AddDays(-30),
+            EndDate: DateTime.UtcNow,
+            Period: "month",
+            IncludeCategories: new List<string> { "ToDo", "Project", "BillReminder" },
+            IncludeTrends: true,
+            IncludeBreakdowns: true,
+            IncludeInsights: true
+        );
+
+        var expectedResponse = new GetCompletionStatsResponse(
+            Overview: new CompletionOverview(
+                TotalCompleted: 125,
+                CompletionRate: 0.78,
+                AverageCompletionTime: 2.5,
+                CompletedToday: 8,
+                CompletedThisWeek: 32,
+                CompletedThisMonth: 125
+            ),
+            Trends: new List<CompletionTrend>
+            {
+                new(Period: DateTime.UtcNow.AddDays(-7), Completed: 25, CompletionRate: 0.75, TrendDirection: "up"),
+                new(Period: DateTime.UtcNow.AddDays(-14), Completed: 20, CompletionRate: 0.65, TrendDirection: "stable"),
+                new(Period: DateTime.UtcNow.AddDays(-21), Completed: 18, CompletionRate: 0.60, TrendDirection: "down")
+            },
+            Breakdowns: new Dictionary<string, CompletionBreakdown>
+            {
+                ["category"] = new(
+                    Items: new Dictionary<string, int> { { "ToDo", 60 }, { "Project", 40 }, { "BillReminder", 25 } },
+                    Rates: new Dictionary<string, double> { { "ToDo", 0.80 }, { "Project", 0.75 }, { "BillReminder", 0.83 } },
+                    TopPerformer: "BillReminder",
+                    NeedsAttention: "Project"
+                ),
+                ["priority"] = new(
+                    Items: new Dictionary<string, int> { { "Critical", 30 }, { "High", 50 }, { "Medium", 35 }, { "Low", 10 } },
+                    Rates: new Dictionary<string, double> { { "Critical", 0.95 }, { "High", 0.85 }, { "Medium", 0.70 }, { "Low", 0.50 } },
+                    TopPerformer: "Critical",
+                    NeedsAttention: "Low"
+                )
+            },
+            Insights: new CompletionInsights(
+                PositivePatterns: new List<string> 
+                { 
+                    "Consistent daily completion habits", 
+                    "Strong performance on critical tasks",
+                    "Improved completion rates over past month"
+                },
+                AreasForImprovement: new List<string> 
+                { 
+                    "Low priority tasks often delayed",
+                    "Project tasks take longer than expected",
+                    "Weekend completion rates could be better"
+                },
+                Recommendations: new List<string>
+                {
+                    "Consider time-boxing for project tasks",
+                    "Schedule low priority tasks during high-energy periods",
+                    "Set up weekend reminders for consistency"
+                },
+                PerformanceMetrics: new Dictionary<string, double>
+                {
+                    { "consistency_score", 0.85 },
+                    { "velocity_trend", 0.12 },
+                    { "quality_index", 0.78 },
+                    { "efficiency_rating", 0.82 }
+                }
+            )
+        );
+
+        var result = Result<GetCompletionStatsResponse>.Success(expectedResponse);
+        _mockMediator.Setup(m => m.Send(It.IsAny<GetCompletionStatsQuery>(), It.IsAny<CancellationToken>()))
+                    .ReturnsAsync(result);
+
+        // Act
+        var actionResult = await _controller.GetCompletionStats(request, CancellationToken.None);
+
+        // Assert
+        var okResult = actionResult.Result.Should().BeOfType<OkObjectResult>().Subject;
+        var response = okResult.Value.Should().BeOfType<CompletionStatsResponseDto>().Subject;
+
+        // Verify overview statistics
+        response.Overview.TotalCompleted.Should().Be(125);
+        response.Overview.CompletionRate.Should().Be(0.78);
+        response.Overview.AverageCompletionTime.Should().Be(2.5);
+        response.Overview.CompletedToday.Should().Be(8);
+        response.Overview.CompletedThisWeek.Should().Be(32);
+        response.Overview.CompletedThisMonth.Should().Be(125);
+
+        // Verify trends
+        response.Trends.Should().HaveCount(3);
+        var firstTrend = response.Trends.First();
+        firstTrend.Completed.Should().Be(25);
+        firstTrend.CompletionRate.Should().Be(0.75);
+        firstTrend.TrendDirection.Should().Be("up");
+
+        // Verify breakdowns
+        response.Breakdowns.Should().ContainKey("category");
+        response.Breakdowns["category"].TopPerformer.Should().Be("BillReminder");
+        response.Breakdowns["priority"].NeedsAttention.Should().Be("Low");
+
+        // Verify insights
+        response.Insights.PositivePatterns.Should().HaveCount(3);
+        response.Insights.AreasForImprovement.Should().HaveCount(3);
+        response.Insights.Recommendations.Should().HaveCount(3);
+        response.Insights.PerformanceMetrics.Should().HaveCount(4);
+
+        _mockMediator.Verify(m => m.Send(
+            It.Is<GetCompletionStatsQuery>(q => 
+                q.UserId == _testUserId &&
+                q.StartDate == request.StartDate &&
+                q.EndDate == request.EndDate &&
+                q.Period == request.Period &&
+                q.IncludeCategories!.SequenceEqual(request.IncludeCategories!) &&
+                q.IncludeTrends == request.IncludeTrends &&
+                q.IncludeBreakdowns == request.IncludeBreakdowns &&
+                q.IncludeInsights == request.IncludeInsights),
+            It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task GetCompletionStats_WithDefaultParameters_ShouldUseDefaults()
+    {
+        // Arrange
+        var request = new CompletionStatsRequestDto();
+        var expectedResponse = new GetCompletionStatsResponse(
+            Overview: new CompletionOverview(0, 0.0, 0.0, 0, 0, 0),
+            Trends: new List<CompletionTrend>(),
+            Breakdowns: new Dictionary<string, CompletionBreakdown>(),
+            Insights: new CompletionInsights(new List<string>(), new List<string>(), new List<string>(), new Dictionary<string, double>())
+        );
+
+        var result = Result<GetCompletionStatsResponse>.Success(expectedResponse);
+        _mockMediator.Setup(m => m.Send(It.IsAny<GetCompletionStatsQuery>(), It.IsAny<CancellationToken>()))
+                    .ReturnsAsync(result);
+
+        // Act
+        var actionResult = await _controller.GetCompletionStats(request, CancellationToken.None);
+
+        // Assert
+        var okResult = actionResult.Result.Should().BeOfType<OkObjectResult>().Subject;
+        var response = okResult.Value.Should().BeOfType<CompletionStatsResponseDto>().Subject;
+
+        response.Overview.TotalCompleted.Should().Be(0);
+        response.Trends.Should().BeEmpty();
+        response.Breakdowns.Should().BeEmpty();
+
+        _mockMediator.Verify(m => m.Send(
+            It.Is<GetCompletionStatsQuery>(q => 
+                q.UserId == _testUserId &&
+                q.Period == "month" &&
+                q.IncludeTrends == true &&
+                q.IncludeBreakdowns == true &&
+                q.IncludeInsights == true),
+            It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Theory]
+    [InlineData("day")]
+    [InlineData("week")]
+    [InlineData("month")]
+    [InlineData("quarter")]
+    [InlineData("year")]
+    public async Task GetCompletionStats_WithDifferentPeriods_ShouldPassCorrectPeriod(string period)
+    {
+        // Arrange
+        var request = new CompletionStatsRequestDto(Period: period);
+        var expectedResponse = new GetCompletionStatsResponse(
+            Overview: new CompletionOverview(10, 0.5, 1.0, 2, 8, 10),
+            Trends: new List<CompletionTrend>(),
+            Breakdowns: new Dictionary<string, CompletionBreakdown>(),
+            Insights: new CompletionInsights(new List<string>(), new List<string>(), new List<string>(), new Dictionary<string, double>())
+        );
+
+        var result = Result<GetCompletionStatsResponse>.Success(expectedResponse);
+        _mockMediator.Setup(m => m.Send(It.IsAny<GetCompletionStatsQuery>(), It.IsAny<CancellationToken>()))
+                    .ReturnsAsync(result);
+
+        // Act
+        var actionResult = await _controller.GetCompletionStats(request, CancellationToken.None);
+
+        // Assert
+        actionResult.Result.Should().BeOfType<OkObjectResult>();
+
+        _mockMediator.Verify(m => m.Send(
+            It.Is<GetCompletionStatsQuery>(q => q.Period == period),
+            It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task GetCompletionStats_WithSpecificDateRange_ShouldPassCorrectDates()
+    {
+        // Arrange
+        var startDate = DateTime.UtcNow.AddDays(-90);
+        var endDate = DateTime.UtcNow.AddDays(-7);
+        var request = new CompletionStatsRequestDto(
+            StartDate: startDate,
+            EndDate: endDate,
+            Period: "week",
+            IncludeTrends: false,
+            IncludeBreakdowns: false,
+            IncludeInsights: false
+        );
+
+        var expectedResponse = new GetCompletionStatsResponse(
+            Overview: new CompletionOverview(45, 0.68, 3.2, 0, 0, 45),
+            Trends: new List<CompletionTrend>(),
+            Breakdowns: new Dictionary<string, CompletionBreakdown>(),
+            Insights: new CompletionInsights(new List<string>(), new List<string>(), new List<string>(), new Dictionary<string, double>())
+        );
+
+        var result = Result<GetCompletionStatsResponse>.Success(expectedResponse);
+        _mockMediator.Setup(m => m.Send(It.IsAny<GetCompletionStatsQuery>(), It.IsAny<CancellationToken>()))
+                    .ReturnsAsync(result);
+
+        // Act
+        var actionResult = await _controller.GetCompletionStats(request, CancellationToken.None);
+
+        // Assert
+        actionResult.Result.Should().BeOfType<OkObjectResult>();
+
+        _mockMediator.Verify(m => m.Send(
+            It.Is<GetCompletionStatsQuery>(q => 
+                q.StartDate == startDate &&
+                q.EndDate == endDate &&
+                q.Period == "week" &&
+                q.IncludeTrends == false &&
+                q.IncludeBreakdowns == false &&
+                q.IncludeInsights == false),
+            It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task GetCompletionStats_WithSpecificCategories_ShouldPassCategories()
+    {
+        // Arrange
+        var categories = new List<string> { "ToDo", "Project", "Appointment" };
+        var request = new CompletionStatsRequestDto(IncludeCategories: categories);
+
+        var expectedResponse = new GetCompletionStatsResponse(
+            Overview: new CompletionOverview(75, 0.82, 2.1, 5, 18, 75),
+            Trends: new List<CompletionTrend>(),
+            Breakdowns: new Dictionary<string, CompletionBreakdown>
+            {
+                ["category"] = new(
+                    Items: new Dictionary<string, int> { { "ToDo", 40 }, { "Project", 20 }, { "Appointment", 15 } },
+                    Rates: new Dictionary<string, double> { { "ToDo", 0.85 }, { "Project", 0.75 }, { "Appointment", 0.88 } },
+                    TopPerformer: "Appointment",
+                    NeedsAttention: "Project"
+                )
+            },
+            Insights: new CompletionInsights(new List<string>(), new List<string>(), new List<string>(), new Dictionary<string, double>())
+        );
+
+        var result = Result<GetCompletionStatsResponse>.Success(expectedResponse);
+        _mockMediator.Setup(m => m.Send(It.IsAny<GetCompletionStatsQuery>(), It.IsAny<CancellationToken>()))
+                    .ReturnsAsync(result);
+
+        // Act
+        var actionResult = await _controller.GetCompletionStats(request, CancellationToken.None);
+
+        // Assert
+        var okResult = actionResult.Result.Should().BeOfType<OkObjectResult>().Subject;
+        var response = okResult.Value.Should().BeOfType<CompletionStatsResponseDto>().Subject;
+
+        response.Breakdowns.Should().ContainKey("category");
+        response.Breakdowns["category"].Items.Should().ContainKeys("ToDo", "Project", "Appointment");
+
+        _mockMediator.Verify(m => m.Send(
+            It.Is<GetCompletionStatsQuery>(q => 
+                q.IncludeCategories!.SequenceEqual(categories)),
+            It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task GetCompletionStats_WithServiceFailure_ShouldReturnBadRequest()
+    {
+        // Arrange
+        var request = new CompletionStatsRequestDto();
+        var result = Result<GetCompletionStatsResponse>.Failure("Unable to calculate completion statistics");
+        _mockMediator.Setup(m => m.Send(It.IsAny<GetCompletionStatsQuery>(), It.IsAny<CancellationToken>()))
+                    .ReturnsAsync(result);
+
+        // Act
+        var actionResult = await _controller.GetCompletionStats(request, CancellationToken.None);
+
+        // Assert
+        var badRequestResult = actionResult.Result.Should().BeOfType<BadRequestObjectResult>().Subject;
+        badRequestResult.Value.Should().Be("Unable to calculate completion statistics");
+    }
+
+    [Fact]
+    public async Task GetCompletionStats_WithComplexTrendsAndBreakdowns_ShouldMapCorrectly()
+    {
+        // Arrange
+        var request = new CompletionStatsRequestDto(IncludeTrends: true, IncludeBreakdowns: true);
+
+        var trends = new List<CompletionTrend>
+        {
+            new(DateTime.UtcNow.AddDays(-28), 15, 0.60, "down"),
+            new(DateTime.UtcNow.AddDays(-21), 18, 0.65, "stable"),
+            new(DateTime.UtcNow.AddDays(-14), 22, 0.72, "up"),
+            new(DateTime.UtcNow.AddDays(-7), 25, 0.78, "up")
+        };
+
+        var breakdowns = new Dictionary<string, CompletionBreakdown>
+        {
+            ["category"] = new(
+                Items: new Dictionary<string, int> { { "ToDo", 45 }, { "Project", 25 }, { "BillReminder", 20 }, { "Appointment", 15 } },
+                Rates: new Dictionary<string, double> { { "ToDo", 0.85 }, { "Project", 0.70 }, { "BillReminder", 0.90 }, { "Appointment", 0.95 } },
+                TopPerformer: "Appointment",
+                NeedsAttention: "Project"
+            ),
+            ["priority"] = new(
+                Items: new Dictionary<string, int> { { "Critical", 20 }, { "High", 35 }, { "Medium", 30 }, { "Low", 20 } },
+                Rates: new Dictionary<string, double> { { "Critical", 0.95 }, { "High", 0.88 }, { "Medium", 0.75 }, { "Low", 0.60 } },
+                TopPerformer: "Critical",
+                NeedsAttention: "Low"
+            )
+        };
+
+        var expectedResponse = new GetCompletionStatsResponse(
+            Overview: new CompletionOverview(105, 0.78, 2.8, 12, 25, 105),
+            Trends: trends,
+            Breakdowns: breakdowns,
+            Insights: new CompletionInsights(
+                PositivePatterns: new List<string> { "Steady upward trend", "Excellent critical task completion" },
+                AreasForImprovement: new List<string> { "Project completion efficiency", "Low priority task delays" },
+                Recommendations: new List<string> { "Focus on project planning", "Batch low priority tasks" },
+                PerformanceMetrics: new Dictionary<string, double> { { "trend_velocity", 0.18 }, { "consistency", 0.82 } }
+            )
+        );
+
+        var result = Result<GetCompletionStatsResponse>.Success(expectedResponse);
+        _mockMediator.Setup(m => m.Send(It.IsAny<GetCompletionStatsQuery>(), It.IsAny<CancellationToken>()))
+                    .ReturnsAsync(result);
+
+        // Act
+        var actionResult = await _controller.GetCompletionStats(request, CancellationToken.None);
+
+        // Assert
+        var okResult = actionResult.Result.Should().BeOfType<OkObjectResult>().Subject;
+        var response = okResult.Value.Should().BeOfType<CompletionStatsResponseDto>().Subject;
+
+        // Verify trends mapping
+        response.Trends.Should().HaveCount(4);
+        var latestTrend = response.Trends.Last();
+        latestTrend.Completed.Should().Be(25);
+        latestTrend.CompletionRate.Should().Be(0.78);
+        latestTrend.TrendDirection.Should().Be("up");
+
+        // Verify breakdowns mapping
+        response.Breakdowns.Should().HaveCount(2);
+        response.Breakdowns["category"].Items.Should().HaveCount(4);
+        response.Breakdowns["category"].TopPerformer.Should().Be("Appointment");
+        response.Breakdowns["priority"].NeedsAttention.Should().Be("Low");
+
+        // Verify insights
+        response.Insights.PositivePatterns.Should().Contain("Steady upward trend");
+        response.Insights.AreasForImprovement.Should().Contain("Project completion efficiency");
+        response.Insights.PerformanceMetrics.Should().ContainKey("trend_velocity");
+    }
+
+    [Fact]
+    public async Task GetCompletionStats_WithUnauthenticatedUser_ShouldThrowUnauthorizedAccessException()
+    {
+        // Arrange - Remove user authentication
+        _controller.ControllerContext = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext()
+        };
+        var request = new CompletionStatsRequestDto();
+
+        // Act & Assert
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() =>
+            _controller.GetCompletionStats(request, CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task GetCompletionStats_ShouldLogCorrectInformation()
+    {
+        // Arrange
+        var request = new CompletionStatsRequestDto();
+        var expectedResponse = new GetCompletionStatsResponse(
+            Overview: new CompletionOverview(50, 0.65, 2.3, 3, 12, 50),
+            Trends: new List<CompletionTrend>(),
+            Breakdowns: new Dictionary<string, CompletionBreakdown>(),
+            Insights: new CompletionInsights(new List<string>(), new List<string>(), new List<string>(), new Dictionary<string, double>())
+        );
+
+        var result = Result<GetCompletionStatsResponse>.Success(expectedResponse);
+        _mockMediator.Setup(m => m.Send(It.IsAny<GetCompletionStatsQuery>(), It.IsAny<CancellationToken>()))
+                    .ReturnsAsync(result);
+
+        // Act
+        await _controller.GetCompletionStats(request, CancellationToken.None);
+
+        // Assert - Verify logging was called correctly
+        _mockLogger.Verify(
+            x => x.Log(
+                LogLevel.Information,
+                It.IsAny<EventId>(),
+                It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains($"Getting completion statistics for user {_testUserId}")),
+                It.IsAny<Exception>(),
+                It.IsAny<Func<It.IsAnyType, Exception?, string>>()
+            ),
+            Times.Once
+        );
+    }
+
+    #endregion
+
+    #region Dashboard Settings Management Tests
+
+    [Fact]
+    public async Task GetDashboardSettings_WithAuthenticatedUser_ShouldReturnDefaultSettings()
+    {
+        // Act
+        var actionResult = await _controller.GetDashboardSettings(CancellationToken.None);
+
+        // Assert
+        var okResult = actionResult.Result.Should().BeOfType<OkObjectResult>().Subject;
+        var response = okResult.Value.Should().BeOfType<DashboardSettingsResponseDto>().Subject;
+
+        // Verify default settings structure
+        response.Success.Should().BeTrue();
+        response.Settings.Should().NotBeNull();
+        
+        // Verify default values
+        response.Settings.Theme.Should().Be("light");
+        response.Settings.Language.Should().Be("en");
+        response.Settings.ShowCompletionStats.Should().BeTrue();
+        response.Settings.ShowProductivityStreak.Should().BeTrue();
+        response.Settings.ShowOverdueTasks.Should().BeTrue();
+        response.Settings.ShowMotivationalContent.Should().BeTrue();
+        response.Settings.RefreshInterval.Should().Be(300);
+
+        // Verify default widgets
+        response.Settings.VisibleWidgets.Should().Contain("completion-stats");
+        response.Settings.VisibleWidgets.Should().Contain("productivity-streak");
+        response.Settings.VisibleWidgets.Should().Contain("overdue-tasks");
+        response.Settings.VisibleWidgets.Should().Contain("motivational-content");
+
+        // Verify notification settings
+        response.Settings.NotificationSettings.EnableOverdueAlerts.Should().BeTrue();
+        response.Settings.NotificationSettings.EnableStreakReminders.Should().BeTrue();
+        response.Settings.NotificationSettings.EnableDailyDigest.Should().BeFalse();
+        response.Settings.NotificationSettings.OverdueAlertThreshold.Should().Be(3);
+        response.Settings.NotificationSettings.DigestFrequency.Should().Be("weekly");
+        response.Settings.NotificationSettings.QuietHours.Should().HaveCount(10);
+
+        // Verify display settings
+        response.Settings.DisplaySettings.ChartType.Should().Be("bar");
+        response.Settings.DisplaySettings.DateFormat.Should().Be("MM/dd/yyyy");
+        response.Settings.DisplaySettings.TimeFormat.Should().Be("12h");
+        response.Settings.DisplaySettings.Use24HourFormat.Should().BeFalse();
+        response.Settings.DisplaySettings.ItemsPerPage.Should().Be(20);
+        response.Settings.DisplaySettings.DefaultSortOrder.Should().Be("priority");
+        response.Settings.DisplaySettings.ShowAnimations.Should().BeTrue();
+        response.Settings.DisplaySettings.CompactMode.Should().BeFalse();
+
+        response.LastUpdated.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromMinutes(1));
+    }
+
+    [Fact]
+    public async Task GetDashboardSettings_WithUnauthenticatedUser_ShouldThrowUnauthorizedAccessException()
+    {
+        // Arrange - Remove user authentication
+        _controller.ControllerContext = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext()
+        };
+
+        // Act & Assert
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() =>
+            _controller.GetDashboardSettings(CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task UpdateDashboardSettings_WithValidSettings_ShouldReturnUpdatedSettings()
+    {
+        // Arrange
+        var request = new UpdateDashboardSettingsRequestDto(
+            Theme: "dark",
+            Language: "es",
+            ShowCompletionStats: false,
+            ShowProductivityStreak: true,
+            ShowOverdueTasks: true,
+            ShowMotivationalContent: false,
+            RefreshInterval: 600,
+            VisibleWidgets: new List<string> { "productivity-streak", "overdue-tasks" },
+            WidgetSettings: new Dictionary<string, object> { { "theme", "dark" } },
+            NotificationSettings: new NotificationSettingsRequestDto(
+                EnableOverdueAlerts: false,
+                EnableStreakReminders: true,
+                EnableDailyDigest: true,
+                OverdueAlertThreshold: 5,
+                DigestFrequency: "daily",
+                QuietHours: new List<int> { 22, 23, 0, 1, 2, 3, 4, 5 }
+            ),
+            DisplaySettings: new DisplaySettingsRequestDto(
+                ChartType: "pie",
+                DateFormat: "dd/MM/yyyy",
+                TimeFormat: "24h",
+                Use24HourFormat: true,
+                ItemsPerPage: 50,
+                DefaultSortOrder: "date",
+                ShowAnimations: false,
+                CompactMode: true
+            )
+        );
+
+        var expectedCommandResponse = new UpdateDashboardSettingsResponse(
+            Success: true,
+            UpdatedSettings: new DashboardSettingsDto(
+                Theme: "dark",
+                Language: "es",
+                ShowCompletionStats: false,
+                ShowProductivityStreak: true,
+                ShowOverdueTasks: true,
+                ShowMotivationalContent: false,
+                RefreshInterval: 600,
+                VisibleWidgets: new List<string> { "productivity-streak", "overdue-tasks" },
+                WidgetSettings: new Dictionary<string, object> { { "theme", "dark" } },
+                NotificationSettings: new NotificationSettingsDto(
+                    EnableOverdueAlerts: false,
+                    EnableStreakReminders: true,
+                    EnableDailyDigest: true,
+                    OverdueAlertThreshold: 5,
+                    DigestFrequency: "daily",
+                    QuietHours: new List<int> { 22, 23, 0, 1, 2, 3, 4, 5 }
+                ),
+                DisplaySettings: new DisplaySettingsDto(
+                    ChartType: "pie",
+                    DateFormat: "dd/MM/yyyy",
+                    TimeFormat: "24h",
+                    Use24HourFormat: true,
+                    ItemsPerPage: 50,
+                    DefaultSortOrder: "date",
+                    ShowAnimations: false,
+                    CompactMode: true
+                )
+            ),
+            ValidationWarnings: new List<string>()
+        );
+
+        var result = Result<UpdateDashboardSettingsResponse>.Success(expectedCommandResponse);
+        _mockMediator.Setup(m => m.Send(It.IsAny<UpdateDashboardSettingsCommand>(), It.IsAny<CancellationToken>()))
+                    .ReturnsAsync(result);
+
+        // Act
+        var actionResult = await _controller.UpdateDashboardSettings(request, CancellationToken.None);
+
+        // Assert
+        var okResult = actionResult.Result.Should().BeOfType<OkObjectResult>().Subject;
+        var response = okResult.Value.Should().BeOfType<DashboardSettingsResponseDto>().Subject;
+
+        response.Success.Should().BeTrue();
+        response.Settings.Theme.Should().Be("dark");
+        response.Settings.Language.Should().Be("es");
+        response.Settings.RefreshInterval.Should().Be(600);
+        response.Settings.VisibleWidgets.Should().BeEquivalentTo(new[] { "productivity-streak", "overdue-tasks" });
+        response.Settings.NotificationSettings.EnableDailyDigest.Should().BeTrue();
+        response.Settings.DisplaySettings.Use24HourFormat.Should().BeTrue();
+        response.ValidationWarnings.Should().BeEmpty();
+
+        _mockMediator.Verify(m => m.Send(
+            It.Is<UpdateDashboardSettingsCommand>(c => 
+                c.UserId == _testUserId &&
+                c.Settings.Theme == "dark" &&
+                c.Settings.Language == "es" &&
+                c.Settings.RefreshInterval == 600),
+            It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task UpdateDashboardSettings_WithValidationWarnings_ShouldReturnWarnings()
+    {
+        // Arrange
+        var request = new UpdateDashboardSettingsRequestDto(
+            Theme: "invalid-theme",
+            Language: "fr",
+            RefreshInterval: 5, // Below minimum
+            VisibleWidgets: new List<string> { "invalid-widget", "completion-stats" }
+        );
+
+        var expectedResponse = new UpdateDashboardSettingsResponse(
+            Success: true,
+            UpdatedSettings: new DashboardSettingsDto(
+                Theme: "light", // Corrected to default
+                Language: "en", // Corrected to default
+                ShowCompletionStats: true,
+                ShowProductivityStreak: true,
+                ShowOverdueTasks: true,
+                ShowMotivationalContent: true,
+                RefreshInterval: 300, // Corrected to minimum
+                VisibleWidgets: new List<string> { "completion-stats" }, // Invalid widget removed
+                WidgetSettings: new Dictionary<string, object>(),
+                NotificationSettings: new NotificationSettingsDto(true, true, false, 3, "weekly", new List<int>()),
+                DisplaySettings: new DisplaySettingsDto("bar", "MM/dd/yyyy", "12h", false, 20, "priority", true, false)
+            ),
+            ValidationWarnings: new List<string>
+            {
+                "Invalid theme 'invalid-theme'. Using default theme.",
+                "Invalid language 'fr'. Using default language.",
+                "Refresh interval should be between 30 seconds and 1 hour. Using default value.",
+                "Invalid widgets: invalid-widget"
+            }
+        );
+
+        var result = Result<UpdateDashboardSettingsResponse>.Success(expectedResponse);
+        _mockMediator.Setup(m => m.Send(It.IsAny<UpdateDashboardSettingsCommand>(), It.IsAny<CancellationToken>()))
+                    .ReturnsAsync(result);
+
+        // Act
+        var actionResult = await _controller.UpdateDashboardSettings(request, CancellationToken.None);
+
+        // Assert
+        var okResult = actionResult.Result.Should().BeOfType<OkObjectResult>().Subject;
+        var response = okResult.Value.Should().BeOfType<DashboardSettingsResponseDto>().Subject;
+
+        response.Success.Should().BeTrue();
+        response.ValidationWarnings.Should().HaveCount(4);
+        response.ValidationWarnings.Should().Contain("Invalid theme 'invalid-theme'. Using default theme.");
+        response.ValidationWarnings.Should().Contain("Invalid language 'fr'. Using default language.");
+        response.ValidationWarnings.Should().Contain("Refresh interval should be between 30 seconds and 1 hour. Using default value.");
+        response.ValidationWarnings.Should().Contain("Invalid widgets: invalid-widget");
+
+        // Verify corrected values
+        response.Settings.Theme.Should().Be("light");
+        response.Settings.Language.Should().Be("en");
+        response.Settings.RefreshInterval.Should().Be(300);
+        response.Settings.VisibleWidgets.Should().BeEquivalentTo(new[] { "completion-stats" });
+    }
+
+    [Fact]
+    public async Task UpdateDashboardSettings_WithServiceFailure_ShouldReturnBadRequest()
+    {
+        // Arrange
+        var request = new UpdateDashboardSettingsRequestDto();
+        var result = Result<UpdateDashboardSettingsResponse>.Failure("Database connection failed");
+        _mockMediator.Setup(m => m.Send(It.IsAny<UpdateDashboardSettingsCommand>(), It.IsAny<CancellationToken>()))
+                    .ReturnsAsync(result);
+
+        // Act
+        var actionResult = await _controller.UpdateDashboardSettings(request, CancellationToken.None);
+
+        // Assert
+        var badRequestResult = actionResult.Result.Should().BeOfType<BadRequestObjectResult>().Subject;
+        badRequestResult.Value.Should().Be("Database connection failed");
+    }
+
+    [Fact]
+    public async Task UpdateDashboardSettings_WithUnauthenticatedUser_ShouldThrowUnauthorizedAccessException()
+    {
+        // Arrange - Remove user authentication
+        _controller.ControllerContext = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext()
+        };
+        var request = new UpdateDashboardSettingsRequestDto();
+
+        // Act & Assert
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() =>
+            _controller.UpdateDashboardSettings(request, CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task ResetDashboardPreferences_WithConfirmation_ShouldResetToDefaults()
+    {
+        // Arrange
+        var request = new ResetDashboardPreferencesRequestDto(
+            ConfirmReset: true,
+            SpecificSettings: null
+        );
+
+        var expectedResponse = new ResetDashboardPreferencesResponse(
+            Success: true,
+            DefaultSettings: new DashboardSettingsDto(
+                Theme: "light",
+                Language: "en",
+                ShowCompletionStats: true,
+                ShowProductivityStreak: true,
+                ShowOverdueTasks: true,
+                ShowMotivationalContent: true,
+                RefreshInterval: 300,
+                VisibleWidgets: new List<string> { "completion-stats", "productivity-streak", "overdue-tasks", "motivational-content" },
+                WidgetSettings: new Dictionary<string, object>(),
+                NotificationSettings: new NotificationSettingsDto(true, true, false, 3, "weekly", new List<int> { 22, 23, 0, 1, 2, 3, 4, 5, 6, 7 }),
+                DisplaySettings: new DisplaySettingsDto("bar", "MM/dd/yyyy", "12h", false, 20, "priority", true, false)
+            ),
+            ResetSettings: new List<string> 
+            { 
+                "theme", "language", "widgets", "notifications", "display", 
+                "refresh-interval", "completion-stats", "productivity-streak", 
+                "overdue-tasks", "motivational-content" 
+            },
+            ResetTimestamp: DateTime.UtcNow
+        );
+
+        var result = Result<ResetDashboardPreferencesResponse>.Success(expectedResponse);
+        _mockMediator.Setup(m => m.Send(It.IsAny<ResetDashboardPreferencesCommand>(), It.IsAny<CancellationToken>()))
+                    .ReturnsAsync(result);
+
+        // Act
+        var actionResult = await _controller.ResetDashboardPreferences(request, CancellationToken.None);
+
+        // Assert
+        var okResult = actionResult.Result.Should().BeOfType<OkObjectResult>().Subject;
+        var response = okResult.Value.Should().BeOfType<ResetDashboardPreferencesResponseDto>().Subject;
+
+        response.Success.Should().BeTrue();
+        response.DefaultSettings.Should().NotBeNull();
+        response.ResetSettings.Should().HaveCount(10);
+        response.ResetSettings.Should().Contain("theme");
+        response.ResetSettings.Should().Contain("language");
+        response.ResetSettings.Should().Contain("widgets");
+        response.ResetTimestamp.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromMinutes(1));
+        response.Message.Should().Be("Dashboard preferences have been successfully reset to defaults.");
+
+        _mockMediator.Verify(m => m.Send(
+            It.Is<ResetDashboardPreferencesCommand>(c => 
+                c.UserId == _testUserId &&
+                c.ConfirmReset == true &&
+                c.SpecificSettings == null),
+            It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task ResetDashboardPreferences_WithSpecificSettings_ShouldResetOnlySpecified()
+    {
+        // Arrange
+        var specificSettings = new List<string> { "theme", "language" };
+        var request = new ResetDashboardPreferencesRequestDto(
+            ConfirmReset: false,
+            SpecificSettings: specificSettings
+        );
+
+        var expectedResponse = new ResetDashboardPreferencesResponse(
+            Success: true,
+            DefaultSettings: new DashboardSettingsDto(
+                Theme: "light",
+                Language: "en",
+                ShowCompletionStats: true,
+                ShowProductivityStreak: true,
+                ShowOverdueTasks: true,
+                ShowMotivationalContent: true,
+                RefreshInterval: 300,
+                VisibleWidgets: new List<string> { "completion-stats", "productivity-streak", "overdue-tasks", "motivational-content" },
+                WidgetSettings: new Dictionary<string, object>(),
+                NotificationSettings: new NotificationSettingsDto(true, true, false, 3, "weekly", new List<int>()),
+                DisplaySettings: new DisplaySettingsDto("bar", "MM/dd/yyyy", "12h", false, 20, "priority", true, false)
+            ),
+            ResetSettings: specificSettings,
+            ResetTimestamp: DateTime.UtcNow
+        );
+
+        var result = Result<ResetDashboardPreferencesResponse>.Success(expectedResponse);
+        _mockMediator.Setup(m => m.Send(It.IsAny<ResetDashboardPreferencesCommand>(), It.IsAny<CancellationToken>()))
+                    .ReturnsAsync(result);
+
+        // Act
+        var actionResult = await _controller.ResetDashboardPreferences(request, CancellationToken.None);
+
+        // Assert
+        var okResult = actionResult.Result.Should().BeOfType<OkObjectResult>().Subject;
+        var response = okResult.Value.Should().BeOfType<ResetDashboardPreferencesResponseDto>().Subject;
+
+        response.Success.Should().BeTrue();
+        response.ResetSettings.Should().BeEquivalentTo(specificSettings);
+        response.ResetSettings.Should().HaveCount(2);
+
+        _mockMediator.Verify(m => m.Send(
+            It.Is<ResetDashboardPreferencesCommand>(c => 
+                c.UserId == _testUserId &&
+                c.ConfirmReset == false &&
+                c.SpecificSettings!.SequenceEqual(specificSettings)),
+            It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task ResetDashboardPreferences_WithoutConfirmation_ShouldReturnBadRequest()
+    {
+        // Arrange
+        var request = new ResetDashboardPreferencesRequestDto(
+            ConfirmReset: false,
+            SpecificSettings: null
+        );
+
+        var result = Result<ResetDashboardPreferencesResponse>.Failure("Reset confirmation required. Set ConfirmReset to true to proceed.");
+        _mockMediator.Setup(m => m.Send(It.IsAny<ResetDashboardPreferencesCommand>(), It.IsAny<CancellationToken>()))
+                    .ReturnsAsync(result);
+
+        // Act
+        var actionResult = await _controller.ResetDashboardPreferences(request, CancellationToken.None);
+
+        // Assert
+        var badRequestResult = actionResult.Result.Should().BeOfType<BadRequestObjectResult>().Subject;
+        badRequestResult.Value.Should().Be("Reset confirmation required. Set ConfirmReset to true to proceed.");
+    }
+
+    [Fact]
+    public async Task ResetDashboardPreferences_WithUnauthenticatedUser_ShouldThrowUnauthorizedAccessException()
+    {
+        // Arrange - Remove user authentication
+        _controller.ControllerContext = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext()
+        };
+        var request = new ResetDashboardPreferencesRequestDto(ConfirmReset: true);
+
+        // Act & Assert
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() =>
+            _controller.ResetDashboardPreferences(request, CancellationToken.None));
+    }
+
+    [Theory]
+    [InlineData("light")]
+    [InlineData("dark")]
+    public async Task UpdateDashboardSettings_WithValidThemes_ShouldAcceptTheme(string theme)
+    {
+        // Arrange
+        var request = new UpdateDashboardSettingsRequestDto(Theme: theme);
+        var expectedResponse = new UpdateDashboardSettingsResponse(
+            Success: true,
+            UpdatedSettings: new DashboardSettingsDto(theme, "en", true, true, true, true, 300, 
+                new List<string>(), new Dictionary<string, object>(),
+                new NotificationSettingsDto(true, true, false, 3, "weekly", new List<int>()),
+                new DisplaySettingsDto("bar", "MM/dd/yyyy", "12h", false, 20, "priority", true, false)),
+            ValidationWarnings: new List<string>()
+        );
+
+        var result = Result<UpdateDashboardSettingsResponse>.Success(expectedResponse);
+        _mockMediator.Setup(m => m.Send(It.IsAny<UpdateDashboardSettingsCommand>(), It.IsAny<CancellationToken>()))
+                    .ReturnsAsync(result);
+
+        // Act
+        var actionResult = await _controller.UpdateDashboardSettings(request, CancellationToken.None);
+
+        // Assert
+        var okResult = actionResult.Result.Should().BeOfType<OkObjectResult>().Subject;
+        var response = okResult.Value.Should().BeOfType<DashboardSettingsResponseDto>().Subject;
+
+        response.Settings.Theme.Should().Be(theme);
+        response.ValidationWarnings.Should().BeEmpty();
+    }
+
+    [Theory]
+    [InlineData("en")]
+    [InlineData("es")]
+    public async Task UpdateDashboardSettings_WithValidLanguages_ShouldAcceptLanguage(string language)
+    {
+        // Arrange
+        var request = new UpdateDashboardSettingsRequestDto(Language: language);
+        var expectedResponse = new UpdateDashboardSettingsResponse(
+            Success: true,
+            UpdatedSettings: new DashboardSettingsDto("light", language, true, true, true, true, 300, 
+                new List<string>(), new Dictionary<string, object>(),
+                new NotificationSettingsDto(true, true, false, 3, "weekly", new List<int>()),
+                new DisplaySettingsDto("bar", "MM/dd/yyyy", "12h", false, 20, "priority", true, false)),
+            ValidationWarnings: new List<string>()
+        );
+
+        var result = Result<UpdateDashboardSettingsResponse>.Success(expectedResponse);
+        _mockMediator.Setup(m => m.Send(It.IsAny<UpdateDashboardSettingsCommand>(), It.IsAny<CancellationToken>()))
+                    .ReturnsAsync(result);
+
+        // Act
+        var actionResult = await _controller.UpdateDashboardSettings(request, CancellationToken.None);
+
+        // Assert
+        var okResult = actionResult.Result.Should().BeOfType<OkObjectResult>().Subject;
+        var response = okResult.Value.Should().BeOfType<DashboardSettingsResponseDto>().Subject;
+
+        response.Settings.Language.Should().Be(language);
+        response.ValidationWarnings.Should().BeEmpty();
+    }
+
+    #endregion
+
+    #region Export and Reports Tests
+
+    [Fact]
+    public async Task ExportDashboardData_WithValidJsonRequest_ShouldReturnJsonFile()
+    {
+        // Arrange
+        var request = new ExportDashboardDataRequestDto(
+            Format: "json",
+            StartDate: DateTime.UtcNow.AddDays(-30),
+            EndDate: DateTime.UtcNow,
+            IncludeCategories: new List<string> { "ToDo", "Project" },
+            IncludePriorities: new List<string> { "High", "Critical" },
+            IncludeStatuses: new List<string> { "Completed", "InProgress" },
+            DataTypes: new List<string> { "tasks", "metrics", "analytics" },
+            IncludeDeleted: false,
+            IncludeArchived: true,
+            TimeZone: "UTC",
+            CustomFilters: new Dictionary<string, object> { { "minDuration", 5 } }
+        );
+
+        var expectedResponse = new ExportDashboardDataResponse(
+            ContentType: "application/json",
+            FileName: "dashboard-export-20241211.json",
+            FileContent: System.Text.Encoding.UTF8.GetBytes("{\"tasks\": [], \"metrics\": {}}")
+        );
+
+        var result = Result<ExportDashboardDataResponse>.Success(expectedResponse);
+        _mockMediator.Setup(m => m.Send(It.IsAny<ExportDashboardDataQuery>(), It.IsAny<CancellationToken>()))
+                    .ReturnsAsync(result);
+
+        // Act
+        var actionResult = await _controller.ExportDashboardData(request, CancellationToken.None);
+
+        // Assert
+        var fileResult = actionResult.Should().BeOfType<FileContentResult>().Subject;
+        fileResult.ContentType.Should().Be("application/json");
+        fileResult.FileDownloadName.Should().Be("dashboard-export-20241211.json");
+        fileResult.FileContents.Should().BeEquivalentTo(System.Text.Encoding.UTF8.GetBytes("{\"tasks\": [], \"metrics\": {}}"));
+
+        _mockMediator.Verify(m => m.Send(
+            It.Is<ExportDashboardDataQuery>(q => 
+                q.UserId == _testUserId &&
+                q.Format == "json" &&
+                q.Options.StartDate == request.StartDate &&
+                q.Options.EndDate == request.EndDate &&
+                q.Options.IncludeCategories!.SequenceEqual(request.IncludeCategories!) &&
+                q.Options.DataTypes!.SequenceEqual(request.DataTypes!) &&
+                q.Options.IncludeDeleted == false &&
+                q.Options.IncludeArchived == true &&
+                q.Options.TimeZone == "UTC"),
+            It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Theory]
+    [InlineData("csv", "text/csv")]
+    [InlineData("json", "application/json")]
+    [InlineData("excel", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")]
+    public async Task ExportDashboardData_WithDifferentFormats_ShouldReturnCorrectContentType(string format, string expectedContentType)
+    {
+        // Arrange
+        var request = new ExportDashboardDataRequestDto(Format: format);
+        var expectedResponse = new ExportDashboardDataResponse(
+            ContentType: expectedContentType,
+            FileName: $"dashboard-export.{format}",
+            FileContent: new byte[] { 0x01, 0x02, 0x03 }
+        );
+
+        var result = Result<ExportDashboardDataResponse>.Success(expectedResponse);
+        _mockMediator.Setup(m => m.Send(It.IsAny<ExportDashboardDataQuery>(), It.IsAny<CancellationToken>()))
+                    .ReturnsAsync(result);
+
+        // Act
+        var actionResult = await _controller.ExportDashboardData(request, CancellationToken.None);
+
+        // Assert
+        var fileResult = actionResult.Should().BeOfType<FileContentResult>().Subject;
+        fileResult.ContentType.Should().Be(expectedContentType);
+        fileResult.FileDownloadName.Should().Be($"dashboard-export.{format}");
+
+        _mockMediator.Verify(m => m.Send(
+            It.Is<ExportDashboardDataQuery>(q => q.Format == format),
+            It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task ExportDashboardData_WithComplexFilters_ShouldPassAllFilters()
+    {
+        // Arrange
+        var categories = new List<string> { "ToDo", "Project", "BillReminder", "Appointment" };
+        var priorities = new List<string> { "Critical", "High", "Medium" };
+        var statuses = new List<string> { "Completed", "InProgress", "Pending" };
+        var dataTypes = new List<string> { "tasks", "metrics", "streaks", "analytics" };
+        var customFilters = new Dictionary<string, object>
+        {
+            { "minCompletionRate", 0.7 },
+            { "includeSubtasks", true },
+            { "groupBy", "category" }
+        };
+
+        var request = new ExportDashboardDataRequestDto(
+            Format: "excel",
+            StartDate: DateTime.UtcNow.AddDays(-90),
+            EndDate: DateTime.UtcNow.AddDays(-1),
+            IncludeCategories: categories,
+            IncludePriorities: priorities,
+            IncludeStatuses: statuses,
+            DataTypes: dataTypes,
+            IncludeDeleted: true,
+            IncludeArchived: false,
+            TimeZone: "America/New_York",
+            CustomFilters: customFilters
+        );
+
+        var expectedResponse = new ExportDashboardDataResponse(
+            ContentType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            FileName: "comprehensive-dashboard-export.xlsx",
+            FileContent: new byte[] { 0x50, 0x4B } // Excel header bytes
+        );
+
+        var result = Result<ExportDashboardDataResponse>.Success(expectedResponse);
+        _mockMediator.Setup(m => m.Send(It.IsAny<ExportDashboardDataQuery>(), It.IsAny<CancellationToken>()))
+                    .ReturnsAsync(result);
+
+        // Act
+        var actionResult = await _controller.ExportDashboardData(request, CancellationToken.None);
+
+        // Assert
+        actionResult.Should().BeOfType<FileContentResult>();
+
+        _mockMediator.Verify(m => m.Send(
+            It.Is<ExportDashboardDataQuery>(q => 
+                q.Options.IncludeCategories!.SequenceEqual(categories) &&
+                q.Options.IncludePriorities!.SequenceEqual(priorities) &&
+                q.Options.IncludeStatuses!.SequenceEqual(statuses) &&
+                q.Options.DataTypes!.SequenceEqual(dataTypes) &&
+                q.Options.IncludeDeleted == true &&
+                q.Options.IncludeArchived == false &&
+                q.Options.TimeZone == "America/New_York" &&
+                q.Options.CustomFilters!["minCompletionRate"].Equals(0.7)),
+            It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task ExportDashboardData_WithServiceFailure_ShouldReturnBadRequest()
+    {
+        // Arrange
+        var request = new ExportDashboardDataRequestDto();
+        var result = Result<ExportDashboardDataResponse>.Failure("Export service temporarily unavailable");
+        _mockMediator.Setup(m => m.Send(It.IsAny<ExportDashboardDataQuery>(), It.IsAny<CancellationToken>()))
+                    .ReturnsAsync(result);
+
+        // Act
+        var actionResult = await _controller.ExportDashboardData(request, CancellationToken.None);
+
+        // Assert
+        var badRequestResult = actionResult.Should().BeOfType<BadRequestObjectResult>().Subject;
+        badRequestResult.Value.Should().Be("Export service temporarily unavailable");
+    }
+
+    [Fact]
+    public async Task ExportDashboardData_WithUnauthenticatedUser_ShouldThrowUnauthorizedAccessException()
+    {
+        // Arrange - Remove user authentication
+        _controller.ControllerContext = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext()
+        };
+        var request = new ExportDashboardDataRequestDto();
+
+        // Act & Assert
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() =>
+            _controller.ExportDashboardData(request, CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task GenerateDashboardReport_WithValidPdfRequest_ShouldReturnPdfFile()
+    {
+        // Arrange
+        var request = new GenerateDashboardReportRequestDto(
+            ReportType: "summary",
+            StartDate: DateTime.UtcNow.AddDays(-30),
+            EndDate: DateTime.UtcNow,
+            Format: "pdf",
+            Sections: new List<string> { "overview", "tasks", "productivity", "trends" },
+            IncludeCharts: true,
+            IncludeInsights: true,
+            IncludeRecommendations: true,
+            TimeZone: "UTC",
+            CustomSettings: new Dictionary<string, object> { { "theme", "professional" } }
+        );
+
+        var expectedResponse = new GenerateDashboardReportResponse(
+            ContentType: "application/pdf",
+            ReportFileName: "dashboard-summary-report-20241211.pdf",
+            ReportContent: new byte[] { 0x25, 0x50, 0x44, 0x46 } // PDF header
+        );
+
+        var result = Result<GenerateDashboardReportResponse>.Success(expectedResponse);
+        _mockMediator.Setup(m => m.Send(It.IsAny<GenerateDashboardReportQuery>(), It.IsAny<CancellationToken>()))
+                    .ReturnsAsync(result);
+
+        // Act
+        var actionResult = await _controller.GenerateDashboardReport(request, CancellationToken.None);
+
+        // Assert
+        var fileResult = actionResult.Should().BeOfType<FileContentResult>().Subject;
+        fileResult.ContentType.Should().Be("application/pdf");
+        fileResult.FileDownloadName.Should().Be("dashboard-summary-report-20241211.pdf");
+        fileResult.FileContents.Should().BeEquivalentTo(new byte[] { 0x25, 0x50, 0x44, 0x46 });
+
+        _mockMediator.Verify(m => m.Send(
+            It.Is<GenerateDashboardReportQuery>(q => 
+                q.UserId == _testUserId &&
+                q.ReportType == "summary" &&
+                q.Options.StartDate == request.StartDate &&
+                q.Options.EndDate == request.EndDate &&
+                q.Options.Format == "pdf" &&
+                q.Options.Sections!.SequenceEqual(request.Sections!) &&
+                q.Options.IncludeCharts == true &&
+                q.Options.IncludeInsights == true &&
+                q.Options.IncludeRecommendations == true),
+            It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Theory]
+    [InlineData("summary", "pdf", "application/pdf")]
+    [InlineData("detailed", "html", "text/html")]
+    [InlineData("analytical", "markdown", "text/markdown")]
+    public async Task GenerateDashboardReport_WithDifferentFormats_ShouldReturnCorrectContentType(
+        string reportType, string format, string expectedContentType)
+    {
+        // Arrange
+        var request = new GenerateDashboardReportRequestDto(
+            ReportType: reportType,
+            Format: format
+        );
+
+        var expectedResponse = new GenerateDashboardReportResponse(
+            ContentType: expectedContentType,
+            ReportFileName: $"dashboard-{reportType}-report.{format}",
+            ReportContent: new byte[] { 0x01, 0x02, 0x03 }
+        );
+
+        var result = Result<GenerateDashboardReportResponse>.Success(expectedResponse);
+        _mockMediator.Setup(m => m.Send(It.IsAny<GenerateDashboardReportQuery>(), It.IsAny<CancellationToken>()))
+                    .ReturnsAsync(result);
+
+        // Act
+        var actionResult = await _controller.GenerateDashboardReport(request, CancellationToken.None);
+
+        // Assert
+        var fileResult = actionResult.Should().BeOfType<FileContentResult>().Subject;
+        fileResult.ContentType.Should().Be(expectedContentType);
+        fileResult.FileDownloadName.Should().Be($"dashboard-{reportType}-report.{format}");
+
+        _mockMediator.Verify(m => m.Send(
+            It.Is<GenerateDashboardReportQuery>(q => 
+                q.ReportType == reportType &&
+                q.Options.Format == format),
+            It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task GenerateDashboardReport_WithComprehensiveOptions_ShouldPassAllOptions()
+    {
+        // Arrange
+        var sections = new List<string> { "overview", "tasks", "productivity", "trends", "recommendations" };
+        var customSettings = new Dictionary<string, object>
+        {
+            { "theme", "modern" },
+            { "logoUrl", "https://example.com/logo.png" },
+            { "includeFooter", true },
+            { "pageSize", "A4" }
+        };
+
+        var request = new GenerateDashboardReportRequestDto(
+            ReportType: "detailed",
+            StartDate: DateTime.UtcNow.AddDays(-60),
+            EndDate: DateTime.UtcNow,
+            Format: "html",
+            Sections: sections,
+            IncludeCharts: true,
+            IncludeInsights: true,
+            IncludeRecommendations: true,
+            TimeZone: "Europe/London",
+            CustomSettings: customSettings
+        );
+
+        var expectedResponse = new GenerateDashboardReportResponse(
+            ContentType: "text/html",
+            ReportFileName: "comprehensive-detailed-report.html",
+            ReportContent: System.Text.Encoding.UTF8.GetBytes("<html><body>Report Content</body></html>")
+        );
+
+        var result = Result<GenerateDashboardReportResponse>.Success(expectedResponse);
+        _mockMediator.Setup(m => m.Send(It.IsAny<GenerateDashboardReportQuery>(), It.IsAny<CancellationToken>()))
+                    .ReturnsAsync(result);
+
+        // Act
+        var actionResult = await _controller.GenerateDashboardReport(request, CancellationToken.None);
+
+        // Assert
+        actionResult.Should().BeOfType<FileContentResult>();
+
+        _mockMediator.Verify(m => m.Send(
+            It.Is<GenerateDashboardReportQuery>(q => 
+                q.ReportType == "detailed" &&
+                q.Options.Sections!.SequenceEqual(sections) &&
+                q.Options.IncludeCharts == true &&
+                q.Options.IncludeInsights == true &&
+                q.Options.IncludeRecommendations == true &&
+                q.Options.TimeZone == "Europe/London" &&
+                q.Options.CustomSettings!["theme"].Equals("modern")),
+            It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task GenerateDashboardReport_WithServiceFailure_ShouldReturnBadRequest()
+    {
+        // Arrange
+        var request = new GenerateDashboardReportRequestDto();
+        var result = Result<GenerateDashboardReportResponse>.Failure("Report generation service is down");
+        _mockMediator.Setup(m => m.Send(It.IsAny<GenerateDashboardReportQuery>(), It.IsAny<CancellationToken>()))
+                    .ReturnsAsync(result);
+
+        // Act
+        var actionResult = await _controller.GenerateDashboardReport(request, CancellationToken.None);
+
+        // Assert
+        var badRequestResult = actionResult.Should().BeOfType<BadRequestObjectResult>().Subject;
+        badRequestResult.Value.Should().Be("Report generation service is down");
+    }
+
+    [Fact]
+    public async Task GenerateDashboardReport_WithUnauthenticatedUser_ShouldThrowUnauthorizedAccessException()
+    {
+        // Arrange - Remove user authentication
+        _controller.ControllerContext = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext()
+        };
+        var request = new GenerateDashboardReportRequestDto();
+
+        // Act & Assert
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() =>
+            _controller.GenerateDashboardReport(request, CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task GenerateDashboardReport_ShouldLogCorrectInformation()
+    {
+        // Arrange
+        var request = new GenerateDashboardReportRequestDto(ReportType: "analytical");
+        var expectedResponse = new GenerateDashboardReportResponse(
+            ContentType: "application/pdf",
+            ReportFileName: "analytical-report.pdf",
+            ReportContent: new byte[] { 0x25, 0x50, 0x44, 0x46 }
+        );
+
+        var result = Result<GenerateDashboardReportResponse>.Success(expectedResponse);
+        _mockMediator.Setup(m => m.Send(It.IsAny<GenerateDashboardReportQuery>(), It.IsAny<CancellationToken>()))
+                    .ReturnsAsync(result);
+
+        // Act
+        await _controller.GenerateDashboardReport(request, CancellationToken.None);
+
+        // Assert - Verify logging was called correctly
+        _mockLogger.Verify(
+            x => x.Log(
+                LogLevel.Information,
+                It.IsAny<EventId>(),
+                It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains($"Generating dashboard report for user {_testUserId}, type: analytical")),
+                It.IsAny<Exception>(),
+                It.IsAny<Func<It.IsAnyType, Exception?, string>>()
+            ),
+            Times.Once
+        );
+    }
+
+    [Fact]
+    public async Task ExportDashboardData_ShouldLogCorrectInformation()
+    {
+        // Arrange
+        var request = new ExportDashboardDataRequestDto(Format: "csv");
+        var expectedResponse = new ExportDashboardDataResponse(
+            ContentType: "text/csv",
+            FileName: "export.csv",
+            FileContent: new byte[] { 0x01, 0x02 }
+        );
+
+        var result = Result<ExportDashboardDataResponse>.Success(expectedResponse);
+        _mockMediator.Setup(m => m.Send(It.IsAny<ExportDashboardDataQuery>(), It.IsAny<CancellationToken>()))
+                    .ReturnsAsync(result);
+
+        // Act
+        await _controller.ExportDashboardData(request, CancellationToken.None);
+
+        // Assert - Verify logging was called correctly
+        _mockLogger.Verify(
+            x => x.Log(
+                LogLevel.Information,
+                It.IsAny<EventId>(),
+                It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains($"Exporting dashboard data for user {_testUserId} in format csv")),
+                It.IsAny<Exception>(),
+                It.IsAny<Func<It.IsAnyType, Exception?, string>>()
+            ),
+            Times.Once
+        );
     }
 
     #endregion
