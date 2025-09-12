@@ -46,7 +46,8 @@
       "Bash(echo \"Skipped $file\")",
       "Bash(dotnet --version)",
       "Bash(verbosity=normal)",
-      "Bash(cat:*)"
+      "Bash(cat:*)",
+      "Bash(dotnet nuget locals:*)"
     ],
     "deny": [],
     "ask": []

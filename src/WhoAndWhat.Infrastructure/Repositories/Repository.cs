@@ -31,6 +31,21 @@ public class Repository<T> : IRepository<T> where T : class
         return await _dbSet.Where(predicate).ToListAsync(cancellationToken);
     }
 
+    public async Task<T?> GetByConditionAsync(Expression<Func<T, bool>> predicate, CancellationToken cancellationToken = default)
+    {
+        return await _dbSet.Where(predicate).FirstOrDefaultAsync(cancellationToken);
+    }
+
+    public async Task<IEnumerable<T>> GetAllByConditionAsync(Expression<Func<T, bool>> predicate, CancellationToken cancellationToken = default)
+    {
+        return await _dbSet.Where(predicate).ToListAsync(cancellationToken);
+    }
+
+    public async Task<int> CountByConditionAsync(Expression<Func<T, bool>> predicate, CancellationToken cancellationToken = default)
+    {
+        return await _dbSet.Where(predicate).CountAsync(cancellationToken);
+    }
+
     public async Task AddAsync(T entity, CancellationToken cancellationToken = default)
     {
         await _dbSet.AddAsync(entity, cancellationToken);
