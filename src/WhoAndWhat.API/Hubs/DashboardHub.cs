@@ -201,7 +201,7 @@ public class DashboardHub : Hub
     /// <param name="deliveryId">Delivery log ID</param>
     /// <param name="contentId">Content ID</param>
     /// <param name="engagementType">Type of engagement (viewed, clicked, etc.)</param>
-    /// <param name="viewDuration">How long user viewed the content</param>
+    /// <param name="viewDurationSeconds">How long user viewed the content in seconds</param>
     public async Task AcknowledgeMotivationalContent(string deliveryId, string contentId, string engagementType, int? viewDurationSeconds = null)
     {
         try

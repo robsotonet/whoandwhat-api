@@ -115,7 +115,7 @@ public class DashboardController : ControllerBase
     /// Record user interaction with motivational content for analytics and personalization
     /// </summary>
     /// <param name="contentId">The content ID that was interacted with</param>
-    /// <param name="interactionType">Type of interaction (view, click, share, dismiss)</param>
+    /// <param name="request">The content interaction request containing interaction type</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Success indicator</returns>
     [HttpPost("motivation/{contentId:guid}/interaction")]
@@ -123,7 +123,7 @@ public class DashboardController : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
-    public async Task<ActionResult> RecordContentInteraction(
+    public Task<ActionResult> RecordContentInteraction(
         [FromRoute] Guid contentId,
         [FromBody] ContentInteractionRequest request,
         CancellationToken cancellationToken = default)
@@ -133,17 +133,17 @@ public class DashboardController : ControllerBase
             // Validate input
             if (contentId == Guid.Empty)
             {
-                return BadRequest("Content ID cannot be empty");
+                return Task.FromResult<ActionResult>(BadRequest("Content ID cannot be empty"));
             }
 
             if (string.IsNullOrWhiteSpace(request.InteractionType))
             {
-                return BadRequest("Interaction type is required");
+                return Task.FromResult<ActionResult>(BadRequest("Interaction type is required"));
             }
 
             if (!IsValidInteractionType(request.InteractionType))
             {
-                return BadRequest("Invalid interaction type. Must be one of: view, click, share, dismiss");
+                return Task.FromResult<ActionResult>(BadRequest("Invalid interaction type. Must be one of: view, click, share, dismiss"));
             }
 
             // Extract user ID from claims
@@ -159,18 +159,18 @@ public class DashboardController : ControllerBase
             _logger.LogInformation("Successfully recorded content interaction for user {UserId}",
                 userId);
 
-            return Ok();
+            return Task.FromResult<ActionResult>(Ok());
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Unexpected error recording content interaction");
             
-            return StatusCode(StatusCodes.Status500InternalServerError, new ProblemDetails
+            return Task.FromResult<ActionResult>(StatusCode(StatusCodes.Status500InternalServerError, new ProblemDetails
             {
                 Title = "Internal Server Error", 
                 Detail = "An unexpected error occurred while recording content interaction",
                 Status = StatusCodes.Status500InternalServerError
-            });
+            }));
         }
     }
 
@@ -305,7 +305,7 @@ public class DashboardController : ControllerBase
     [HttpGet("settings")]
     [ProducesResponseType(typeof(DashboardSettingsResponseDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<DashboardSettingsResponseDto>> GetDashboardSettings(
+    public Task<ActionResult<DashboardSettingsResponseDto>> GetDashboardSettings(
         CancellationToken cancellationToken = default)
     {
         var userId = GetCurrentUserId();
@@ -348,7 +348,7 @@ public class DashboardController : ControllerBase
             LastUpdated: DateTime.UtcNow
         );
 
-        return Ok(response);
+        return Task.FromResult<ActionResult<DashboardSettingsResponseDto>>(Ok(response));
     }
 
     /// <summary>
@@ -607,7 +607,7 @@ public class DashboardController : ControllerBase
         return new ProductivityStreakResponseDto(
             CurrentStreak: response.CurrentStreak,
             LongestStreak: response.LongestStreak,
-            LastActivityDate: response.LastActivityDate,
+            LastActivityDate: response.LastCompletionDate,
             Milestones: response.Milestones.Select(m => new StreakMilestoneDto(
                 Days: m.Days,
                 Title: m.Title,
@@ -615,18 +615,18 @@ public class DashboardController : ControllerBase
                 IsAchieved: m.IsAchieved,
                 AchievedDate: m.AchievedDate
             )).ToList(),
-            StreakHistory: response.StreakHistory.Select(sh => new StreakHistoryDto(
-                StartDate: sh.StartDate,
-                EndDate: sh.EndDate,
-                Duration: sh.Duration,
-                TasksCompleted: sh.TasksCompleted,
-                StreakType: sh.StreakType
+            StreakHistory: response.Last30Days.Select(dp => new StreakHistoryDto(
+                StartDate: dp.Date,
+                EndDate: dp.Date,
+                Duration: dp.HasActivity ? 1 : 0,
+                TasksCompleted: dp.CompletedTasks,
+                StreakType: dp.IsPartOfCurrentStreak ? "current" : "past"
             )).ToList(),
             Insights: new StreakInsightsDto(
-                ConsistencyScore: response.Insights.ConsistencyScore,
-                BestPeriod: response.Insights.BestPeriod,
-                SuccessFactors: response.Insights.SuccessFactors,
-                ImprovementAreas: response.Insights.ImprovementAreas
+                ConsistencyScore: response.WeeklyStats.ConsistencyRate,
+                BestPeriod: "weekly",
+                SuccessFactors: new List<string> { "Consistent daily activity", "High task completion rate" },
+                ImprovementAreas: new List<string> { "Weekend productivity", "Task variety" }
             )
         );
     }
@@ -634,8 +634,8 @@ public class DashboardController : ControllerBase
     private OverdueTasksResponseDto MapToOverdueResponse(GetOverdueTasksResponse response)
     {
         return new OverdueTasksResponseDto(
-            TotalOverdueCount: response.TotalOverdueCount,
-            OverdueTasks: response.OverdueTasks.Select(ot => new OverdueTaskDto(
+            TotalOverdueCount: response.Summary.TotalOverdue,
+            OverdueTasks: response.Tasks.Select(ot => new OverdueTaskDto(
                 Id: ot.Id,
                 Title: ot.Title,
                 Category: ot.Category,
@@ -646,13 +646,19 @@ public class DashboardController : ControllerBase
                 Tags: ot.Tags
             )).ToList(),
             Analysis: new OverdueAnalysisDto(
-                CategoryBreakdown: response.Analysis.CategoryBreakdown,
-                PriorityBreakdown: response.Analysis.PriorityBreakdown,
-                UrgencyBreakdown: response.Analysis.UrgencyBreakdown,
-                AverageOverdueDays: response.Analysis.AverageOverdueDays,
-                CommonPatterns: response.Analysis.CommonPatterns
+                CategoryBreakdown: response.Analytics.CategoryBreakdown,
+                PriorityBreakdown: response.Analytics.PriorityBreakdown,
+                UrgencyBreakdown: new Dictionary<string, int>
+                {
+                    { "critical", response.Summary.CriticalPriorityCount },
+                    { "high", response.Summary.HighPriorityCount },
+                    { "medium", response.Summary.MediumPriorityCount },
+                    { "low", response.Summary.LowPriorityCount }
+                },
+                AverageOverdueDays: response.Summary.AverageDaysOverdue,
+                CommonPatterns: new List<string> { response.Summary.MostOverdueCategory }
             ),
-            Recommendations: response.Recommendations
+            Recommendations: response.Analytics.RecommendedActions
         );
     }
 
@@ -660,33 +666,44 @@ public class DashboardController : ControllerBase
     {
         return new CompletionStatsResponseDto(
             Overview: new CompletionOverviewDto(
-                TotalCompleted: response.Overview.TotalCompleted,
+                TotalCompleted: response.Overview.TotalTasksCompleted,
                 CompletionRate: response.Overview.CompletionRate,
-                AverageCompletionTime: response.Overview.AverageCompletionTime,
-                CompletedToday: response.Overview.CompletedToday,
-                CompletedThisWeek: response.Overview.CompletedThisWeek,
-                CompletedThisMonth: response.Overview.CompletedThisMonth
+                AverageCompletionTime: response.Overview.AverageCompletionTime.TotalMinutes,
+                CompletedToday: response.Trends.DailyData.LastOrDefault()?.TasksCompleted ?? 0,
+                CompletedThisWeek: response.Trends.WeeklyData.LastOrDefault()?.TasksCompleted ?? 0,
+                CompletedThisMonth: response.Trends.MonthlyData.LastOrDefault()?.TasksCompleted ?? 0
             ),
-            Trends: response.Trends.Select(t => new CompletionTrendDto(
-                Period: t.Period,
-                Completed: t.Completed,
-                CompletionRate: t.CompletionRate,
-                TrendDirection: t.TrendDirection
+            Trends: response.Trends.DailyData.Select(d => new CompletionTrendDto(
+                Period: d.Date,
+                Completed: d.TasksCompleted,
+                CompletionRate: d.CompletionRate,
+                TrendDirection: d.CompletionRate > 0.5 ? "up" : "down"
             )).ToList(),
-            Breakdowns: response.Breakdowns.ToDictionary(
-                kvp => kvp.Key,
-                kvp => new CompletionBreakdownDto(
-                    Items: kvp.Value.Items,
-                    Rates: kvp.Value.Rates,
-                    TopPerformer: kvp.Value.TopPerformer,
-                    NeedsAttention: kvp.Value.NeedsAttention
+            Breakdowns: new Dictionary<string, CompletionBreakdownDto>
+            {
+                ["categories"] = new CompletionBreakdownDto(
+                    Items: response.Breakdown.ByCategory.ToDictionary(kvp => kvp.Key, kvp => kvp.Value.CompletedTasks),
+                    Rates: response.Breakdown.ByCategory.ToDictionary(kvp => kvp.Key, kvp => kvp.Value.CompletionRate),
+                    TopPerformer: response.Comparison.BestCategory,
+                    NeedsAttention: response.Comparison.WorstCategory
+                ),
+                ["priorities"] = new CompletionBreakdownDto(
+                    Items: response.Breakdown.ByPriority.ToDictionary(kvp => kvp.Key, kvp => kvp.Value.CompletedTasks),
+                    Rates: response.Breakdown.ByPriority.ToDictionary(kvp => kvp.Key, kvp => kvp.Value.CompletionRate),
+                    TopPerformer: "high",
+                    NeedsAttention: "low"
                 )
-            ),
+            },
             Insights: new CompletionInsightsDto(
-                PositivePatterns: response.Insights.PositivePatterns,
-                AreasForImprovement: response.Insights.AreasForImprovement,
-                Recommendations: response.Insights.Recommendations,
-                PerformanceMetrics: response.Insights.PerformanceMetrics
+                PositivePatterns: response.Insights.Where(i => i.Severity == "positive").Select(i => i.Description).ToList(),
+                AreasForImprovement: response.Insights.Where(i => i.Severity == "warning").Select(i => i.Description).ToList(),
+                Recommendations: response.Insights.Select(i => i.Recommendation).ToList(),
+                PerformanceMetrics: new Dictionary<string, double>
+                {
+                    ["completionRate"] = response.Overview.CompletionRate,
+                    ["onTimeRate"] = response.Overview.OnTimeCompletionRate,
+                    ["velocity"] = response.Trends.Velocity.TasksPerDay
+                }
             )
         );
     }

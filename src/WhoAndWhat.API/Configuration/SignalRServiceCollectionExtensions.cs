@@ -31,7 +31,7 @@ public static class SignalRServiceCollectionExtensions
         {
             signalRBuilder.AddStackExchangeRedis(redisConnectionString, options =>
             {
-                options.Configuration.ChannelPrefix = "whoandwhat:signalr:";
+                options.Configuration.ChannelPrefix = StackExchange.Redis.RedisChannel.Literal("whoandwhat:signalr:");
             });
         }
 

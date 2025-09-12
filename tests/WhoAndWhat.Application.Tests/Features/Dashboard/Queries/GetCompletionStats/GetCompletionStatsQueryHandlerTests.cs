@@ -2,6 +2,7 @@ using FluentAssertions;
 using Microsoft.Extensions.Logging;
 using Moq;
 using WhoAndWhat.Application.Common;
+using WhoAndWhat.Application.DTOs;
 using WhoAndWhat.Application.Features.Dashboard.Queries.GetCompletionStats;
 using WhoAndWhat.Application.Interfaces;
 using WhoAndWhat.Domain.Entities;
