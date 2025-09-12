@@ -1,0 +1,356 @@
+# Azure DevOps CI/CD Pipeline for WhoAndWhat API
+# Trigger on main and develop branches, and pull requests
+
+trigger:
+  branches:
+    include:
+      - main
+      - develop
+      - feature/*
+  paths:
+    exclude:
+      - docs/*
+      - README.md
+      - .gitignore
+
+pr:
+  branches:
+    include:
+      - main
+      - develop
+
+variables:
+  - name: solution
+    value: '**/*.sln'
+  - name: buildPlatform
+    value: 'Any CPU'
+  - name: buildConfiguration
+    value: 'Release'
+  - name: dotnetVersion
+    value: '9.0.x'
+  - name: dockerImageTag
+    value: '$(Build.BuildId)'
+  - name: containerRegistry
+    value: 'whoandwhat-registry'
+  - name: imageName
+    value: 'whoandwhat-api'
+
+stages:
+  # Build Stage
+  - stage: Build
+    displayName: 'Build and Test'
+    jobs:
+      - job: BuildAndTest
+        displayName: 'Build, Test, and Package'
+        pool:
+          vmImage: 'ubuntu-latest'
+        
+        steps:
+          # Setup .NET
+          - task: UseDotNet@2
+            displayName: 'Use .NET $(dotnetVersion)'
+            inputs:
+              packageType: 'sdk'
+              version: '$(dotnetVersion)'
+              includePreviewVersions: true
+
+          # Restore dependencies
+          - task: DotNetCoreCLI@2
+            displayName: 'Restore packages'
+            inputs:
+              command: 'restore'
+              projects: '$(solution)'
+
+          # Build solution
+          - task: DotNetCoreCLI@2
+            displayName: 'Build solution'
+            inputs:
+              command: 'build'
+              projects: '$(solution)'
+              arguments: '--configuration $(buildConfiguration) --no-restore'
+
+          # Run unit tests with coverage
+          - task: DotNetCoreCLI@2
+            displayName: 'Run unit tests'
+            inputs:
+              command: 'test'
+              projects: 'tests/**/*Tests.csproj'
+              arguments: '--configuration $(buildConfiguration) --no-build --collect:"XPlat Code Coverage" --results-directory $(Agent.TempDirectory) --logger trx'
+              publishTestResults: true
+
+          # Generate code coverage report
+          - task: PublishCodeCoverageResults@1
+            displayName: 'Publish code coverage'
+            inputs:
+              codeCoverageTool: 'Cobertura'
+              summaryFileLocation: '$(Agent.TempDirectory)/**/coverage.cobertura.xml'
+              
+          # Architecture validation tests
+          - task: DotNetCoreCLI@2
+            displayName: 'Run architecture tests'
+            inputs:
+              command: 'test'
+              projects: 'tests/WhoAndWhat.Architecture.Tests/WhoAndWhat.Architecture.Tests.csproj'
+              arguments: '--configuration $(buildConfiguration) --no-build --logger trx'
+
+          # Build Docker image
+          - task: Docker@2
+            displayName: 'Build Docker image'
+            inputs:
+              containerRegistry: '$(containerRegistry)'
+              repository: '$(imageName)'
+              command: 'build'
+              Dockerfile: '**/Dockerfile'
+              tags: |
+                $(dockerImageTag)
+                latest
+
+          # Push Docker image to registry
+          - task: Docker@2
+            displayName: 'Push Docker image'
+            inputs:
+              containerRegistry: '$(containerRegistry)'
+              repository: '$(imageName)'
+              command: 'push'
+              tags: |
+                $(dockerImageTag)
+                latest
+            condition: and(succeeded(), or(eq(variables['Build.SourceBranch'], 'refs/heads/main'), eq(variables['Build.SourceBranch'], 'refs/heads/develop')))
+
+  # Security Scanning Stage
+  - stage: Security
+    displayName: 'Security Analysis'
+    dependsOn: Build
+    condition: succeeded()
+    jobs:
+      - job: SecurityScan
+        displayName: 'Security and Quality Analysis'
+        pool:
+          vmImage: 'ubuntu-latest'
+        
+        steps:
+          # Setup .NET
+          - task: UseDotNet@2
+            displayName: 'Use .NET $(dotnetVersion)'
+            inputs:
+              packageType: 'sdk'
+              version: '$(dotnetVersion)'
+
+          # Restore dependencies
+          - task: DotNetCoreCLI@2
+            displayName: 'Restore packages'
+            inputs:
+              command: 'restore'
+              projects: '$(solution)'
+
+          # SonarCloud analysis (prepare)
+          - task: SonarCloudPrepare@1
+            displayName: 'Prepare SonarCloud analysis'
+            inputs:
+              SonarCloud: 'SonarCloud'
+              organization: 'whoandwhat'
+              scannerMode: 'MSBuild'
+              projectKey: 'whoandwhat-api'
+              projectName: 'WhoAndWhat API'
+              extraProperties: |
+                sonar.cs.opencover.reportsPaths=$(Agent.TempDirectory)/**/coverage.opencover.xml
+                sonar.exclusions=**/bin/**,**/obj/**,**/*.Tests/**
+
+          # Build for analysis
+          - task: DotNetCoreCLI@2
+            displayName: 'Build for analysis'
+            inputs:
+              command: 'build'
+              projects: '$(solution)'
+              arguments: '--configuration $(buildConfiguration) --no-restore'
+
+          # Run tests with OpenCover format for SonarCloud
+          - task: DotNetCoreCLI@2
+            displayName: 'Run tests for coverage'
+            inputs:
+              command: 'test'
+              projects: 'tests/**/*Tests.csproj'
+              arguments: '--configuration $(buildConfiguration) --no-build --collect:"XPlat Code Coverage" -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=opencover'
+
+          # SonarCloud analysis (analyze)
+          - task: SonarCloudAnalyze@1
+            displayName: 'Run SonarCloud analysis'
+
+          # SonarCloud analysis (publish)
+          - task: SonarCloudPublish@1
+            displayName: 'Publish SonarCloud results'
+
+          # OWASP Dependency Check
+          - task: dependency-check-build-task@6
+            displayName: 'OWASP Dependency Check'
+            inputs:
+              projectName: 'WhoAndWhat API'
+              scanPath: '.'
+              format: 'ALL'
+              additionalArguments: '--enableExperimental --enableRetired'
+
+          # Publish security scan results
+          - task: PublishTestResults@2
+            displayName: 'Publish dependency check results'
+            inputs:
+              testResultsFormat: 'JUnit'
+              testResultsFiles: 'dependency-check-junit.xml'
+              searchFolder: '$(System.DefaultWorkingDirectory)'
+            condition: succeededOrFailed()
+
+  # Integration Testing Stage  
+  - stage: Integration
+    displayName: 'Integration Testing'
+    dependsOn: Build
+    condition: succeeded()
+    jobs:
+      - job: IntegrationTests
+        displayName: 'Run integration tests'
+        pool:
+          vmImage: 'ubuntu-latest'
+        services:
+          postgres:
+            image: postgres:15-alpine
+            env:
+              POSTGRES_DB: WhoAndWhat
+              POSTGRES_USER: postgres
+              POSTGRES_PASSWORD: postgres
+            ports:
+              - 5432:5432
+          redis:
+            image: redis:7-alpine
+            ports:
+              - 6379:6379
+
+        steps:
+          # Setup .NET
+          - task: UseDotNet@2
+            displayName: 'Use .NET $(dotnetVersion)'
+            inputs:
+              packageType: 'sdk'
+              version: '$(dotnetVersion)'
+
+          # Run Docker integration tests
+          - task: DotNetCoreCLI@2
+            displayName: 'Run Docker integration tests'
+            inputs:
+              command: 'test'
+              projects: 'tests/WhoAndWhat.Docker.Tests/WhoAndWhat.Docker.Tests.csproj'
+              arguments: '--configuration $(buildConfiguration) --logger trx'
+              publishTestResults: true
+
+          # Run API integration tests
+          - task: DotNetCoreCLI@2
+            displayName: 'Run API integration tests'
+            inputs:
+              command: 'test'
+              projects: 'tests/WhoAndWhat.API.Tests/WhoAndWhat.API.Tests.csproj'
+              arguments: '--configuration $(buildConfiguration) --logger trx'
+              publishTestResults: true
+            env:
+              ConnectionStrings__DefaultConnection: 'Host=localhost;Port=5432;Database=WhoAndWhat;Username=postgres;Password=postgres'
+              ConnectionStrings__Redis: 'localhost:6379'
+
+  # Staging Deployment Stage
+  - stage: DeployStaging
+    displayName: 'Deploy to Staging'
+    dependsOn: 
+      - Build
+      - Security
+      - Integration
+    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/develop'))
+    jobs:
+      - deployment: DeployToStaging
+        displayName: 'Deploy to Staging Environment'
+        pool:
+          vmImage: 'ubuntu-latest'
+        environment: 'staging'
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                # Download artifacts
+                - download: current
+                  artifact: drop
+
+                # Deploy to Azure Container Instances
+                - task: AzureContainerInstances@2
+                  displayName: 'Deploy to Azure Container Instances'
+                  inputs:
+                    azureSubscription: 'Azure Service Connection'
+                    resourceGroupName: 'whoandwhat-staging-rg'
+                    location: 'East US'
+                    containerInstanceName: 'whoandwhat-api-staging'
+                    containerGroupName: 'whoandwhat-staging'
+                    imageSource: 'Container Registry'
+                    registryLoginServer: '$(containerRegistry).azurecr.io'
+                    registryUsername: '$(containerRegistryUsername)'
+                    registryPassword: '$(containerRegistryPassword)'
+                    repositories: '$(containerRegistry).azurecr.io/$(imageName):$(dockerImageTag)'
+                    containerCommand: ''
+                    containerPorts: '8080'
+                    memoryInGB: '1'
+                    cpu: '1'
+                    environmentVariables: |
+                      ASPNETCORE_ENVIRONMENT=Staging
+                      ConnectionStrings__DefaultConnection=$(StagingDbConnectionString)
+                      JWT__SecretKey=$(StagingJwtSecret)
+
+                # Run smoke tests against staging
+                - task: DotNetCoreCLI@2
+                  displayName: 'Run staging smoke tests'
+                  inputs:
+                    command: 'test'
+                    projects: 'tests/WhoAndWhat.SmokeTests/WhoAndWhat.SmokeTests.csproj'
+                    arguments: '--configuration $(buildConfiguration) --logger trx'
+                    publishTestResults: true
+                  env:
+                    STAGING_API_URL: 'https://whoandwhat-api-staging.eastus.azurecontainer.io'
+
+  # Production Deployment Stage
+  - stage: DeployProduction
+    displayName: 'Deploy to Production'
+    dependsOn: DeployStaging
+    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+    jobs:
+      - deployment: DeployToProduction
+        displayName: 'Deploy to Production Environment'
+        pool:
+          vmImage: 'ubuntu-latest'
+        environment: 'production'
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                # Manual approval gate configured in Azure DevOps Environment
+                - task: AzureContainerInstances@2
+                  displayName: 'Deploy to Production Azure Container Instances'
+                  inputs:
+                    azureSubscription: 'Azure Service Connection'
+                    resourceGroupName: 'whoandwhat-prod-rg'
+                    location: 'East US'
+                    containerInstanceName: 'whoandwhat-api-prod'
+                    containerGroupName: 'whoandwhat-production'
+                    imageSource: 'Container Registry'
+                    registryLoginServer: '$(containerRegistry).azurecr.io'
+                    registryUsername: '$(containerRegistryUsername)'
+                    registryPassword: '$(containerRegistryPassword)'
+                    repositories: '$(containerRegistry).azurecr.io/$(imageName):$(dockerImageTag)'
+                    containerPorts: '8080'
+                    memoryInGB: '2'
+                    cpu: '2'
+                    environmentVariables: |
+                      ASPNETCORE_ENVIRONMENT=Production
+                      ConnectionStrings__DefaultConnection=$(ProductionDbConnectionString)
+                      JWT__SecretKey=$(ProductionJwtSecret)
+
+                # Run production health checks
+                - task: DotNetCoreCLI@2
+                  displayName: 'Run production health checks'
+                  inputs:
+                    command: 'test'
+                    projects: 'tests/WhoAndWhat.HealthChecks/WhoAndWhat.HealthChecks.csproj'
+                    arguments: '--configuration $(buildConfiguration) --logger trx'
+                    publishTestResults: true
+                  env:
+                    PRODUCTION_API_URL: 'https://api.whoandwhat.com'

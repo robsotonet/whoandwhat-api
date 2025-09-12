@@ -1,0 +1,128 @@
+Summary
+  Generated on: 9/6/2025 - 1:00:00 AM
+  Coverage date: 9/3/2025 - 9:30:17 PM - 9/6/2025 - 12:59:36 AM
+  Parser: MultiReport (35x Cobertura)
+  Assemblies: 4
+  Classes: 100
+  Files: 79
+  Line coverage: 61.1%
+  Covered lines: 2622
+  Uncovered lines: 1664
+  Coverable lines: 4286
+  Total lines: 7219
+  Branch coverage: 62% (375 of 604)
+  Covered branches: 375
+  Total branches: 604
+  Method coverage: 84.9% (531 of 625)
+  Full method coverage: 76.4% (478 of 625)
+  Covered methods: 531
+  Fully covered methods: 478
+  Total methods: 625
+
+WhoAndWhat.API                                                                            74.9%
+  Program                                                                                 95.7%
+  WhoAndWhat.API.Configuration.ApplicationBuilderExtensions                                100%
+  WhoAndWhat.API.Configuration.ServiceCollectionExtensions                                95.3%
+  WhoAndWhat.API.Controllers.v1.ApiInfoController                                          100%
+  WhoAndWhat.API.Controllers.v1.ApiInfoResponse                                            100%
+  WhoAndWhat.API.Controllers.v1.AuthController                                            58.2%
+  WhoAndWhat.API.Controllers.v1.OAuthAccountInfo                                             0%
+  WhoAndWhat.API.Controllers.v1.OAuthCallbackResponse                                        0%
+  WhoAndWhat.API.Controllers.v1.OAuthController                                              0%
+  WhoAndWhat.API.Controllers.v1.OAuthLinkRequest                                             0%
+  WhoAndWhat.API.Controllers.v1.OAuthLinkResponse                                            0%
+  WhoAndWhat.API.Controllers.v1.OAuthUnlinkResponse                                          0%
+  WhoAndWhat.API.Controllers.v1.OAuthUserInfo                                                0%
+  WhoAndWhat.API.Controllers.v1.UserOAuthAccountsResponse                                    0%
+  WhoAndWhat.API.Controllers.v1.VersionInfo                                                100%
+  WhoAndWhat.API.Middleware.DDoSProtectionMiddleware                                      50.6%
+  WhoAndWhat.API.Middleware.EnhancedSecurityHeadersMiddleware                             91.8%
+  WhoAndWhat.API.Middleware.ErrorDetail                                                    100%
+  WhoAndWhat.API.Middleware.ErrorResponse                                                  100%
+  WhoAndWhat.API.Middleware.GlobalExceptionMiddleware                                      100%
+  WhoAndWhat.API.Middleware.RequestTracker                                                 100%
+  WhoAndWhat.API.Middleware.SecurityHeadersMiddleware                                      100%
+  WhoAndWhat.API.Middleware.SuspiciousPatternTracker                                       100%
+
+WhoAndWhat.Application                                                                    90.5%
+  WhoAndWhat.Application.Behaviors.ValidationBehavior<T1, T2>                               95%
+  WhoAndWhat.Application.Common.Result                                                      60%
+  WhoAndWhat.Application.Common.Result<T>                                                  100%
+  WhoAndWhat.Application.DependencyInjection.ApplicationServiceCollectionExtensions       66.6%
+  WhoAndWhat.Application.DTOs.Authentication.CurrentUserResponse                           100%
+  WhoAndWhat.Application.DTOs.Authentication.LoginRequest                                  100%
+  WhoAndWhat.Application.DTOs.Authentication.LoginResponse                                 100%
+  WhoAndWhat.Application.DTOs.Authentication.LogoutRequest                                 100%
+  WhoAndWhat.Application.DTOs.Authentication.LogoutResponse                                100%
+  WhoAndWhat.Application.DTOs.Authentication.RefreshTokenRequest                           100%
+  WhoAndWhat.Application.DTOs.Authentication.RefreshTokenResponse                          100%
+  WhoAndWhat.Application.DTOs.Authentication.RegisterRequest                               100%
+  WhoAndWhat.Application.DTOs.Authentication.RegisterResponse                              100%
+  WhoAndWhat.Application.DTOs.Authentication.TokenResult                                   100%
+  WhoAndWhat.Application.Features.Auth.AccountVerificationService                          100%
+  WhoAndWhat.Application.Features.Auth.Commands.LoginUser.LoginUserCommand                  80%
+  WhoAndWhat.Application.Features.Auth.Commands.LoginUser.LoginUserCommandHandler          100%
+  WhoAndWhat.Application.Features.Auth.Commands.LogoutUser.LogoutUserCommand               100%
+  WhoAndWhat.Application.Features.Auth.Commands.LogoutUser.LogoutUserCommandHandler        100%
+  WhoAndWhat.Application.Features.Auth.Commands.RefreshToken.RefreshTokenCommand           100%
+  WhoAndWhat.Application.Features.Auth.Commands.RefreshToken.RefreshTokenCommandHandler    100%
+  WhoAndWhat.Application.Features.Auth.Commands.RegisterUser.RegisterUserCommand           100%
+  WhoAndWhat.Application.Features.Auth.Commands.RegisterUser.RegisterUserCommandHandler   89.1%
+  WhoAndWhat.Application.Features.Auth.PasswordResetService                                100%
+  WhoAndWhat.Application.Interfaces.OAuthProviders                                           0%
+  WhoAndWhat.Application.Validators.LoginRequestValidator                                    0%
+  WhoAndWhat.Application.Validators.LoginUserCommandValidator                              100%
+  WhoAndWhat.Application.Validators.RefreshTokenCommandValidator                           100%
+  WhoAndWhat.Application.Validators.RefreshTokenRequestValidator                             0%
+  WhoAndWhat.Application.Validators.RegisterRequestValidator                               100%
+  WhoAndWhat.Application.Validators.RegisterUserCommandValidator                           100%
+
+WhoAndWhat.Domain                                                                         84.1%
+  WhoAndWhat.Domain.Entities.BaseEntity                                                    100%
+  WhoAndWhat.Domain.Entities.Contact                                                        90%
+  WhoAndWhat.Domain.Entities.Event                                                         100%
+  WhoAndWhat.Domain.Entities.OAuthAccount                                                 87.8%
+  WhoAndWhat.Domain.Entities.Project                                                       100%
+  WhoAndWhat.Domain.Entities.RefreshToken                                                  100%
+  WhoAndWhat.Domain.Entities.Task                                                         93.3%
+  WhoAndWhat.Domain.Entities.User                                                         72.9%
+  WhoAndWhat.Domain.Events.DomainEvent                                                     100%
+  WhoAndWhat.Domain.Events.HasDomainEvents                                                 100%
+  WhoAndWhat.Domain.Events.UserCreatedEvent                                                100%
+  WhoAndWhat.Domain.Events.UserDeactivatedEvent                                            100%
+  WhoAndWhat.Domain.Events.UserEmailVerifiedEvent                                          100%
+  WhoAndWhat.Domain.Events.UserLockedEvent                                                 100%
+  WhoAndWhat.Domain.Events.UserLoggedInEvent                                               100%
+  WhoAndWhat.Domain.Events.UserPasswordChangedEvent                                        100%
+  WhoAndWhat.Domain.Events.UserPreferencesUpdatedEvent                                     100%
+  WhoAndWhat.Domain.Events.UserUnlockedEvent                                               100%
+  WhoAndWhat.Domain.Services.UserDomainService                                             100%
+  WhoAndWhat.Domain.Validators.ContactValidator                                            100%
+  WhoAndWhat.Domain.Validators.ProjectValidator                                            100%
+  WhoAndWhat.Domain.Validators.TaskValidator                                               100%
+  WhoAndWhat.Domain.Validators.UserValidator                                               100%
+
+WhoAndWhat.Infrastructure                                                                 29.4%
+  WhoAndWhat.Infrastructure.Configuration.AppleOAuthSettings                               100%
+  WhoAndWhat.Infrastructure.Configuration.ClearSiteDataSettings                            100%
+  WhoAndWhat.Infrastructure.Configuration.CSPSettings                                      100%
+  WhoAndWhat.Infrastructure.Configuration.DDoSProtectionSettings                           100%
+  WhoAndWhat.Infrastructure.Configuration.FacebookOAuthSettings                            100%
+  WhoAndWhat.Infrastructure.Configuration.GoogleOAuthSettings                              100%
+  WhoAndWhat.Infrastructure.Configuration.HSTSSettings                                     100%
+  WhoAndWhat.Infrastructure.Configuration.JwtSettings                                      100%
+  WhoAndWhat.Infrastructure.Configuration.OAuthCallbackSettings                            100%
+  WhoAndWhat.Infrastructure.Configuration.OAuthSettings                                    100%
+  WhoAndWhat.Infrastructure.Configuration.PermissionsPolicySettings                        100%
+  WhoAndWhat.Infrastructure.Configuration.SecurityHeadersSettings                          100%
+  WhoAndWhat.Infrastructure.Data.ApplicationDbContext                                      100%
+  WhoAndWhat.Infrastructure.Data.DataSeeder                                               68.4%
+  WhoAndWhat.Infrastructure.Data.DesignTimeDbContextFactory                                  0%
+  WhoAndWhat.Infrastructure.Migrations.ApplicationDbContextModelSnapshot                     0%
+  WhoAndWhat.Infrastructure.Migrations.InitialCreate                                         0%
+  WhoAndWhat.Infrastructure.Repositories.OAuthAccountRepository                              0%
+  WhoAndWhat.Infrastructure.Repositories.Repository<T>                                    81.2%
+  WhoAndWhat.Infrastructure.Repositories.UserRepository                                    100%
+  WhoAndWhat.Infrastructure.Services.DomainEventDispatcher                                   0%
+  WhoAndWhat.Infrastructure.Services.JwtTokenService                                      94.3%
+  WhoAndWhat.Infrastructure.Services.OAuthService                                            0%

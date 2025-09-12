@@ -1,0 +1,101 @@
+version: '3.8'
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: final
+    container_name: whoandwhat-api
+    ports:
+      - "5000:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:8080
+      - ConnectionStrings__DefaultConnection=Server=db;Port=5432;Database=WhoAndWhat;User Id=postgres;Password=postgres;
+      - JWT__SecretKey=YourDevelopmentSecretKeyHere_MinimumLength32Characters
+      - JWT__Issuer=WhoAndWhat-API
+      - JWT__Audience=WhoAndWhat-Client
+      - Logging__LogLevel__Default=Information
+      - Logging__LogLevel__Microsoft.AspNetCore=Warning
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      # Volume for hot reload in development (will be overridden by docker-compose.override.yml)
+      - ./src:/app/src:ro
+    networks:
+      - whoandwhat-network
+    restart: unless-stopped
+
+  db:
+    image: postgres:15-alpine
+    container_name: whoandwhat-db
+    environment:
+      POSTGRES_DB: WhoAndWhat
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8"
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/init:/docker-entrypoint-initdb.d:ro
+    networks:
+      - whoandwhat-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d WhoAndWhat"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # Redis cache (for future use)
+  redis:
+    image: redis:7-alpine
+    container_name: whoandwhat-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - whoandwhat-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  # pgAdmin for database management (development only)
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: whoandwhat-pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@whoandwhat.local
+      PGADMIN_DEFAULT_PASSWORD: admin
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+    ports:
+      - "8080:80"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    depends_on:
+      - db
+    networks:
+      - whoandwhat-network
+    restart: unless-stopped
+    profiles:
+      - development
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  pgadmin_data:
+    driver: local
+
+networks:
+  whoandwhat-network:
+    driver: bridge

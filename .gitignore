@@ -166,6 +166,11 @@ coverage*.info
 *.coverage
 *.coveragexml
 
+# Coverage reports (build artifacts)
+CoverageReport/
+TestResults/CoverageReport/
+coverage/
+
 # NCrunch
 _NCrunch_*
 .NCrunch_*

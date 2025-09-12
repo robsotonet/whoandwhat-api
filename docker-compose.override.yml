@@ -1,0 +1,29 @@
+version: '3.8'
+
+services:
+  api:
+    build:
+      target: build  # Use build stage for development with hot reload
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - DOTNET_USE_POLLING_FILE_WATCHER=true
+      - ASPNETCORE_LOGGING__CONSOLE__DISABLECOLORS=false
+    volumes:
+      # Enable hot reload by mounting source code
+      - .:/src:cached
+      - dotnet_packages:/root/.nuget/packages
+    working_dir: /src
+    command: ["dotnet", "watch", "run", "--project", "src/WhoAndWhat.API/WhoAndWhat.API.csproj", "--urls", "http://+:8080"]
+
+  db:
+    environment:
+      # Enable statement logging for development
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8"
+    command: ["postgres", "-c", "log_statement=all", "-c", "log_destination=stderr"]
+    volumes:
+      # Add development-specific init scripts
+      - ./database/dev-init:/docker-entrypoint-initdb.d:ro
+
+volumes:
+  dotnet_packages:
+    external: false
