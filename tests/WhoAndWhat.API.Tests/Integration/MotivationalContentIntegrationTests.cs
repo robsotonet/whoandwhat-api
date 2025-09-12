@@ -120,22 +120,24 @@ public class MotivationalContentIntegrationTests : IClassFixture<MotivationalCon
             userId,
             contentId,
             ContentDeliveryChannel.Dashboard,
-            deliveredAt,
+            null, // abTestGroup
             new Dictionary<string, object>
             {
                 ["device"] = "desktop",
-                ["sessionId"] = Guid.NewGuid().ToString()
+                ["sessionId"] = Guid.NewGuid().ToString(),
+                ["deliveredAt"] = deliveredAt
             });
 
         // Simulate user engagement
         deliveryLog.RecordEngagement(
             ContentEngagementType.ActionTaken,
-            deliveredAt.AddMinutes(5),
             new Dictionary<string, object>
             {
                 ["actionType"] = "task_created",
-                ["satisfaction"] = "high"
-            });
+                ["satisfaction"] = "high",
+                ["engagementTime"] = deliveredAt.AddMinutes(5)
+            },
+            TimeSpan.FromMinutes(5));
 
         _fixture.AddTestDeliveryLog(deliveryLog);
 
@@ -341,7 +343,7 @@ public class MotivationalContentIntegrationTests : IClassFixture<MotivationalCon
         var nyTimeZone = TimeZoneInfo.FindSystemTimeZoneById("America/New_York");
         var localTime = TimeZoneInfo.ConvertTimeFromUtc(nextDeliveryTime!.Value, nyTimeZone);
         
-        localTime.Hour.Should().BeOneOf(8, 13, "Should be scheduled for preferred times");
+        localTime.Hour.Should().BeOneOf(8, 13);
     }
 
     #endregion

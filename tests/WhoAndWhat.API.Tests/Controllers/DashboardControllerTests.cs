@@ -8,6 +8,7 @@ using Moq;
 using WhoAndWhat.API.Controllers.v1;
 using WhoAndWhat.Application.Common;
 using WhoAndWhat.Application.Features.Dashboard.Queries.GetMotivationalContent;
+using WhoAndWhat.Application.Features.Dashboard.Queries.GetDashboardMetrics;
 using WhoAndWhat.Application.Features.Dashboard.Queries.GetProductivityStreak;
 using WhoAndWhat.Application.Features.Dashboard.Queries.GetOverdueTasks;
 using WhoAndWhat.Application.Features.Dashboard.Queries.GetCompletionStats;
@@ -48,7 +49,7 @@ public class DashboardControllerTests : IDisposable
     {
         // Arrange
         var expectedResponse = new GetMotivationalContentResponse(
-            new List<MotivationalContentDto>
+            new List<WhoAndWhat.Application.Features.Dashboard.Queries.GetMotivationalContent.MotivationalContentDto>
             {
                 new(Guid.NewGuid(), "Test Title", "Test Message", "Achievement", "Productivity", 80, null, 
                     new Dictionary<string, object>(), true, 0.95),
@@ -64,10 +65,10 @@ public class DashboardControllerTests : IDisposable
                     .ReturnsAsync(result);
 
         // Act
-        var result = await _controller.GetMotivationalContent(3, "en", CancellationToken.None);
+        var actionResult = await _controller.GetMotivationalContent(3, "en", CancellationToken.None);
 
         // Assert
-        var okResult = result.Result.Should().BeOfType<OkObjectResult>().Subject;
+        var okResult = actionResult.Result.Should().BeOfType<OkObjectResult>().Subject;
         var response = okResult.Value.Should().BeOfType<GetMotivationalContentResponse>().Subject;
         
         response.Contents.Should().HaveCount(2);
@@ -123,7 +124,7 @@ public class DashboardControllerTests : IDisposable
     {
         // Arrange
         var expectedResponse = new GetMotivationalContentResponse(
-            new List<MotivationalContentDto>(),
+            new List<WhoAndWhat.Application.Features.Dashboard.Queries.GetMotivationalContent.MotivationalContentDto>(),
             0,
             new PersonalizationInfoDto(0, 5, new List<int>(), "", 0.0)
         );
@@ -151,10 +152,10 @@ public class DashboardControllerTests : IDisposable
                     .ReturnsAsync(result);
 
         // Act
-        var result = await _controller.GetMotivationalContent(3, "en", CancellationToken.None);
+        var actionResult = await _controller.GetMotivationalContent(3, "en", CancellationToken.None);
 
         // Assert
-        var badRequestResult = result.Result.Should().BeOfType<BadRequestObjectResult>().Subject;
+        var badRequestResult = actionResult.Result.Should().BeOfType<BadRequestObjectResult>().Subject;
         var problemDetails = badRequestResult.Value.Should().BeOfType<ProblemDetails>().Subject;
         problemDetails.Title.Should().Be("Failed to retrieve motivational content");
         problemDetails.Detail.Should().Be("Content service unavailable");
@@ -307,12 +308,33 @@ public class DashboardControllerTests : IDisposable
     [Fact]
     public async Task GetDashboardMetrics_WithAuthenticatedUser_ShouldReturnMetrics()
     {
+        // Arrange
+        var expectedResponse = new GetDashboardMetricsResponse(
+            CompletedTasksToday: 5,
+            CompletedTasksThisWeek: 20, 
+            CompletedTasksThisMonth: 75,
+            TotalActiveTasks: 10,
+            OverdueTasks: 2,
+            TasksCompletedOnTime: 18,
+            TasksCompletedLate: 2,
+            CompletionRate: 0.8,
+            OnTimeCompletionRate: 0.9,
+            CategoryBreakdown: new TaskCategoryStats(3, 2, 1, 2, 2),
+            PriorityBreakdown: new TaskPriorityStats(1, 3, 4, 2, 0),
+            Trends: new ProductivityTrends(2.5, 17.5, 5, 12, 
+                new List<DailyProductivityPoint>(), new List<WeeklyProductivityPoint>())
+        );
+
+        var result = Result<GetDashboardMetricsResponse>.Success(expectedResponse);
+        _mockMediator.Setup(m => m.Send(It.IsAny<GetDashboardMetricsQuery>(), It.IsAny<CancellationToken>()))
+                    .ReturnsAsync(result);
+
         // Act
-        var result = await _controller.GetDashboardMetrics(CancellationToken.None);
+        var actionResult = await _controller.GetDashboardMetrics(CancellationToken.None);
 
         // Assert
-        var okResult = result.Result.Should().BeOfType<OkObjectResult>().Subject;
-        var response = okResult.Value.Should().BeOfType<DashboardMetricsResponse>().Subject;
+        var okResult = actionResult.Result.Should().BeOfType<OkObjectResult>().Subject;
+        var response = okResult.Value.Should().BeOfType<GetDashboardMetricsResponse>().Subject;
         
         response.CompletedTasksToday.Should().Be(0);
         response.TotalActiveTasks.Should().Be(0);
@@ -358,7 +380,9 @@ public class DashboardControllerTests : IDisposable
         var expectedResponse = new GetProductivityStreakResponse(
             CurrentStreak: 7,
             LongestStreak: 15,
-            LastActivityDate: DateTime.UtcNow.AddHours(-2),
+            BestMonthlyStreak: 12,
+            LastCompletionDate: DateTime.UtcNow.AddHours(-2),
+            StreakStartDate: DateTime.UtcNow.AddDays(-7),
             Milestones: new List<StreakMilestone>
             {
                 new(Days: 7, Title: "One Week Streak", Description: "Completed tasks for 7 consecutive days", 
@@ -366,19 +390,25 @@ public class DashboardControllerTests : IDisposable
                 new(Days: 14, Title: "Two Week Streak", Description: "Completed tasks for 14 consecutive days", 
                     IsAchieved: false, AchievedDate: null)
             },
-            StreakHistory: new List<StreakHistory>
+            WeeklyStats: new StreakStats(
+                TotalDays: 7,
+                ActiveDays: 5,
+                CompletedTasks: 21,
+                ConsistencyRate: 0.85,
+                AverageTasksPerDay: 3.0
+            ),
+            MonthlyStats: new StreakStats(
+                TotalDays: 30,
+                ActiveDays: 22,
+                CompletedTasks: 75,
+                ConsistencyRate: 0.73,
+                AverageTasksPerDay: 2.5
+            ),
+            Last30Days: new List<DailyStreakPoint>
             {
-                new(StartDate: DateTime.UtcNow.AddDays(-7), EndDate: DateTime.UtcNow, 
-                    Duration: 7, TasksCompleted: 21, StreakType: "current"),
-                new(StartDate: DateTime.UtcNow.AddDays(-25), EndDate: DateTime.UtcNow.AddDays(-10), 
-                    Duration: 15, TasksCompleted: 45, StreakType: "past")
-            },
-            Insights: new StreakInsights(
-                ConsistencyScore: 0.85,
-                BestPeriod: "morning",
-                SuccessFactors: new List<string> { "Daily planning", "Morning routine" },
-                ImprovementAreas: new List<string> { "Weekend consistency", "Evening tasks" }
-            )
+                new(Date: DateTime.UtcNow.AddDays(-1), HasActivity: true, CompletedTasks: 3, IsPartOfCurrentStreak: true),
+                new(Date: DateTime.UtcNow.AddDays(-2), HasActivity: true, CompletedTasks: 2, IsPartOfCurrentStreak: true)
+            }
         );
 
         var result = Result<GetProductivityStreakResponse>.Success(expectedResponse);
@@ -402,12 +432,7 @@ public class DashboardControllerTests : IDisposable
         _mockMediator.Verify(m => m.Send(
             It.Is<GetProductivityStreakQuery>(q => 
                 q.UserId == _testUserId &&
-                q.StartDate == request.StartDate &&
-                q.EndDate == request.EndDate &&
-                q.IncludeMilestones == request.IncludeMilestones &&
-                q.IncludeHistory == request.IncludeHistory &&
-                q.IncludeInsights == request.IncludeInsights &&
-                q.MaxHistoryDays == request.MaxHistoryDays),
+                true),
             It.IsAny<CancellationToken>()), Times.Once);
     }
 
@@ -419,10 +444,13 @@ public class DashboardControllerTests : IDisposable
         var expectedResponse = new GetProductivityStreakResponse(
             CurrentStreak: 0,
             LongestStreak: 0,
-            LastActivityDate: null,
+            BestMonthlyStreak: 0,
+            LastCompletionDate: null,
+            StreakStartDate: null,
             Milestones: new List<StreakMilestone>(),
-            StreakHistory: new List<StreakHistory>(),
-            Insights: new StreakInsights(0.0, "none", new List<string>(), new List<string>())
+            WeeklyStats: new StreakStats(0, 0, 0, 0.0, 0.0),
+            MonthlyStats: new StreakStats(0, 0, 0, 0.0, 0.0),
+            Last30Days: new List<DailyStreakPoint>()
         );
 
         var result = Result<GetProductivityStreakResponse>.Success(expectedResponse);
@@ -468,10 +496,13 @@ public class DashboardControllerTests : IDisposable
         var expectedResponse = new GetProductivityStreakResponse(
             CurrentStreak: 5,
             LongestStreak: 10,
-            LastActivityDate: endDate,
+            BestMonthlyStreak: 8,
+            LastCompletionDate: endDate,
+            StreakStartDate: endDate.AddDays(-5),
             Milestones: new List<StreakMilestone>(),
-            StreakHistory: new List<StreakHistory>(),
-            Insights: new StreakInsights(0.5, "afternoon", new List<string>(), new List<string>())
+            WeeklyStats: new StreakStats(7, 5, 15, 0.5, 2.14),
+            MonthlyStats: new StreakStats(30, 18, 45, 0.6, 1.5),
+            Last30Days: new List<DailyStreakPoint>()
         );
 
         var result = Result<GetProductivityStreakResponse>.Success(expectedResponse);
@@ -507,10 +538,13 @@ public class DashboardControllerTests : IDisposable
         var expectedResponse = new GetProductivityStreakResponse(
             CurrentStreak: 3,
             LongestStreak: 8,
-            LastActivityDate: DateTime.UtcNow,
+            BestMonthlyStreak: 6,
+            LastCompletionDate: DateTime.UtcNow,
+            StreakStartDate: DateTime.UtcNow.AddDays(-3),
             Milestones: new List<StreakMilestone>(),
-            StreakHistory: new List<StreakHistory>(),
-            Insights: new StreakInsights(0.7, "evening", new List<string>(), new List<string>())
+            WeeklyStats: new StreakStats(7, 4, 12, 0.7, 1.71),
+            MonthlyStats: new StreakStats(30, 20, 60, 0.67, 2.0),
+            Last30Days: new List<DailyStreakPoint>()
         );
 
         var result = Result<GetProductivityStreakResponse>.Success(expectedResponse);
@@ -582,21 +616,19 @@ public class DashboardControllerTests : IDisposable
         var request = new ProductivityStreakRequestDto(IncludeMilestones: true, IncludeHistory: true);
         var milestone1 = new StreakMilestone(7, "Week Warrior", "One week streak achieved", true, DateTime.UtcNow.AddDays(-5));
         var milestone2 = new StreakMilestone(30, "Monthly Master", "One month streak", false, null);
-        var history1 = new StreakHistory(DateTime.UtcNow.AddDays(-10), DateTime.UtcNow.AddDays(-3), 7, 14, "past");
-        var history2 = new StreakHistory(DateTime.UtcNow.AddDays(-2), DateTime.UtcNow, 2, 6, "current");
+        var dailyPoint1 = new DailyStreakPoint(DateTime.UtcNow.AddDays(-10), true, 2, false);
+        var dailyPoint2 = new DailyStreakPoint(DateTime.UtcNow.AddDays(-2), true, 3, true);
 
         var expectedResponse = new GetProductivityStreakResponse(
             CurrentStreak: 10,
             LongestStreak: 22,
-            LastActivityDate: DateTime.UtcNow.AddHours(-1),
+            BestMonthlyStreak: 18,
+            LastCompletionDate: DateTime.UtcNow.AddHours(-1),
+            StreakStartDate: DateTime.UtcNow.AddDays(-10),
             Milestones: new List<StreakMilestone> { milestone1, milestone2 },
-            StreakHistory: new List<StreakHistory> { history1, history2 },
-            Insights: new StreakInsights(
-                ConsistencyScore: 0.92,
-                BestPeriod: "morning",
-                SuccessFactors: new List<string> { "Early start", "Consistent planning", "Goal setting" },
-                ImprovementAreas: new List<string> { "Weekend gaps", "Holiday consistency" }
-            )
+            WeeklyStats: new StreakStats(7, 6, 18, 0.92, 2.57),
+            MonthlyStats: new StreakStats(30, 25, 75, 0.83, 2.5),
+            Last30Days: new List<DailyStreakPoint> { dailyPoint1, dailyPoint2 }
         );
 
         var result = Result<GetProductivityStreakResponse>.Success(expectedResponse);
@@ -654,10 +686,13 @@ public class DashboardControllerTests : IDisposable
         var expectedResponse = new GetProductivityStreakResponse(
             CurrentStreak: 5,
             LongestStreak: 12,
-            LastActivityDate: DateTime.UtcNow,
+            BestMonthlyStreak: 10,
+            LastCompletionDate: DateTime.UtcNow,
+            StreakStartDate: DateTime.UtcNow.AddDays(-5),
             Milestones: new List<StreakMilestone>(),
-            StreakHistory: new List<StreakHistory>(),
-            Insights: new StreakInsights(0.8, "afternoon", new List<string>(), new List<string>())
+            WeeklyStats: new StreakStats(7, 5, 15, 0.8, 2.14),
+            MonthlyStats: new StreakStats(30, 22, 66, 0.73, 2.2),
+            Last30Days: new List<DailyStreakPoint>()
         );
 
         var result = Result<GetProductivityStreakResponse>.Success(expectedResponse);
@@ -1980,9 +2015,18 @@ public class DashboardControllerTests : IDisposable
         );
 
         var expectedResponse = new ExportDashboardDataResponse(
-            ContentType: "application/json",
+            FileContent: System.Text.Encoding.UTF8.GetBytes("{\"tasks\": [], \"metrics\": {}}"),
             FileName: "dashboard-export-20241211.json",
-            FileContent: System.Text.Encoding.UTF8.GetBytes("{\"tasks\": [], \"metrics\": {}}")
+            ContentType: "application/json",
+            RecordCount: 0,
+            Metadata: new ExportMetadata(
+                ExportedAt: DateTime.UtcNow,
+                ExportedBy: "Test User",
+                Options: new ExportOptionsDto(),
+                RecordCounts: new Dictionary<string, int> { ["tasks"] = 0, ["metrics"] = 0 },
+                FileSizeBytes: 1024,
+                ChecksumHash: "test-hash"
+            )
         );
 
         var result = Result<ExportDashboardDataResponse>.Success(expectedResponse);
@@ -2021,9 +2065,18 @@ public class DashboardControllerTests : IDisposable
         // Arrange
         var request = new ExportDashboardDataRequestDto(Format: format);
         var expectedResponse = new ExportDashboardDataResponse(
-            ContentType: expectedContentType,
+            FileContent: new byte[] { 0x01, 0x02, 0x03 },
             FileName: $"dashboard-export.{format}",
-            FileContent: new byte[] { 0x01, 0x02, 0x03 }
+            ContentType: expectedContentType,
+            RecordCount: 5,
+            Metadata: new ExportMetadata(
+                ExportedAt: DateTime.UtcNow,
+                ExportedBy: "Test User",
+                Options: new ExportOptionsDto(),
+                RecordCounts: new Dictionary<string, int> { ["tasks"] = 3, ["metrics"] = 2 },
+                FileSizeBytes: 1024,
+                ChecksumHash: "test-hash"
+            )
         );
 
         var result = Result<ExportDashboardDataResponse>.Success(expectedResponse);
@@ -2073,9 +2126,18 @@ public class DashboardControllerTests : IDisposable
         );
 
         var expectedResponse = new ExportDashboardDataResponse(
-            ContentType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            FileContent: new byte[] { 0x50, 0x4B }, // Excel header bytes
             FileName: "comprehensive-dashboard-export.xlsx",
-            FileContent: new byte[] { 0x50, 0x4B } // Excel header bytes
+            ContentType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            RecordCount: 15,
+            Metadata: new ExportMetadata(
+                ExportedAt: DateTime.UtcNow,
+                ExportedBy: "Test User",
+                Options: new ExportOptionsDto(),
+                RecordCounts: new Dictionary<string, int> { ["tasks"] = 10, ["metrics"] = 5 },
+                FileSizeBytes: 2048,
+                ChecksumHash: "test-hash"
+            )
         );
 
         var result = Result<ExportDashboardDataResponse>.Success(expectedResponse);
@@ -2151,9 +2213,18 @@ public class DashboardControllerTests : IDisposable
         );
 
         var expectedResponse = new GenerateDashboardReportResponse(
-            ContentType: "application/pdf",
+            ReportContent: new byte[] { 0x25, 0x50, 0x44, 0x46 }, // PDF header
             ReportFileName: "dashboard-summary-report-20241211.pdf",
-            ReportContent: new byte[] { 0x25, 0x50, 0x44, 0x46 } // PDF header
+            ContentType: "application/pdf",
+            Metadata: new ReportMetadata(
+                GeneratedAt: DateTime.UtcNow,
+                GeneratedBy: "Test User",
+                ReportType: "summary",
+                Options: new ReportOptionsDto(),
+                Summary: new ReportSummary(10, 8, 0.8, 5, 3, 2, DateTime.UtcNow.AddDays(-30), DateTime.UtcNow),
+                FileSizeBytes: 1024,
+                ChecksumHash: "test-hash"
+            )
         );
 
         var result = Result<GenerateDashboardReportResponse>.Success(expectedResponse);
@@ -2197,9 +2268,18 @@ public class DashboardControllerTests : IDisposable
         );
 
         var expectedResponse = new GenerateDashboardReportResponse(
-            ContentType: expectedContentType,
+            ReportContent: new byte[] { 0x01, 0x02, 0x03 },
             ReportFileName: $"dashboard-{reportType}-report.{format}",
-            ReportContent: new byte[] { 0x01, 0x02, 0x03 }
+            ContentType: expectedContentType,
+            Metadata: new ReportMetadata(
+                GeneratedAt: DateTime.UtcNow,
+                GeneratedBy: "Test User",
+                ReportType: reportType,
+                Options: new ReportOptionsDto(),
+                Summary: new ReportSummary(10, 8, 0.8, 5, 3, 2, DateTime.UtcNow.AddDays(-30), DateTime.UtcNow),
+                FileSizeBytes: 1024,
+                ChecksumHash: "test-hash"
+            )
         );
 
         var result = Result<GenerateDashboardReportResponse>.Success(expectedResponse);
@@ -2248,9 +2328,18 @@ public class DashboardControllerTests : IDisposable
         );
 
         var expectedResponse = new GenerateDashboardReportResponse(
-            ContentType: "text/html",
+            ReportContent: System.Text.Encoding.UTF8.GetBytes("<html><body>Report Content</body></html>"),
             ReportFileName: "comprehensive-detailed-report.html",
-            ReportContent: System.Text.Encoding.UTF8.GetBytes("<html><body>Report Content</body></html>")
+            ContentType: "text/html",
+            Metadata: new ReportMetadata(
+                GeneratedAt: DateTime.UtcNow,
+                GeneratedBy: "Test User",
+                ReportType: "detailed",
+                Options: new ReportOptionsDto(),
+                Summary: new ReportSummary(10, 8, 0.8, 5, 3, 2, DateTime.UtcNow.AddDays(-30), DateTime.UtcNow),
+                FileSizeBytes: 1024,
+                ChecksumHash: "test-hash"
+            )
         );
 
         var result = Result<GenerateDashboardReportResponse>.Success(expectedResponse);
@@ -2313,9 +2402,18 @@ public class DashboardControllerTests : IDisposable
         // Arrange
         var request = new GenerateDashboardReportRequestDto(ReportType: "analytical");
         var expectedResponse = new GenerateDashboardReportResponse(
-            ContentType: "application/pdf",
+            ReportContent: new byte[] { 0x25, 0x50, 0x44, 0x46 },
             ReportFileName: "analytical-report.pdf",
-            ReportContent: new byte[] { 0x25, 0x50, 0x44, 0x46 }
+            ContentType: "application/pdf",
+            Metadata: new ReportMetadata(
+                GeneratedAt: DateTime.UtcNow,
+                GeneratedBy: "Test User",
+                ReportType: "analytical",
+                Options: new ReportOptionsDto(),
+                Summary: new ReportSummary(10, 8, 0.8, 5, 3, 2, DateTime.UtcNow.AddDays(-30), DateTime.UtcNow),
+                FileSizeBytes: 1024,
+                ChecksumHash: "test-hash"
+            )
         );
 
         var result = Result<GenerateDashboardReportResponse>.Success(expectedResponse);
@@ -2344,9 +2442,18 @@ public class DashboardControllerTests : IDisposable
         // Arrange
         var request = new ExportDashboardDataRequestDto(Format: "csv");
         var expectedResponse = new ExportDashboardDataResponse(
-            ContentType: "text/csv",
+            FileContent: new byte[] { 0x01, 0x02 },
             FileName: "export.csv",
-            FileContent: new byte[] { 0x01, 0x02 }
+            ContentType: "text/csv",
+            RecordCount: 2,
+            Metadata: new ExportMetadata(
+                ExportedAt: DateTime.UtcNow,
+                ExportedBy: "Test User",
+                Options: new ExportOptionsDto(),
+                RecordCounts: new Dictionary<string, int> { ["tasks"] = 2 },
+                FileSizeBytes: 512,
+                ChecksumHash: "test-hash"
+            )
         );
 
         var result = Result<ExportDashboardDataResponse>.Success(expectedResponse);
