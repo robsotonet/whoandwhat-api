@@ -79,7 +79,7 @@ public sealed class GetOverdueTasksQueryHandler
             var summary = CalculateSummary(overdueTasks, today);
 
             // Calculate analytics
-            var analytics = await CalculateAnalytics(overdueTasks, allTasks.ToList(), today, cancellationToken);
+            var analytics = CalculateAnalytics(overdueTasks, allTasks.ToList(), today, cancellationToken);
 
             var response = new GetOverdueTasksResponse(
                 Tasks: taskDtos,
@@ -124,11 +124,15 @@ public sealed class GetOverdueTasksQueryHandler
     {
         // High urgency: Urgent priority OR more than 7 days overdue
         if (priority == (int)Priority.Urgent || daysOverdue > 7)
+        {
             return "High";
+        }
 
         // Medium urgency: High priority OR more than 3 days overdue
         if (priority == (int)Priority.High || daysOverdue > 3)
+        {
             return "Medium";
+        }
 
         // Everything else is low urgency
         return "Low";
@@ -175,7 +179,7 @@ public sealed class GetOverdueTasksQueryHandler
         );
     }
 
-    private async Task<OverdueTasksAnalytics> CalculateAnalytics(
+    private OverdueTasksAnalytics CalculateAnalytics(
         List<Domain.Entities.AppTask> overdueTasks, 
         List<Domain.Entities.AppTask> allTasks, 
         DateTime today,

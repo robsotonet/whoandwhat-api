@@ -96,14 +96,20 @@ public sealed class GetProductivityStreakQueryHandler
 
     private int CalculateCurrentStreak(List<DateTime> activeDates, DateTime today)
     {
-        if (!activeDates.Any()) return 0;
+        if (!activeDates.Any())
+        {
+            return 0;
+        }
 
         var streak = 0;
         var currentDate = today;
 
         // Check if there's activity today or yesterday (allow for timezone differences)
         var hasRecentActivity = activeDates.Any(d => d >= today.AddDays(-1));
-        if (!hasRecentActivity) return 0;
+        if (!hasRecentActivity)
+        {
+            return 0;
+        }
 
         // Count consecutive days backwards
         while (activeDates.Contains(currentDate))
@@ -117,7 +123,10 @@ public sealed class GetProductivityStreakQueryHandler
 
     private int CalculateLongestStreak(List<DateTime> activeDates)
     {
-        if (!activeDates.Any()) return 0;
+        if (!activeDates.Any())
+        {
+            return 0;
+        }
 
         int longestStreak = 1;
         int currentStreak = 1;
@@ -140,7 +149,10 @@ public sealed class GetProductivityStreakQueryHandler
 
     private int CalculateBestMonthlyStreak(List<DateTime> activeDates)
     {
-        if (!activeDates.Any()) return 0;
+        if (!activeDates.Any())
+        {
+            return 0;
+        }
 
         var monthlyStreaks = new Dictionary<string, int>();
         
@@ -188,7 +200,10 @@ public sealed class GetProductivityStreakQueryHandler
 
     private int FindStreakOfLength(List<DateTime> activeDates, int targetLength)
     {
-        if (activeDates.Count < targetLength) return -1;
+        if (activeDates.Count < targetLength)
+        {
+            return -1;
+        }
 
         int currentStreak = 1;
         int streakStart = 0;

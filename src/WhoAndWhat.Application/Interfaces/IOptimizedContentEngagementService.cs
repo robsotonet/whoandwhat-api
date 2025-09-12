@@ -14,7 +14,7 @@ public interface IOptimizedContentEngagementService
     /// <param name="count">Number of content items to return</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>List of personalized content ordered by relevance</returns>
-    Task<List<MotivationalContent>> GetPersonalizedContentAsync(
+    public Task<List<MotivationalContent>> GetPersonalizedContentAsync(
         Guid userId, 
         int count = 3, 
         CancellationToken cancellationToken = default);
@@ -24,7 +24,7 @@ public interface IOptimizedContentEngagementService
     /// </summary>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Number of content items optimized</returns>
-    Task<int> OptimizeContentForEngagementAsync(CancellationToken cancellationToken = default);
+    public Task<int> OptimizeContentForEngagementAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Records user interaction with content for future optimization
@@ -34,7 +34,7 @@ public interface IOptimizedContentEngagementService
     /// <param name="interactionType">Type of interaction (view, click, share, dismiss)</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>True if interaction was recorded successfully</returns>
-    Task<bool> RecordUserInteractionAsync(
+    public Task<bool> RecordUserInteractionAsync(
         Guid userId,
         Guid contentId,
         string interactionType,
@@ -46,7 +46,7 @@ public interface IOptimizedContentEngagementService
     /// <param name="userId">The user ID</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>True if preferences were updated</returns>
-    Task<bool> UpdateUserPreferencesFromBehaviorAsync(
+    public Task<bool> UpdateUserPreferencesFromBehaviorAsync(
         Guid userId,
         CancellationToken cancellationToken = default);
 
@@ -57,7 +57,7 @@ public interface IOptimizedContentEngagementService
     /// <param name="endDate">End date for analytics period</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Dictionary of content performance metrics</returns>
-    Task<Dictionary<string, object>> GetContentPerformanceAnalyticsAsync(
+    public Task<Dictionary<string, object>> GetContentPerformanceAnalyticsAsync(
         DateTime startDate,
         DateTime endDate,
         CancellationToken cancellationToken = default);

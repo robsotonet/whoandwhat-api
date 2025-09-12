@@ -58,7 +58,7 @@ public sealed class GetDashboardMetricsQueryHandler
             var lateTasks = tasksWithDueDates.Count - onTimeTasks;
 
             // Calculate rates
-            var totalTasksEver = allTasks.Count;
+            var totalTasksEver = allTasks.Count();
             var completionRate = totalTasksEver > 0 ? (double)completedTasks.Count / totalTasksEver : 0.0;
             var onTimeRate = tasksWithDueDates.Count > 0 ? (double)onTimeTasks / tasksWithDueDates.Count : 0.0;
 
@@ -188,7 +188,9 @@ public sealed class GetDashboardMetricsQueryHandler
         {
             var hasTasksOnDate = completedTasks.Any(t => t.UpdatedAt.Date == currentDate);
             if (!hasTasksOnDate)
+            {
                 break;
+            }
 
             streak++;
             currentDate = currentDate.AddDays(-1);
@@ -199,7 +201,10 @@ public sealed class GetDashboardMetricsQueryHandler
 
     private int CalculateLongestStreak(List<Domain.Entities.AppTask> completedTasks)
     {
-        if (!completedTasks.Any()) return 0;
+        if (!completedTasks.Any())
+        {
+            return 0;
+        }
 
         var dates = completedTasks
             .Select(t => t.UpdatedAt.Date)
@@ -207,7 +212,10 @@ public sealed class GetDashboardMetricsQueryHandler
             .OrderBy(d => d)
             .ToList();
 
-        if (!dates.Any()) return 0;
+        if (!dates.Any())
+        {
+            return 0;
+        }
 
         int longestStreak = 1;
         int currentStreak = 1;

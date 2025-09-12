@@ -68,9 +68,9 @@ public sealed class GenerateDashboardReportQueryHandler
             // Generate report file
             var reportResult = request.Options.Format.ToLowerInvariant() switch
             {
-                "html" => await GenerateHtmlReport(reportData, request.ReportType, request.Options),
-                "markdown" => await GenerateMarkdownReport(reportData, request.ReportType, request.Options),
-                "pdf" => await GeneratePdfReport(reportData, request.ReportType, request.Options),
+                "html" => GenerateHtmlReport(reportData, request.ReportType, request.Options),
+                "markdown" => GenerateMarkdownReport(reportData, request.ReportType, request.Options),
+                "pdf" => GeneratePdfReport(reportData, request.ReportType, request.Options),
                 _ => throw new InvalidOperationException($"Unsupported report format: {request.Options.Format}")
             };
 
@@ -133,14 +133,14 @@ public sealed class GenerateDashboardReportQueryHandler
         // Generate insights based on report type
         var insights = reportType.ToLowerInvariant() switch
         {
-            "analytical" => await GenerateAnalyticalInsights(filteredTasks, options),
-            "detailed" => await GenerateDetailedInsights(filteredTasks, options),
-            _ => await GenerateSummaryInsights(filteredTasks, options)
+            "analytical" => GenerateAnalyticalInsights(filteredTasks, options),
+            "detailed" => GenerateDetailedInsights(filteredTasks, options),
+            _ => GenerateSummaryInsights(filteredTasks, options)
         };
 
         // Generate recommendations
         var recommendations = options.IncludeRecommendations 
-            ? await GenerateRecommendations(filteredTasks, insights, options)
+            ? GenerateRecommendations(filteredTasks, insights, options)
             : new List<ReportRecommendation>();
 
         var summary = new ReportSummary(
@@ -159,11 +159,11 @@ public sealed class GenerateDashboardReportQueryHandler
             Summary: summary,
             Insights: insights,
             Recommendations: recommendations,
-            Charts: options.IncludeCharts ? await GenerateChartData(filteredTasks, options) : new List<ChartData>()
+            Charts: options.IncludeCharts ? GenerateChartData(filteredTasks, options) : new List<ChartData>()
         );
     }
 
-    private async Task<List<ReportInsight>> GenerateSummaryInsights(List<AppTask> tasks, ReportOptionsDto options)
+    private List<ReportInsight> GenerateSummaryInsights(List<AppTask> tasks, ReportOptionsDto options)
     {
         var insights = new List<ReportInsight>();
 
@@ -211,9 +211,9 @@ public sealed class GenerateDashboardReportQueryHandler
         return insights;
     }
 
-    private async Task<List<ReportInsight>> GenerateDetailedInsights(List<AppTask> tasks, ReportOptionsDto options)
+    private List<ReportInsight> GenerateDetailedInsights(List<AppTask> tasks, ReportOptionsDto options)
     {
-        var insights = await GenerateSummaryInsights(tasks, options);
+        var insights = GenerateSummaryInsights(tasks, options);
 
         // Add priority analysis
         var priorityStats = tasks
@@ -257,9 +257,9 @@ public sealed class GenerateDashboardReportQueryHandler
         return insights;
     }
 
-    private async Task<List<ReportInsight>> GenerateAnalyticalInsights(List<AppTask> tasks, ReportOptionsDto options)
+    private List<ReportInsight> GenerateAnalyticalInsights(List<AppTask> tasks, ReportOptionsDto options)
     {
-        var insights = await GenerateDetailedInsights(tasks, options);
+        var insights = GenerateDetailedInsights(tasks, options);
 
         // Add time-based productivity analysis
         var hourlyStats = tasks
@@ -306,7 +306,7 @@ public sealed class GenerateDashboardReportQueryHandler
         return insights;
     }
 
-    private async Task<List<ReportRecommendation>> GenerateRecommendations(
+    private List<ReportRecommendation> GenerateRecommendations(
         List<AppTask> tasks, 
         List<ReportInsight> insights, 
         ReportOptionsDto options)
@@ -379,7 +379,7 @@ public sealed class GenerateDashboardReportQueryHandler
         return recommendations;
     }
 
-    private async Task<List<ChartData>> GenerateChartData(List<AppTask> tasks, ReportOptionsDto options)
+    private List<ChartData> GenerateChartData(List<AppTask> tasks, ReportOptionsDto options)
     {
         var charts = new List<ChartData>();
 
@@ -446,7 +446,7 @@ public sealed class GenerateDashboardReportQueryHandler
         return currentStreak;
     }
 
-    private async Task<ReportFile> GenerateHtmlReport(ReportData data, string reportType, ReportOptionsDto options)
+    private ReportFile GenerateHtmlReport(ReportData data, string reportType, ReportOptionsDto options)
     {
         var html = new StringBuilder();
         html.AppendLine("<!DOCTYPE html>");
@@ -511,7 +511,7 @@ public sealed class GenerateDashboardReportQueryHandler
         return new ReportFile(content, fileName, "text/html");
     }
 
-    private async Task<ReportFile> GenerateMarkdownReport(ReportData data, string reportType, ReportOptionsDto options)
+    private ReportFile GenerateMarkdownReport(ReportData data, string reportType, ReportOptionsDto options)
     {
         var md = new StringBuilder();
         md.AppendLine($"# Dashboard Report - {reportType.ToUpperInvariant()}");
@@ -574,11 +574,11 @@ public sealed class GenerateDashboardReportQueryHandler
         return new ReportFile(content, fileName, "text/markdown");
     }
 
-    private async Task<ReportFile> GeneratePdfReport(ReportData data, string reportType, ReportOptionsDto options)
+    private ReportFile GeneratePdfReport(ReportData data, string reportType, ReportOptionsDto options)
     {
         // For now, generate HTML and indicate it would be converted to PDF
         // In a real implementation, you would use libraries like iTextSharp, PuppeteerSharp, or similar
-        var htmlResult = await GenerateHtmlReport(data, reportType, options);
+        var htmlResult = GenerateHtmlReport(data, reportType, options);
         
         var fileName = $"dashboard_report_{DateTime.UtcNow:yyyyMMdd_HHmmss}.pdf";
         return new ReportFile(htmlResult.ReportContent, fileName, "application/pdf");

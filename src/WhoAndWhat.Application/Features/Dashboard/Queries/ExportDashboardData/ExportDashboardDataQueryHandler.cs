@@ -60,9 +60,9 @@ public sealed class ExportDashboardDataQueryHandler
             // Generate export file based on format
             var exportResult = request.Format.ToLowerInvariant() switch
             {
-                "csv" => await GenerateCsvExport(dashboardData, request.Options),
-                "json" => await GenerateJsonExport(dashboardData, request.Options),
-                "excel" => await GenerateExcelExport(dashboardData, request.Options),
+                "csv" => GenerateCsvExport(dashboardData, request.Options),
+                "json" => GenerateJsonExport(dashboardData, request.Options),
+                "excel" => GenerateExcelExport(dashboardData, request.Options),
                 _ => throw new InvalidOperationException($"Unsupported export format: {request.Format}")
             };
 
@@ -314,7 +314,7 @@ public sealed class ExportDashboardDataQueryHandler
         return analytics;
     }
 
-    private async Task<ExportFile> GenerateCsvExport(DashboardExportData data, ExportOptionsDto options)
+    private ExportFile GenerateCsvExport(DashboardExportData data, ExportOptionsDto options)
     {
         var csv = new StringBuilder();
 
@@ -339,7 +339,7 @@ public sealed class ExportDashboardDataQueryHandler
         return new ExportFile(fileContent, fileName, "text/csv");
     }
 
-    private async Task<ExportFile> GenerateJsonExport(DashboardExportData data, ExportOptionsDto options)
+    private ExportFile GenerateJsonExport(DashboardExportData data, ExportOptionsDto options)
     {
         var exportData = new
         {
@@ -379,11 +379,11 @@ public sealed class ExportDashboardDataQueryHandler
         return new ExportFile(fileContent, fileName, "application/json");
     }
 
-    private async Task<ExportFile> GenerateExcelExport(DashboardExportData data, ExportOptionsDto options)
+    private ExportFile GenerateExcelExport(DashboardExportData data, ExportOptionsDto options)
     {
         // For now, generate a CSV-like format as Excel implementation would require additional libraries
         // In a real implementation, you would use libraries like EPPlus or ClosedXML
-        var csvResult = await GenerateCsvExport(data, options);
+        var csvResult = GenerateCsvExport(data, options);
         
         var fileName = $"dashboard_export_{DateTime.UtcNow:yyyyMMdd_HHmmss}.xlsx";
         return new ExportFile(csvResult.FileContent, fileName, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
@@ -391,7 +391,10 @@ public sealed class ExportDashboardDataQueryHandler
 
     private static string EscapeCsv(string value)
     {
-        if (string.IsNullOrEmpty(value)) return "";
+        if (string.IsNullOrEmpty(value))
+        {
+            return "";
+        }
         
         if (value.Contains(',') || value.Contains('"') || value.Contains('\n') || value.Contains('\r'))
         {

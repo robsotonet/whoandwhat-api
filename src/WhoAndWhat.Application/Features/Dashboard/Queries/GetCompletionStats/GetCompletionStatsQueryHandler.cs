@@ -60,7 +60,7 @@ public sealed class GetCompletionStatsQueryHandler
             var breakdown = CalculateBreakdown(periodTasks, completedTasks);
 
             // Calculate comparison with previous period
-            var comparison = await CalculateComparison(allTasksResult.ToList(), startDate, endDate, request.Period);
+            var comparison = CalculateComparison(allTasksResult.ToList(), startDate, endDate, request.Period);
 
             // Generate insights and recommendations
             var insights = GenerateInsights(periodTasks, completedTasks, overview, breakdown);
@@ -343,7 +343,7 @@ public sealed class GetCompletionStatsQueryHandler
         );
     }
 
-    private async Task<CompletionComparison> CalculateComparison(
+    private CompletionComparison CalculateComparison(
         List<Domain.Entities.AppTask> allTasks,
         DateTime startDate,
         DateTime endDate,
