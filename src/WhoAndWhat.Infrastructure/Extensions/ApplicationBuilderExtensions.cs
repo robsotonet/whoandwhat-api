@@ -18,8 +18,8 @@ public static class ApplicationBuilderExtensions
     /// <param name="seedInProduction">Whether to seed in production environment</param>
     /// <returns>Application builder for method chaining</returns>
     public static async Task<IApplicationBuilder> SeedDatabaseAsync(
-        this IApplicationBuilder app, 
-        bool seedInDevelopment = true, 
+        this IApplicationBuilder app,
+        bool seedInDevelopment = true,
         bool seedInProduction = false)
     {
         using var scope = app.ApplicationServices.CreateScope();

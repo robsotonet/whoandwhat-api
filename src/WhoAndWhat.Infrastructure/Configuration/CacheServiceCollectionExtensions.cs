@@ -94,10 +94,10 @@ public static class CacheServiceCollectionExtensions
 
         // Register task cache service
         services.AddScoped<ITaskCacheService, TaskCacheService>();
-        
+
         // Register dashboard cache service
         services.AddScoped<IDashboardCacheService, DashboardCacheService>();
-        
+
         // Register dashboard performance monitoring
         services.AddSingleton<DashboardPerformanceMonitoringService>();
         services.AddHostedService(provider => provider.GetRequiredService<DashboardPerformanceMonitoringService>());
@@ -244,7 +244,7 @@ public class CacheWarmupService : BackgroundService
             var dashboardCacheService = scope.ServiceProvider.GetService<IDashboardCacheService>();
 
             _logger.LogInformation("Starting cache warmup process");
-            
+
             // Warm task cache
             var warmedTaskItems = await taskCacheService.WarmCacheAsync(stoppingToken);
             _logger.LogInformation("Task cache warmup completed. Warmed {ItemCount} task cache items", warmedTaskItems);
@@ -262,7 +262,7 @@ public class CacheWarmupService : BackgroundService
             }
 
             var totalWarmedItems = warmedTaskItems + warmedDashboardItems;
-            _logger.LogInformation("Cache warmup process completed. Total warmed items: {TotalItems} (Tasks: {TaskItems}, Dashboard: {DashboardItems})", 
+            _logger.LogInformation("Cache warmup process completed. Total warmed items: {TotalItems} (Tasks: {TaskItems}, Dashboard: {DashboardItems})",
                 totalWarmedItems, warmedTaskItems, warmedDashboardItems);
         }
         catch (OperationCanceledException)

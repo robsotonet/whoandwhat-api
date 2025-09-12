@@ -42,11 +42,11 @@ public class ContentSchedulingService : BackgroundService
         try
         {
             // Start scheduling timer (check for content to schedule)
-            _schedulingTimer = new Timer(async _ => await ProcessContentScheduling(stoppingToken), 
+            _schedulingTimer = new Timer(async _ => await ProcessContentScheduling(stoppingToken),
                 null, TimeSpan.Zero, _schedulingInterval);
 
             // Start delivery timer (deliver scheduled content)
-            _deliveryTimer = new Timer(async _ => await ProcessContentDelivery(stoppingToken), 
+            _deliveryTimer = new Timer(async _ => await ProcessContentDelivery(stoppingToken),
                 null, TimeSpan.FromMinutes(1), _deliveryInterval);
 
             // Keep the service running
@@ -89,7 +89,9 @@ public class ContentSchedulingService : BackgroundService
     private async Task ProcessContentScheduling(CancellationToken cancellationToken)
     {
         if (cancellationToken.IsCancellationRequested)
+        {
             return;
+        }
 
         if (!await _schedulingSemaphore.WaitAsync(100, cancellationToken))
         {
@@ -108,7 +110,7 @@ public class ContentSchedulingService : BackgroundService
 
             // Get all users with content enabled
             var activePreferences = await preferencesRepository.GetAllByConditionAsync(
-                p => p.IsContentEnabled && 
+                p => p.IsContentEnabled &&
                      (p.ContentPausedUntil == null || p.ContentPausedUntil <= DateTime.UtcNow),
                 cancellationToken);
 
@@ -120,7 +122,9 @@ public class ContentSchedulingService : BackgroundService
                 try
                 {
                     if (cancellationToken.IsCancellationRequested)
+                    {
                         break;
+                    }
 
                     // Check if user needs content scheduling
                     if (await ShouldScheduleContentForUser(preferences, contentService, cancellationToken))
@@ -163,7 +167,9 @@ public class ContentSchedulingService : BackgroundService
     private async Task ProcessContentDelivery(CancellationToken cancellationToken)
     {
         if (cancellationToken.IsCancellationRequested)
+        {
             return;
+        }
 
         try
         {
@@ -226,7 +232,7 @@ public class ContentSchedulingService : BackgroundService
             // Get users whose next delivery time has passed
             var now = DateTime.UtcNow;
             var eligiblePreferences = await preferencesRepository.GetAllByConditionAsync(
-                p => p.IsContentEnabled && 
+                p => p.IsContentEnabled &&
                      (p.ContentPausedUntil == null || p.ContentPausedUntil <= now),
                 cancellationToken);
 
@@ -237,14 +243,16 @@ public class ContentSchedulingService : BackgroundService
                 try
                 {
                     if (cancellationToken.IsCancellationRequested)
+                    {
                         break;
+                    }
 
                     var nextDeliveryTime = preferences.GetNextPreferredDeliveryTime();
                     if (nextDeliveryTime.HasValue && nextDeliveryTime.Value <= now)
                     {
                         // Check if user can receive content now
                         var canDeliver = preferences.CanDeliverContentNow(
-                            ContentDeliveryChannel.SignalR, 
+                            ContentDeliveryChannel.SignalR,
                             MotivationalContentType.Insight);
 
                         if (canDeliver && !await contentService.HasReachedContentLimitsAsync(
@@ -347,7 +355,7 @@ public class ContentSchedulingService : BackgroundService
             {
                 // Schedule for immediate or near-future delivery based on user preferences
                 var deliveryTime = contentResult.OptimalDeliveryTime ?? DateTime.UtcNow.AddMinutes(5);
-                
+
                 // For now, we'll deliver immediately if it's the right time, or skip if not
                 if (deliveryTime <= DateTime.UtcNow.AddMinutes(30))
                 {

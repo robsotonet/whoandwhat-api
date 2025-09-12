@@ -26,15 +26,15 @@ public class DatabaseSeeder : IDataSeeder
         try
         {
             _logger.LogInformation("Starting database seeding process...");
-            
+
             using var scope = _serviceProvider.CreateScope();
-            
+
             // Seed motivational content
             var contentSeeder = scope.ServiceProvider.GetRequiredService<MotivationalContentSeeder>();
             await contentSeeder.SeedAsync(cancellationToken);
-            
+
             // TODO: Add other seeders as needed (user roles, default settings, etc.)
-            
+
             _logger.LogInformation("Database seeding process completed successfully");
         }
         catch (Exception ex)

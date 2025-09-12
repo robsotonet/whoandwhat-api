@@ -35,7 +35,7 @@ public class DashboardCacheService : IDashboardCacheService, IDisposable
         _distributedCache = distributedCache ?? throw new ArgumentNullException(nameof(distributedCache));
         _settings = settings?.Value ?? throw new ArgumentNullException(nameof(settings));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-        
+
         _database = _redis.GetDatabase(_settings.DatabaseIndex);
         _keyPrefix = $"{_settings.KeyPrefix}:dashboard";
         _metricsTracker = new ConcurrentDictionary<string, DashboardCacheMetrics>();
@@ -48,12 +48,12 @@ public class DashboardCacheService : IDashboardCacheService, IDisposable
             var key = $"{_keyPrefix}:analytics:{userAnalytics.UserId}";
             var json = JsonSerializer.Serialize(userAnalytics);
             var expiry = TimeSpan.FromMinutes(_settings.DefaultExpirationMinutes);
-            
+
             await _distributedCache.SetStringAsync(key, json, new DistributedCacheEntryOptions
             {
                 AbsoluteExpirationRelativeToNow = expiry
             }, cancellationToken);
-            
+
             TrackCacheOperation("UserAnalytics", true);
             return true;
         }
@@ -71,13 +71,13 @@ public class DashboardCacheService : IDashboardCacheService, IDisposable
         {
             var key = $"{_keyPrefix}:analytics:{userId}";
             var json = await _distributedCache.GetStringAsync(key, cancellationToken);
-            
+
             if (string.IsNullOrEmpty(json))
             {
                 TrackCacheOperation("UserAnalytics", false);
                 return null;
             }
-            
+
             TrackCacheOperation("UserAnalytics", true);
             return JsonSerializer.Deserialize<UserAnalytics>(json);
         }
@@ -96,12 +96,12 @@ public class DashboardCacheService : IDashboardCacheService, IDisposable
             var key = $"{_keyPrefix}:streak:{productivityStreak.UserId}";
             var json = JsonSerializer.Serialize(productivityStreak);
             var expiry = TimeSpan.FromMinutes(_settings.DefaultExpirationMinutes);
-            
+
             await _distributedCache.SetStringAsync(key, json, new DistributedCacheEntryOptions
             {
                 AbsoluteExpirationRelativeToNow = expiry
             }, cancellationToken);
-            
+
             TrackCacheOperation("ProductivityStreak", true);
             return true;
         }
@@ -119,13 +119,13 @@ public class DashboardCacheService : IDashboardCacheService, IDisposable
         {
             var key = $"{_keyPrefix}:streak:{userId}";
             var json = await _distributedCache.GetStringAsync(key, cancellationToken);
-            
+
             if (string.IsNullOrEmpty(json))
             {
                 TrackCacheOperation("ProductivityStreak", false);
                 return null;
             }
-            
+
             TrackCacheOperation("ProductivityStreak", true);
             return JsonSerializer.Deserialize<ProductivityStreak>(json);
         }
@@ -144,12 +144,12 @@ public class DashboardCacheService : IDashboardCacheService, IDisposable
             var key = $"{_keyPrefix}:snapshot:{analyticsSnapshot.UserId}:{analyticsSnapshot.SnapshotDate:yyyy-MM-dd}:{analyticsSnapshot.SnapshotType}";
             var json = JsonSerializer.Serialize(analyticsSnapshot);
             var expiry = TimeSpan.FromMinutes(_settings.DefaultExpirationMinutes);
-            
+
             await _distributedCache.SetStringAsync(key, json, new DistributedCacheEntryOptions
             {
                 AbsoluteExpirationRelativeToNow = expiry
             }, cancellationToken);
-            
+
             TrackCacheOperation("AnalyticsSnapshot", true);
             return true;
         }
@@ -167,13 +167,13 @@ public class DashboardCacheService : IDashboardCacheService, IDisposable
         {
             var key = $"{_keyPrefix}:snapshot:{userId}:{snapshotDate:yyyy-MM-dd}:{snapshotType}";
             var json = await _distributedCache.GetStringAsync(key, cancellationToken);
-            
+
             if (string.IsNullOrEmpty(json))
             {
                 TrackCacheOperation("AnalyticsSnapshot", false);
                 return null;
             }
-            
+
             TrackCacheOperation("AnalyticsSnapshot", true);
             return JsonSerializer.Deserialize<AnalyticsSnapshot>(json);
         }
@@ -192,12 +192,12 @@ public class DashboardCacheService : IDashboardCacheService, IDisposable
             var key = $"{_keyPrefix}:recent-snapshots:{userId}:{snapshotType}";
             var json = JsonSerializer.Serialize(snapshots);
             var expiry = TimeSpan.FromMinutes(_settings.DefaultExpirationMinutes);
-            
+
             await _distributedCache.SetStringAsync(key, json, new DistributedCacheEntryOptions
             {
                 AbsoluteExpirationRelativeToNow = expiry
             }, cancellationToken);
-            
+
             TrackCacheOperation("RecentSnapshots", true);
             return true;
         }
@@ -215,13 +215,13 @@ public class DashboardCacheService : IDashboardCacheService, IDisposable
         {
             var key = $"{_keyPrefix}:recent-snapshots:{userId}:{snapshotType}";
             var json = await _distributedCache.GetStringAsync(key, cancellationToken);
-            
+
             if (string.IsNullOrEmpty(json))
             {
                 TrackCacheOperation("RecentSnapshots", false);
                 return null;
             }
-            
+
             TrackCacheOperation("RecentSnapshots", true);
             return JsonSerializer.Deserialize<IEnumerable<AnalyticsSnapshot>>(json);
         }
@@ -240,12 +240,12 @@ public class DashboardCacheService : IDashboardCacheService, IDisposable
             var key = $"{_keyPrefix}:summary:{userId}";
             var json = JsonSerializer.Serialize(dashboardSummary);
             var expiry = TimeSpan.FromMinutes(_settings.DefaultExpirationMinutes);
-            
+
             await _distributedCache.SetStringAsync(key, json, new DistributedCacheEntryOptions
             {
                 AbsoluteExpirationRelativeToNow = expiry
             }, cancellationToken);
-            
+
             TrackCacheOperation("DashboardSummary", true);
             return true;
         }
@@ -263,13 +263,13 @@ public class DashboardCacheService : IDashboardCacheService, IDisposable
         {
             var key = $"{_keyPrefix}:summary:{userId}";
             var json = await _distributedCache.GetStringAsync(key, cancellationToken);
-            
+
             if (string.IsNullOrEmpty(json))
             {
                 TrackCacheOperation("DashboardSummary", false);
                 return null;
             }
-            
+
             TrackCacheOperation("DashboardSummary", true);
             return JsonSerializer.Deserialize<DashboardSummary>(json);
         }
@@ -288,12 +288,12 @@ public class DashboardCacheService : IDashboardCacheService, IDisposable
             var key = $"{_keyPrefix}:metrics:{userId}:{period}";
             var json = JsonSerializer.Serialize(metrics);
             var expiry = TimeSpan.FromMinutes(_settings.DefaultExpirationMinutes);
-            
+
             await _distributedCache.SetStringAsync(key, json, new DistributedCacheEntryOptions
             {
                 AbsoluteExpirationRelativeToNow = expiry
             }, cancellationToken);
-            
+
             TrackCacheOperation("ProductivityMetrics", true);
             return true;
         }
@@ -311,13 +311,13 @@ public class DashboardCacheService : IDashboardCacheService, IDisposable
         {
             var key = $"{_keyPrefix}:metrics:{userId}:{period}";
             var json = await _distributedCache.GetStringAsync(key, cancellationToken);
-            
+
             if (string.IsNullOrEmpty(json))
             {
                 TrackCacheOperation("ProductivityMetrics", false);
                 return null;
             }
-            
+
             TrackCacheOperation("ProductivityMetrics", true);
             return JsonSerializer.Deserialize<ProductivityMetrics>(json);
         }
@@ -357,7 +357,7 @@ public class DashboardCacheService : IDashboardCacheService, IDisposable
                 AnalyticsCacheInvalidationType.DashboardSummary => $"{_keyPrefix}:summary:{userId}",
                 _ => $"{_keyPrefix}:*:{userId}"
             };
-            
+
             await InvalidateByPatternAsync(pattern, cancellationToken);
             return true;
         }
@@ -408,10 +408,10 @@ public class DashboardCacheService : IDashboardCacheService, IDisposable
                 CacheHits = _metricsTracker.Values.Sum(m => m.CacheHits),
                 CacheMisses = _metricsTracker.Values.Sum(m => m.CacheMisses),
                 AverageResponseTime = TimeSpan.FromMilliseconds(
-                    _metricsTracker.Values.Any() 
+                    _metricsTracker.Values.Any()
                         ? _metricsTracker.Values.Average(m => m.AverageResponseTime.TotalMilliseconds)
                         : 0),
-                MeasurementStartTime = _metricsTracker.Values.Any() 
+                MeasurementStartTime = _metricsTracker.Values.Any()
                     ? _metricsTracker.Values.Min(m => m.MeasurementStartTime)
                     : DateTime.UtcNow,
                 LastResetTime = _metricsTracker.Values.Any()
@@ -455,7 +455,7 @@ public class DashboardCacheService : IDashboardCacheService, IDisposable
                 }
 
                 var scanResult = server.Execute("SCAN", cursor, "MATCH", pattern, "COUNT", 100);
-                
+
                 if (!scanResult.IsNull && scanResult.Length >= 2)
                 {
                     var nextCursor = scanResult[0];
@@ -468,7 +468,7 @@ public class DashboardCacheService : IDashboardCacheService, IDisposable
                     }
 
                     var redisKeys = ((RedisResult[])keys!).Where(k => k.HasValue).Select(k => (RedisKey)k!).ToArray();
-                    
+
                     if (redisKeys.Any())
                     {
                         var deleteResult = await _database.KeyDeleteAsync(redisKeys);
@@ -476,7 +476,7 @@ public class DashboardCacheService : IDashboardCacheService, IDisposable
                         _logger.LogDebug("Deleted {Count} dashboard cache keys", deleteResult);
                     }
 
-                    if (!long.TryParse(nextCursor!, out cursor))
+                    if (!long.TryParse((string?)nextCursor!, out cursor))
                     {
                         _logger.LogError("Failed to parse SCAN cursor: {Cursor}", nextCursor);
                         break;
@@ -504,16 +504,16 @@ public class DashboardCacheService : IDashboardCacheService, IDisposable
         try
         {
             var processedCount = 0;
-            
+
             foreach (var userId in userIds)
             {
                 if (cancellationToken.IsCancellationRequested)
                     break;
-                    
+
                 // Implement precomputation logic here
                 processedCount++;
             }
-            
+
             _logger.LogInformation("Precomputed dashboard data for {Count} users", processedCount);
             return Task.FromResult(processedCount);
         }
@@ -535,7 +535,7 @@ public class DashboardCacheService : IDashboardCacheService, IDisposable
                 break;
 
             var scanResult = server.Execute("SCAN", cursor, "MATCH", pattern, "COUNT", 100);
-            
+
             if (!scanResult.IsNull && scanResult.Length >= 2)
             {
                 var nextCursor = scanResult[0];
@@ -544,14 +544,14 @@ public class DashboardCacheService : IDashboardCacheService, IDisposable
                 if (keys.HasValue)
                 {
                     var redisKeys = ((RedisResult[])keys!).Where(k => k.HasValue).Select(k => (RedisKey)k!).ToArray();
-                    
+
                     if (redisKeys.Any())
                     {
                         await _database.KeyDeleteAsync(redisKeys);
                     }
                 }
 
-                if (!long.TryParse(nextCursor!, out cursor))
+                if (!long.TryParse((string?)nextCursor!, out cursor))
                     break;
             }
             else
@@ -566,16 +566,16 @@ public class DashboardCacheService : IDashboardCacheService, IDisposable
         if (!_settings.EnablePerformanceMonitoring)
             return;
 
-        _metricsTracker.AddOrUpdate(operationType, 
-            new DashboardCacheMetrics 
-            { 
-                TotalRequests = 1, 
+        _metricsTracker.AddOrUpdate(operationType,
+            new DashboardCacheMetrics
+            {
+                TotalRequests = 1,
                 CacheHits = isHit ? 1 : 0,
                 CacheMisses = isHit ? 0 : 1,
                 MeasurementStartTime = DateTime.UtcNow,
                 LastResetTime = DateTime.UtcNow
             },
-            (key, existing) => 
+            (key, existing) =>
             {
                 existing.TotalRequests++;
                 if (isHit)

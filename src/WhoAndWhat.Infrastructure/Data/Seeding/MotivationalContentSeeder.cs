@@ -40,19 +40,19 @@ public class MotivationalContentSeeder
 
             // Achievement & Success Content
             contents.AddRange(CreateAchievementContent());
-            
+
             // Productivity & Focus Content  
             contents.AddRange(CreateProductivityContent());
-            
+
             // Wellness & Balance Content
             contents.AddRange(CreateWellnessContent());
-            
+
             // Learning & Growth Content
             contents.AddRange(CreateLearningContent());
-            
+
             // Streak & Milestone Content
             contents.AddRange(CreateStreakContent());
-            
+
             // Encouragement & Support Content
             contents.AddRange(CreateEncouragementContent());
 
@@ -81,7 +81,7 @@ public class MotivationalContentSeeder
                 CreateBasicTargeting(UserExperienceLevel.Beginner),
                 priority: 100
             ),
-            
+
             MotivationalContent.Create(
                 title: "✨ Outstanding Progress!",
                 message: "Your consistency is paying off! You've completed several tasks today - that's the kind of dedication that leads to success.",

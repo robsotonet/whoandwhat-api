@@ -263,7 +263,7 @@ public class ApplicationDbContext : DbContext
             entity.HasIndex(e => new { e.IsActive, e.Priority });
             entity.HasIndex(e => new { e.IsABTestEnabled, e.ABTestGroup });
             entity.HasIndex(e => new { e.StartDate, e.EndDate });
-            
+
             // Soft delete configuration
             entity.HasIndex(e => e.IsDeleted);
             entity.HasQueryFilter(e => !e.IsDeleted);

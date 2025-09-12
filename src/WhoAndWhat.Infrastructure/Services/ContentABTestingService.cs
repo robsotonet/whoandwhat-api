@@ -134,7 +134,10 @@ public class ContentABTestingService : IContentABTestingService
             // Calculate metrics for each group
             foreach (var group in groupedLogs)
             {
-                if (group.Key == null) continue;
+                if (group.Key == null)
+                {
+                    continue;
+                }
 
                 var logs = group.ToList();
                 var engagedLogs = logs.Where(l => l.EngagementType.HasValue).ToList();
@@ -279,7 +282,7 @@ public class ContentABTestingService : IContentABTestingService
             foreach (var content in activeContent)
             {
                 var testName = content.GetMetadata<string>("testName") ?? "Unknown";
-                
+
                 if (!testSummaries.ContainsKey(testName))
                 {
                     testSummaries[testName] = new ABTestSummary
@@ -303,7 +306,7 @@ public class ContentABTestingService : IContentABTestingService
                 var sampleSize = await _deliveryLogRepository.CountByConditionAsync(
                     dl => dl.ABTestGroup != null && dl.ABTestGroup.Contains(summary.TestName),
                     cancellationToken);
-                
+
                 summary.CurrentSampleSize = sampleSize;
                 summary.TargetSampleSize = (int)MinimumSampleSize * summary.GroupCount;
             }
@@ -358,7 +361,7 @@ public class ContentABTestingService : IContentABTestingService
     {
         var weight = 1.0 / groupCount;
         var weights = new Dictionary<string, double>();
-        
+
         weights["control"] = weight;
         for (int i = 1; i < groupCount; i++)
         {
@@ -370,7 +373,10 @@ public class ContentABTestingService : IContentABTestingService
 
     private double CalculateConversionRate(List<ContentDeliveryLog> logs)
     {
-        if (!logs.Any()) return 0.0;
+        if (!logs.Any())
+        {
+            return 0.0;
+        }
 
         var conversions = logs.Count(l => l.EngagementType >= ContentEngagementType.Clicked);
         return (double)conversions / logs.Count;
@@ -380,7 +386,10 @@ public class ContentABTestingService : IContentABTestingService
     {
         // Placeholder for revenue calculation - would be based on business logic
         // For now, use engagement score as a proxy
-        if (!logs.Any()) return 0.0;
+        if (!logs.Any())
+        {
+            return 0.0;
+        }
 
         return logs.Where(l => l.EngagementType.HasValue)
                   .Sum(l => l.GetEngagementScore() * 10); // $10 value per engagement point
@@ -399,7 +408,7 @@ public class ContentABTestingService : IContentABTestingService
         // In production, you'd use proper statistical libraries
 
         var analysis = new StatisticalAnalysis();
-        
+
         if (groupResults.Count < 2)
         {
             analysis.IsSignificant = false;
@@ -439,7 +448,7 @@ public class ContentABTestingService : IContentABTestingService
         {
             var expected = group.SampleSize * expectedRate;
             var observed = group.TotalEngagements;
-            
+
             if (expected > 0)
             {
                 chiSquare += Math.Pow(observed - expected, 2) / expected;
@@ -448,22 +457,22 @@ public class ContentABTestingService : IContentABTestingService
 
         // Calculate accurate p-value using chi-square distribution
         var degreesOfFreedom = groups.Count - 1;
-        
+
         if (degreesOfFreedom <= 0)
         {
             // Not enough groups for meaningful statistical analysis
             return (1.0, chiSquare);
         }
-        
+
         try
         {
             // Use Math.NET Numerics for accurate chi-square p-value calculation
             var chiSquareDistribution = new ChiSquared(degreesOfFreedom);
             var pValue = 1.0 - chiSquareDistribution.CumulativeDistribution(chiSquare);
-            
+
             // Ensure p-value is within valid bounds [0, 1]
             pValue = Math.Max(0.0, Math.Min(1.0, pValue));
-            
+
             return (pValue, chiSquare);
         }
         catch (Exception ex)
@@ -481,7 +490,7 @@ public class ContentABTestingService : IContentABTestingService
 
         var best = groups.First().EngagementRate;
         var control = groups.Last().EngagementRate;
-        
+
         return control > 0 ? Math.Abs(best - control) / control : 0.0;
     }
 
@@ -504,7 +513,7 @@ public class ContentABTestingService : IContentABTestingService
             return ABTestStatus.NoData;
 
         var minSampleSize = groupResults.Values.Min(g => g.SampleSize);
-        
+
         if (minSampleSize < MinimumSampleSize)
             return ABTestStatus.InsufficientData;
 

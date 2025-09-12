@@ -1,9 +1,9 @@
+using System.Collections.Concurrent;
+using System.Diagnostics;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using System.Collections.Concurrent;
-using System.Diagnostics;
 using WhoAndWhat.Application.Interfaces;
 using WhoAndWhat.Infrastructure.Configuration;
 
@@ -78,7 +78,7 @@ public class DashboardPerformanceMonitoringService : BackgroundService, IDisposa
             while (!stoppingToken.IsCancellationRequested)
             {
                 await Task.Delay(TimeSpan.FromMinutes(1), stoppingToken);
-                
+
                 // Periodic health checks can be implemented here
                 await PerformHealthCheck(stoppingToken);
             }
@@ -116,7 +116,7 @@ public class DashboardPerformanceMonitoringService : BackgroundService, IDisposa
         _performanceSnapshotTimer?.Change(Timeout.Infinite, Timeout.Infinite);
 
         await base.StopAsync(cancellationToken);
-        
+
         // Log final metrics
         LogFinalMetrics();
     }
@@ -126,19 +126,19 @@ public class DashboardPerformanceMonitoringService : BackgroundService, IDisposa
         try
         {
             _logger.LogDebug("Warming up cache services");
-            
+
             var stopwatch = Stopwatch.StartNew();
-            
+
             // Warm dashboard cache
             var dashboardWarmupTask = _dashboardCacheService.WarmDashboardCacheAsync(cancellationToken);
-            
+
             // Warm task cache
             var taskWarmupTask = _taskCacheService.WarmCacheAsync(cancellationToken);
-            
+
             var results = await Task.WhenAll(dashboardWarmupTask, taskWarmupTask);
-            
+
             stopwatch.Stop();
-            
+
             _logger.LogInformation("Cache warmup completed in {Duration}ms. Dashboard: {DashboardCount} items, Tasks: {TaskCount} items",
                 stopwatch.ElapsedMilliseconds, results[0], results[1]);
         }
@@ -153,25 +153,25 @@ public class DashboardPerformanceMonitoringService : BackgroundService, IDisposa
         try
         {
             var stopwatch = Stopwatch.StartNew();
-            
+
             // Check dashboard cache health
             var dashboardMetrics = await _dashboardCacheService.GetDashboardCacheMetricsAsync(cancellationToken);
-            
+
             // Check task cache health
             var taskMetrics = await _taskCacheService.GetCacheMetricsAsync(cancellationToken);
-            
+
             stopwatch.Stop();
-            
+
             // Log health status
             var overallHitRatio = CalculateOverallHitRatio(dashboardMetrics.HitRatio, taskMetrics.HitRatio);
-            
+
             if (overallHitRatio < 0.7) // Less than 70% hit ratio
             {
                 _logger.LogWarning("Cache performance degraded: Overall hit ratio {HitRatio:P2}", overallHitRatio);
             }
             else
             {
-                _logger.LogDebug("Cache health check completed in {Duration}ms. Hit ratio: {HitRatio:P2}", 
+                _logger.LogDebug("Cache health check completed in {Duration}ms. Hit ratio: {HitRatio:P2}",
                     stopwatch.ElapsedMilliseconds, overallHitRatio);
             }
         }
@@ -183,21 +183,24 @@ public class DashboardPerformanceMonitoringService : BackgroundService, IDisposa
 
     private void CollectMetrics(object? state)
     {
-        if (_disposed) return;
+        if (_disposed)
+        {
+            return;
+        }
 
         try
         {
             _logger.LogDebug("Collecting performance metrics");
-            
+
             // This would collect and aggregate metrics from cache services
             // For now, we track the operation counts and durations
-            
+
             var totalOperations = _operationCounts.Values.Sum();
-            var averageDuration = _operationDurations.Values.Any() 
+            var averageDuration = _operationDurations.Values.Any()
                 ? TimeSpan.FromMilliseconds(_operationDurations.Values.Average(t => t.TotalMilliseconds))
                 : TimeSpan.Zero;
-            
-            _logger.LogDebug("Metrics collected: {TotalOps} operations, {AvgDuration}ms average duration", 
+
+            _logger.LogDebug("Metrics collected: {TotalOps} operations, {AvgDuration}ms average duration",
                 totalOperations, averageDuration.TotalMilliseconds);
         }
         catch (Exception ex)
@@ -208,29 +211,32 @@ public class DashboardPerformanceMonitoringService : BackgroundService, IDisposa
 
     private async void OptimizeCache(object? state)
     {
-        if (_disposed) return;
+        if (_disposed)
+        {
+            return;
+        }
 
         try
         {
             _logger.LogDebug("Performing cache optimization");
-            
+
             // Get current metrics
             var dashboardMetrics = await _dashboardCacheService.GetDashboardCacheMetricsAsync();
             var taskMetrics = await _taskCacheService.GetCacheMetricsAsync();
-            
+
             // Perform optimization based on metrics
             if (dashboardMetrics.HitRatio < 0.6) // Less than 60% hit ratio
             {
                 _logger.LogInformation("Dashboard cache hit ratio low ({HitRatio:P2}), triggering warmup", dashboardMetrics.HitRatio);
                 await _dashboardCacheService.WarmDashboardCacheAsync();
             }
-            
+
             if (taskMetrics.HitRatio < 0.6)
             {
                 _logger.LogInformation("Task cache hit ratio low ({HitRatio:P2}), triggering warmup", taskMetrics.HitRatio);
                 await _taskCacheService.WarmCacheAsync();
             }
-            
+
             _logger.LogDebug("Cache optimization completed");
         }
         catch (Exception ex)
@@ -241,7 +247,10 @@ public class DashboardPerformanceMonitoringService : BackgroundService, IDisposa
 
     private void CreatePerformanceSnapshot(object? state)
     {
-        if (_disposed) return;
+        if (_disposed)
+        {
+            return;
+        }
 
         try
         {
@@ -250,7 +259,7 @@ public class DashboardPerformanceMonitoringService : BackgroundService, IDisposa
                 Timestamp = DateTime.UtcNow,
                 ServiceUptime = _serviceUptime.Elapsed,
                 TotalOperations = _operationCounts.Values.Sum(),
-                AverageOperationDuration = _operationDurations.Values.Any() 
+                AverageOperationDuration = _operationDurations.Values.Any()
                     ? TimeSpan.FromMilliseconds(_operationDurations.Values.Average(t => t.TotalMilliseconds))
                     : TimeSpan.Zero,
                 MemoryUsage = GC.GetTotalMemory(false)
@@ -268,7 +277,7 @@ public class DashboardPerformanceMonitoringService : BackgroundService, IDisposa
                 _performanceHistory.TryDequeue(out _);
             }
 
-            _logger.LogDebug("Performance snapshot created: {TotalOps} operations, {Memory} bytes memory", 
+            _logger.LogDebug("Performance snapshot created: {TotalOps} operations, {Memory} bytes memory",
                 snapshot.TotalOperations, snapshot.MemoryUsage);
         }
         catch (Exception ex)
@@ -289,7 +298,7 @@ public class DashboardPerformanceMonitoringService : BackgroundService, IDisposa
         {
             var totalOperations = _operationCounts.Values.Sum();
             var uptime = _serviceUptime.Elapsed;
-            
+
             _logger.LogInformation("Dashboard Performance Monitoring Service final metrics:");
             _logger.LogInformation("  - Total uptime: {Uptime}", uptime);
             _logger.LogInformation("  - Total operations monitored: {TotalOps}", totalOperations);
@@ -303,10 +312,13 @@ public class DashboardPerformanceMonitoringService : BackgroundService, IDisposa
 
     public void TrackOperation(string operationType, TimeSpan duration)
     {
-        if (_disposed) return;
+        if (_disposed)
+        {
+            return;
+        }
 
         _operationCounts.AddOrUpdate(operationType, 1, (_, count) => count + 1);
-        _operationDurations.AddOrUpdate(operationType, duration, (_, existing) => 
+        _operationDurations.AddOrUpdate(operationType, duration, (_, existing) =>
             TimeSpan.FromMilliseconds((existing.TotalMilliseconds + duration.TotalMilliseconds) / 2));
     }
 
@@ -322,12 +334,12 @@ public class DashboardPerformanceMonitoringService : BackgroundService, IDisposa
                     _cacheOptimizationTimer?.Dispose();
                     _performanceSnapshotTimer?.Dispose();
                     _serviceUptime?.Stop();
-                    
+
                     _disposed = true;
                 }
             }
         }
-        
+
         base.Dispose();
         GC.SuppressFinalize(this);
     }

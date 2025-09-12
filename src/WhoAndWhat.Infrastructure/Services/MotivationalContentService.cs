@@ -42,8 +42,8 @@ public class MotivationalContentService : IMotivationalContentService
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
-    public async Task<PersonalizedContentResult?> GetPersonalizedContentAsync(Guid userId, 
-        ContentSelectionContext? contentContext = null, 
+    public async Task<PersonalizedContentResult?> GetPersonalizedContentAsync(Guid userId,
+        ContentSelectionContext? contentContext = null,
         CancellationToken cancellationToken = default)
     {
         try
@@ -68,7 +68,7 @@ public class MotivationalContentService : IMotivationalContentService
             // Get user analytics for personalization
             var userAnalytics = await _analyticsRepository.GetByConditionAsync(
                 ua => ua.UserId == userId, cancellationToken);
-            
+
             var userStreak = await _streakRepository.GetByConditionAsync(
                 ps => ps.UserId == userId && ps.IsActive, cancellationToken);
 
@@ -83,7 +83,7 @@ public class MotivationalContentService : IMotivationalContentService
                 var recentLogs = await _deliveryLogRepository.GetAllByConditionAsync(
                     dl => dl.UserId == userId && dl.DeliveredAt > DateTime.UtcNow.Subtract(recentWindow),
                     cancellationToken);
-                
+
                 recentContentIds = recentLogs.Select(dl => dl.MotivationalContentId).ToHashSet();
             }
 
@@ -146,9 +146,9 @@ public class MotivationalContentService : IMotivationalContentService
         }
     }
 
-    public async Task<IEnumerable<PersonalizedContentResult>> GetPersonalizedContentBatchAsync(Guid userId, 
-        int maxItems, 
-        ContentSelectionContext? contentContext = null, 
+    public async Task<IEnumerable<PersonalizedContentResult>> GetPersonalizedContentBatchAsync(Guid userId,
+        int maxItems,
+        ContentSelectionContext? contentContext = null,
         CancellationToken cancellationToken = default)
     {
         try
@@ -183,8 +183,8 @@ public class MotivationalContentService : IMotivationalContentService
         }
     }
 
-    public async Task<bool> LogContentEngagementAsync(Guid userId, 
-        Guid contentId, 
+    public async Task<bool> LogContentEngagementAsync(Guid userId,
+        Guid contentId,
         ContentEngagementType engagementType,
         Guid? deliveryLogId = null,
         Dictionary<string, object>? engagementMetadata = null,
@@ -239,8 +239,8 @@ public class MotivationalContentService : IMotivationalContentService
         }
     }
 
-    public async Task<Guid> RecordContentDeliveryAsync(Guid userId, 
-        Guid contentId, 
+    public async Task<Guid> RecordContentDeliveryAsync(Guid userId,
+        Guid contentId,
         ContentDeliveryChannel deliveryChannel,
         Dictionary<string, object>? deliveryContext = null,
         double? personalizationScore = null,
@@ -276,15 +276,15 @@ public class MotivationalContentService : IMotivationalContentService
         }
     }
 
-    public Task<string> AssignABTestGroupAsync(Guid userId, 
-        string testName, 
+    public Task<string> AssignABTestGroupAsync(Guid userId,
+        string testName,
         CancellationToken cancellationToken = default)
     {
         try
         {
             // Use consistent hashing to assign users to groups
             var userHash = ComputeDeterministicHash(userId, testName);
-            
+
             // Use atomic KeyValuePair enumeration to ensure groups and weights correspond correctly
             var testWeights = _defaultABTestWeights.ToArray();
             var groups = testWeights.Select(kvp => kvp.Key).ToArray();
@@ -305,17 +305,17 @@ public class MotivationalContentService : IMotivationalContentService
         }
     }
 
-    public async Task<ABTestMetrics> GetABTestMetricsAsync(string testName, 
-        DateTime startDate, 
-        DateTime endDate, 
+    public async Task<ABTestMetrics> GetABTestMetricsAsync(string testName,
+        DateTime startDate,
+        DateTime endDate,
         CancellationToken cancellationToken = default)
     {
         try
         {
             var deliveryLogs = await _deliveryLogRepository.GetAllByConditionAsync(
-                dl => dl.ABTestGroup != null && 
-                      dl.ABTestGroup.Contains(testName) && 
-                      dl.DeliveredAt >= startDate && 
+                dl => dl.ABTestGroup != null &&
+                      dl.ABTestGroup.Contains(testName) &&
+                      dl.DeliveredAt >= startDate &&
                       dl.DeliveredAt <= endDate,
                 cancellationToken);
 
@@ -336,7 +336,7 @@ public class MotivationalContentService : IMotivationalContentService
                     TotalEngagements = engagedLogs.Count,
                     EngagementRate = logs.Count > 0 ? (double)engagedLogs.Count / logs.Count : 0,
                     AverageEngagementScore = engagedLogs.Count > 0 ? engagedLogs.Average(l => l.GetEngagementScore()) : 0,
-                    AverageEngagementLatency = engagedLogs.Count > 0 
+                    AverageEngagementLatency = engagedLogs.Count > 0
                         ? TimeSpan.FromTicks((long)engagedLogs.Where(l => l.GetEngagementLatency().HasValue)
                             .Average(l => l.GetEngagementLatency()!.Value.Ticks))
                         : TimeSpan.Zero,
@@ -349,7 +349,7 @@ public class MotivationalContentService : IMotivationalContentService
             }
 
             // Determine winning group and statistical significance
-            var winningGroup = groupMetrics.Count > 0 
+            var winningGroup = groupMetrics.Count > 0
                 ? groupMetrics.OrderByDescending(kvp => kvp.Value.EngagementRate).First()
                 : default;
 
@@ -378,16 +378,16 @@ public class MotivationalContentService : IMotivationalContentService
         }
     }
 
-    public async Task<ContentPerformanceMetrics> GetContentPerformanceAsync(Guid contentId, 
-        DateTime startDate, 
-        DateTime endDate, 
+    public async Task<ContentPerformanceMetrics> GetContentPerformanceAsync(Guid contentId,
+        DateTime startDate,
+        DateTime endDate,
         CancellationToken cancellationToken = default)
     {
         try
         {
             var deliveryLogs = await _deliveryLogRepository.GetAllByConditionAsync(
-                dl => dl.MotivationalContentId == contentId && 
-                      dl.DeliveredAt >= startDate && 
+                dl => dl.MotivationalContentId == contentId &&
+                      dl.DeliveredAt >= startDate &&
                       dl.DeliveredAt <= endDate,
                 cancellationToken);
 
@@ -404,11 +404,11 @@ public class MotivationalContentService : IMotivationalContentService
                 TotalEngagements = engagedLogs.Count,
                 EngagementRate = deliveryLogs.Any() ? (double)engagedLogs.Count / deliveryLogs.Count() : 0,
                 AverageEngagementScore = engagedLogs.Any() ? engagedLogs.Average(l => l.GetEngagementScore()) : 0,
-                AveragePersonalizationScore = personalizedLogs.Any() 
+                AveragePersonalizationScore = personalizedLogs.Any()
                     ? personalizedLogs.Where(l => l.PersonalizationScore.HasValue)
-                        .Average(l => l.PersonalizationScore!.Value) 
+                        .Average(l => l.PersonalizationScore!.Value)
                     : 0,
-                AverageEngagementLatency = engagedLogs.Any() 
+                AverageEngagementLatency = engagedLogs.Any()
                     ? TimeSpan.FromTicks((long)engagedLogs.Where(l => l.GetEngagementLatency().HasValue)
                         .Average(l => l.GetEngagementLatency()!.Value.Ticks))
                     : TimeSpan.Zero,
@@ -431,16 +431,16 @@ public class MotivationalContentService : IMotivationalContentService
         }
     }
 
-    public async Task<bool> UpdateUserPreferencesFromEngagementAsync(Guid userId, 
+    public async Task<bool> UpdateUserPreferencesFromEngagementAsync(Guid userId,
         CancellationToken cancellationToken = default)
     {
         try
         {
             var preferences = await GetOrCreateUserPreferencesAsync(userId, cancellationToken);
-            
+
             // Get recent engagement history
             var recentLogs = await _deliveryLogRepository.GetAllByConditionAsync(
-                dl => dl.UserId == userId && 
+                dl => dl.UserId == userId &&
                       dl.DeliveredAt > DateTime.UtcNow.AddDays(-30) &&
                       dl.EngagementType.HasValue,
                 cancellationToken);
@@ -452,7 +452,7 @@ public class MotivationalContentService : IMotivationalContentService
 
             // Analyze engagement patterns by content type
             var contentTypeEngagement = new Dictionary<MotivationalContentType, List<double>>();
-            
+
             foreach (var log in recentLogs)
             {
                 var content = await _contentRepository.GetByIdAsync(log.MotivationalContentId, cancellationToken);
@@ -485,14 +485,14 @@ public class MotivationalContentService : IMotivationalContentService
         }
     }
 
-    public async Task<bool> HasReachedContentLimitsAsync(Guid userId, 
-        ContentLimitTimeWindow timeWindow, 
+    public async Task<bool> HasReachedContentLimitsAsync(Guid userId,
+        ContentLimitTimeWindow timeWindow,
         CancellationToken cancellationToken = default)
     {
         try
         {
             var preferences = await GetOrCreateUserPreferencesAsync(userId, cancellationToken);
-            
+
             var windowStart = timeWindow switch
             {
                 ContentLimitTimeWindow.Daily => DateTime.UtcNow.Date,
@@ -522,8 +522,8 @@ public class MotivationalContentService : IMotivationalContentService
         }
     }
 
-    public async Task<double> GetContentRecommendationScoreAsync(Guid userId, 
-        Guid contentId, 
+    public async Task<double> GetContentRecommendationScoreAsync(Guid userId,
+        Guid contentId,
         CancellationToken cancellationToken = default)
     {
         try
@@ -558,17 +558,17 @@ public class MotivationalContentService : IMotivationalContentService
             // This is a placeholder for content optimization algorithms
             // In a full implementation, this would analyze historical engagement data
             // to automatically optimize content targeting, timing, and personalization
-            
+
             _logger.LogInformation("Starting content optimization process");
-            
+
             // Placeholder implementation - would include:
             // 1. Analyze historical engagement patterns
             // 2. Identify high/low performing content
             // 3. Adjust targeting conditions for better performance
             // 4. Update A/B test configurations based on results
-            
+
             await Task.CompletedTask; // Placeholder
-            
+
             _logger.LogInformation("Content optimization completed - 0 items optimized (placeholder implementation)");
             return 0;
         }
@@ -627,8 +627,8 @@ public class MotivationalContentService : IMotivationalContentService
     }
 
     private (double Score, string ReasonCode) CalculateContentScore(
-        MotivationalContent content, 
-        Dictionary<string, object> userContext, 
+        MotivationalContent content,
+        Dictionary<string, object> userContext,
         ContentSelectionContext? selectionContext)
     {
         double score = 0.5; // Base score
@@ -641,7 +641,7 @@ public class MotivationalContentService : IMotivationalContentService
         }
 
         // Content type preference
-        if (userContext.TryGetValue("preferredTypes", out var preferredTypesObj) && 
+        if (userContext.TryGetValue("preferredTypes", out var preferredTypesObj) &&
             preferredTypesObj is List<MotivationalContentType> preferredTypes)
         {
             if (preferredTypes.Contains(content.ContentType))
@@ -663,7 +663,7 @@ public class MotivationalContentService : IMotivationalContentService
         }
 
         // Context-specific boost
-        if (selectionContext?.PreferredType.HasValue == true && 
+        if (selectionContext?.PreferredType.HasValue == true &&
             content.ContentType == selectionContext.PreferredType.Value)
         {
             score += 0.1;
@@ -739,11 +739,11 @@ public class MotivationalContentService : IMotivationalContentService
             {
                 var engagementScore = GetEngagementScore(engagementType);
                 var currentScore = preferences.GetEngagementHistory<double>($"score_{content.ContentType}") ?? 0.5;
-                
+
                 // Weighted average with more weight on recent engagement
                 var newScore = (currentScore * 0.7) + (engagementScore * 0.3);
                 preferences.UpdateEngagementHistory($"score_{content.ContentType}", newScore);
-                
+
                 await _preferencesRepository.UpdateAsync(preferences, cancellationToken);
             }
         }
@@ -774,19 +774,19 @@ public class MotivationalContentService : IMotivationalContentService
     {
         var input = $"{userId}_{testName}";
         var inputBytes = Encoding.UTF8.GetBytes(input);
-        
+
         using var sha256 = SHA256.Create();
         var hashBytes = sha256.ComputeHash(inputBytes);
-        
+
         // Convert first 4 bytes to int for consistent hash value
         var hashInt = BitConverter.ToInt32(hashBytes, 0);
-        
+
         // Handle int.MinValue overflow case: Math.Abs(int.MinValue) returns int.MinValue
         if (hashInt == int.MinValue)
         {
             return int.MaxValue; // Use maximum positive value instead
         }
-        
+
         return Math.Abs(hashInt);
     }
 
@@ -811,7 +811,7 @@ public class MotivationalContentService : IMotivationalContentService
     {
         // Simplified statistical significance calculation
         // In a full implementation, this would use proper statistical tests (Chi-square, t-test, etc.)
-        
+
         if (groupMetrics.Count < 2)
         {
             return null;
@@ -866,7 +866,7 @@ public class MotivationalContentService : IMotivationalContentService
         // Simple trend analysis based on chronological engagement rates
         var sortedLogs = logs.OrderBy(l => l.DeliveredAt).ToList();
         var midPoint = sortedLogs.Count / 2;
-        
+
         var firstHalf = sortedLogs.Take(midPoint);
         var secondHalf = sortedLogs.Skip(midPoint);
 
