@@ -416,10 +416,13 @@ public class GetProductivityStreakQueryHandlerTests
 
     private AppTask CreateCompletedTask(DateTime completionDate)
     {
-        var task = AppTask.Create(
-            title: $"Test Task {Guid.NewGuid()}",
-            category: AppTaskCategory.ToDo,
-            userId: _testUserId);
+        var task = new AppTask 
+        { 
+            Title = $"Test Task {Guid.NewGuid()}", 
+            Category = (int)AppTaskCategory.ToDo, 
+            UserId = _testUserId, 
+            Status = (int)AppTaskStatus.Pending 
+        };
             
         // Use reflection to set private fields since we need to simulate completed tasks
         var statusField = typeof(AppTask).GetField("_status", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);

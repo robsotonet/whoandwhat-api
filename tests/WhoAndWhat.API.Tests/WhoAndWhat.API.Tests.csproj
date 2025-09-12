@@ -30,6 +30,7 @@
     <ProjectReference Include="..\..\src\WhoAndWhat.Infrastructure\WhoAndWhat.Infrastructure.csproj" />
     <ProjectReference Include="..\..\src\WhoAndWhat.Application\WhoAndWhat.Application.csproj" />
     <ProjectReference Include="..\..\src\WhoAndWhat.Domain\WhoAndWhat.Domain.csproj" />
+    <ProjectReference Include="..\WhoAndWhat.Domain.Tests\WhoAndWhat.Domain.Tests.csproj" />
   </ItemGroup>
 
 </Project>

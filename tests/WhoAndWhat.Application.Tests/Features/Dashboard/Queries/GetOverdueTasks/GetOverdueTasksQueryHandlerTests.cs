@@ -524,7 +524,7 @@ public class GetOverdueTasksQueryHandlerTests
 
     private AppTask CreateActiveTask(string title, AppTaskCategory category)
     {
-        var task = AppTask.Create(title, category, _testUserId);
+        var task = new AppTask { Title = title, Category = (int)category, UserId = _testUserId, Status = (int)AppTaskStatus.Pending };
         
         // Set as in progress
         var statusField = typeof(AppTask).GetField("_status", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
@@ -546,7 +546,7 @@ public class GetOverdueTasksQueryHandlerTests
 
     private AppTask CreateOverdueTask(string title, AppTaskCategory category, Priority priority, DateTime dueDate)
     {
-        var task = AppTask.Create(title, category, _testUserId);
+        var task = new AppTask { Title = title, Category = (int)category, UserId = _testUserId, Status = (int)AppTaskStatus.Pending };
         
         // Set as in progress (overdue)
         var statusField = typeof(AppTask).GetField("_status", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
@@ -565,7 +565,7 @@ public class GetOverdueTasksQueryHandlerTests
 
     private AppTask CreateCompletedTask(string title, AppTaskCategory category)
     {
-        var task = AppTask.Create(title, category, _testUserId);
+        var task = new AppTask { Title = title, Category = (int)category, UserId = _testUserId, Status = (int)AppTaskStatus.Pending };
         
         // Set as completed
         var statusField = typeof(AppTask).GetField("_status", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);

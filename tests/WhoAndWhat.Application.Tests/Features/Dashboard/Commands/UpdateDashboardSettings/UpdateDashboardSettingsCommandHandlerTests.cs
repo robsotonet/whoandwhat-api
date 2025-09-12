@@ -5,6 +5,7 @@ using WhoAndWhat.Application.Common;
 using WhoAndWhat.Application.Features.Dashboard.Commands.UpdateDashboardSettings;
 using WhoAndWhat.Application.Interfaces;
 using WhoAndWhat.Domain.Entities;
+using WhoAndWhat.Domain.ValueObjects;
 using Xunit;
 
 namespace WhoAndWhat.Application.Tests.Features.Dashboard.Commands.UpdateDashboardSettings;
@@ -555,7 +556,7 @@ public class UpdateDashboardSettingsCommandHandlerTests
 
     private User CreateTestUser()
     {
-        return User.Create("testuser", "test@example.com", "hashedpassword");
+        return new User("test@example.com", "testuser", Language.en);
     }
 
     private DashboardSettingsDto CreateValidDashboardSettings()

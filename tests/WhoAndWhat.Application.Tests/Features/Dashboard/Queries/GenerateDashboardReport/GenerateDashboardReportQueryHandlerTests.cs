@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging;
 using Moq;
 using System.Text;
 using WhoAndWhat.Application.Common;
+using WhoAndWhat.Application.DTOs;
 using WhoAndWhat.Application.Features.Dashboard.Queries.GenerateDashboardReport;
 using WhoAndWhat.Application.Interfaces;
 using WhoAndWhat.Domain.Entities;
@@ -485,13 +486,13 @@ public class GenerateDashboardReportQueryHandlerTests
 
         // Setup for streak calculation (separate call)
         _mockTaskRepository
-            .Setup(x => x.GetTasksByUserIdAsync(_testUserId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(tasks);
+            .Setup(x => x.GetTasksByUserIdAsync(_testUserId, It.IsAny<TaskFilter>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((tasks, tasks.Count));
     }
 
     private User CreateTestUser()
     {
-        var user = User.Create("testuser", "test@example.com", "hashedpassword");
+        var user = new User("test@example.com", "testuser", Language.en);
         return user;
     }
 
@@ -502,7 +503,7 @@ public class GenerateDashboardReportQueryHandlerTests
             CreateTask("Task 1", AppTaskCategory.ToDo, AppTaskStatus.Completed),
             CreateTask("Task 2", AppTaskCategory.Idea, AppTaskStatus.InProgress),
             CreateTask("Task 3", AppTaskCategory.ToDo, AppTaskStatus.Completed),
-            CreateTask("Task 4", AppTaskCategory.Project, AppTaskStatus.NotStarted),
+            CreateTask("Task 4", AppTaskCategory.Project, AppTaskStatus.Pending),
         };
     }
 
@@ -513,8 +514,8 @@ public class GenerateDashboardReportQueryHandlerTests
             CreateTask("Task 1", AppTaskCategory.ToDo, AppTaskStatus.Completed),
             CreateTask("Task 2", AppTaskCategory.Idea, AppTaskStatus.InProgress),
             CreateTask("Task 3", AppTaskCategory.Appointment, AppTaskStatus.Completed),
-            CreateTask("Task 4", AppTaskCategory.BillReminder, AppTaskStatus.NotStarted),
-            CreateTask("Task 5", AppTaskCategory.Project, AppTaskStatus.OnHold),
+            CreateTask("Task 4", AppTaskCategory.BillReminder, AppTaskStatus.Pending),
+            CreateTask("Task 5", AppTaskCategory.Project, AppTaskStatus.Pending),
         };
     }
 
@@ -553,7 +554,7 @@ public class GenerateDashboardReportQueryHandlerTests
         {
             CreateTask("Regular Task", AppTaskCategory.ToDo, AppTaskStatus.Completed),
             CreateTaskWithDueDate("Overdue Task 1", DateTime.Today.AddDays(-3), AppTaskStatus.InProgress),
-            CreateTaskWithDueDate("Overdue Task 2", DateTime.Today.AddDays(-1), AppTaskStatus.NotStarted),
+            CreateTaskWithDueDate("Overdue Task 2", DateTime.Today.AddDays(-1), AppTaskStatus.Pending),
             CreateTaskWithDueDate("Future Task", DateTime.Today.AddDays(1), AppTaskStatus.InProgress),
         };
         return tasks;
@@ -614,7 +615,7 @@ public class GenerateDashboardReportQueryHandlerTests
 
     private AppTask CreateTask(string title, AppTaskCategory category, AppTaskStatus status)
     {
-        var task = AppTask.Create(title, category, _testUserId);
+        var task = new AppTask { Title = title, Category = (int)category, UserId = _testUserId, Status = (int)AppTaskStatus.Pending };
         
         // Set status using reflection
         var statusField = typeof(AppTask).GetField("_status", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
@@ -625,7 +626,7 @@ public class GenerateDashboardReportQueryHandlerTests
 
     private AppTask CreateTaskWithPriority(string title, Priority priority)
     {
-        var task = AppTask.Create(title, AppTaskCategory.ToDo, _testUserId);
+        var task = new AppTask { Title = title, Category = (int)AppTaskCategory.ToDo, UserId = _testUserId, Status = (int)AppTaskStatus.Pending };
         
         // Set priority using reflection
         var priorityField = typeof(AppTask).GetField("_priority", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);

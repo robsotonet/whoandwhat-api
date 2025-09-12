@@ -449,13 +449,13 @@ public class GetDashboardMetricsQueryHandlerTests
 
     private AppTask CreateActiveTask(AppTaskCategory category)
     {
-        var task = AppTask.Create($"Test Task {Guid.NewGuid()}", category, _testUserId);
+        var task = new AppTask { Title = $"Test Task {Guid.NewGuid()}", Category = (int)category, UserId = _testUserId, Status = (int)AppTaskStatus.Pending };
         return task;
     }
 
     private AppTask CreateActiveTaskWithPriority(Priority priority)
     {
-        var task = AppTask.Create($"Test Task {Guid.NewGuid()}", AppTaskCategory.ToDo, _testUserId);
+        var task = new AppTask { Title = $"Test Task {Guid.NewGuid()}", Category = (int)AppTaskCategory.ToDo, UserId = _testUserId, Status = (int)AppTaskStatus.Pending };
         
         // Set priority using reflection
         var priorityField = typeof(AppTask).GetField("_priority", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
@@ -466,7 +466,7 @@ public class GetDashboardMetricsQueryHandlerTests
 
     private AppTask CreateActiveTaskWithDueDate(DateTime dueDate)
     {
-        var task = AppTask.Create($"Test Task {Guid.NewGuid()}", AppTaskCategory.ToDo, _testUserId);
+        var task = new AppTask { Title = $"Test Task {Guid.NewGuid()}", Category = (int)AppTaskCategory.ToDo, UserId = _testUserId, Status = (int)AppTaskStatus.Pending };
         
         // Set due date using reflection
         var dueDateField = typeof(AppTask).GetField("_dueDate", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
@@ -477,7 +477,7 @@ public class GetDashboardMetricsQueryHandlerTests
 
     private AppTask CreateCompletedTask(DateTime completionDate, AppTaskCategory category)
     {
-        var task = AppTask.Create($"Test Task {Guid.NewGuid()}", category, _testUserId);
+        var task = new AppTask { Title = $"Test Task {Guid.NewGuid()}", Category = (int)category, UserId = _testUserId, Status = (int)AppTaskStatus.Pending };
         
         // Set as completed
         var statusField = typeof(AppTask).GetField("_status", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
@@ -512,7 +512,7 @@ public class GetDashboardMetricsQueryHandlerTests
 
     private AppTask CreateArchivedTask(AppTaskCategory category)
     {
-        var task = AppTask.Create($"Test Task {Guid.NewGuid()}", category, _testUserId);
+        var task = new AppTask { Title = $"Test Task {Guid.NewGuid()}", Category = (int)category, UserId = _testUserId, Status = (int)AppTaskStatus.Pending };
         
         // Set as archived
         var statusField = typeof(AppTask).GetField("_status", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
@@ -523,7 +523,7 @@ public class GetDashboardMetricsQueryHandlerTests
 
     private AppTask CreateDeletedTask(AppTaskCategory category)
     {
-        var task = AppTask.Create($"Test Task {Guid.NewGuid()}", category, _testUserId);
+        var task = new AppTask { Title = $"Test Task {Guid.NewGuid()}", Category = (int)category, UserId = _testUserId, Status = (int)AppTaskStatus.Pending };
         
         // Set as deleted
         var isDeletedField = typeof(AppTask).GetField("_isDeleted", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);

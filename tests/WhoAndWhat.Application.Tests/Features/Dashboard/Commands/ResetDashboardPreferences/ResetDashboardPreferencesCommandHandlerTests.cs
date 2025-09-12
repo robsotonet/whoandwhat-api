@@ -6,6 +6,7 @@ using WhoAndWhat.Application.Features.Dashboard.Commands.ResetDashboardPreferenc
 using WhoAndWhat.Application.Features.Dashboard.Commands.UpdateDashboardSettings;
 using WhoAndWhat.Application.Interfaces;
 using WhoAndWhat.Domain.Entities;
+using WhoAndWhat.Domain.ValueObjects;
 
 namespace WhoAndWhat.Application.Tests.Features.Dashboard.Commands.ResetDashboardPreferences;
 
@@ -331,29 +332,12 @@ public class ResetDashboardPreferencesCommandHandlerTests
 
     private User CreateTestUser(Guid userId)
     {
-        var user = new User();
+        // Use the public constructor with required parameters
+        var user = new User("test@example.com", "testuser", Language.en);
         
-        // Use reflection to set the private Id property
-        var idProperty = typeof(User).GetProperty("Id");
-        if (idProperty != null && idProperty.CanWrite)
-        {
-            idProperty.SetValue(user, userId);
-        }
-        else
-        {
-            // If property is read-only, try to set via constructor or backing field
-            var idField = typeof(User).GetField("_id", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-            idField?.SetValue(user, userId);
-        }
-
-        var emailProperty = typeof(User).GetProperty("Email");
-        emailProperty?.SetValue(user, "test@example.com");
-
-        var firstNameProperty = typeof(User).GetProperty("FirstName");
-        firstNameProperty?.SetValue(user, "Test");
-
-        var lastNameProperty = typeof(User).GetProperty("LastName");
-        lastNameProperty?.SetValue(user, "User");
+        // If we need to set a specific ID, use reflection as a fallback
+        var idField = typeof(BaseEntity).GetField("_id", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+        idField?.SetValue(user, userId);
 
         return user;
     }

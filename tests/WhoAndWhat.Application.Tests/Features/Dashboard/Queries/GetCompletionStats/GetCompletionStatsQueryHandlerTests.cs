@@ -406,7 +406,7 @@ public class GetCompletionStatsQueryHandlerTests
         var tasks = CreateTasksWithProductivityPattern();
 
         _mockTaskRepository
-            .Setup(x => x.GetTasksByUserIdAsync(_testUserId, It.IsAny<CancellationToken>()))
+            .Setup(x => x.GetTasksByUserIdAsync(_testUserId, It.IsAny<TaskFilter>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync((tasks, tasks.Count));
 
         // Act
@@ -665,7 +665,7 @@ public class GetCompletionStatsQueryHandlerTests
 
     private AppTask CreateTask(string title, AppTaskStatus status, DateTime createdAt)
     {
-        var task = AppTask.Create(title, AppTaskCategory.ToDo, _testUserId);
+        var task = new AppTask { Title = title, Category = (int)AppTaskCategory.ToDo, UserId = _testUserId, Status = (int)AppTaskStatus.Pending };
         
         SetTaskStatus(task, status);
         SetTaskCreationTime(task, createdAt);
@@ -689,7 +689,7 @@ public class GetCompletionStatsQueryHandlerTests
 
     private AppTask CreateCompletedTaskWithCategory(string title, AppTaskCategory category, Priority priority, DateTime createdAt, DateTime completedAt)
     {
-        var task = AppTask.Create(title, category, _testUserId);
+        var task = new AppTask { Title = title, Category = (int)category, UserId = _testUserId, Status = (int)AppTaskStatus.Pending };
         
         SetTaskStatus(task, AppTaskStatus.Completed);
         SetTaskPriority(task, priority);
@@ -712,7 +712,7 @@ public class GetCompletionStatsQueryHandlerTests
 
     private AppTask CreateInProgressTaskWithCategory(string title, AppTaskCategory category, Priority priority, DateTime createdAt)
     {
-        var task = AppTask.Create(title, category, _testUserId);
+        var task = new AppTask { Title = title, Category = (int)category, UserId = _testUserId, Status = (int)AppTaskStatus.Pending };
         
         SetTaskStatus(task, AppTaskStatus.InProgress);
         SetTaskPriority(task, priority);

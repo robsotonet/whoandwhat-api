@@ -4,6 +4,7 @@ using Moq;
 using System.Text;
 using System.Text.Json;
 using WhoAndWhat.Application.Common;
+using WhoAndWhat.Application.DTOs;
 using WhoAndWhat.Application.Features.Dashboard.Queries.ExportDashboardData;
 using WhoAndWhat.Application.Interfaces;
 using WhoAndWhat.Domain.Entities;
@@ -541,7 +542,7 @@ public class ExportDashboardDataQueryHandlerTests
 
     private User CreateTestUser()
     {
-        var user = User.Create("testuser", "test@example.com", "hashedpassword");
+        var user = new User("test@example.com", "testuser", Language.en);
         return user;
     }
 
@@ -552,7 +553,7 @@ public class ExportDashboardDataQueryHandlerTests
             CreateTask("Task 1", AppTaskCategory.ToDo, AppTaskStatus.Completed),
             CreateTask("Task 2", AppTaskCategory.Idea, AppTaskStatus.InProgress),
             CreateTask("Task 3", AppTaskCategory.ToDo, AppTaskStatus.Completed),
-            CreateTask("Task 4", AppTaskCategory.Project, AppTaskStatus.NotStarted),
+            CreateTask("Task 4", AppTaskCategory.Project, AppTaskStatus.Pending),
         };
     }
 
@@ -563,7 +564,7 @@ public class ExportDashboardDataQueryHandlerTests
             CreateTask("Task 1", AppTaskCategory.ToDo, AppTaskStatus.Completed, Priority.High),
             CreateTask("Task 2", AppTaskCategory.Idea, AppTaskStatus.InProgress, Priority.Medium),
             CreateTask("Task 3", AppTaskCategory.Appointment, AppTaskStatus.Completed, Priority.Low),
-            CreateTask("Task 4", AppTaskCategory.BillReminder, AppTaskStatus.NotStarted, Priority.Urgent),
+            CreateTask("Task 4", AppTaskCategory.BillReminder, AppTaskStatus.Pending, Priority.Urgent),
         };
     }
 
@@ -574,7 +575,7 @@ public class ExportDashboardDataQueryHandlerTests
             CreateTask("ToDo Task 1", AppTaskCategory.ToDo, AppTaskStatus.InProgress),
             CreateTask("ToDo Task 2", AppTaskCategory.ToDo, AppTaskStatus.Completed),
             CreateTask("Project Task", AppTaskCategory.Project, AppTaskStatus.InProgress),
-            CreateTask("Idea Task", AppTaskCategory.Idea, AppTaskStatus.NotStarted),
+            CreateTask("Idea Task", AppTaskCategory.Idea, AppTaskStatus.Pending),
         };
     }
 
@@ -617,7 +618,7 @@ public class ExportDashboardDataQueryHandlerTests
             CreateTask("Completed 2", AppTaskCategory.Idea, AppTaskStatus.Completed),
             CreateTask("Completed 3", AppTaskCategory.Project, AppTaskStatus.Completed),
             CreateTask("In Progress", AppTaskCategory.ToDo, AppTaskStatus.InProgress),
-            CreateTask("Not Started", AppTaskCategory.Appointment, AppTaskStatus.NotStarted),
+            CreateTask("Not Started", AppTaskCategory.Appointment, AppTaskStatus.Pending),
         };
     }
 
@@ -674,7 +675,7 @@ public class ExportDashboardDataQueryHandlerTests
 
     private AppTask CreateTask(string title, AppTaskCategory category, AppTaskStatus status, Priority? priority = null)
     {
-        var task = AppTask.Create(title, category, _testUserId);
+        var task = new AppTask { Title = title, Category = (int)category, UserId = _testUserId, Status = (int)AppTaskStatus.Pending };
         
         // Set status using reflection
         var statusField = typeof(AppTask).GetField("_status", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
@@ -689,7 +690,7 @@ public class ExportDashboardDataQueryHandlerTests
 
     private AppTask CreateDeletedTask(string title, AppTaskCategory category)
     {
-        var task = AppTask.Create(title, category, _testUserId);
+        var task = new AppTask { Title = title, Category = (int)category, UserId = _testUserId, Status = (int)AppTaskStatus.Pending };
         
         // Set as deleted using reflection
         var isDeletedField = typeof(AppTask).GetField("_isDeleted", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);

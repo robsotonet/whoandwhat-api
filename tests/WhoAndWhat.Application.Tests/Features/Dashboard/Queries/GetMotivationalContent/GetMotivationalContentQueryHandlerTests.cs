@@ -89,7 +89,7 @@ public class GetMotivationalContentQueryHandlerTests
 
         _mockPreferencesRepository
             .Setup(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()))
-            .Returns(Task.CompletedTask);
+            .ReturnsAsync(1);
 
         SetupPreferencesCanDeliverContent(defaultPreferences, true);
 
@@ -241,7 +241,7 @@ public class GetMotivationalContentQueryHandlerTests
                 title: $"Test Title {i + 1}",
                 message: $"Test motivational message {i + 1}",
                 contentType: MotivationalContentType.Achievement,
-                category: MotivationalContentCategory.Productivity,
+                category: ContentCategory.Productivity,
                 priority: 80 + i,
                 targetConditions: new Dictionary<string, object>
                 {
