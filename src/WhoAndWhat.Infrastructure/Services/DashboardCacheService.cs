@@ -461,13 +461,13 @@ public class DashboardCacheService : IDashboardCacheService, IDisposable
                     var nextCursor = scanResult[0];
                     var keys = scanResult[1];
 
-                    if (keys.IsNull || !keys.HasValue)
+                    if (keys.IsNull)
                     {
                         _logger.LogWarning("Invalid SCAN response - keys array is null");
                         break;
                     }
 
-                    var redisKeys = ((RedisResult[])keys!).Where(k => k.HasValue).Select(k => (RedisKey)k!).ToArray();
+                    var redisKeys = ((RedisResult[])keys!).Where(k => !k.IsNull).Select(k => (RedisKey)k!).ToArray();
 
                     if (redisKeys.Any())
                     {
@@ -508,7 +508,9 @@ public class DashboardCacheService : IDashboardCacheService, IDisposable
             foreach (var userId in userIds)
             {
                 if (cancellationToken.IsCancellationRequested)
+                {
                     break;
+                }
 
                 // Implement precomputation logic here
                 processedCount++;
@@ -532,7 +534,9 @@ public class DashboardCacheService : IDashboardCacheService, IDisposable
         do
         {
             if (cancellationToken.IsCancellationRequested)
+            {
                 break;
+            }
 
             var scanResult = server.Execute("SCAN", cursor, "MATCH", pattern, "COUNT", 100);
 
@@ -541,9 +545,9 @@ public class DashboardCacheService : IDashboardCacheService, IDisposable
                 var nextCursor = scanResult[0];
                 var keys = scanResult[1];
 
-                if (keys.HasValue)
+                if (!keys.IsNull)
                 {
-                    var redisKeys = ((RedisResult[])keys!).Where(k => k.HasValue).Select(k => (RedisKey)k!).ToArray();
+                    var redisKeys = ((RedisResult[])keys!).Where(k => !k.IsNull).Select(k => (RedisKey)k!).ToArray();
 
                     if (redisKeys.Any())
                     {
@@ -552,7 +556,9 @@ public class DashboardCacheService : IDashboardCacheService, IDisposable
                 }
 
                 if (!long.TryParse((string?)nextCursor!, out cursor))
+                {
                     break;
+                }
             }
             else
             {
@@ -564,7 +570,9 @@ public class DashboardCacheService : IDashboardCacheService, IDisposable
     private void TrackCacheOperation(string operationType, bool isHit)
     {
         if (!_settings.EnablePerformanceMonitoring)
+        {
             return;
+        }
 
         _metricsTracker.AddOrUpdate(operationType,
             new DashboardCacheMetrics
@@ -579,9 +587,13 @@ public class DashboardCacheService : IDashboardCacheService, IDisposable
             {
                 existing.TotalRequests++;
                 if (isHit)
+                {
                     existing.CacheHits++;
+                }
                 else
+                {
                     existing.CacheMisses++;
+                }
                 return existing;
             });
     }

@@ -437,7 +437,10 @@ public class ContentABTestingService : IContentABTestingService
         // In production, use proper statistical library like Math.NET
 
         var groups = groupResults.Values.ToList();
-        if (groups.Count < 2) return (1.0, 0.0);
+        if (groups.Count < 2)
+        {
+            return (1.0, 0.0);
+        }
 
         var totalSample = groups.Sum(g => g.SampleSize);
         var totalEngagements = groups.Sum(g => g.TotalEngagements);
@@ -486,7 +489,10 @@ public class ContentABTestingService : IContentABTestingService
     private double CalculateEffectSize(Dictionary<string, ABTestGroupResults> groupResults)
     {
         var groups = groupResults.Values.OrderByDescending(g => g.EngagementRate).ToList();
-        if (groups.Count < 2) return 0.0;
+        if (groups.Count < 2)
+        {
+            return 0.0;
+        }
 
         var best = groups.First().EngagementRate;
         var control = groups.Last().EngagementRate;
@@ -510,15 +516,21 @@ public class ContentABTestingService : IContentABTestingService
     private ABTestStatus DetermineTestStatus(Dictionary<string, ABTestGroupResults> groupResults, StatisticalAnalysis? analysis)
     {
         if (!groupResults.Any())
+        {
             return ABTestStatus.NoData;
+        }
 
         var minSampleSize = groupResults.Values.Min(g => g.SampleSize);
 
         if (minSampleSize < MinimumSampleSize)
+        {
             return ABTestStatus.InsufficientData;
+        }
 
         if (analysis?.IsSignificant == true)
+        {
             return ABTestStatus.SignificantResult;
+        }
 
         return ABTestStatus.Running;
     }
@@ -526,7 +538,9 @@ public class ContentABTestingService : IContentABTestingService
     private ABTestGroupResults? DetermineWinner(Dictionary<string, ABTestGroupResults> groupResults, StatisticalAnalysis? analysis)
     {
         if (analysis?.IsSignificant != true)
+        {
             return null;
+        }
 
         return groupResults.Values.OrderByDescending(g => g.EngagementRate).First();
     }

@@ -329,13 +329,13 @@ public class ContentDeliveryLogBuilder
             _userId,
             _motivationalContentId,
             _deliveryChannel,
-            _deliveredAt,
+            _abTestGroup,
             _deliveryContext);
 
         // Set engagement data if provided
         if (_engagementType.HasValue)
         {
-            log.RecordEngagement(_engagementType.Value, _engagedAt ?? DateTime.UtcNow, _engagementContext);
+            log.RecordEngagement(_engagementType.Value, _engagementContext, _engagementDuration);
         }
 
         // Set A/B test group if provided
@@ -355,15 +355,13 @@ public class ContentDeliveryLogBuilder
         // Set personalized score if provided
         if (_personalizedScore.HasValue)
         {
-            // Note: This might need to be set through a method depending on the entity's API
-            // log.SetPersonalizedScore(_personalizedScore.Value);
+            log.SetPersonalizedScore(_personalizedScore.Value);
         }
 
         // Add analytics data
         foreach (var data in _analyticsData)
         {
-            // Note: This might need to be set through a method depending on the entity's API
-            // log.AddAnalyticsData(data.Key, data.Value);
+            log.AddAnalyticsData(data.Key, data.Value);
         }
 
         return log;

@@ -3,6 +3,7 @@ using System.Text;
 using Microsoft.Extensions.Logging;
 using WhoAndWhat.Application.Interfaces;
 using WhoAndWhat.Domain.Entities;
+using WhoAndWhat.Domain.ValueObjects;
 
 namespace WhoAndWhat.Infrastructure.Services;
 
@@ -323,7 +324,10 @@ public class MotivationalContentService : IMotivationalContentService
 
             foreach (var group in deliveryLogs.GroupBy(dl => dl.ABTestGroup))
             {
-                if (group.Key == null) continue;
+                if (group.Key == null)
+                {
+                    continue;
+                }
 
                 var logs = group.ToList();
                 var engagedLogs = logs.Where(l => l.EngagementType.HasValue).ToList();
@@ -738,7 +742,7 @@ public class MotivationalContentService : IMotivationalContentService
             if (content != null)
             {
                 var engagementScore = GetEngagementScore(engagementType);
-                var currentScore = preferences.GetEngagementHistory<double>($"score_{content.ContentType}") ?? 0.5;
+                var currentScore = preferences.GetEngagementHistory<double?>($"score_{content.ContentType}") ?? 0.5;
 
                 // Weighted average with more weight on recent engagement
                 var newScore = (currentScore * 0.7) + (engagementScore * 0.3);
