@@ -43,7 +43,9 @@
       "Bash(dotnet format:*)",
       "Bash(for:*)",
       "Bash(do)",
-      "Bash(echo \"Skipped $file\")"
+      "Bash(echo \"Skipped $file\")",
+      "Bash(dotnet --version)",
+      "Bash(verbosity=normal)"
     ],
     "deny": [],
     "ask": []

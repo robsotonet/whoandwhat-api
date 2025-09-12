@@ -158,13 +158,13 @@ public sealed class GetCompletionStatsQueryHandler
         var dailyData = new List<DailyCompletionPoint>();
         for (var date = startDate.Date; date <= endDate.Date; date = date.AddDays(1))
         {
-            var dayTasks = allTasks.Where(t => t.CreatedDate.Date == date).ToList();
-            var dayCompleted = allTasks.Count(t => t.UpdatedAt?.Date == date);
+            var dayTasks = allTasks.Where(t => t.CreatedAt.Date == date).ToList();
+            var dayCompleted = allTasks.Count(t => t.UpdatedAt.Date == date);
             var completionRate = dayTasks.Count > 0 ? (double)dayCompleted / dayTasks.Count * 100 : 0.0;
             
             var dayCompletionTimes = allTasks
-                .Where(t => t.UpdatedAt?.Date == date && t.UpdatedAt.HasValue)
-                .Select(t => t.UpdatedAt!.Value - t.CreatedDate)
+                .Where(t => t.UpdatedAt.Date == date)
+                .Select(t => t.UpdatedAt - t.CreatedAt)
                 .ToList();
                 
             var avgTime = dayCompletionTimes.Any() 
@@ -187,7 +187,7 @@ public sealed class GetCompletionStatsQueryHandler
             var weekStart = DateTime.UtcNow.Date.AddDays(-7 * (i + 1) + -(int)DateTime.UtcNow.DayOfWeek);
             var weekEnd = weekStart.AddDays(7);
             
-            var weekTasks = allTasks.Where(t => t.CreatedDate >= weekStart && t.CreatedDate < weekEnd).ToList();
+            var weekTasks = allTasks.Where(t => t.CreatedAt >= weekStart && t.CreatedAt < weekEnd).ToList();
             var weekCompleted = allTasks.Count(t => t.UpdatedAt >= weekStart && t.UpdatedAt < weekEnd);
             var weekRate = weekTasks.Count > 0 ? (double)weekCompleted / weekTasks.Count * 100 : 0.0;
 
@@ -207,7 +207,7 @@ public sealed class GetCompletionStatsQueryHandler
             var monthStart = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, 1).AddMonths(-i);
             var monthEnd = monthStart.AddMonths(1);
             
-            var monthTasks = allTasks.Where(t => t.CreatedDate >= monthStart && t.CreatedDate < monthEnd).ToList();
+            var monthTasks = allTasks.Where(t => t.CreatedAt >= monthStart && t.CreatedAt < monthEnd).ToList();
             var monthCompleted = allTasks.Count(t => t.UpdatedAt >= monthStart && t.UpdatedAt < monthEnd);
             var monthRate = monthTasks.Count > 0 ? (double)monthCompleted / monthTasks.Count * 100 : 0.0;
 
@@ -244,7 +244,7 @@ public sealed class GetCompletionStatsQueryHandler
     {
         // By category
         var byCategory = new Dictionary<string, CompletionCategoryStats>();
-        foreach (AppTaskCategory category in Enum.GetValues<AppTaskCategory>())
+        foreach (AppTaskCategory category in AppTaskCategory.GetAll())
         {
             var categoryTasks = periodTasks.Where(t => t.Category == (int)category).ToList();
             var categoryCompleted = completedTasks.Where(t => t.Category == (int)category).ToList();
@@ -255,8 +255,7 @@ public sealed class GetCompletionStatsQueryHandler
             if (categoryTasks.Any())
             {
                 var completionTimes = categoryCompleted
-                    .Where(t => t.UpdatedAt.HasValue)
-                    .Select(t => t.UpdatedAt!.Value - t.CreatedDate)
+                                        .Select(t => t.UpdatedAt - t.CreatedAt)
                     .ToList();
 
                 var avgTime = completionTimes.Any() 
@@ -275,7 +274,7 @@ public sealed class GetCompletionStatsQueryHandler
 
         // By priority
         var byPriority = new Dictionary<string, CompletionPriorityStats>();
-        foreach (Priority priority in Enum.GetValues<Priority>())
+        foreach (Priority priority in Priority.GetAll())
         {
             var priorityTasks = periodTasks.Where(t => t.Priority == (int)priority).ToList();
             var priorityCompleted = completedTasks.Where(t => t.Priority == (int)priority).ToList();
@@ -285,8 +284,7 @@ public sealed class GetCompletionStatsQueryHandler
             if (priorityTasks.Any())
             {
                 var completionTimes = priorityCompleted
-                    .Where(t => t.UpdatedAt.HasValue)
-                    .Select(t => t.UpdatedAt!.Value - t.CreatedDate)
+                                        .Select(t => t.UpdatedAt - t.CreatedAt)
                     .ToList();
 
                 var avgTime = completionTimes.Any() 
@@ -308,29 +306,22 @@ public sealed class GetCompletionStatsQueryHandler
 
         // By hour of day
         var byHourOfDay = completedTasks
-            .Where(t => t.UpdatedAt.HasValue)
-            .GroupBy(t => t.UpdatedAt!.Value.Hour)
+                        .GroupBy(t => t.UpdatedAt.Hour)
             .ToDictionary(g => g.Key, g => g.Count());
 
         // By day of week
         var byDayOfWeek = completedTasks
-            .Where(t => t.UpdatedAt.HasValue)
-            .GroupBy(t => t.UpdatedAt!.Value.DayOfWeek.ToString())
+                        .GroupBy(t => t.UpdatedAt.DayOfWeek.ToString())
             .ToDictionary(g => g.Key, g => g.Count());
 
         // By time range
         var byTimeRange = new Dictionary<string, CompletionTimeRangeStats>
         {
-            ["Same Day"] = new(completedTasks.Count(t => t.UpdatedAt.HasValue && 
-                                                       (t.UpdatedAt.Value - t.CreatedDate).Days == 0), 0, "Same Day"),
-            ["1-3 Days"] = new(completedTasks.Count(t => t.UpdatedAt.HasValue && 
-                                                       (t.UpdatedAt.Value - t.CreatedDate).Days is > 0 and <= 3), 0, "1-3 Days"),
-            ["4-7 Days"] = new(completedTasks.Count(t => t.UpdatedAt.HasValue && 
-                                                       (t.UpdatedAt.Value - t.CreatedDate).Days is > 3 and <= 7), 0, "4-7 Days"),
-            ["1-2 Weeks"] = new(completedTasks.Count(t => t.UpdatedAt.HasValue && 
-                                                        (t.UpdatedAt.Value - t.CreatedDate).Days is > 7 and <= 14), 0, "1-2 Weeks"),
-            ["2+ Weeks"] = new(completedTasks.Count(t => t.UpdatedAt.HasValue && 
-                                                       (t.UpdatedAt.Value - t.CreatedDate).Days > 14), 0, "2+ Weeks")
+            ["Same Day"] = new(completedTasks.Count(t =>                                                        (t.UpdatedAt - t.CreatedAt).Days == 0), 0, "Same Day"),
+            ["1-3 Days"] = new(completedTasks.Count(t =>                                                        (t.UpdatedAt - t.CreatedAt).Days is > 0 and <= 3), 0, "1-3 Days"),
+            ["4-7 Days"] = new(completedTasks.Count(t =>                                                        (t.UpdatedAt - t.CreatedAt).Days is > 3 and <= 7), 0, "4-7 Days"),
+            ["1-2 Weeks"] = new(completedTasks.Count(t =>                                                         (t.UpdatedAt - t.CreatedAt).Days is > 7 and <= 14), 0, "1-2 Weeks"),
+            ["2+ Weeks"] = new(completedTasks.Count(t =>                                                        (t.UpdatedAt - t.CreatedAt).Days > 14), 0, "2+ Weeks")
         };
 
         // Calculate percentages for time ranges
@@ -363,8 +354,8 @@ public sealed class GetCompletionStatsQueryHandler
         var previousStartDate = startDate - periodLength;
         var previousEndDate = startDate.AddTicks(-1);
 
-        var currentPeriodTasks = allTasks.Where(t => t.CreatedDate >= startDate && t.CreatedDate <= endDate).ToList();
-        var previousPeriodTasks = allTasks.Where(t => t.CreatedDate >= previousStartDate && t.CreatedDate <= previousEndDate).ToList();
+        var currentPeriodTasks = allTasks.Where(t => t.CreatedAt >= startDate && t.CreatedAt <= endDate).ToList();
+        var previousPeriodTasks = allTasks.Where(t => t.CreatedAt >= previousStartDate && t.CreatedAt <= previousEndDate).ToList();
 
         var currentCompleted = currentPeriodTasks.Count(t => t.Status == (int)AppTaskStatus.Completed);
         var previousCompleted = previousPeriodTasks.Count(t => t.Status == (int)AppTaskStatus.Completed);
@@ -378,7 +369,7 @@ public sealed class GetCompletionStatsQueryHandler
         // Find best and worst performing days/categories
         var dailyCompletions = allTasks
             .Where(t => t.UpdatedAt >= startDate && t.UpdatedAt <= endDate)
-            .GroupBy(t => t.UpdatedAt!.Value.Date)
+            .GroupBy(t => t.UpdatedAt.Date)
             .ToDictionary(g => g.Key, g => g.Count());
 
         var bestDay = dailyCompletions.Any() ? dailyCompletions.Values.Max() : 0;

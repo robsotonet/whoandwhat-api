@@ -222,7 +222,7 @@ public sealed class GenerateDashboardReportQueryHandler
                 Priority = g.Key, 
                 Count = g.Count(), 
                 Completed = g.Count(t => t.Status == (int)AppTaskStatus.Completed),
-                AvgCompletionTime = g.Where(t => t.UpdatedAt.HasValue && t.CreatedAt != default)
+                AvgCompletionTime = g.Where(t => t.CreatedAt != default)
                     .Select(t => (t.UpdatedAt - t.CreatedAt).TotalHours)
                     .DefaultIfEmpty(0)
                     .Average()
@@ -414,7 +414,7 @@ public sealed class GenerateDashboardReportQueryHandler
 
     private async Task<int> CalculateCurrentStreak(Guid userId, CancellationToken cancellationToken)
     {
-        var tasks = await _taskRepository.GetTasksByUserIdAsync(userId, cancellationToken);
+        var (tasks, _) = await _taskRepository.GetTasksByUserIdAsync(userId, new TaskFilter { PageSize = 10000 }, cancellationToken);
         var completedTasks = tasks
             .Where(t => t.Status == (int)AppTaskStatus.Completed)
             .OrderByDescending(t => t.UpdatedAt.Date)
@@ -425,7 +425,7 @@ public sealed class GenerateDashboardReportQueryHandler
 
         foreach (var task in completedTasks)
         {
-            var taskDate = task.CompletedAt!.Value.Date;
+            var taskDate = task.UpdatedAt.Date;
             
             if (taskDate == currentDate || (currentStreak == 0 && taskDate < currentDate))
             {

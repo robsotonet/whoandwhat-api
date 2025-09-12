@@ -359,9 +359,8 @@ public sealed class ExportDashboardDataQueryHandler
                 Status = ((AppTaskStatus)t.Status).ToString(),
                 t.CreatedAt,
                 t.DueDate,
-                CompletedAt = t.Status == (int)AppTaskStatus.Completed ? t.UpdatedAt : (DateTime?)null,
-                t.Tags
-            }) ?? new object[0],
+                CompletedAt = t.Status == (int)AppTaskStatus.Completed ? t.UpdatedAt : (DateTime?)null
+            }) ?? Enumerable.Empty<object>(),
             Metrics = data.Metrics,
             Streaks = data.Streaks ?? new List<ProductivityStreakExport>(),
             Analytics = data.Analytics ?? new List<AnalyticsExport>()

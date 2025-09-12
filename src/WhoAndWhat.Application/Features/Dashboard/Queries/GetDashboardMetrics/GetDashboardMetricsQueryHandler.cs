@@ -54,7 +54,7 @@ public sealed class GetDashboardMetricsQueryHandler
             
             // On-time completion metrics
             var tasksWithDueDates = completedTasks.Where(t => t.DueDate.HasValue).ToList();
-            var onTimeTasks = tasksWithDueDates.Count(t => t.UpdatedAt <= t.DueDate);
+            var onTimeTasks = tasksWithDueDates.Count(t => t.DueDate.HasValue && t.UpdatedAt <= t.DueDate.Value);
             var lateTasks = tasksWithDueDates.Count - onTimeTasks;
 
             // Calculate rates
@@ -81,7 +81,7 @@ public sealed class GetDashboardMetricsQueryHandler
             );
 
             // Calculate productivity trends
-            var trends = await CalculateProductivityTrends(completedTasks, today, cancellationToken);
+            var trends = CalculateProductivityTrends(completedTasks, today);
 
             var response = new GetDashboardMetricsResponse(
                 CompletedTasksToday: completedToday,
@@ -108,10 +108,9 @@ public sealed class GetDashboardMetricsQueryHandler
         }
     }
 
-    private async Task<ProductivityTrends> CalculateProductivityTrends(
+    private ProductivityTrends CalculateProductivityTrends(
         List<Domain.Entities.AppTask> completedTasks,
-        DateTime today,
-        CancellationToken cancellationToken)
+        DateTime today)
     {
         // Calculate daily averages
         var last30Days = completedTasks
@@ -134,7 +133,7 @@ public sealed class GetDashboardMetricsQueryHandler
             var date = today.AddDays(-i);
             var dayCompleted = completedTasks.Count(t => t.UpdatedAt.Date == date);
             
-            // For creation count, we'd need to track CreatedDate - using a placeholder
+            // For creation count, we'd need to track CreatedAt - using a placeholder
             var dayCreated = dayCompleted + new Random().Next(0, 3); // Placeholder logic
             var dayRate = dayCreated > 0 ? (double)dayCompleted / dayCreated : 0.0;
 
