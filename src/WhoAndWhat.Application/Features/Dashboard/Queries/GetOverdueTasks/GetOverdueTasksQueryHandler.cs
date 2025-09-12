@@ -2,6 +2,7 @@ using MediatR;
 using Microsoft.Extensions.Logging;
 using WhoAndWhat.Application.Common;
 using WhoAndWhat.Application.DTOs;
+using WhoAndWhat.Application.DTOs.Dashboard;
 using WhoAndWhat.Application.Interfaces;
 using WhoAndWhat.Domain.ValueObjects;
 
@@ -107,16 +108,12 @@ public sealed class GetOverdueTasksQueryHandler
         return new OverdueTaskDto(
             Id: task.Id,
             Title: task.Title,
-            Description: task.Description,
             Category: ((AppTaskCategory)task.Category).ToString(),
             Priority: ((Priority)task.Priority).ToString(),
             DueDate: task.DueDate.Value,
             DaysOverdue: daysOverdue,
-            CreatedDate: task.CreatedAt,
-            LastModifiedDate: task.UpdatedAt,
-            Tags: new List<string>(), // Tags not implemented yet
-            HasReminders: false, // Reminders not implemented yet
-            UrgencyLevel: urgencyLevel
+            UrgencyLevel: urgencyLevel,
+            Tags: new List<string>() // Tags not implemented yet
         );
     }
 

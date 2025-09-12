@@ -672,7 +672,7 @@ public class ExportDashboardDataQueryHandlerTests
         return tasks;
     }
 
-    private AppTask CreateTask(string title, AppTaskCategory category, AppTaskStatus status, Priority priority = Priority.Medium)
+    private AppTask CreateTask(string title, AppTaskCategory category, AppTaskStatus status, Priority? priority = null)
     {
         var task = AppTask.Create(title, category, _testUserId);
         
@@ -682,7 +682,7 @@ public class ExportDashboardDataQueryHandlerTests
         
         // Set priority using reflection
         var priorityField = typeof(AppTask).GetField("_priority", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-        priorityField?.SetValue(task, (int)priority);
+        priorityField?.SetValue(task, (int)(priority ?? Priority.Medium));
         
         return task;
     }

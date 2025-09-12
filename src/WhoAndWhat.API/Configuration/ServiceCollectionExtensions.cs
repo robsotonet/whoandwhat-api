@@ -322,8 +322,8 @@ Users can export their data in JSON or CSV format including:
         // Register archive service
         services.AddScoped<ITaskArchiveService, TaskArchiveService>();
 
-        // Add Hangfire background job services
-        services.AddHangfireServices(configuration);
+        // Background job services are now handled by ContentSchedulingService
+        // The ContentSchedulingService is automatically registered in MotivationalContentServiceCollectionExtensions
 
         return services;
     }

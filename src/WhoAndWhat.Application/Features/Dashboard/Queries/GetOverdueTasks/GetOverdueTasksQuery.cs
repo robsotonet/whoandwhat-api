@@ -1,5 +1,6 @@
 using MediatR;
 using WhoAndWhat.Application.Common;
+using WhoAndWhat.Application.DTOs.Dashboard;
 
 namespace WhoAndWhat.Application.Features.Dashboard.Queries.GetOverdueTasks;
 
@@ -21,23 +22,6 @@ public sealed record GetOverdueTasksResponse(
     OverdueTasksAnalytics Analytics
 );
 
-/// <summary>
-/// Overdue task data transfer object
-/// </summary>
-public sealed record OverdueTaskDto(
-    Guid Id,
-    string Title,
-    string? Description,
-    string Category,
-    string Priority,
-    DateTime DueDate,
-    int DaysOverdue,
-    DateTime CreatedDate,
-    DateTime? LastModifiedDate,
-    List<string> Tags,
-    bool HasReminders,
-    string UrgencyLevel
-);
 
 /// <summary>
 /// Summary of overdue tasks

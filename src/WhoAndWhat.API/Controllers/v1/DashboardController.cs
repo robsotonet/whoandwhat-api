@@ -751,19 +751,3 @@ public class DashboardController : ControllerBase
 /// </summary>
 /// <param name="InteractionType">Type of interaction (view, click, share, dismiss)</param>
 public sealed record ContentInteractionRequest(string InteractionType);
-
-/// <summary>
-/// Response model for dashboard metrics
-/// </summary>
-/// <param name="CompletedTasksToday">Number of tasks completed today</param>
-/// <param name="TotalActiveTasks">Total number of active tasks</param>
-/// <param name="OverdueTasks">Number of overdue tasks</param>
-/// <param name="ProductivityStreak">Current productivity streak in days</param>
-/// <param name="MotivationalContentDelivered">Content items delivered today</param>
-public sealed record DashboardMetricsResponse(
-    int CompletedTasksToday,
-    int TotalActiveTasks,
-    int OverdueTasks,
-    int ProductivityStreak,
-    int MotivationalContentDelivered
-);

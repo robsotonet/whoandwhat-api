@@ -171,18 +171,19 @@ public class GetOverdueTasksQueryHandlerTests
     }
 
     [Theory]
-    [InlineData(Priority.Urgent, 1, "High")] // Urgent priority = High urgency
-    [InlineData(Priority.High, 5, "Medium")] // High priority + 5 days = Medium urgency  
-    [InlineData(Priority.Medium, 8, "High")] // Medium priority + 8 days = High urgency (>7 days)
-    [InlineData(Priority.Medium, 2, "Low")] // Medium priority + 2 days = Low urgency
-    [InlineData(Priority.Low, 4, "Medium")] // Low priority + 4 days = Medium urgency (>3 days)
-    [InlineData(Priority.Low, 1, "Low")] // Low priority + 1 day = Low urgency
-    public async Task Handle_ShouldCalculateUrgencyLevelCorrectly(Priority priority, int daysOverdue, string expectedUrgency)
+    [InlineData(3, 1, "High")] // Urgent priority = High urgency
+    [InlineData(2, 5, "Medium")] // High priority + 5 days = Medium urgency  
+    [InlineData(1, 8, "High")] // Medium priority + 8 days = High urgency (>7 days)
+    [InlineData(1, 2, "Low")] // Medium priority + 2 days = Low urgency
+    [InlineData(0, 4, "Medium")] // Low priority + 4 days = Medium urgency (>3 days)
+    [InlineData(0, 1, "Low")] // Low priority + 1 day = Low urgency
+    public async Task Handle_ShouldCalculateUrgencyLevelCorrectly(int priorityValue, int daysOverdue, string expectedUrgency)
     {
         // Arrange
         var query = new GetOverdueTasksQuery(_testUserId);
         var today = DateTime.UtcNow.Date;
         var dueDate = today.AddDays(-daysOverdue);
+        var priority = Priority.FromValue(priorityValue);
         
         var tasks = new List<AppTask>
         {

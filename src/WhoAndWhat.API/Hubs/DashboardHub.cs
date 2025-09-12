@@ -289,7 +289,7 @@ public class DashboardHub : Hub
 
             // Get the content scheduling service from DI
             var schedulingService = Context.GetHttpContext()?.RequestServices
-                .GetService<WhoAndWhat.Application.Services.ContentSchedulingService>();
+                .GetService<WhoAndWhat.Infrastructure.Services.ContentSchedulingService>();
 
             if (schedulingService != null)
             {

@@ -7,6 +7,7 @@ using WhoAndWhat.Application.Interfaces;
 using WhoAndWhat.Application.Services;
 using WhoAndWhat.Domain.Entities;
 using WhoAndWhat.Infrastructure.Repositories.Analytics;
+using WhoAndWhat.Infrastructure.Services;
 using Xunit;
 
 namespace WhoAndWhat.Application.Tests.Services;
