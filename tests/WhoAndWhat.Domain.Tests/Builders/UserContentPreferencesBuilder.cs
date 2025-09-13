@@ -53,7 +53,7 @@ public class UserContentPreferencesBuilder
     public UserContentPreferencesBuilder WithFrequency(ContentFrequency frequency)
     {
         _preferredFrequency = frequency;
-        
+
         // Automatically adjust limits based on frequency
         (_maxDailyContent, _maxWeeklyContent) = frequency switch
         {
@@ -63,7 +63,7 @@ public class UserContentPreferencesBuilder
             ContentFrequency.VeryHigh => (8, 40),
             _ => (3, 15)
         };
-        
+
         return this;
     }
 
@@ -387,34 +387,50 @@ public class UserContentPreferencesBuilder
         // Apply all configurations
         preferences.SetContentEnabled(_isContentEnabled);
         preferences.SetPreferredFrequency(_preferredFrequency);
-        
+
         if (_preferredContentTypes.Any())
+        {
             preferences.SetPreferredContentTypes(_preferredContentTypes);
-            
+        }
+
         if (_preferredCategories.Any())
+        {
             preferences.SetPreferredCategories(_preferredCategories);
-            
+        }
+
         if (_preferredChannels.Any())
+        {
             preferences.SetPreferredChannels(_preferredChannels);
-            
+        }
+
         if (_preferredDeliveryTimes.Any())
+        {
             preferences.SetPreferredDeliveryTimes(_preferredDeliveryTimes);
+        }
 
         preferences.SetContentLimits(_maxDailyContent, _maxWeeklyContent);
         preferences.SetSchedulingPreferences(_allowWeekends, _allowAfterHours);
         preferences.SetTimeZone(_timeZone);
 
         if (_lastContentDelivery.HasValue)
+        {
             preferences.RecordContentDelivery(_lastContentDelivery.Value);
+        }
 
         if (_contentPausedUntil.HasValue)
+        {
             preferences.PauseContentUntil(_contentPausedUntil.Value);
+        }
 
         foreach (var setting in _personalizationSettings)
+        {
             preferences.UpdatePersonalizationSetting(setting.Key, setting.Value);
+        }
 
         foreach (var history in _engagementHistory)
+        {
             preferences.UpdateEngagementHistory(history.Key, history.Value);
+        }
 
         return preferences;
     }
@@ -425,7 +441,7 @@ public class UserContentPreferencesBuilder
     public List<UserContentPreferences> BuildMany(int count)
     {
         var preferences = new List<UserContentPreferences>();
-        
+
         for (int i = 0; i < count; i++)
         {
             var builder = New()
@@ -433,9 +449,18 @@ public class UserContentPreferencesBuilder
                 .WithFrequency(_preferredFrequency);
 
             // Add some variation
-            if (i % 3 == 0) builder.AsExpert();
-            else if (i % 3 == 1) builder.AsIntermediate();
-            else builder.AsBeginner();
+            if (i % 3 == 0)
+            {
+                builder.AsExpert();
+            }
+            else if (i % 3 == 1)
+            {
+                builder.AsIntermediate();
+            }
+            else
+            {
+                builder.AsBeginner();
+            }
 
             preferences.Add(builder.Build());
         }

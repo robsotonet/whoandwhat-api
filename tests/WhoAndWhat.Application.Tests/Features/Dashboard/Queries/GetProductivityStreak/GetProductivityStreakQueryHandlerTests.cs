@@ -26,7 +26,7 @@ public class GetProductivityStreakQueryHandlerTests
     {
         _mockTaskRepository = new Mock<IAppTaskRepository>();
         _mockLogger = new Mock<ILogger<GetProductivityStreakQueryHandler>>();
-        
+
         _handler = new GetProductivityStreakQueryHandler(
             _mockTaskRepository.Object,
             _mockLogger.Object);
@@ -58,13 +58,13 @@ public class GetProductivityStreakQueryHandlerTests
         result.Value.WeeklyStats.Should().NotBeNull();
         result.Value.MonthlyStats.Should().NotBeNull();
         result.Value.Last30Days.Should().HaveCount(30);
-        
+
         // All milestones should be unachieved
         result.Value.Milestones.Should().AllSatisfy(m => m.IsAchieved.Should().BeFalse());
-        
+
         _mockTaskRepository.Verify(x => x.GetTasksByUserIdAsync(
-            _testUserId, 
-            It.Is<TaskFilter>(f => f.PageSize == 10000), 
+            _testUserId,
+            It.Is<TaskFilter>(f => f.PageSize == 10000),
             It.IsAny<CancellationToken>()), Times.Once);
     }
 
@@ -89,12 +89,12 @@ public class GetProductivityStreakQueryHandlerTests
         result.Value.LongestStreak.Should().Be(5);
         result.Value.LastCompletionDate.Should().NotBeNull();
         result.Value.StreakStartDate.Should().Be(today.AddDays(-4)); // Start of 5-day streak
-        
+
         // Check milestones
         var threedayMilestone = result.Value.Milestones.First(m => m.Days == 3);
         threedayMilestone.IsAchieved.Should().BeTrue();
         threedayMilestone.Title.Should().Be("Getting Started");
-        
+
         var sevenDayMilestone = result.Value.Milestones.First(m => m.Days == 7);
         sevenDayMilestone.IsAchieved.Should().BeFalse();
 
@@ -141,7 +141,7 @@ public class GetProductivityStreakQueryHandlerTests
 
         // Add current 3-day streak
         completedTasks.AddRange(CreateTasksForStreak(today, 3));
-        
+
         // Add gap
         // Add historical 7-day streak (10-16 days ago)
         for (int i = 10; i <= 16; i++)
@@ -160,7 +160,7 @@ public class GetProductivityStreakQueryHandlerTests
         result.IsSuccess.Should().BeTrue();
         result.Value.CurrentStreak.Should().Be(3);
         result.Value.LongestStreak.Should().Be(7); // Historical longest streak
-        
+
         // 7-day milestone should be achieved
         var sevenDayMilestone = result.Value.Milestones.First(m => m.Days == 7);
         sevenDayMilestone.IsAchieved.Should().BeTrue();
@@ -286,21 +286,21 @@ public class GetProductivityStreakQueryHandlerTests
         // Assert
         result.IsSuccess.Should().BeTrue();
         var last30Days = result.Value.Last30Days;
-        
+
         last30Days.Should().HaveCount(30);
         last30Days.Should().BeInAscendingOrder(x => x.Date);
-        
+
         // First day should be 29 days ago
         last30Days.First().Date.Should().Be(today.AddDays(-29));
-        
+
         // Last day should be today
         last30Days.Last().Date.Should().Be(today);
-        
+
         // Check that current streak days are marked correctly
         var todayPoint = last30Days.Last();
         todayPoint.HasActivity.Should().BeTrue();
         todayPoint.IsPartOfCurrentStreak.Should().BeTrue();
-        
+
         // Check historical activity
         var tenDaysAgoPoint = last30Days.Single(d => d.Date == today.AddDays(-10));
         tenDaysAgoPoint.HasActivity.Should().BeTrue();
@@ -324,7 +324,7 @@ public class GetProductivityStreakQueryHandlerTests
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("Failed to retrieve productivity streak");
         result.Error.Should().Contain("Database connection failed");
-        
+
         // Verify logging
         _mockLogger.Verify(
             x => x.Log(
@@ -381,7 +381,7 @@ public class GetProductivityStreakQueryHandlerTests
 
         // Assert
         result.IsSuccess.Should().BeTrue();
-        
+
         // Verify logging
         _mockLogger.Verify(
             x => x.Log(
@@ -391,7 +391,7 @@ public class GetProductivityStreakQueryHandlerTests
                 It.IsAny<Exception>(),
                 It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
             Times.Once);
-            
+
         _mockLogger.Verify(
             x => x.Log(
                 LogLevel.Information,
@@ -416,18 +416,18 @@ public class GetProductivityStreakQueryHandlerTests
 
     private AppTask CreateCompletedTask(DateTime completionDate)
     {
-        var task = new AppTask 
-        { 
-            Title = $"Test Task {Guid.NewGuid()}", 
-            Category = (int)AppTaskCategory.ToDo, 
-            UserId = _testUserId, 
-            Status = (int)AppTaskStatus.Pending 
+        var task = new AppTask
+        {
+            Title = $"Test Task {Guid.NewGuid()}",
+            Category = (int)AppTaskCategory.ToDo,
+            UserId = _testUserId,
+            Status = (int)AppTaskStatus.Pending
         };
-            
+
         // Use reflection to set private fields since we need to simulate completed tasks
         var statusField = typeof(AppTask).GetField("_status", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
         statusField?.SetValue(task, (int)AppTaskStatus.Completed);
-        
+
         var updatedAtField = typeof(AppTask).GetField("_updatedAt", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
         updatedAtField?.SetValue(task, completionDate);
 

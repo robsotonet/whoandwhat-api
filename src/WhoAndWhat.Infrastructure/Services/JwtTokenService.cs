@@ -252,11 +252,14 @@ public class JwtTokenService : IJwtTokenService
         var forwardedFor = context.Request.Headers["X-Forwarded-For"].FirstOrDefault();
         if (!string.IsNullOrEmpty(forwardedFor))
         {
-            // X-Forwarded-For can contain multiple IPs, take the first one
-            var firstIp = forwardedFor.Split(',').FirstOrDefault()?.Trim();
-            if (!string.IsNullOrEmpty(firstIp))
+            // X-Forwarded-For can contain multiple IPs, take the first one using ReadOnlySpan for better performance
+            var forwardedSpan = forwardedFor.AsSpan();
+            var commaIndex = forwardedSpan.IndexOf(',');
+            var firstIpSpan = commaIndex >= 0 ? forwardedSpan[..commaIndex].Trim() : forwardedSpan.Trim();
+            
+            if (!firstIpSpan.IsEmpty)
             {
-                return firstIp;
+                return firstIpSpan.ToString();
             }
         }
 

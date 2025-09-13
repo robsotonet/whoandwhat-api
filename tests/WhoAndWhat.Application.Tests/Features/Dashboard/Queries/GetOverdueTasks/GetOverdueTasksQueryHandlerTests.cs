@@ -26,7 +26,7 @@ public class GetOverdueTasksQueryHandlerTests
     {
         _mockTaskRepository = new Mock<IAppTaskRepository>();
         _mockLogger = new Mock<ILogger<GetOverdueTasksQueryHandler>>();
-        
+
         _handler = new GetOverdueTasksQueryHandler(
             _mockTaskRepository.Object,
             _mockLogger.Object);
@@ -49,14 +49,14 @@ public class GetOverdueTasksQueryHandlerTests
         // Assert
         result.IsSuccess.Should().BeTrue();
         var response = result.Value;
-        
+
         response.Tasks.Should().BeEmpty();
         response.Summary.TotalOverdue.Should().Be(0);
         response.Summary.CriticalPriorityCount.Should().Be(0);
         response.Summary.AverageDaysOverdue.Should().Be(0);
         response.Summary.MostOverdueCategory.Should().Be("None");
         response.Summary.OldestOverdueDate.Should().BeNull();
-        
+
         response.Analytics.Should().NotBeNull();
         response.Analytics.CategoryBreakdown.Should().BeEmpty();
         response.Analytics.PriorityBreakdown.Should().BeEmpty();
@@ -82,15 +82,15 @@ public class GetOverdueTasksQueryHandlerTests
         // Assert
         result.IsSuccess.Should().BeTrue();
         var response = result.Value;
-        
+
         response.Tasks.Should().HaveCount(3); // 3 overdue tasks from test scenario
         response.Tasks.Should().AllSatisfy(t => t.DaysOverdue.Should().BeGreaterThan(0));
         response.Tasks.Should().AllSatisfy(t => t.DueDate.Date.Should().BeBefore(today));
-        
+
         // Tasks should be sorted by priority (descending) then by days overdue (descending)
         var firstTask = response.Tasks.First();
         firstTask.Priority.Should().Be("Urgent"); // Highest priority first
-        
+
         // Verify DTO mapping
         response.Tasks.Should().AllSatisfy(t =>
         {
@@ -120,7 +120,7 @@ public class GetOverdueTasksQueryHandlerTests
         // Assert
         result.IsSuccess.Should().BeTrue();
         var response = result.Value;
-        
+
         response.Tasks.Should().AllSatisfy(t => t.Category.Should().Be("ToDo"));
         response.Tasks.Should().HaveCount(2); // Only ToDo tasks should be returned
     }
@@ -143,7 +143,7 @@ public class GetOverdueTasksQueryHandlerTests
         // Assert
         result.IsSuccess.Should().BeTrue();
         var response = result.Value;
-        
+
         response.Tasks.Should().AllSatisfy(t => t.Priority.Should().Be("High"));
         response.Tasks.Should().HaveCount(1); // Only High priority tasks should be returned
     }
@@ -166,7 +166,7 @@ public class GetOverdueTasksQueryHandlerTests
         // Assert
         result.IsSuccess.Should().BeTrue();
         var response = result.Value;
-        
+
         response.Tasks.Should().HaveCount(2); // Limited to 2 results
         response.Summary.TotalOverdue.Should().Be(5); // But summary should reflect total count
     }
@@ -185,7 +185,7 @@ public class GetOverdueTasksQueryHandlerTests
         var today = DateTime.UtcNow.Date;
         var dueDate = today.AddDays(-daysOverdue);
         var priority = Priority.FromValue(priorityValue);
-        
+
         var tasks = new List<AppTask>
         {
             CreateOverdueTask($"Test Task", AppTaskCategory.ToDo, priority, dueDate)
@@ -201,7 +201,7 @@ public class GetOverdueTasksQueryHandlerTests
         // Assert
         result.IsSuccess.Should().BeTrue();
         var response = result.Value;
-        
+
         response.Tasks.Should().HaveCount(1);
         var task = response.Tasks.First();
         task.UrgencyLevel.Should().Be(expectedUrgency);
@@ -215,7 +215,7 @@ public class GetOverdueTasksQueryHandlerTests
         // Arrange
         var query = new GetOverdueTasksQuery(_testUserId);
         var today = DateTime.UtcNow.Date;
-        
+
         var tasks = new List<AppTask>
         {
             CreateOverdueTask("Low Priority - 5 days", AppTaskCategory.ToDo, Priority.Low, today.AddDays(-5)),
@@ -234,19 +234,19 @@ public class GetOverdueTasksQueryHandlerTests
         // Assert
         result.IsSuccess.Should().BeTrue();
         var response = result.Value;
-        
+
         response.Tasks.Should().HaveCount(4);
-        
+
         // Should be sorted by priority (Urgent first), then by days overdue (most overdue first)
         response.Tasks[0].Priority.Should().Be("Urgent");
         response.Tasks[0].DaysOverdue.Should().Be(1);
-        
+
         response.Tasks[1].Priority.Should().Be("High");
         response.Tasks[1].DaysOverdue.Should().Be(10); // More days overdue comes first among High priority
-        
+
         response.Tasks[2].Priority.Should().Be("High");
         response.Tasks[2].DaysOverdue.Should().Be(2);
-        
+
         response.Tasks[3].Priority.Should().Be("Low");
         response.Tasks[3].DaysOverdue.Should().Be(5);
     }
@@ -257,7 +257,7 @@ public class GetOverdueTasksQueryHandlerTests
         // Arrange
         var query = new GetOverdueTasksQuery(_testUserId);
         var today = DateTime.UtcNow.Date;
-        
+
         var tasks = new List<AppTask>
         {
             CreateOverdueTask("Urgent Task", AppTaskCategory.ToDo, Priority.Urgent, today.AddDays(-3)),
@@ -276,14 +276,14 @@ public class GetOverdueTasksQueryHandlerTests
         // Assert
         result.IsSuccess.Should().BeTrue();
         var response = result.Value;
-        
+
         var summary = response.Summary;
         summary.TotalOverdue.Should().Be(4);
         summary.CriticalPriorityCount.Should().Be(1); // Urgent
         summary.HighPriorityCount.Should().Be(1);
         summary.MediumPriorityCount.Should().Be(1);
         summary.LowPriorityCount.Should().Be(1);
-        
+
         summary.AverageDaysOverdue.Should().Be(6.3); // (3+7+1+14)/4 = 6.25, rounded to 6.3
         summary.MostOverdueDays.Should().Be(14);
         summary.MostOverdueCategory.Should().Be("ToDo"); // 2 tasks in ToDo category
@@ -296,7 +296,7 @@ public class GetOverdueTasksQueryHandlerTests
         // Arrange
         var query = new GetOverdueTasksQuery(_testUserId);
         var today = DateTime.UtcNow.Date;
-        
+
         var overdueTasks = CreateOverdueTasksForAnalytics(today);
         var allTasks = new List<AppTask>(overdueTasks);
         allTasks.AddRange(CreateNonOverdueTasks()); // Add some non-overdue tasks
@@ -311,13 +311,13 @@ public class GetOverdueTasksQueryHandlerTests
         // Assert
         result.IsSuccess.Should().BeTrue();
         var response = result.Value;
-        
+
         var analytics = response.Analytics;
         analytics.CategoryBreakdown.Should().NotBeEmpty();
         analytics.PriorityBreakdown.Should().NotBeEmpty();
         analytics.TrendData.Should().HaveCount(7); // Last 7 days
         analytics.OverdueRate.Should().BeGreaterThan(0);
-        
+
         // Trend data should be ordered chronologically
         analytics.TrendData.Should().BeInAscendingOrder(t => t.Date);
         analytics.TrendData.First().Date.Should().Be(today.AddDays(-6));
@@ -330,16 +330,16 @@ public class GetOverdueTasksQueryHandlerTests
         // Arrange
         var query = new GetOverdueTasksQuery(_testUserId);
         var today = DateTime.UtcNow.Date;
-        
+
         // Create scenario with high overdue rate (more than 50%)
         var tasks = new List<AppTask>();
-        
+
         // Add 10 overdue tasks
         for (int i = 1; i <= 10; i++)
         {
             tasks.Add(CreateOverdueTask($"Overdue Task {i}", AppTaskCategory.ToDo, Priority.Medium, today.AddDays(-i)));
         }
-        
+
         // Add only 5 non-overdue tasks with due dates (total 15 tasks with due dates = 66% overdue rate)
         for (int i = 1; i <= 5; i++)
         {
@@ -356,7 +356,7 @@ public class GetOverdueTasksQueryHandlerTests
         // Assert
         result.IsSuccess.Should().BeTrue();
         var response = result.Value;
-        
+
         var recommendations = response.Analytics.RecommendedActions;
         recommendations.Should().Contain(r => r.Contains("breaking large tasks into smaller"));
         recommendations.Should().Contain(r => r.Contains("Review and adjust due dates"));
@@ -369,7 +369,7 @@ public class GetOverdueTasksQueryHandlerTests
         // Arrange
         var query = new GetOverdueTasksQuery(_testUserId);
         var today = DateTime.UtcNow.Date;
-        
+
         var tasks = new List<AppTask>
         {
             CreateOverdueTask("Valid Overdue", AppTaskCategory.ToDo, Priority.High, today.AddDays(-1)),
@@ -388,7 +388,7 @@ public class GetOverdueTasksQueryHandlerTests
         // Assert
         result.IsSuccess.Should().BeTrue();
         var response = result.Value;
-        
+
         response.Tasks.Should().HaveCount(1); // Only the valid overdue task
         response.Tasks.Single().Title.Should().Be("Valid Overdue");
     }
@@ -410,7 +410,7 @@ public class GetOverdueTasksQueryHandlerTests
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("Failed to retrieve overdue tasks");
         result.Error.Should().Contain("Database connection failed");
-        
+
         // Verify logging
         _mockLogger.Verify(
             x => x.Log(
@@ -438,7 +438,7 @@ public class GetOverdueTasksQueryHandlerTests
 
         // Assert
         result.IsSuccess.Should().BeTrue();
-        
+
         // Verify logging
         _mockLogger.Verify(
             x => x.Log(
@@ -448,7 +448,7 @@ public class GetOverdueTasksQueryHandlerTests
                 It.IsAny<Exception>(),
                 It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
             Times.Once);
-            
+
         _mockLogger.Verify(
             x => x.Log(
                 LogLevel.Information,
@@ -501,14 +501,14 @@ public class GetOverdueTasksQueryHandlerTests
     {
         var tasks = new List<AppTask>();
         var priorities = new[] { Priority.Urgent, Priority.High, Priority.Medium, Priority.Low };
-        
+
         for (int i = 0; i < count; i++)
         {
             var priority = priorities[i % priorities.Length];
             var daysOverdue = i + 1;
             tasks.Add(CreateOverdueTask($"Overdue Task {i + 1}", AppTaskCategory.ToDo, priority, today.AddDays(-daysOverdue)));
         }
-        
+
         return tasks;
     }
 
@@ -525,85 +525,85 @@ public class GetOverdueTasksQueryHandlerTests
     private AppTask CreateActiveTask(string title, AppTaskCategory category)
     {
         var task = new AppTask { Title = title, Category = (int)category, UserId = _testUserId, Status = (int)AppTaskStatus.Pending };
-        
+
         // Set as in progress
         var statusField = typeof(AppTask).GetField("_status", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
         statusField?.SetValue(task, (int)AppTaskStatus.InProgress);
-        
+
         return task;
     }
 
     private AppTask CreateActiveTaskWithDueDate(string title, DateTime dueDate)
     {
         var task = CreateActiveTask(title, AppTaskCategory.ToDo);
-        
+
         // Set due date
         var dueDateField = typeof(AppTask).GetField("_dueDate", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
         dueDateField?.SetValue(task, dueDate);
-        
+
         return task;
     }
 
     private AppTask CreateOverdueTask(string title, AppTaskCategory category, Priority priority, DateTime dueDate)
     {
         var task = new AppTask { Title = title, Category = (int)category, UserId = _testUserId, Status = (int)AppTaskStatus.Pending };
-        
+
         // Set as in progress (overdue)
         var statusField = typeof(AppTask).GetField("_status", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
         statusField?.SetValue(task, (int)AppTaskStatus.InProgress);
-        
+
         // Set priority
         var priorityField = typeof(AppTask).GetField("_priority", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
         priorityField?.SetValue(task, (int)priority);
-        
+
         // Set due date in the past
         var dueDateField = typeof(AppTask).GetField("_dueDate", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
         dueDateField?.SetValue(task, dueDate);
-        
+
         return task;
     }
 
     private AppTask CreateCompletedTask(string title, AppTaskCategory category)
     {
         var task = new AppTask { Title = title, Category = (int)category, UserId = _testUserId, Status = (int)AppTaskStatus.Pending };
-        
+
         // Set as completed
         var statusField = typeof(AppTask).GetField("_status", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
         statusField?.SetValue(task, (int)AppTaskStatus.Completed);
-        
+
         return task;
     }
 
     private AppTask CreateCompletedOverdueTask(string title, AppTaskCategory category, Priority priority, DateTime dueDate)
     {
         var task = CreateOverdueTask(title, category, priority, dueDate);
-        
+
         // Set as completed (should be excluded from overdue results)
         var statusField = typeof(AppTask).GetField("_status", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
         statusField?.SetValue(task, (int)AppTaskStatus.Completed);
-        
+
         return task;
     }
 
     private AppTask CreateArchivedOverdueTask(string title, AppTaskCategory category, Priority priority, DateTime dueDate)
     {
         var task = CreateOverdueTask(title, category, priority, dueDate);
-        
+
         // Set as archived (should be excluded from overdue results)
         var statusField = typeof(AppTask).GetField("_status", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
         statusField?.SetValue(task, (int)AppTaskStatus.Archived);
-        
+
         return task;
     }
 
     private AppTask CreateDeletedOverdueTask(string title, AppTaskCategory category, Priority priority, DateTime dueDate)
     {
         var task = CreateOverdueTask(title, category, priority, dueDate);
-        
+
         // Set as deleted (should be excluded from overdue results)
         var isDeletedField = typeof(AppTask).GetField("_isDeleted", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
         isDeletedField?.SetValue(task, true);
-        
+
         return task;
     }
 

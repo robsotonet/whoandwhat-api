@@ -42,4 +42,30 @@ public class UserRepository : Repository<User>, IUserRepository
     {
         return await _context.Users.AnyAsync(u => u.Username == username, cancellationToken);
     }
+
+    [Obsolete("This method loads all users into memory. Use GetActiveUsersPagedAsync for better performance.")]
+    public async System.Threading.Tasks.Task<IEnumerable<User>> GetAllActiveUsersAsync(CancellationToken cancellationToken = default)
+    {
+        await System.Threading.Tasks.Task.CompletedTask; // Satisfy async signature
+        throw new NotSupportedException(
+            "GetAllActiveUsersAsync is deprecated due to memory concerns. " +
+            "Use GetActiveUsersPagedAsync for better performance and to avoid OutOfMemoryException.");
+    }
+
+    public async System.Threading.Tasks.Task<IEnumerable<User>> GetActiveUsersPagedAsync(int pageSize, int pageNumber, CancellationToken cancellationToken = default)
+    {
+        return await _context.Users
+            .Where(u => u.LastLoginDate >= DateTime.UtcNow.AddDays(-30))
+            .OrderBy(u => u.Id)
+            .Skip((pageNumber - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync(cancellationToken);
+    }
+
+    public async System.Threading.Tasks.Task<int> GetActiveUsersCountAsync(CancellationToken cancellationToken = default)
+    {
+        return await _context.Users
+            .Where(u => u.LastLoginDate >= DateTime.UtcNow.AddDays(-30))
+            .CountAsync(cancellationToken);
+    }
 }

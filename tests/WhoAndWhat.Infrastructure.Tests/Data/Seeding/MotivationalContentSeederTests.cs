@@ -309,7 +309,7 @@ public class MotivationalContentSeederTests : IDisposable
         {
             content.Title.Should().Contain("Streak", "Streak content should mention streaks");
             content.TargetConditions.Should().ContainKey("minStreakDays");
-            
+
             var minStreakDays = content.TargetConditions["minStreakDays"];
             minStreakDays.Should().BeOfType<int>();
             ((int)minStreakDays).Should().BeGreaterThan(0);
@@ -371,7 +371,7 @@ public class MotivationalContentSeederTests : IDisposable
 
         // Assert
         var seededContent = await _context.MotivationalContents.ToListAsync();
-        
+
         seededContent.Should().OnlyContain(c => !string.IsNullOrWhiteSpace(c.Title), "All content should have titles");
         seededContent.Should().OnlyContain(c => c.Title.Length >= 5, "Titles should be meaningful length");
         seededContent.Should().OnlyContain(c => c.Title.Length <= 100, "Titles should not be too long");
@@ -385,7 +385,7 @@ public class MotivationalContentSeederTests : IDisposable
 
         // Assert
         var seededContent = await _context.MotivationalContents.ToListAsync();
-        
+
         seededContent.Should().OnlyContain(c => !string.IsNullOrWhiteSpace(c.Message), "All content should have messages");
         seededContent.Should().OnlyContain(c => c.Message.Length >= 20, "Messages should be substantial");
         seededContent.Should().OnlyContain(c => c.Message.Length <= 500, "Messages should be concise");
@@ -400,7 +400,7 @@ public class MotivationalContentSeederTests : IDisposable
         // Assert
         var seededContent = await _context.MotivationalContents.ToListAsync();
         var ids = seededContent.Select(c => c.Id).ToList();
-        
+
         ids.Should().OnlyHaveUniqueItems("All content should have unique IDs");
         ids.Should().OnlyContain(id => id != Guid.Empty, "All IDs should be valid GUIDs");
     }
@@ -417,10 +417,10 @@ public class MotivationalContentSeederTests : IDisposable
         // Assert
         var seededContent = await _context.MotivationalContents.ToListAsync();
         var afterSeeding = DateTime.UtcNow;
-        
-        seededContent.Should().OnlyContain(c => c.CreatedAt >= beforeSeeding && c.CreatedAt <= afterSeeding, 
+
+        seededContent.Should().OnlyContain(c => c.CreatedAt >= beforeSeeding && c.CreatedAt <= afterSeeding,
             "All content should have recent creation timestamps");
-        seededContent.Should().OnlyContain(c => c.UpdatedAt >= beforeSeeding && c.UpdatedAt <= afterSeeding, 
+        seededContent.Should().OnlyContain(c => c.UpdatedAt >= beforeSeeding && c.UpdatedAt <= afterSeeding,
             "All content should have recent update timestamps");
     }
 
@@ -443,7 +443,7 @@ public class MotivationalContentSeederTests : IDisposable
         foreach (var content in contentWithTargeting)
         {
             content.TargetConditions.Should().NotBeNull();
-            
+
             if (content.TargetConditions.ContainsKey("experienceLevel"))
             {
                 var experienceLevel = content.TargetConditions["experienceLevel"];
@@ -549,8 +549,8 @@ public class MotivationalContentSeederTests : IDisposable
 
         // Assert
         var seededContent = await _context.MotivationalContents.ToListAsync();
-        
-        seededContent.Count.Should().BeInRange(15, 50, 
+
+        seededContent.Count.Should().BeInRange(15, 50,
             "Should create a reasonable amount of content - enough for variety but not excessive");
     }
 
@@ -580,15 +580,15 @@ public class MotivationalContentSeederTests : IDisposable
 
         // Assert
         var seededContent = await _context.MotivationalContents.ToListAsync();
-        
+
         // Check content type distribution
         var contentTypeGroups = seededContent.GroupBy(c => c.ContentType).ToList();
         contentTypeGroups.Should().HaveCountGreaterThan(3, "Should have diverse content types");
-        
+
         // No single content type should dominate (more than 60% of total)
         var maxTypeCount = contentTypeGroups.Max(g => g.Count());
         var totalCount = seededContent.Count;
-        (maxTypeCount / (double)totalCount).Should().BeLessThan(0.6, 
+        (maxTypeCount / (double)totalCount).Should().BeLessThan(0.6,
             "No single content type should dominate the seeded content");
     }
 
@@ -601,7 +601,7 @@ public class MotivationalContentSeederTests : IDisposable
         // Assert
         var seededContent = await _context.MotivationalContents.ToListAsync();
         var priorities = seededContent.Select(c => c.Priority).ToList();
-        
+
         // Should have content across different priority ranges
         priorities.Should().Contain(p => p >= 0 && p < 50, "Should have low priority content");
         priorities.Should().Contain(p => p >= 50 && p < 100, "Should have medium priority content");

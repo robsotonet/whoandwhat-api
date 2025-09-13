@@ -11,7 +11,7 @@ using DomainTaskStatus = WhoAndWhat.Domain.ValueObjects.AppTaskStatus;
 namespace WhoAndWhat.Infrastructure.Repositories;
 
 /// <summary>
-/// Implementation of ITaskRepository with advanced querying capabilities
+/// Implementation of IAppTaskRepository with advanced querying capabilities
 /// </summary>
 public class TaskRepository : Repository<DomainTask>, IAppTaskRepository
 {

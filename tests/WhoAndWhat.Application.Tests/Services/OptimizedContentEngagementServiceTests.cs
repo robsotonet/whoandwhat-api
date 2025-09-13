@@ -239,7 +239,7 @@ public class OptimizedContentEngagementServiceTests : IClassFixture<Motivational
         // Assert
         var (currentContents, _, _) = _fixture.GetCurrentStorageState();
         var optimizedContent = currentContents.First(c => c.Id == content.Id);
-        
+
         // Should have updated targeting based on performance
         optimizedContent.TargetConditions.Should().ContainKey("preferredSegments");
     }
@@ -477,7 +477,7 @@ public class OptimizedContentEngagementServiceTests : IClassFixture<Motivational
 
         // Assert
         optimizedCount.Should().BeGreaterThan(0);
-        
+
         var (currentContents, _, _) = _fixture.GetCurrentStorageState();
         var optimizedContent = currentContents.First(c => c.Id == content.Id);
         optimizedContent.Priority.Should().NotBe(75, "Content with significant engagement should be optimized");
@@ -488,7 +488,7 @@ public class OptimizedContentEngagementServiceTests : IClassFixture<Motivational
     {
         // Arrange
         _fixture.ResetRepositories();
-        
+
         var achievementContent = MotivationalContentBuilder.New()
             .AsAchievement()
             .WithPriority(50)
@@ -497,7 +497,7 @@ public class OptimizedContentEngagementServiceTests : IClassFixture<Motivational
             .AsProductivityTip()
             .WithPriority(60)
             .Build();
-        
+
         _fixture.AddTestContent(achievementContent);
         _fixture.AddTestContent(tipContent);
 
@@ -684,7 +684,7 @@ public class OptimizedContentEngagementServiceTests : IClassFixture<Motivational
             Times.Once);
 
         var (currentContents, currentPreferences, _) = _fixture.GetCurrentStorageState();
-        
+
         // Star content should have higher priority
         var optimizedStar = currentContents.First(c => c.Id == starContent.Id);
         optimizedStar.Priority.Should().BeGreaterThan(70);

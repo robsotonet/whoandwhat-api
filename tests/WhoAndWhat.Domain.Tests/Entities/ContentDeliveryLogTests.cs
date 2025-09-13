@@ -164,7 +164,8 @@ public class ContentDeliveryLogTests
         var engagedAt = deliveredAt.AddMinutes(-5); // Before delivery
 
         // Act & Assert
-        var action = () => {
+        var action = () =>
+        {
             // Cannot test engagement before delivery with current API
             // The actual RecordEngagement method uses DateTime.UtcNow automatically
             throw new ArgumentException("Engagement time cannot be before delivery time");

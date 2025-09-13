@@ -209,7 +209,7 @@ public class ContentDeliveryLog : BaseEntity
     /// </summary>
     public bool IsSuccessfulDelivery()
     {
-        return EngagementType.HasValue && 
+        return EngagementType.HasValue &&
                EngagementType.Value >= ContentEngagementType.Viewed;
     }
 
@@ -388,7 +388,7 @@ public class ContentDeliveryLog : BaseEntity
     /// </summary>
     public bool IsHighEngagement()
     {
-        return EngagementType.HasValue && 
+        return EngagementType.HasValue &&
                EngagementType.Value >= ContentEngagementType.Clicked &&
                GetEngagementScore() >= 0.6;
     }

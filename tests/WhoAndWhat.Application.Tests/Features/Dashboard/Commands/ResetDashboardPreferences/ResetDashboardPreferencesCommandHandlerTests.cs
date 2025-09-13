@@ -121,7 +121,7 @@ public class ResetDashboardPreferencesCommandHandlerTests
         _userRepositoryMock.Setup(x => x.GetByIdAsync(_testUserId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(user);
 
-        var command = new ResetDashboardPreferencesCommand(_testUserId, ConfirmReset: false, 
+        var command = new ResetDashboardPreferencesCommand(_testUserId, ConfirmReset: false,
             SpecificSettings: new List<string> { settingToReset });
 
         // Act
@@ -142,7 +142,7 @@ public class ResetDashboardPreferencesCommandHandlerTests
             .ReturnsAsync(user);
 
         var settingsToReset = new List<string> { "theme", "language", "notifications" };
-        var command = new ResetDashboardPreferencesCommand(_testUserId, ConfirmReset: false, 
+        var command = new ResetDashboardPreferencesCommand(_testUserId, ConfirmReset: false,
             SpecificSettings: settingsToReset);
 
         // Act
@@ -163,7 +163,7 @@ public class ResetDashboardPreferencesCommandHandlerTests
             .ReturnsAsync(user);
 
         var settingsToReset = new List<string> { "theme", "invalid-setting", "language", "another-invalid" };
-        var command = new ResetDashboardPreferencesCommand(_testUserId, ConfirmReset: false, 
+        var command = new ResetDashboardPreferencesCommand(_testUserId, ConfirmReset: false,
             SpecificSettings: settingsToReset);
 
         // Act
@@ -184,7 +184,7 @@ public class ResetDashboardPreferencesCommandHandlerTests
             .ReturnsAsync(user);
 
         var settingsToReset = new List<string> { "invalid-setting", "another-invalid" };
-        var command = new ResetDashboardPreferencesCommand(_testUserId, ConfirmReset: false, 
+        var command = new ResetDashboardPreferencesCommand(_testUserId, ConfirmReset: false,
             SpecificSettings: settingsToReset);
 
         // Act
@@ -206,7 +206,7 @@ public class ResetDashboardPreferencesCommandHandlerTests
         _userRepositoryMock.Setup(x => x.GetByIdAsync(_testUserId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(user);
 
-        var command = new ResetDashboardPreferencesCommand(_testUserId, ConfirmReset: false, 
+        var command = new ResetDashboardPreferencesCommand(_testUserId, ConfirmReset: false,
             SpecificSettings: new List<string> { inputSetting });
 
         // Act
@@ -296,7 +296,7 @@ public class ResetDashboardPreferencesCommandHandlerTests
         _userRepositoryMock.Setup(x => x.GetByIdAsync(_testUserId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(user);
 
-        var command = new ResetDashboardPreferencesCommand(_testUserId, ConfirmReset: false, 
+        var command = new ResetDashboardPreferencesCommand(_testUserId, ConfirmReset: false,
             SpecificSettings: new List<string> { setting });
 
         // Act
@@ -316,7 +316,7 @@ public class ResetDashboardPreferencesCommandHandlerTests
             .ReturnsAsync(user);
 
         var settingsToReset = new List<string> { "theme", "language" };
-        var command = new ResetDashboardPreferencesCommand(_testUserId, ConfirmReset: false, 
+        var command = new ResetDashboardPreferencesCommand(_testUserId, ConfirmReset: false,
             SpecificSettings: settingsToReset);
 
         // Act
@@ -334,7 +334,7 @@ public class ResetDashboardPreferencesCommandHandlerTests
     {
         // Use the public constructor with required parameters
         var user = new User("test@example.com", "testuser", Language.en);
-        
+
         // If we need to set a specific ID, use reflection as a fallback
         var idField = typeof(BaseEntity).GetField("_id", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
         idField?.SetValue(user, userId);

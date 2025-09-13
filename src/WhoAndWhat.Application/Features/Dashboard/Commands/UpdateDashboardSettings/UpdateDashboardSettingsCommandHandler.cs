@@ -8,7 +8,7 @@ namespace WhoAndWhat.Application.Features.Dashboard.Commands.UpdateDashboardSett
 /// <summary>
 /// Handler for updating user's dashboard settings and preferences
 /// </summary>
-public sealed class UpdateDashboardSettingsCommandHandler 
+public sealed class UpdateDashboardSettingsCommandHandler
     : IRequestHandler<UpdateDashboardSettingsCommand, Result<UpdateDashboardSettingsResponse>>
 {
     private readonly IUserRepository _userRepository;
@@ -23,7 +23,7 @@ public sealed class UpdateDashboardSettingsCommandHandler
     }
 
     public async Task<Result<UpdateDashboardSettingsResponse>> Handle(
-        UpdateDashboardSettingsCommand request, 
+        UpdateDashboardSettingsCommand request,
         CancellationToken cancellationToken)
     {
         try
@@ -159,12 +159,12 @@ public sealed class UpdateDashboardSettingsCommandHandler
         // For now, we'll assume this stores the preferences in a user settings table or JSON field
 
         _logger.LogDebug("Storing dashboard preferences for user {UserId}", userId);
-        
+
         // Placeholder - actual implementation would:
         // 1. Check if preferences exist for user
         // 2. Create new or update existing preferences
         // 3. Save to database
-        
+
         await Task.CompletedTask; // Placeholder for async operation
     }
 }

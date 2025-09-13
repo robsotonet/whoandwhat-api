@@ -374,11 +374,11 @@ public class ContentDeliveryLogBuilder
     {
         var logs = new List<ContentDeliveryLog>();
         var spread = timeSpread ?? TimeSpan.FromDays(7);
-        
+
         for (int i = 0; i < count; i++)
         {
             var deliveryTime = _deliveredAt.AddTicks(-(spread.Ticks * i / count));
-            
+
             var builder = New()
                 .ForUser(_userId)
                 .ForContent(_motivationalContentId)
@@ -386,10 +386,22 @@ public class ContentDeliveryLogBuilder
                 .DeliveredAt(deliveryTime);
 
             // Add some realistic variation
-            if (i % 4 == 0) builder.AsHighEngagement();
-            else if (i % 4 == 1) builder.AsViewed();
-            else if (i % 4 == 2) builder.AsClicked();
-            else builder.AsLowEngagement();
+            if (i % 4 == 0)
+            {
+                builder.AsHighEngagement();
+            }
+            else if (i % 4 == 1)
+            {
+                builder.AsViewed();
+            }
+            else if (i % 4 == 2)
+            {
+                builder.AsClicked();
+            }
+            else
+            {
+                builder.AsLowEngagement();
+            }
 
             logs.Add(builder.Build());
         }
@@ -401,7 +413,7 @@ public class ContentDeliveryLogBuilder
     /// Builds engagement pattern logs for testing analytics
     /// </summary>
     public List<ContentDeliveryLog> BuildEngagementPattern(
-        int totalLogs, 
+        int totalLogs,
         double engagementRate = 0.7,
         DateTime? startDate = null)
     {
@@ -420,11 +432,11 @@ public class ContentDeliveryLogBuilder
             // Determine engagement based on rate
             if (random.NextDouble() < engagementRate)
             {
-                var engagementTypes = new[] 
-                { 
+                var engagementTypes = new[]
+                {
                     ContentEngagementType.Viewed,
                     ContentEngagementType.Clicked,
-                    ContentEngagementType.ActionTaken 
+                    ContentEngagementType.ActionTaken
                 };
                 var engagementType = engagementTypes[random.Next(engagementTypes.Length)];
                 builder.WithEngagement(engagementType, deliveryTime.AddMinutes(random.Next(1, 30)));

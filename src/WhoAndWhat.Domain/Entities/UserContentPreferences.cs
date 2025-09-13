@@ -44,20 +44,20 @@ public class UserContentPreferences : BaseEntity
     {
         UserId = userId;
         IsContentEnabled = true;
-        
+
         // Default preferred content types
         PreferredContentTypes.Add(MotivationalContentType.Insight);
         PreferredContentTypes.Add(MotivationalContentType.Achievement);
         PreferredContentTypes.Add(MotivationalContentType.Encouragement);
-        
+
         // Default preferred categories
         PreferredCategories.Add(ContentCategory.Productivity);
         PreferredCategories.Add(ContentCategory.Motivation);
-        
+
         // Default preferred channels
         PreferredChannels.Add(ContentDeliveryChannel.Dashboard);
         PreferredChannels.Add(ContentDeliveryChannel.InApp);
-        
+
         // Default delivery times (morning and afternoon)
         PreferredDeliveryTimes["morning"] = new TimeSpan(9, 0, 0);   // 9:00 AM
         PreferredDeliveryTimes["afternoon"] = new TimeSpan(14, 0, 0); // 2:00 PM
@@ -75,7 +75,7 @@ public class UserContentPreferences : BaseEntity
 
         var preferences = new UserContentPreferences(userId);
         preferences.AddDomainEvent(new UserContentPreferencesCreatedEvent(preferences));
-        
+
         return preferences;
     }
 
@@ -88,7 +88,7 @@ public class UserContentPreferences : BaseEntity
         {
             IsContentEnabled = enabled;
             MarkAsModified();
-            
+
             if (enabled)
             {
                 ContentPausedUntil = null;
@@ -109,7 +109,7 @@ public class UserContentPreferences : BaseEntity
         if (PreferredFrequency != frequency)
         {
             PreferredFrequency = frequency;
-            
+
             // Adjust max daily/weekly content based on frequency
             (MaxDailyContent, MaxWeeklyContent) = frequency switch
             {
@@ -119,7 +119,7 @@ public class UserContentPreferences : BaseEntity
                 ContentFrequency.VeryHigh => (8, 40),
                 _ => (3, 15)
             };
-            
+
             MarkAsModified();
             AddDomainEvent(new UserContentPreferencesUpdatedEvent(this));
         }
@@ -352,7 +352,7 @@ public class UserContentPreferences : BaseEntity
 
         // Check time constraints
         var now = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, TimeZoneInfo.FindSystemTimeZoneById(TimeZone));
-        
+
         // Check weekend constraint
         if (!AllowWeekends && (now.DayOfWeek == DayOfWeek.Saturday || now.DayOfWeek == DayOfWeek.Sunday))
         {
@@ -396,7 +396,7 @@ public class UserContentPreferences : BaseEntity
         var tomorrow = today.AddDays(1);
         var firstDeliveryTime = PreferredDeliveryTimes.Values.Min();
         var nextDeliveryDateTime = tomorrow.Add(firstDeliveryTime);
-        
+
         return TimeZoneInfo.ConvertTimeToUtc(nextDeliveryDateTime, userTimeZone);
     }
 

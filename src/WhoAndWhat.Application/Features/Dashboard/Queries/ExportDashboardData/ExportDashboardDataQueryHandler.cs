@@ -1,7 +1,7 @@
-using MediatR;
-using Microsoft.Extensions.Logging;
 using System.Text;
 using System.Text.Json;
+using MediatR;
+using Microsoft.Extensions.Logging;
 using WhoAndWhat.Application.Common;
 using WhoAndWhat.Application.DTOs;
 using WhoAndWhat.Application.Interfaces;
@@ -13,7 +13,7 @@ namespace WhoAndWhat.Application.Features.Dashboard.Queries.ExportDashboardData;
 /// <summary>
 /// Handler for exporting dashboard data in various formats (CSV, JSON, Excel)
 /// </summary>
-public sealed class ExportDashboardDataQueryHandler 
+public sealed class ExportDashboardDataQueryHandler
     : IRequestHandler<ExportDashboardDataQuery, Result<ExportDashboardDataResponse>>
 {
     private readonly IAppTaskRepository _taskRepository;
@@ -31,12 +31,12 @@ public sealed class ExportDashboardDataQueryHandler
     }
 
     public async Task<Result<ExportDashboardDataResponse>> Handle(
-        ExportDashboardDataQuery request, 
+        ExportDashboardDataQuery request,
         CancellationToken cancellationToken)
     {
         try
         {
-            _logger.LogInformation("Exporting dashboard data for user {UserId} in format {Format}", 
+            _logger.LogInformation("Exporting dashboard data for user {UserId} in format {Format}",
                 request.UserId, request.Format);
 
             // Verify user exists
@@ -83,7 +83,7 @@ public sealed class ExportDashboardDataQueryHandler
                 Metadata: metadata
             );
 
-            _logger.LogInformation("Successfully exported {RecordCount} records for user {UserId}", 
+            _logger.LogInformation("Successfully exported {RecordCount} records for user {UserId}",
                 response.RecordCount, request.UserId);
 
             return Result<ExportDashboardDataResponse>.Success(response);
@@ -96,8 +96,8 @@ public sealed class ExportDashboardDataQueryHandler
     }
 
     private async Task<DashboardExportData> GatherDashboardData(
-        Guid userId, 
-        ExportOptionsDto options, 
+        Guid userId,
+        ExportOptionsDto options,
         CancellationToken cancellationToken)
     {
         var data = new DashboardExportData();
@@ -144,7 +144,7 @@ public sealed class ExportDashboardDataQueryHandler
             CreatedBefore = options.EndDate,
             IncludeDeleted = options.IncludeDeleted
         };
-        
+
         if (options.IncludeCategories?.Any() == true)
         {
             // Convert string category names to AppTaskCategory value objects
@@ -155,14 +155,14 @@ public sealed class ExportDashboardDataQueryHandler
                 .ToList();
             filter.Categories = categories;
         }
-        
+
         filter.PageSize = 10000; // Get all matching tasks
         return filter;
     }
 
     private async Task<DashboardMetricsExport> CalculateDashboardMetrics(
-        Guid userId, 
-        ExportOptionsDto options, 
+        Guid userId,
+        ExportOptionsDto options,
         CancellationToken cancellationToken)
     {
         var filter = CreateTaskFilter(userId, options);
@@ -171,7 +171,7 @@ public sealed class ExportDashboardDataQueryHandler
         var totalTasks = tasks.Count();
         var completedTasks = tasks.Count(t => t.Status == (int)AppTaskStatus.Completed);
         var overdueTasks = tasks.Count(t => t.DueDate.HasValue && t.DueDate < DateTime.UtcNow && t.Status != (int)AppTaskStatus.Completed);
-        
+
         var completionRate = totalTasks > 0 ? (double)completedTasks / totalTasks * 100 : 0;
         var overdueRate = totalTasks > 0 ? (double)overdueTasks / totalTasks * 100 : 0;
 
@@ -197,8 +197,8 @@ public sealed class ExportDashboardDataQueryHandler
     }
 
     private async Task<List<ProductivityStreakExport>> CalculateProductivityStreaks(
-        Guid userId, 
-        ExportOptionsDto options, 
+        Guid userId,
+        ExportOptionsDto options,
         CancellationToken cancellationToken)
     {
         var filter = CreateTaskFilter(userId, options);
@@ -238,7 +238,7 @@ public sealed class ExportDashboardDataQueryHandler
                         StartDate: currentStreakStart,
                         EndDate: lastCompletionDate,
                         Duration: currentStreak,
-                        TasksCompleted: completedTasks.Count(t => t.UpdatedAt.Date >= currentStreakStart && 
+                        TasksCompleted: completedTasks.Count(t => t.UpdatedAt.Date >= currentStreakStart &&
                                                                 t.UpdatedAt.Date <= lastCompletionDate)
                     ));
                 }
@@ -255,7 +255,7 @@ public sealed class ExportDashboardDataQueryHandler
                 StartDate: currentStreakStart,
                 EndDate: lastCompletionDate,
                 Duration: currentStreak,
-                TasksCompleted: completedTasks.Count(t => t.UpdatedAt.Date >= currentStreakStart && 
+                TasksCompleted: completedTasks.Count(t => t.UpdatedAt.Date >= currentStreakStart &&
                                                         t.UpdatedAt.Date <= lastCompletionDate)
             ));
         }
@@ -264,8 +264,8 @@ public sealed class ExportDashboardDataQueryHandler
     }
 
     private async Task<List<AnalyticsExport>> CalculateAnalytics(
-        Guid userId, 
-        ExportOptionsDto options, 
+        Guid userId,
+        ExportOptionsDto options,
         CancellationToken cancellationToken)
     {
         var filter = CreateTaskFilter(userId, options);
@@ -384,7 +384,7 @@ public sealed class ExportDashboardDataQueryHandler
         // For now, generate a CSV-like format as Excel implementation would require additional libraries
         // In a real implementation, you would use libraries like EPPlus or ClosedXML
         var csvResult = GenerateCsvExport(data, options);
-        
+
         var fileName = $"dashboard_export_{DateTime.UtcNow:yyyyMMdd_HHmmss}.xlsx";
         return new ExportFile(csvResult.FileContent, fileName, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
     }
@@ -395,12 +395,12 @@ public sealed class ExportDashboardDataQueryHandler
         {
             return "";
         }
-        
+
         if (value.Contains(',') || value.Contains('"') || value.Contains('\n') || value.Contains('\r'))
         {
             return $"\"{value.Replace("\"", "\"\"")}\"";
         }
-        
+
         return value;
     }
 

@@ -28,11 +28,11 @@ public class MotivationalContentIntegrationTests : IClassFixture<MotivationalCon
     #region Complete Content Delivery Workflow Tests
 
     [Fact]
-    public async Task CompleteContentDeliveryWorkflow_ShouldWork()
+    public Task CompleteContentDeliveryWorkflow_ShouldWork()
     {
         // Arrange - Setup a complete scenario
         _fixture.ResetRepositories();
-        
+
         var userId = Guid.NewGuid();
         var preferences = UserContentPreferencesBuilder.New()
             .ForUser(userId)
@@ -60,14 +60,15 @@ public class MotivationalContentIntegrationTests : IClassFixture<MotivationalCon
 
         // Assert - Should calculate meaningful score
         score.Should().BeGreaterThan(0.5, "Targeted content should have good personalization score");
+        return Task.CompletedTask;
     }
 
     [Fact]
-    public async Task PersonalizedContentDelivery_ShouldRespectUserPreferences()
+    public Task PersonalizedContentDelivery_ShouldRespectUserPreferences()
     {
         // Arrange
         _fixture.ResetRepositories();
-        
+
         var userId = Guid.NewGuid();
         var preferences = UserContentPreferencesBuilder.New()
             .ForUser(userId)
@@ -103,14 +104,15 @@ public class MotivationalContentIntegrationTests : IClassFixture<MotivationalCon
             ContentDeliveryChannel.Dashboard,
             nonPreferredContent.ContentType);
         canDeliverNonPreferred.Should().BeFalse("User should not receive non-preferred content types");
+        return Task.CompletedTask;
     }
 
     [Fact]
-    public async Task ContentDeliveryWithEngagementTracking_ShouldUpdateHistory()
+    public Task ContentDeliveryWithEngagementTracking_ShouldUpdateHistory()
     {
         // Arrange
         _fixture.ResetRepositories();
-        
+
         var userId = Guid.NewGuid();
         var contentId = Guid.NewGuid();
         var deliveredAt = DateTime.UtcNow;
@@ -146,14 +148,15 @@ public class MotivationalContentIntegrationTests : IClassFixture<MotivationalCon
         deliveryLog.IsHighEngagement().Should().BeTrue();
         deliveryLog.GetEngagementScore().Should().Be(1.0);
         deliveryLog.GetEngagementDuration().Should().Be(TimeSpan.FromMinutes(5));
+        return Task.CompletedTask;
     }
 
     [Fact]
-    public async Task StreakBasedContentDelivery_ShouldTargetCorrectly()
+    public Task StreakBasedContentDelivery_ShouldTargetCorrectly()
     {
         // Arrange
         _fixture.ResetRepositories();
-        
+
         var userId = Guid.NewGuid();
         var preferences = UserContentPreferencesBuilder.New()
             .ForUser(userId)
@@ -179,17 +182,18 @@ public class MotivationalContentIntegrationTests : IClassFixture<MotivationalCon
         threeDay.MatchesUserConditions(userConditions3Days).Should().BeTrue("3-day streak should match 3-day content");
         sevenDay.MatchesUserConditions(userConditions7Days).Should().BeTrue("7-day streak should match 7-day content");
         thirtyDay.MatchesUserConditions(userConditions2Days).Should().BeFalse("2-day streak should not match 30-day content");
+        return Task.CompletedTask;
     }
 
     [Fact]
-    public async Task ABTestingWorkflow_ShouldTrackVariants()
+    public Task ABTestingWorkflow_ShouldTrackVariants()
     {
         // Arrange
         _fixture.ResetRepositories();
-        
+
         var userId = Guid.NewGuid();
         var contentId = Guid.NewGuid();
-        
+
         var abTestContent = MotivationalContentBuilder.New()
             .WithABTesting(new Dictionary<string, object>
             {
@@ -222,6 +226,7 @@ public class MotivationalContentIntegrationTests : IClassFixture<MotivationalCon
         groupBLog.ABTestGroup.Should().Be("group_b");
         groupALog.GetEngagementScore().Should().Be(0.3); // Viewed
         groupBLog.GetEngagementScore().Should().Be(1.0); // Action taken
+        return Task.CompletedTask;
     }
 
     #endregion
@@ -233,15 +238,15 @@ public class MotivationalContentIntegrationTests : IClassFixture<MotivationalCon
     {
         // Arrange
         _fixture.ResetRepositories();
-        
+
         // Create content with known performance characteristics
         var highPerformer = MotivationalContentBuilder.New()
             .WithTitle("High Performer")
             .WithPriority(50)
             .Build();
-        
+
         var lowPerformer = MotivationalContentBuilder.New()
-            .WithTitle("Low Performer") 
+            .WithTitle("Low Performer")
             .WithPriority(75)
             .Build();
 
@@ -268,7 +273,7 @@ public class MotivationalContentIntegrationTests : IClassFixture<MotivationalCon
 
         // Assert - Optimization should occur
         optimizedCount.Should().BeGreaterThan(0);
-        
+
         var (currentContents, _, _) = _fixture.GetCurrentStorageState();
         var optimizedHigh = currentContents.First(c => c.Id == highPerformer.Id);
         var optimizedLow = currentContents.First(c => c.Id == lowPerformer.Id);
@@ -278,11 +283,11 @@ public class MotivationalContentIntegrationTests : IClassFixture<MotivationalCon
     }
 
     [Fact]
-    public async Task PersonalizationEngine_ShouldAdaptToUserBehavior()
+    public Task PersonalizationEngine_ShouldAdaptToUserBehavior()
     {
         // Arrange
         _fixture.ResetRepositories();
-        
+
         var userId = Guid.NewGuid();
         var preferences = UserContentPreferencesBuilder.New()
             .ForUser(userId)
@@ -305,20 +310,21 @@ public class MotivationalContentIntegrationTests : IClassFixture<MotivationalCon
         preferences.UpdateEngagementHistory("totalEngagements", 100);
 
         var enhancedScore = preferences.CalculateContentScore(
-            MotivationalContentType.Achievement, 
+            MotivationalContentType.Achievement,
             ContentCategory.Achievement);
 
         // Assert - Personalization should improve with engagement data
         enhancedScore.Should().BeGreaterThan(baseScore, "Score should improve with positive engagement history");
         enhancedScore.Should().BeLessOrEqualTo(1.0, "Score should not exceed maximum");
+        return Task.CompletedTask;
     }
 
     [Fact]
-    public async Task TimingOptimization_ShouldRespectUserTimezone()
+    public Task TimingOptimization_ShouldRespectUserTimezone()
     {
         // Arrange
         _fixture.ResetRepositories();
-        
+
         var userId = Guid.NewGuid();
         var preferences = UserContentPreferencesBuilder.New()
             .ForUser(userId)
@@ -342,8 +348,9 @@ public class MotivationalContentIntegrationTests : IClassFixture<MotivationalCon
         // Verify timezone conversion works
         var nyTimeZone = TimeZoneInfo.FindSystemTimeZoneById("America/New_York");
         var localTime = TimeZoneInfo.ConvertTimeFromUtc(nextDeliveryTime!.Value, nyTimeZone);
-        
+
         localTime.Hour.Should().BeOneOf(8, 13);
+        return Task.CompletedTask;
     }
 
     #endregion
@@ -351,11 +358,11 @@ public class MotivationalContentIntegrationTests : IClassFixture<MotivationalCon
     #region User Experience Integration Tests
 
     [Fact]
-    public async Task NewUserOnboarding_ShouldProvideAppropriateContent()
+    public Task NewUserOnboarding_ShouldProvideAppropriateContent()
     {
         // Arrange
         _fixture.ResetRepositories();
-        
+
         var newUserId = Guid.NewGuid();
         var newUserPreferences = UserContentPreferences.CreateDefault(newUserId);
         _fixture.AddTestPreferences(newUserPreferences);
@@ -378,14 +385,15 @@ public class MotivationalContentIntegrationTests : IClassFixture<MotivationalCon
         // Assert - New users should receive beginner content
         canReceive.Should().BeTrue("New users should receive encouragement content");
         score.Should().BeGreaterThan(0.0, "Beginner content should have positive score for new users");
+        return Task.CompletedTask;
     }
 
     [Fact]
-    public async Task ExpertUserExperience_ShouldReceiveAdvancedContent()
+    public Task ExpertUserExperience_ShouldReceiveAdvancedContent()
     {
         // Arrange
         _fixture.ResetRepositories();
-        
+
         var expertUserId = Guid.NewGuid();
         var expertPreferences = UserContentPreferencesBuilder.New()
             .ForUser(expertUserId)
@@ -414,14 +422,15 @@ public class MotivationalContentIntegrationTests : IClassFixture<MotivationalCon
         // Assert - Expert users should receive challenging content
         canReceive.Should().BeTrue("Expert users should receive challenge content");
         score.Should().BeGreaterThan(0.7, "Expert-targeted content should have high score for expert users");
+        return Task.CompletedTask;
     }
 
     [Fact]
-    public async Task ContentPauseAndResume_ShouldWork()
+    public Task ContentPauseAndResume_ShouldWork()
     {
         // Arrange
         _fixture.ResetRepositories();
-        
+
         var userId = Guid.NewGuid();
         var preferences = UserContentPreferencesBuilder.New()
             .ForUser(userId)
@@ -448,14 +457,15 @@ public class MotivationalContentIntegrationTests : IClassFixture<MotivationalCon
         // Assert
         canDeliverWhilePaused.Should().BeFalse("Content should not be delivered while paused");
         canDeliverAfterResume.Should().BeTrue("Content should be delivered after resume");
+        return Task.CompletedTask;
     }
 
     [Fact]
-    public async Task EngagementLearning_ShouldInfluenceNextRecommendations()
+    public Task EngagementLearning_ShouldInfluenceNextRecommendations()
     {
         // Arrange
         _fixture.ResetRepositories();
-        
+
         var userId = Guid.NewGuid();
         var preferences = UserContentPreferencesBuilder.New()
             .ForUser(userId)
@@ -477,6 +487,7 @@ public class MotivationalContentIntegrationTests : IClassFixture<MotivationalCon
 
         // Assert - Learning should improve recommendations
         enhancedScore.Should().BeGreaterThan(0.7, "High engagement history should boost content scores");
+        return Task.CompletedTask;
     }
 
     #endregion
@@ -484,11 +495,11 @@ public class MotivationalContentIntegrationTests : IClassFixture<MotivationalCon
     #region Edge Cases and Error Scenarios Tests
 
     [Fact]
-    public async Task DisabledUser_ShouldNotReceiveContent()
+    public Task DisabledUser_ShouldNotReceiveContent()
     {
         // Arrange
         _fixture.ResetRepositories();
-        
+
         var userId = Guid.NewGuid();
         var disabledPreferences = UserContentPreferencesBuilder.New()
             .ForUser(userId)
@@ -506,14 +517,15 @@ public class MotivationalContentIntegrationTests : IClassFixture<MotivationalCon
 
         // Assert
         canDeliver.Should().BeFalse("Disabled users should not receive any content");
+        return Task.CompletedTask;
     }
 
     [Fact]
-    public async Task InactiveContent_ShouldNotBeDelivered()
+    public Task InactiveContent_ShouldNotBeDelivered()
     {
         // Arrange
         _fixture.ResetRepositories();
-        
+
         var userId = Guid.NewGuid();
         var preferences = UserContentPreferencesBuilder.New()
             .ForUser(userId)
@@ -530,15 +542,16 @@ public class MotivationalContentIntegrationTests : IClassFixture<MotivationalCon
 
         // Assert
         matches.Should().BeTrue("Inactive content can still match conditions, delivery logic should filter it out");
+        return Task.CompletedTask;
         // Note: The delivery system would need to check IsActive before delivering
     }
 
     [Fact]
-    public async Task WeekendsAndAfterHours_ShouldBeRespected()
+    public Task WeekendsAndAfterHours_ShouldBeRespected()
     {
         // Arrange
         _fixture.ResetRepositories();
-        
+
         var userId = Guid.NewGuid();
         var strictPreferences = UserContentPreferencesBuilder.New()
             .ForUser(userId)
@@ -559,14 +572,15 @@ public class MotivationalContentIntegrationTests : IClassFixture<MotivationalCon
         // Assert - Result depends on current time, but logic should be respected
         // In a real system, we'd mock the current time for deterministic testing
         canDeliver.Should().Be(canDeliver, "Weekend/after-hours restrictions should be evaluated");
+        return Task.CompletedTask;
     }
 
     [Fact]
-    public async Task HighVolumeDelivery_ShouldRespectLimits()
+    public Task HighVolumeDelivery_ShouldRespectLimits()
     {
         // Arrange
         _fixture.ResetRepositories();
-        
+
         var userId = Guid.NewGuid();
         var preferences = UserContentPreferencesBuilder.New()
             .ForUser(userId)
@@ -577,16 +591,17 @@ public class MotivationalContentIntegrationTests : IClassFixture<MotivationalCon
         // Act & Assert - Limits should be enforced
         preferences.MaxDailyContent.Should().Be(2);
         preferences.MaxWeeklyContent.Should().Be(5);
-        
+        return Task.CompletedTask;
+
         // Note: Actual limit enforcement would be in the delivery service logic
     }
 
     [Fact]
-    public async Task EmptyTargetConditions_ShouldMatchAllUsers()
+    public Task EmptyTargetConditions_ShouldMatchAllUsers()
     {
         // Arrange
         _fixture.ResetRepositories();
-        
+
         var universalContent = MotivationalContentBuilder.New()
             .WithTargetConditions(new Dictionary<string, object>())
             .Build();
@@ -603,6 +618,7 @@ public class MotivationalContentIntegrationTests : IClassFixture<MotivationalCon
 
         // Assert
         matches.Should().BeTrue("Content with empty targeting should match all users");
+        return Task.CompletedTask;
     }
 
     #endregion
@@ -610,13 +626,13 @@ public class MotivationalContentIntegrationTests : IClassFixture<MotivationalCon
     #region Cross-Component Integration Tests
 
     [Fact]
-    public async Task CompleteUserJourney_ShouldBeSeamless()
+    public Task CompleteUserJourney_ShouldBeSeamless()
     {
         // Arrange - Create complete user journey scenario
         _fixture.ResetRepositories();
-        
+
         var userId = Guid.NewGuid();
-        
+
         // 1. User starts as beginner
         var preferences = UserContentPreferencesBuilder.New()
             .ForUser(userId)
@@ -632,15 +648,15 @@ public class MotivationalContentIntegrationTests : IClassFixture<MotivationalCon
         var achievementContent = MotivationalContentBuilder.New()
             .AsAchievement()
             .Build();
-        
+
         _fixture.AddTestContent(beginnerContent);
         _fixture.AddTestContent(achievementContent);
 
         // Act - Simulate user progression
-        
+
         // Phase 1: New user receives beginner content
         var initialScore = preferences.CalculateContentScore(
-            beginnerContent.ContentType, 
+            beginnerContent.ContentType,
             beginnerContent.Category);
 
         // Phase 2: User engages positively
@@ -666,6 +682,7 @@ public class MotivationalContentIntegrationTests : IClassFixture<MotivationalCon
         deliveryLog.IsHighEngagement().Should().BeTrue("User should show high engagement");
         improvedScore.Should().BeGreaterThan(initialScore, "Engagement should improve content scoring");
         preferences.PreferredFrequency.Should().Be(ContentFrequency.Moderate, "User preferences should evolve");
+        return Task.CompletedTask;
     }
 
     [Fact]
@@ -673,7 +690,7 @@ public class MotivationalContentIntegrationTests : IClassFixture<MotivationalCon
     {
         // Arrange - Create scenario with optimization potential
         _fixture.ResetRepositories();
-        
+
         var content = MotivationalContentBuilder.New()
             .WithPriority(50)
             .Build();
@@ -705,7 +722,7 @@ public class MotivationalContentIntegrationTests : IClassFixture<MotivationalCon
 
         // Assert - System should adapt to improved performance
         optimizedCount.Should().BeGreaterThan(0, "System should detect optimization opportunities");
-        
+
         var (currentContents, _, _) = _fixture.GetCurrentStorageState();
         var optimizedContent = currentContents.First(c => c.Id == content.Id);
         optimizedContent.Priority.Should().BeGreaterThan(50, "Improved content should get priority boost");

@@ -1,7 +1,7 @@
-using MediatR;
-using Microsoft.Extensions.Logging;
 using System.Text;
 using System.Text.Json;
+using MediatR;
+using Microsoft.Extensions.Logging;
 using WhoAndWhat.Application.Common;
 using WhoAndWhat.Application.DTOs;
 using WhoAndWhat.Application.Interfaces;
@@ -13,7 +13,7 @@ namespace WhoAndWhat.Application.Features.Dashboard.Queries.GenerateDashboardRep
 /// <summary>
 /// Handler for generating comprehensive dashboard reports with analytics and insights
 /// </summary>
-public sealed class GenerateDashboardReportQueryHandler 
+public sealed class GenerateDashboardReportQueryHandler
     : IRequestHandler<GenerateDashboardReportQuery, Result<GenerateDashboardReportResponse>>
 {
     private readonly IAppTaskRepository _taskRepository;
@@ -31,12 +31,12 @@ public sealed class GenerateDashboardReportQueryHandler
     }
 
     public async Task<Result<GenerateDashboardReportResponse>> Handle(
-        GenerateDashboardReportQuery request, 
+        GenerateDashboardReportQuery request,
         CancellationToken cancellationToken)
     {
         try
         {
-            _logger.LogInformation("Generating dashboard report for user {UserId}, type: {ReportType}", 
+            _logger.LogInformation("Generating dashboard report for user {UserId}, type: {ReportType}",
                 request.UserId, request.ReportType);
 
             // Verify user exists
@@ -91,7 +91,7 @@ public sealed class GenerateDashboardReportQueryHandler
                 Metadata: metadata
             );
 
-            _logger.LogInformation("Successfully generated {ReportType} report for user {UserId}, size: {Size} bytes", 
+            _logger.LogInformation("Successfully generated {ReportType} report for user {UserId}, size: {Size} bytes",
                 request.ReportType, request.UserId, response.ReportContent.Length);
 
             return Result<GenerateDashboardReportResponse>.Success(response);
@@ -104,17 +104,17 @@ public sealed class GenerateDashboardReportQueryHandler
     }
 
     private async Task<ReportData> GenerateReportData(
-        Guid userId, 
-        string reportType, 
-        ReportOptionsDto options, 
+        Guid userId,
+        string reportType,
+        ReportOptionsDto options,
         CancellationToken cancellationToken)
     {
         var startDate = options.StartDate ?? DateTime.Today.AddMonths(-1);
         var endDate = options.EndDate ?? DateTime.Today;
 
         // Get tasks for the period
-        var filter = new TaskFilter 
-        { 
+        var filter = new TaskFilter
+        {
             CreatedAfter = startDate,
             CreatedBefore = endDate,
             PageSize = 10000
@@ -139,7 +139,7 @@ public sealed class GenerateDashboardReportQueryHandler
         };
 
         // Generate recommendations
-        var recommendations = options.IncludeRecommendations 
+        var recommendations = options.IncludeRecommendations
             ? GenerateRecommendations(filteredTasks, insights, options)
             : new List<ReportRecommendation>();
 
@@ -179,7 +179,7 @@ public sealed class GenerateDashboardReportQueryHandler
         {
             var trend = weeklyCompletions.Last().Count - weeklyCompletions.First().Count;
             var trendText = trend > 0 ? "improving" : trend < 0 ? "declining" : "stable";
-            
+
             insights.Add(new ReportInsight(
                 Title: "Completion Trend",
                 Description: $"Your task completion rate is {trendText} with {Math.Abs(trend)} tasks difference compared to the start of the period.",
@@ -218,9 +218,10 @@ public sealed class GenerateDashboardReportQueryHandler
         // Add priority analysis
         var priorityStats = tasks
             .GroupBy(t => t.Priority.ToString())
-            .Select(g => new { 
-                Priority = g.Key, 
-                Count = g.Count(), 
+            .Select(g => new
+            {
+                Priority = g.Key,
+                Count = g.Count(),
                 Completed = g.Count(t => t.Status == (int)AppTaskStatus.Completed),
                 AvgCompletionTime = g.Where(t => t.CreatedAt != default)
                     .Select(t => (t.UpdatedAt - t.CreatedAt).TotalHours)
@@ -246,8 +247,8 @@ public sealed class GenerateDashboardReportQueryHandler
                 Description: $"You have {overdueTasks.Count} overdue tasks that need attention.",
                 Type: "warning",
                 Impact: "negative",
-                Data: new Dictionary<string, object> 
-                { 
+                Data: new Dictionary<string, object>
+                {
                     ["overdueCount"] = overdueTasks.Count,
                     ["categories"] = overdueTasks.GroupBy(t => t.Category.ToString()).Select(g => new { Category = g.Key, Count = g.Count() })
                 }
@@ -295,8 +296,8 @@ public sealed class GenerateDashboardReportQueryHandler
                 Description: $"On average, you complete tasks in {avgVelocity:F1} hours after creation.",
                 Type: "velocity",
                 Impact: "informational",
-                Data: new Dictionary<string, object> 
-                { 
+                Data: new Dictionary<string, object>
+                {
                     ["averageHours"] = avgVelocity,
                     ["velocityDistribution"] = completionVelocity.GroupBy(v => Math.Floor(v / 24)).Select(g => new { Days = g.Key, Count = g.Count() })
                 }
@@ -307,8 +308,8 @@ public sealed class GenerateDashboardReportQueryHandler
     }
 
     private List<ReportRecommendation> GenerateRecommendations(
-        List<AppTask> tasks, 
-        List<ReportInsight> insights, 
+        List<AppTask> tasks,
+        List<ReportInsight> insights,
         ReportOptionsDto options)
     {
         var recommendations = new List<ReportRecommendation>();
@@ -426,7 +427,7 @@ public sealed class GenerateDashboardReportQueryHandler
         foreach (var task in completedTasks)
         {
             var taskDate = task.UpdatedAt.Date;
-            
+
             if (taskDate == currentDate || (currentStreak == 0 && taskDate < currentDate))
             {
                 currentStreak++;
@@ -579,7 +580,7 @@ public sealed class GenerateDashboardReportQueryHandler
         // For now, generate HTML and indicate it would be converted to PDF
         // In a real implementation, you would use libraries like iTextSharp, PuppeteerSharp, or similar
         var htmlResult = GenerateHtmlReport(data, reportType, options);
-        
+
         var fileName = $"dashboard_report_{DateTime.UtcNow:yyyyMMdd_HHmmss}.pdf";
         return new ReportFile(htmlResult.ReportContent, fileName, "application/pdf");
     }

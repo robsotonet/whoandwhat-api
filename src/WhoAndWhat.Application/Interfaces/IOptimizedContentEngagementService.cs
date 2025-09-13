@@ -15,8 +15,8 @@ public interface IOptimizedContentEngagementService
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>List of personalized content ordered by relevance</returns>
     public Task<List<MotivationalContent>> GetPersonalizedContentAsync(
-        Guid userId, 
-        int count = 3, 
+        Guid userId,
+        int count = 3,
         CancellationToken cancellationToken = default);
 
     /// <summary>

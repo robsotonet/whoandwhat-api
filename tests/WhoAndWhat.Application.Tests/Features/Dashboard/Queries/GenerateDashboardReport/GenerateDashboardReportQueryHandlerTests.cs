@@ -1,7 +1,7 @@
+using System.Text;
 using FluentAssertions;
 using Microsoft.Extensions.Logging;
 using Moq;
-using System.Text;
 using WhoAndWhat.Application.Common;
 using WhoAndWhat.Application.DTOs;
 using WhoAndWhat.Application.Features.Dashboard.Queries.GenerateDashboardReport;
@@ -29,7 +29,7 @@ public class GenerateDashboardReportQueryHandlerTests
         _mockTaskRepository = new Mock<IAppTaskRepository>();
         _mockUserRepository = new Mock<IUserRepository>();
         _mockLogger = new Mock<ILogger<GenerateDashboardReportQueryHandler>>();
-        
+
         _handler = new GenerateDashboardReportQueryHandler(
             _mockTaskRepository.Object,
             _mockUserRepository.Object,
@@ -42,7 +42,7 @@ public class GenerateDashboardReportQueryHandlerTests
         // Arrange
         var options = new ReportOptionsDto(Format: "html", IncludeCharts: true, IncludeRecommendations: true);
         var query = new GenerateDashboardReportQuery(_testUserId, "summary", options);
-        
+
         var user = CreateTestUser();
         var tasks = CreateTestTasks();
 
@@ -54,7 +54,7 @@ public class GenerateDashboardReportQueryHandlerTests
         // Assert
         result.IsSuccess.Should().BeTrue();
         var response = result.Value;
-        
+
         response.ReportContent.Should().NotBeEmpty();
         response.ReportFileName.Should().EndWith(".html");
         response.ContentType.Should().Be("text/html");
@@ -63,7 +63,7 @@ public class GenerateDashboardReportQueryHandlerTests
         response.Metadata.GeneratedBy.Should().Be(user.Username);
         response.Metadata.FileSizeBytes.Should().BeGreaterThan(0);
         response.Metadata.ChecksumHash.Should().NotBeNullOrEmpty();
-        
+
         // Verify HTML content contains expected sections
         var htmlContent = Encoding.UTF8.GetString(response.ReportContent);
         htmlContent.Should().Contain("Dashboard Report - SUMMARY");
@@ -80,7 +80,7 @@ public class GenerateDashboardReportQueryHandlerTests
         // Arrange
         var options = new ReportOptionsDto(Format: "html");
         var query = new GenerateDashboardReportQuery(_testUserId, reportType, options);
-        
+
         var user = CreateTestUser();
         var tasks = CreateTestTasks();
         SetupMocks(user, tasks);
@@ -92,7 +92,7 @@ public class GenerateDashboardReportQueryHandlerTests
         result.IsSuccess.Should().BeTrue();
         var response = result.Value;
         response.Metadata.ReportType.Should().Be(reportType);
-        
+
         var htmlContent = Encoding.UTF8.GetString(response.ReportContent);
         htmlContent.Should().Contain($"Dashboard Report - {reportType.ToUpperInvariant()}");
     }
@@ -106,7 +106,7 @@ public class GenerateDashboardReportQueryHandlerTests
         // Arrange
         var options = new ReportOptionsDto(Format: format);
         var query = new GenerateDashboardReportQuery(_testUserId, "summary", options);
-        
+
         var user = CreateTestUser();
         var tasks = CreateTestTasks();
         SetupMocks(user, tasks);
@@ -117,7 +117,7 @@ public class GenerateDashboardReportQueryHandlerTests
         // Assert
         result.IsSuccess.Should().BeTrue();
         var response = result.Value;
-        
+
         response.ContentType.Should().Be(expectedContentType);
         response.ReportFileName.Should().EndWith(expectedExtension);
         response.ReportContent.Should().NotBeEmpty();
@@ -129,7 +129,7 @@ public class GenerateDashboardReportQueryHandlerTests
         // Arrange
         var options = new ReportOptionsDto(Format: "markdown", IncludeRecommendations: true);
         var query = new GenerateDashboardReportQuery(_testUserId, "detailed", options);
-        
+
         var user = CreateTestUser();
         var tasks = CreateTestTasksWithVariousStatuses();
         SetupMocks(user, tasks);
@@ -140,7 +140,7 @@ public class GenerateDashboardReportQueryHandlerTests
         // Assert
         result.IsSuccess.Should().BeTrue();
         var response = result.Value;
-        
+
         var markdownContent = Encoding.UTF8.GetString(response.ReportContent);
         markdownContent.Should().Contain("# Dashboard Report - DETAILED");
         markdownContent.Should().Contain("## Summary");
@@ -155,7 +155,7 @@ public class GenerateDashboardReportQueryHandlerTests
         // Arrange
         var options = new ReportOptionsDto();
         var query = new GenerateDashboardReportQuery(_testUserId, "summary", options);
-        
+
         _mockUserRepository
             .Setup(x => x.GetByIdAsync(_testUserId, It.IsAny<CancellationToken>()))
             .ReturnsAsync((User)null!);
@@ -177,7 +177,7 @@ public class GenerateDashboardReportQueryHandlerTests
         // Arrange
         var options = new ReportOptionsDto();
         var query = new GenerateDashboardReportQuery(_testUserId, invalidReportType, options);
-        
+
         var user = CreateTestUser();
         _mockUserRepository
             .Setup(x => x.GetByIdAsync(_testUserId, It.IsAny<CancellationToken>()))
@@ -201,7 +201,7 @@ public class GenerateDashboardReportQueryHandlerTests
         // Arrange
         var options = new ReportOptionsDto(Format: invalidFormat);
         var query = new GenerateDashboardReportQuery(_testUserId, "summary", options);
-        
+
         var user = CreateTestUser();
         _mockUserRepository
             .Setup(x => x.GetByIdAsync(_testUserId, It.IsAny<CancellationToken>()))
@@ -222,7 +222,7 @@ public class GenerateDashboardReportQueryHandlerTests
         // Arrange
         var options = new ReportOptionsDto(Format: "html");
         var query = new GenerateDashboardReportQuery(_testUserId, "detailed", options);
-        
+
         var user = CreateTestUser();
         var tasks = CreateTestTasksWithDifferentPriorities();
         SetupMocks(user, tasks);
@@ -233,7 +233,7 @@ public class GenerateDashboardReportQueryHandlerTests
         // Assert
         result.IsSuccess.Should().BeTrue();
         var htmlContent = Encoding.UTF8.GetString(result.Value.ReportContent);
-        
+
         // Should contain priority-related insights
         htmlContent.Should().Contain("Priority Management");
     }
@@ -244,7 +244,7 @@ public class GenerateDashboardReportQueryHandlerTests
         // Arrange
         var options = new ReportOptionsDto(Format: "html");
         var query = new GenerateDashboardReportQuery(_testUserId, "analytical", options);
-        
+
         var user = CreateTestUser();
         var tasks = CreateTestTasksForAnalytics();
         SetupMocks(user, tasks);
@@ -255,7 +255,7 @@ public class GenerateDashboardReportQueryHandlerTests
         // Assert
         result.IsSuccess.Should().BeTrue();
         var htmlContent = Encoding.UTF8.GetString(result.Value.ReportContent);
-        
+
         // Should contain analytical insights
         htmlContent.Should().Contain("Peak Productivity Hour");
         htmlContent.Should().Contain("Task Completion Velocity");
@@ -267,7 +267,7 @@ public class GenerateDashboardReportQueryHandlerTests
         // Arrange
         var options = new ReportOptionsDto(Format: "html", IncludeRecommendations: true);
         var query = new GenerateDashboardReportQuery(_testUserId, "detailed", options);
-        
+
         var user = CreateTestUser();
         var tasks = CreateTestTasksWithOverdue();
         SetupMocks(user, tasks);
@@ -278,7 +278,7 @@ public class GenerateDashboardReportQueryHandlerTests
         // Assert
         result.IsSuccess.Should().BeTrue();
         var htmlContent = Encoding.UTF8.GetString(result.Value.ReportContent);
-        
+
         htmlContent.Should().Contain("Address Overdue Tasks");
         htmlContent.Should().Contain("overdue tasks that need attention");
     }
@@ -289,7 +289,7 @@ public class GenerateDashboardReportQueryHandlerTests
         // Arrange
         var options = new ReportOptionsDto(Format: "html", IncludeRecommendations: true);
         var query = new GenerateDashboardReportQuery(_testUserId, "summary", options);
-        
+
         var user = CreateTestUser();
         var tasks = CreateTestTasksWithLowCompletionRate(); // < 70% completion rate
         SetupMocks(user, tasks);
@@ -300,7 +300,7 @@ public class GenerateDashboardReportQueryHandlerTests
         // Assert
         result.IsSuccess.Should().BeTrue();
         var htmlContent = Encoding.UTF8.GetString(result.Value.ReportContent);
-        
+
         htmlContent.Should().Contain("Improve Task Completion Rate");
         htmlContent.Should().Contain("breaking large tasks into smaller");
     }
@@ -311,7 +311,7 @@ public class GenerateDashboardReportQueryHandlerTests
         // Arrange
         var options = new ReportOptionsDto(Format: "html", IncludeRecommendations: true);
         var query = new GenerateDashboardReportQuery(_testUserId, "summary", options);
-        
+
         var user = CreateTestUser();
         var tasks = CreateTestTasksWithImbalancedCategories(); // 70%+ in one category
         SetupMocks(user, tasks);
@@ -322,7 +322,7 @@ public class GenerateDashboardReportQueryHandlerTests
         // Assert
         result.IsSuccess.Should().BeTrue();
         var htmlContent = Encoding.UTF8.GetString(result.Value.ReportContent);
-        
+
         htmlContent.Should().Contain("Balance Task Categories");
         htmlContent.Should().Contain("diversifying your task types");
     }
@@ -335,7 +335,7 @@ public class GenerateDashboardReportQueryHandlerTests
         var endDate = new DateTime(2024, 1, 31);
         var options = new ReportOptionsDto(StartDate: startDate, EndDate: endDate, Format: "html");
         var query = new GenerateDashboardReportQuery(_testUserId, "summary", options);
-        
+
         var user = CreateTestUser();
         var tasks = CreateTestTasksWithDifferentDates();
         SetupMocks(user, tasks);
@@ -346,10 +346,10 @@ public class GenerateDashboardReportQueryHandlerTests
         // Assert
         result.IsSuccess.Should().BeTrue();
         var response = result.Value;
-        
+
         response.Metadata.Summary.PeriodStart.Should().Be(startDate);
         response.Metadata.Summary.PeriodEnd.Should().Be(endDate);
-        
+
         var htmlContent = Encoding.UTF8.GetString(response.ReportContent);
         htmlContent.Should().Contain($"Period: {startDate:yyyy-MM-dd} to {endDate:yyyy-MM-dd}");
     }
@@ -360,7 +360,7 @@ public class GenerateDashboardReportQueryHandlerTests
         // Arrange
         var options = new ReportOptionsDto(Format: "html", IncludeCharts: false);
         var query = new GenerateDashboardReportQuery(_testUserId, "summary", options);
-        
+
         var user = CreateTestUser();
         var tasks = CreateTestTasks();
         SetupMocks(user, tasks);
@@ -380,7 +380,7 @@ public class GenerateDashboardReportQueryHandlerTests
         // Arrange
         var options = new ReportOptionsDto();
         var query = new GenerateDashboardReportQuery(_testUserId, "summary", options);
-        
+
         var user = CreateTestUser();
         _mockUserRepository
             .Setup(x => x.GetByIdAsync(_testUserId, It.IsAny<CancellationToken>()))
@@ -397,7 +397,7 @@ public class GenerateDashboardReportQueryHandlerTests
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("Failed to generate dashboard report");
         result.Error.Should().Contain("Database connection failed");
-        
+
         // Verify logging
         _mockLogger.Verify(
             x => x.Log(
@@ -415,7 +415,7 @@ public class GenerateDashboardReportQueryHandlerTests
         // Arrange
         var options = new ReportOptionsDto();
         var query = new GenerateDashboardReportQuery(_testUserId, "summary", options);
-        
+
         var user = CreateTestUser();
         var tasks = CreateTestTasks();
         SetupMocks(user, tasks);
@@ -425,7 +425,7 @@ public class GenerateDashboardReportQueryHandlerTests
 
         // Assert
         result.IsSuccess.Should().BeTrue();
-        
+
         // Verify logging
         _mockLogger.Verify(
             x => x.Log(
@@ -435,7 +435,7 @@ public class GenerateDashboardReportQueryHandlerTests
                 It.IsAny<Exception>(),
                 It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
             Times.Once);
-            
+
         _mockLogger.Verify(
             x => x.Log(
                 LogLevel.Information,
@@ -452,7 +452,7 @@ public class GenerateDashboardReportQueryHandlerTests
         // Arrange
         var options = new ReportOptionsDto(Format: "html");
         var query = new GenerateDashboardReportQuery(_testUserId, "summary", options);
-        
+
         var user = CreateTestUser();
         var emptyTasks = new List<AppTask>();
         SetupMocks(user, emptyTasks);
@@ -463,11 +463,11 @@ public class GenerateDashboardReportQueryHandlerTests
         // Assert
         result.IsSuccess.Should().BeTrue();
         var response = result.Value;
-        
+
         response.Metadata.Summary.TotalTasks.Should().Be(0);
         response.Metadata.Summary.CompletedTasks.Should().Be(0);
         response.Metadata.Summary.CompletionRate.Should().Be(0);
-        
+
         var htmlContent = Encoding.UTF8.GetString(response.ReportContent);
         htmlContent.Should().Contain("Total Tasks:</strong> 0");
     }
@@ -535,7 +535,7 @@ public class GenerateDashboardReportQueryHandlerTests
     {
         var tasks = new List<AppTask>();
         var now = DateTime.UtcNow;
-        
+
         // Create tasks at different hours for peak productivity analysis
         for (int hour = 8; hour <= 18; hour++)
         {
@@ -544,7 +544,7 @@ public class GenerateDashboardReportQueryHandlerTests
             SetTaskCompletionTime(task, now.Date.AddHours(hour + 1));
             tasks.Add(task);
         }
-        
+
         return tasks;
     }
 
@@ -578,71 +578,71 @@ public class GenerateDashboardReportQueryHandlerTests
     private List<AppTask> CreateTestTasksWithImbalancedCategories()
     {
         var tasks = new List<AppTask>();
-        
+
         // Add 8 ToDo tasks (80% of total)
         for (int i = 1; i <= 8; i++)
         {
             tasks.Add(CreateTask($"ToDo Task {i}", AppTaskCategory.ToDo, AppTaskStatus.InProgress));
         }
-        
+
         // Add 2 other category tasks (20% of total)
         tasks.Add(CreateTask("Idea Task", AppTaskCategory.Idea, AppTaskStatus.InProgress));
         tasks.Add(CreateTask("Project Task", AppTaskCategory.Project, AppTaskStatus.InProgress));
-        
+
         return tasks;
     }
 
     private List<AppTask> CreateTestTasksWithDifferentDates()
     {
         var tasks = new List<AppTask>();
-        
+
         // Tasks within date range (January 2024)
         var task1 = CreateTask("Jan Task 1", AppTaskCategory.ToDo, AppTaskStatus.Completed);
         SetTaskCreationTime(task1, new DateTime(2024, 1, 15));
         tasks.Add(task1);
-        
+
         var task2 = CreateTask("Jan Task 2", AppTaskCategory.ToDo, AppTaskStatus.InProgress);
         SetTaskCreationTime(task2, new DateTime(2024, 1, 25));
         tasks.Add(task2);
-        
+
         // Tasks outside date range (should be filtered out)
         var task3 = CreateTask("Dec Task", AppTaskCategory.ToDo, AppTaskStatus.Completed);
         SetTaskCreationTime(task3, new DateTime(2023, 12, 15));
         tasks.Add(task3);
-        
+
         return tasks;
     }
 
     private AppTask CreateTask(string title, AppTaskCategory category, AppTaskStatus status)
     {
         var task = new AppTask { Title = title, Category = (int)category, UserId = _testUserId, Status = (int)AppTaskStatus.Pending };
-        
+
         // Set status using reflection
         var statusField = typeof(AppTask).GetField("_status", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
         statusField?.SetValue(task, (int)status);
-        
+
         return task;
     }
 
     private AppTask CreateTaskWithPriority(string title, Priority priority)
     {
         var task = new AppTask { Title = title, Category = (int)AppTaskCategory.ToDo, UserId = _testUserId, Status = (int)AppTaskStatus.Pending };
-        
+
         // Set priority using reflection
         var priorityField = typeof(AppTask).GetField("_priority", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
         priorityField?.SetValue(task, (int)priority);
-        
+
         return task;
     }
 
     private AppTask CreateTaskWithDueDate(string title, DateTime dueDate, AppTaskStatus status)
     {
         var task = CreateTask(title, AppTaskCategory.ToDo, status);
-        
+
         // Set due date using reflection
         var dueDateField = typeof(AppTask).GetField("_dueDate", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
         dueDateField?.SetValue(task, dueDate);
-        
+
         return task;
     }
 

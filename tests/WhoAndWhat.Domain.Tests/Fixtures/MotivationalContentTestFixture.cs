@@ -1,10 +1,10 @@
+using System.Linq.Expressions;
 using Microsoft.Extensions.Logging;
 using Moq;
 using WhoAndWhat.Application.Interfaces;
 using WhoAndWhat.Domain.Entities;
 using WhoAndWhat.Domain.Tests.Builders;
 using WhoAndWhat.Domain.Tests.Helpers;
-using System.Linq.Expressions;
 
 namespace WhoAndWhat.Domain.Tests.Fixtures;
 
@@ -59,12 +59,12 @@ public class MotivationalContentTestFixture : IDisposable
     private List<ContentDeliveryLog> CreateTestDeliveryLogs()
     {
         var logs = new List<ContentDeliveryLog>();
-        
+
         // Create realistic logs for each user and content combination
         foreach (var userId in TestUserIds.Take(3)) // Limit for performance
         {
             var userLogs = MotivationalContentTestHelper.CreateRealisticDeliveryLogs(
-                userId, 
+                userId,
                 TestContents.Take(5).ToList(), // Limit contents for performance
                 logsPerContent: 8,
                 overallEngagementRate: 0.65);
@@ -259,7 +259,7 @@ public class MotivationalContentTestFixture : IDisposable
     /// <summary>
     /// Gets current storage state for verification
     /// </summary>
-    public (List<MotivationalContent> contents, List<UserContentPreferences> preferences, List<ContentDeliveryLog> logs) 
+    public (List<MotivationalContent> contents, List<UserContentPreferences> preferences, List<ContentDeliveryLog> logs)
         GetCurrentStorageState()
     {
         return (_contentStorage.ToList(), _preferencesStorage.ToList(), _deliveryLogStorage.ToList());
@@ -355,25 +355,39 @@ public class MotivationalContentTestFixture : IDisposable
         Times? saveChangesTimes = null)
     {
         if (getByIdTimes.HasValue)
+        {
             MockContentRepository.Verify(r => r.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()), getByIdTimes.Value);
+        }
 
         if (getAllTimes.HasValue)
+        {
             MockContentRepository.Verify(r => r.GetAllAsync(It.IsAny<CancellationToken>()), getAllTimes.Value);
+        }
 
         if (findTimes.HasValue)
+        {
             MockContentRepository.Verify(r => r.FindAsync(It.IsAny<Expression<Func<MotivationalContent, bool>>>(), It.IsAny<CancellationToken>()), findTimes.Value);
+        }
 
         if (addTimes.HasValue)
+        {
             MockContentRepository.Verify(r => r.AddAsync(It.IsAny<MotivationalContent>(), It.IsAny<CancellationToken>()), addTimes.Value);
+        }
 
         if (updateTimes.HasValue)
+        {
             MockContentRepository.Verify(r => r.UpdateAsync(It.IsAny<MotivationalContent>(), It.IsAny<CancellationToken>()), updateTimes.Value);
+        }
 
         if (deleteTimes.HasValue)
+        {
             MockContentRepository.Verify(r => r.DeleteAsync(It.IsAny<MotivationalContent>(), It.IsAny<CancellationToken>()), deleteTimes.Value);
+        }
 
         if (saveChangesTimes.HasValue)
+        {
             MockContentRepository.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), saveChangesTimes.Value);
+        }
     }
 
     public void Dispose()

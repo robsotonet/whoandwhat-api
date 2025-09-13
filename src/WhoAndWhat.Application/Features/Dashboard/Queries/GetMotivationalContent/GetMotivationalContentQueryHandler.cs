@@ -10,7 +10,7 @@ namespace WhoAndWhat.Application.Features.Dashboard.Queries.GetMotivationalConte
 /// <summary>
 /// Handler for retrieving personalized motivational content for the user's dashboard
 /// </summary>
-public sealed class GetMotivationalContentQueryHandler 
+public sealed class GetMotivationalContentQueryHandler
     : IRequestHandler<GetMotivationalContentQuery, Result<GetMotivationalContentResponse>>
 {
     private readonly IMotivationalContentRepository _contentRepository;
@@ -31,7 +31,7 @@ public sealed class GetMotivationalContentQueryHandler
     }
 
     public async Task<Result<GetMotivationalContentResponse>> Handle(
-        GetMotivationalContentQuery request, 
+        GetMotivationalContentQuery request,
         CancellationToken cancellationToken)
     {
         try
@@ -45,9 +45,9 @@ public sealed class GetMotivationalContentQueryHandler
             // Check if user can receive content now
             if (!preferences.CanDeliverContentNow(ContentDeliveryChannel.Dashboard, MotivationalContentType.Insight))
             {
-                _logger.LogInformation("Content delivery blocked for user {UserId} - daily limit reached or outside delivery hours", 
+                _logger.LogInformation("Content delivery blocked for user {UserId} - daily limit reached or outside delivery hours",
                     request.UserId);
-                
+
                 return Result<GetMotivationalContentResponse>.Success(
                     new GetMotivationalContentResponse(
                         Array.Empty<MotivationalContentDto>(),
@@ -58,8 +58,8 @@ public sealed class GetMotivationalContentQueryHandler
 
             // Get personalized content using the engagement service
             var personalizedContent = await _engagementService.GetPersonalizedContentAsync(
-                request.UserId, 
-                request.Count ?? 3, 
+                request.UserId,
+                request.Count ?? 3,
                 cancellationToken);
 
             // Get total available content count
@@ -71,7 +71,7 @@ public sealed class GetMotivationalContentQueryHandler
                 MapToPersonalizationInfo(preferences)
             );
 
-            _logger.LogInformation("Successfully retrieved {Count} motivational contents for user {UserId}", 
+            _logger.LogInformation("Successfully retrieved {Count} motivational contents for user {UserId}",
                 personalizedContent.Count, request.UserId);
 
             return Result<GetMotivationalContentResponse>.Success(response);
@@ -87,11 +87,11 @@ public sealed class GetMotivationalContentQueryHandler
     private async Task<UserContentPreferences> CreateDefaultPreferencesAsync(Guid userId, CancellationToken cancellationToken)
     {
         _logger.LogInformation("Creating default content preferences for user {UserId}", userId);
-        
+
         var defaultPreferences = UserContentPreferences.CreateDefault(userId);
         await _preferencesRepository.AddAsync(defaultPreferences, cancellationToken);
         await _preferencesRepository.SaveChangesAsync(cancellationToken);
-        
+
         return defaultPreferences;
     }
 
