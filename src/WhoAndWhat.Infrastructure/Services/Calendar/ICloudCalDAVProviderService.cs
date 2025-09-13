@@ -996,10 +996,15 @@ public class ICloudCalDAVProviderService : ICalendarProviderService, IDisposable
                 {
                     var colonIndex = trimmedLine.IndexOf(':');
 
-                    // Validate bounds to prevent potential substring exceptions
-                    if (colonIndex >= 0 && colonIndex < trimmedLine.Length)
+                    // Validate that colon was found (IndexOf returns -1 if not found)
+                    // Note: colonIndex < trimmedLine.Length is always true when IndexOf succeeds
+                    if (colonIndex >= 0)
                     {
                         var property = trimmedLine.Substring(0, colonIndex);
+                        
+                        // Extract value after colon, handling edge case where colon is at end of string
+                        // When colonIndex + 1 == trimmedLine.Length (colon at end), Substring returns empty string
+                        // When colonIndex + 1 < trimmedLine.Length (chars after colon), extract them
                         var value = colonIndex + 1 < trimmedLine.Length
                             ? trimmedLine.Substring(colonIndex + 1)
                             : string.Empty;
