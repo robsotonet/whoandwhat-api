@@ -810,6 +810,13 @@ public class AIPlanningService : IAIPlanningService
     public void Dispose()
     {
         _rateLimitSemaphore?.Dispose();
+        
+        // Clean up provider failure tracking to prevent memory leaks
+        lock (_lockObject)
+        {
+            _providerLastFailure.Clear();
+        }
+        
         // HttpClient should not be disposed here as it's managed by the DI container and HttpClientFactory
         // Disposing it manually can interfere with connection pooling and affect other HttpClient instances
     }

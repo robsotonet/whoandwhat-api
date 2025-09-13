@@ -52,9 +52,16 @@ public class GetProductivityInsightsQueryHandler : IRequestHandler<GetProductivi
             }
 
             // Generate AI-powered insights
-            var aiInsights = await _aiPlanningService.AnalyzeProductivityPatternsAsync(
-                productivityData,
-                request.AnalysisType,
+            var timeframeAnalysis = new TimeframeAnalysis
+            {
+                StartDate = request.TimeRange.StartDate,
+                EndDate = request.TimeRange.EndDate,
+                AnalysisType = request.AnalysisType
+            };
+            
+            var aiInsights = await _aiPlanningService.GetProductivityInsightsAsync(
+                request.UserId,
+                timeframeAnalysis,
                 cancellationToken
             );
 
@@ -111,7 +118,17 @@ public class GetProductivityInsightsQueryHandler : IRequestHandler<GetProductivi
             PageNumber = 1
         };
 
-        var taskStats = await _taskRepository.GetStatisticsAsync(filter, cancellationToken);
+        // Convert TaskFilter to AppTaskSearchCriteria  
+        var searchCriteria = new AppTaskSearchCriteria
+        {
+            UserId = filter.UserId,
+            DueDateFrom = filter.FromDate,
+            DueDateTo = filter.ToDate,
+            Statuses = new List<int>(), // Will be populated if we had specific statuses
+            IncludeDeleted = false
+        };
+        
+        var taskStats = await _taskRepository.GetStatisticsAsync(searchCriteria, cancellationToken);
 
         // Calculate performance metrics
         var performanceMetrics = CalculatePerformanceMetrics(tasksInPeriod, timeframe);
@@ -120,8 +137,8 @@ public class GetProductivityInsightsQueryHandler : IRequestHandler<GetProductivi
             userId,
             timeframe,
             tasksInPeriod.Count(),
-            tasksInPeriod.Count(t => t.Status == AppTaskStatus.Completed),
-            tasksInPeriod.Count(t => t.DueDate.HasValue && t.DueDate.Value < DateTime.Today && t.Status != AppTaskStatus.Completed),
+            tasksInPeriod.Count(t => t.Status == (int)AppTaskStatus.Completed),
+            tasksInPeriod.Count(t => t.DueDate.HasValue && t.DueDate.Value < DateTime.Today && t.Status != (int)AppTaskStatus.Completed),
             completionTrends,
             productivityPatterns,
             performanceMetrics,
@@ -134,8 +151,8 @@ public class GetProductivityInsightsQueryHandler : IRequestHandler<GetProductivi
     {
         var taskList = tasks.ToList();
         var totalTasks = taskList.Count;
-        var completedTasks = taskList.Count(t => t.Status == AppTaskStatus.Completed);
-        var overdueTasks = taskList.Count(t => t.DueDate.HasValue && t.DueDate.Value < DateTime.Today && t.Status != AppTaskStatus.Completed);
+        var completedTasks = taskList.Count(t => t.Status == (int)AppTaskStatus.Completed);
+        var overdueTasks = taskList.Count(t => t.DueDate.HasValue && t.DueDate.Value < DateTime.Today && t.Status != (int)AppTaskStatus.Completed);
 
         var completionRate = totalTasks > 0 ? (double)completedTasks / totalTasks : 0;
         var overdueRate = totalTasks > 0 ? (double)overdueTasks / totalTasks : 0;
@@ -255,8 +272,8 @@ public class GetProductivityInsightsQueryHandler : IRequestHandler<GetProductivi
         var recommendations = GenerateFallbackRecommendations(data);
         
         var trendAnalysis = new ProductivityTrendAnalysis(
-            data.CompletionRate > 0.7 ? TrendDirection.Improving : 
-            data.CompletionRate > 0.4 ? TrendDirection.Stable : TrendDirection.Declining,
+            data.CompletionRate > 0.7 ? WhoAndWhat.Application.DTOs.AI.TrendDirection.Improving : 
+            data.CompletionRate > 0.4 ? WhoAndWhat.Application.DTOs.AI.TrendDirection.Stable : WhoAndWhat.Application.DTOs.AI.TrendDirection.Declining,
             GenerateTrendDataPoints(data, timeframe),
             new List<string> { "completion_rate", "task_volume" },
             recommendations.Take(3).ToList()

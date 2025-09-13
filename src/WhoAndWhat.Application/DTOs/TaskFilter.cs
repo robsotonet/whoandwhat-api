@@ -9,6 +9,21 @@ namespace WhoAndWhat.Application.DTOs;
 public class TaskFilter
 {
     /// <summary>
+    /// Filter by user ID (for AI and analytics queries)
+    /// </summary>
+    public Guid? UserId { get; set; }
+
+    /// <summary>
+    /// Filter tasks from this date (for AI analysis)
+    /// </summary>
+    public DateTime? FromDate { get; set; }
+
+    /// <summary>
+    /// Filter tasks to this date (for AI analysis)
+    /// </summary>
+    public DateTime? ToDate { get; set; }
+
+    /// <summary>
     /// Filter by specific task status
     /// </summary>
     public DomainTaskStatus? Status { get; set; }

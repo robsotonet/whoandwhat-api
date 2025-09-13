@@ -72,10 +72,18 @@ public class GetTaskSuggestionsQueryHandler : IRequestHandler<GetTaskSuggestions
                 GetCurrentUserContext(request.UserId)
             );
 
-            // Generate AI suggestions
-            var aiSuggestions = await _aiPlanningService.GenerateTaskSuggestionsAsync(
-                suggestionContext, 
-                request.MaxSuggestions, 
+            // Generate AI categorization suggestions
+            var userCategoryHistory = new UserCategoryHistory
+            {
+                UserId = request.UserId,
+                HistoricalCategories = completedTasks.Select(t => t.Category.ToString()).Distinct().ToList(),
+                PreferredCategories = new List<string> { "Work", "Personal", "Administrative" }
+            };
+            
+            var aiSuggestions = await _aiPlanningService.GetTaskCategorizationSuggestionsAsync(
+                request.UserId,
+                string.Join("; ", completedTasks.Select(t => t.Title).Take(5)),
+                userCategoryHistory,
                 cancellationToken);
 
             if (aiSuggestions == null || !aiSuggestions.Any())

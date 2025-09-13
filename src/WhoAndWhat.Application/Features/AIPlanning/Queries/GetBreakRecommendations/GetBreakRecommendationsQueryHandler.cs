@@ -41,9 +41,9 @@ public class GetBreakRecommendationsQueryHandler : IRequestHandler<GetBreakRecom
             var enhancedWorkload = await EnhanceWorkloadAnalysis(request.UserId, request.WorkloadAnalysis, cancellationToken);
 
             // Generate AI-powered break recommendations
-            var aiRecommendations = await _aiPlanningService.GenerateBreakRecommendationsAsync(
+            var aiRecommendations = await _aiPlanningService.GetBreakRecommendationsAsync(
+                request.UserId,
                 enhancedWorkload,
-                request.IncludeActivitySuggestions,
                 cancellationToken
             );
 

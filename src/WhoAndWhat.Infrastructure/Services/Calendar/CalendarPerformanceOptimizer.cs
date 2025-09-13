@@ -901,7 +901,7 @@ public class PerformanceMetrics
 
 public class RateLimiter
 {
-    private SemaphoreSlim _semaphore; // Made mutable for recreation pattern
+    private readonly SemaphoreSlim _semaphore; // Thread-safe semaphore for rate limiting
     private readonly Timer _resetTimer;
     private readonly object _resetLock = new object();
     private int _currentRequests;
@@ -942,19 +942,23 @@ public class RateLimiter
                 Interlocked.Exchange(ref _currentRequests, 0);
                 NextResetTime = DateTime.UtcNow.AddMinutes(1);
 
-                // Use recreation pattern: dispose old semaphore and create new one
-                // This is much safer and cleaner than trying to reset permits
-                var oldSemaphore = _semaphore;
-                _semaphore = new SemaphoreSlim(RequestsPerMinute, RequestsPerMinute);
+                // Safe semaphore reset using permit calculation (fixes race condition)
+                // Calculate how many permits we need to release to reach full capacity
+                int currentPermits = _semaphore.CurrentCount;
+                int targetPermits = RequestsPerMinute;
+                int diff = targetPermits - currentPermits;
                 
-                // Dispose old semaphore safely
-                try
+                if (diff > 0)
                 {
-                    oldSemaphore?.Dispose();
-                }
-                catch (ObjectDisposedException)
-                {
-                    // Expected during shutdown
+                    try
+                    {
+                        // Release additional permits to reach full capacity
+                        _semaphore.Release(diff);
+                    }
+                    catch (SemaphoreFullException)
+                    {
+                        // Already at capacity - this is fine and expected
+                    }
                 }
             }
             catch (ObjectDisposedException)

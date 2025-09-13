@@ -46,9 +46,10 @@ public class UserRepository : Repository<User>, IUserRepository
     [Obsolete("This method loads all users into memory. Use GetActiveUsersPagedAsync for better performance.")]
     public async System.Threading.Tasks.Task<IEnumerable<User>> GetAllActiveUsersAsync(CancellationToken cancellationToken = default)
     {
-        return await _context.Users
-            .Where(u => u.LastLoginDate >= DateTime.UtcNow.AddDays(-30)) // Active = logged in within last 30 days
-            .ToListAsync(cancellationToken);
+        await System.Threading.Tasks.Task.CompletedTask; // Satisfy async signature
+        throw new NotSupportedException(
+            "GetAllActiveUsersAsync is deprecated due to memory concerns. " +
+            "Use GetActiveUsersPagedAsync for better performance and to avoid OutOfMemoryException.");
     }
 
     public async System.Threading.Tasks.Task<IEnumerable<User>> GetActiveUsersPagedAsync(int pageSize, int pageNumber, CancellationToken cancellationToken = default)

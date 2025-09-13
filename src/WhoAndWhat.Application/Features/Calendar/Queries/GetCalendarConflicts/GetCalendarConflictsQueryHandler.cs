@@ -34,8 +34,11 @@ public class GetCalendarConflictsQueryHandler : IRequestHandler<GetCalendarConfl
                 request.FilterOptions, 
                 cancellationToken);
 
+            // Convert DetectedConflict to CalendarSyncConflict for filtering
+            var syncConflicts = allConflicts.Select(ConvertToSyncConflict).ToList();
+            
             // Apply additional filtering if needed
-            var filteredConflicts = ApplyFilters(allConflicts, request.FilterOptions).ToList();
+            var filteredConflicts = ApplyFilters(syncConflicts, request.FilterOptions).ToList();
 
             // Calculate statistics
             var statistics = CalculateConflictStatistics(filteredConflicts);
@@ -144,6 +147,28 @@ public class GetCalendarConflictsQueryHandler : IRequestHandler<GetCalendarConfl
             conflictsBySeverity,
             averageResolutionTime,
             autoResolutionRate
+        );
+    }
+
+    /// <summary>
+    /// Converts DetectedConflict to CalendarSyncConflict for compatibility
+    /// </summary>
+    private static CalendarSyncConflict ConvertToSyncConflict(DetectedConflict detected)
+    {
+        return new CalendarSyncConflict(
+            ConflictId: detected.ConflictId,
+            UserId: detected.UserId,
+            Provider: CalendarProvider.Google, // Default provider - would need actual logic
+            Type: detected.Type,
+            Severity: detected.Severity,
+            Title: $"Conflict detected: {detected.Type}",
+            Description: detected.Description,
+            InternalEvent: detected.InternalEvent,
+            ExternalEvent: detected.ExternalEvent,
+            ResolutionOptions: new List<ConflictResolutionOption>(), // Default empty - would need actual options
+            DetectedAt: detected.DetectedAt,
+            RequiresUserAction: detected.Severity == ConflictSeverity.High,
+            ConflictMetadata: detected.ConflictDetails
         );
     }
 }

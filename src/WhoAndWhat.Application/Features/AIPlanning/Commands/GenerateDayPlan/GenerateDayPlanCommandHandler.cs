@@ -49,7 +49,7 @@ public class GenerateDayPlanCommandHandler : IRequestHandler<GenerateDayPlanComm
             var filter = new TaskFilter
             {
                 UserId = request.UserId,
-                Status = AppTaskStatus.Active,
+                Statuses = new[] { AppTaskStatus.Pending, AppTaskStatus.InProgress, AppTaskStatus.Confirmed },
                 PageSize = 50,
                 PageNumber = 1
             };
@@ -106,7 +106,28 @@ public class GenerateDayPlanCommandHandler : IRequestHandler<GenerateDayPlanComm
                 request.FocusMode
             );
 
-            var aiPlan = await _aiPlanningService.GenerateDayPlanAsync(planningContext, cancellationToken);
+            // Create user preferences for AI planning
+            var userPreferences = new UserPlanningPreferences
+            {
+                UserId = request.UserId,
+                PreferredWorkingHours = new WorkingTimeRange
+                {
+                    StartTime = new TimeSpan(9, 0, 0), // 9 AM
+                    EndTime = new TimeSpan(17, 0, 0), // 5 PM
+                    IsEnabled = true
+                },
+                MaxTasksPerHour = 3,
+                BreakDurationMinutes = 15,
+                LunchBreakMinutes = 60,
+                PreferMorningWork = request.FocusMode == FocusMode.DeepWork
+            };
+
+            var aiPlan = await _aiPlanningService.GenerateDayPlanAsync(
+                request.UserId,
+                request.PlanDate,
+                userPreferences,
+                cancellationToken
+            );
 
             if (aiPlan == null)
             {

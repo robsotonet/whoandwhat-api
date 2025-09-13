@@ -37,25 +37,27 @@ public class ResolveCalendarConflictCommandHandler : IRequestHandler<ResolveCale
             if (isAlreadyResolved)
             {
                 return Result<ConflictResolutionResult>.Failure(
-                    $"Conflict {request.ConflictId} not found or does not belong to user {request.UserId}");
-            }
-
-            // Check if the conflict has already been resolved
-            if (!conflict.RequiresUserAction)
-            {
-                return Result<ConflictResolutionResult>.Failure(
                     $"Conflict {request.ConflictId} has already been resolved");
             }
 
-            // Validate the resolution action is appropriate for this conflict type
-            var validationResult = ValidateResolutionAction(conflict, request.Resolution);
+            // Validate the resolution before applying
+            var validationResult = await _conflictDetector.ValidateResolutionAsync(
+                request.UserId,
+                request.ConflictId,
+                request.Resolution,
+                cancellationToken);
+            
             if (!validationResult.IsValid)
             {
                 return Result<ConflictResolutionResult>.Failure(validationResult.ErrorMessage);
             }
 
-            // Execute the resolution
-            var resolutionResult = await ExecuteResolution(conflict, request.Resolution, cancellationToken);
+            // Execute the resolution using the conflict detector
+            var resolutionResult = await _conflictDetector.ApplyResolutionAsync(
+                request.UserId,
+                request.ConflictId,
+                request.Resolution,
+                cancellationToken);
 
             if (resolutionResult.Success)
             {
@@ -68,7 +70,22 @@ public class ResolveCalendarConflictCommandHandler : IRequestHandler<ResolveCale
                     request.ConflictId, resolutionResult.ErrorMessage);
             }
 
-            return Result<ConflictResolutionResult>.Success(resolutionResult);
+            // Convert ManualResolutionResult to ConflictResolutionResult
+            var conflictResolution = new ConflictResolutionResult(
+                ConflictId: request.ConflictId,
+                Success: resolutionResult.Success,
+                AppliedAction: request.Resolution.Action,
+                ResultMessage: resolutionResult.ResultMessage,
+                ResolvedAt: DateTime.UtcNow,
+                ResolutionMetadata: new Dictionary<string, object>
+                {
+                    ["UserId"] = request.UserId.ToString(),
+                    ["AutoResolved"] = false,
+                    ["ResolutionSource"] = "Manual"
+                }
+            );
+            
+            return Result<ConflictResolutionResult>.Success(conflictResolution);
         }
         catch (Exception ex)
         {

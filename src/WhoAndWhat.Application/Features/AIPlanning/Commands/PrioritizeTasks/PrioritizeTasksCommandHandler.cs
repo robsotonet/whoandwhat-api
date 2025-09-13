@@ -65,10 +65,10 @@ public class PrioritizeTasksCommandHandler : IRequestHandler<PrioritizeTasksComm
             );
 
             // Run AI prioritization analysis
-            var aiSuggestions = await _aiPlanningService.AnalyzeTaskPriorityAsync(
+            var aiSuggestions = await _aiPlanningService.GetTaskPrioritySuggestionsAsync(
+                request.UserId,
                 request.TaskAnalysisContexts,
                 enhancedContext,
-                request.MaxPrioritySuggestions,
                 cancellationToken
             );
 

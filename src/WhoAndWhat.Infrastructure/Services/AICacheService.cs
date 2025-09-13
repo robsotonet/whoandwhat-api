@@ -608,7 +608,7 @@ public class AICacheService : IAICacheService, IDisposable
     {
         using var sha256 = SHA256.Create();
         var hashBytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(content));
-        return Convert.ToHexString(hashBytes)[..32]; // Use first 32 characters for balance between key length and collision resistance
+        return Convert.ToHexString(hashBytes); // Use full SHA256 hash for maximum collision resistance
     }
 
     #endregion

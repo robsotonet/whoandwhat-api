@@ -1038,6 +1038,7 @@ public enum ConflictResolutionOption
 /// </summary>
 public enum CalendarProvider
 {
+    None,
     Google,
     Outlook,
     ICloud,

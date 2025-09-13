@@ -36,6 +36,8 @@ public class AppTask : BaseEntity
 
     public bool IsArchived { get; set; }
     public DateTime? ArchivedAt { get; set; }
+    public DateTime? CompletedAt { get; set; }
+    public string? Tags { get; set; } // Comma-separated tags for AI analysis
 
     public ICollection<Contact> Contacts { get; set; } = new List<Contact>();
     public ICollection<TaskContact> TaskContacts { get; set; } = new List<TaskContact>();
@@ -311,6 +313,7 @@ public class AppTask : BaseEntity
         if (CanBeCompleted())
         {
             Status = (int)AppTaskStatus.Completed;
+            CompletedAt = DateTime.UtcNow;
             UpdatedAt = DateTime.UtcNow;
             return true;
         }
