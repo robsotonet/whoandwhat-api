@@ -134,7 +134,7 @@ public sealed class GetDashboardMetricsQueryHandler
             var dayCompleted = completedTasks.Count(t => t.UpdatedAt.Date == date);
 
             // For creation count, we'd need to track CreatedAt - using a placeholder
-            var dayCreated = dayCompleted + new Random().Next(0, 3); // Placeholder logic
+            var dayCreated = dayCompleted + Random.Shared.Next(0, 3); // Placeholder logic
             var dayRate = dayCreated > 0 ? (double)dayCompleted / dayCreated : 0.0;
 
             last7Days.Add(new DailyProductivityPoint(
@@ -156,7 +156,7 @@ public sealed class GetDashboardMetricsQueryHandler
                 t.UpdatedAt >= weekStart && t.UpdatedAt < weekEnd);
 
             // Placeholder for created tasks
-            var weekCreated = weekCompleted + new Random().Next(0, 10);
+            var weekCreated = weekCompleted + Random.Shared.Next(0, 10);
             var weekRate = weekCreated > 0 ? (double)weekCompleted / weekCreated : 0.0;
             var avgPerDay = weekCompleted / 7.0;
 

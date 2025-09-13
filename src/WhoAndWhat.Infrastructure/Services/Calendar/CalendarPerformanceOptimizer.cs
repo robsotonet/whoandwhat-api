@@ -901,7 +901,7 @@ public class PerformanceMetrics
 
 public class RateLimiter
 {
-    private readonly SemaphoreSlim _semaphore;
+    private SemaphoreSlim _semaphore; // Made mutable for recreation pattern
     private readonly Timer _resetTimer;
     private readonly object _resetLock = new object();
     private int _currentRequests;
@@ -942,91 +942,29 @@ public class RateLimiter
                 Interlocked.Exchange(ref _currentRequests, 0);
                 NextResetTime = DateTime.UtcNow.AddMinutes(1);
 
-                // Safely reset semaphore to full capacity using iterative approach
-                // This eliminates race conditions by not relying on CurrentCount calculations
-                int permitsReleased = 0;
-                int maxIterations = RequestsPerMinute * 2; // Safety limit to prevent infinite loops
-                int iterations = 0;
+                // Use recreation pattern: dispose old semaphore and create new one
+                // This is much safer and cleaner than trying to reset permits
+                var oldSemaphore = _semaphore;
+                _semaphore = new SemaphoreSlim(RequestsPerMinute, RequestsPerMinute);
                 
-                while (permitsReleased < RequestsPerMinute && iterations < maxIterations)
-                {
-                    try
-                    {
-                        // Try to release one permit at a time until we reach capacity or get SemaphoreFullException
-                        _semaphore.Release(1);
-                        permitsReleased++;
-                    }
-                    catch (SemaphoreFullException)
-                    {
-                        // Semaphore is at full capacity - this is expected and means we're done
-                        break;
-                    }
-                    catch (ObjectDisposedException)
-                    {
-                        // Semaphore was disposed during reset - expected during shutdown
-                        try
-                        {
-                            _logger?.LogDebug("Semaphore reset interrupted - semaphore was disposed");
-                        }
-                        catch
-                        {
-                            // Ignore logging errors during disposal
-                        }
-                        return;
-                    }
-                    
-                    iterations++;
-                }
-                
-                // Log warning if we hit the safety limit
-                if (iterations >= maxIterations && permitsReleased < RequestsPerMinute)
-                {
-                    try
-                    {
-                        _logger?.LogWarning("Semaphore reset hit maximum iteration limit ({MaxIterations}). " +
-                            "Released {PermitsReleased} of {RequestsPerMinute} permits. This may indicate high concurrent usage.",
-                            maxIterations, permitsReleased, RequestsPerMinute);
-                    }
-                    catch
-                    {
-                        // Ignore logging errors during disposal
-                    }
-                }
-
+                // Dispose old semaphore safely
                 try
                 {
-                    _logger?.LogDebug("Rate limiter reset completed. Released {PermitsReleased} permits. " +
-                        "Current requests: {CurrentRequests}, Semaphore permits available: {AvailablePermits}",
-                        permitsReleased, _currentRequests, _semaphore.CurrentCount);
+                    oldSemaphore?.Dispose();
                 }
-                catch
+                catch (ObjectDisposedException)
                 {
-                    // Ignore logging errors during disposal
+                    // Expected during shutdown
                 }
             }
             catch (ObjectDisposedException)
             {
-                // Semaphore was disposed, this is expected during shutdown
-                try
-                {
-                    _logger?.LogDebug("Semaphore reset skipped - semaphore was disposed");
-                }
-                catch
-                {
-                    // Ignore logging errors during disposal
-                }
+                // Service is shutting down, nothing to do
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                try
-                {
-                    _logger?.LogError(ex, "Error during semaphore reset operation");
-                }
-                catch
-                {
-                    // Ignore logging errors during disposal
-                }
                 // Don't rethrow - this runs on a timer thread
+                // Silently ignore errors during reset operation
             }
         }
     }

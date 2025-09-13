@@ -378,15 +378,20 @@ public class TaskCacheService : ITaskCacheService
     {
         try
         {
-            // Get all keys with our prefix
+            // Get all keys with our prefix using SCAN for better performance
             var server = _redis.GetServer(_redis.GetEndPoints().First());
             var pattern = $"{_cacheSettings.KeyPrefix}:task:*";
-            var keys = server.Keys(_database.Database, pattern).ToArray();
-
-            if (keys.Length > 0)
+            var keysToDelete = new List<RedisKey>();
+            
+            await foreach (var key in ScanKeysAsync(server, pattern, cancellationToken: cancellationToken))
             {
-                await _database.KeyDeleteAsync(keys);
-                _logger.LogWarning("Cleared {KeyCount} task cache keys", keys.Length);
+                keysToDelete.Add(key);
+            }
+
+            if (keysToDelete.Count > 0)
+            {
+                await _database.KeyDeleteAsync(keysToDelete.ToArray());
+                _logger.LogWarning("Cleared {KeyCount} task cache keys", keysToDelete.Count);
             }
 
             return true;
@@ -402,15 +407,20 @@ public class TaskCacheService : ITaskCacheService
     {
         try
         {
-            // Remove all user task list variations (different filters)
+            // Remove all user task list variations (different filters) using SCAN
             var server = _redis.GetServer(_redis.GetEndPoints().First());
             var pattern = $"{_cacheSettings.KeyPrefix}:task:user:{userId}:list:*";
-            var keys = server.Keys(_database.Database, pattern).ToArray();
-
-            if (keys.Length > 0)
+            var keysToDelete = new List<RedisKey>();
+            
+            await foreach (var key in ScanKeysAsync(server, pattern, cancellationToken: cancellationToken))
             {
-                await _database.KeyDeleteAsync(keys);
-                _logger.LogDebug("Invalidated {KeyCount} user task list cache keys for user {UserId}", keys.Length, userId);
+                keysToDelete.Add(key);
+            }
+
+            if (keysToDelete.Count > 0)
+            {
+                await _database.KeyDeleteAsync(keysToDelete.ToArray());
+                _logger.LogDebug("Invalidated {KeyCount} user task list cache keys for user {UserId}", keysToDelete.Count, userId);
             }
         }
         catch (Exception ex)
@@ -434,7 +444,7 @@ public class TaskCacheService : ITaskCacheService
             // Keep only recent response times (last 1000 requests)
             if (_responseTimes.Count > 1000)
             {
-                _responseTimes.RemoveRange(0, _responseTimes.Count - 1000);
+                _responseTimes.RemoveRange(0, 100); // Remove in smaller batches for better performance
             }
         }
     }
@@ -461,6 +471,31 @@ public class TaskCacheService : ITaskCacheService
 
     private string GetUserSummaryCacheKey(Guid userId)
         => $"{_cacheSettings.KeyPrefix}:task:user:{userId}:summary";
+
+    private async IAsyncEnumerable<RedisKey> ScanKeysAsync(
+        IServer server, 
+        string pattern, 
+        int pageSize = 1000,
+        [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken = default)
+    {
+        long cursor = 0;
+        do
+        {
+            var scanResult = await server.ScanAsync(
+                database: _database.Database,
+                cursor: cursor,
+                pattern: pattern,
+                pageSize: pageSize);
+
+            cursor = scanResult.Cursor;
+
+            foreach (var key in scanResult.Items)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                yield return key;
+            }
+        } while (cursor != 0);
+    }
 
     public void Dispose()
     {

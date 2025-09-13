@@ -106,7 +106,7 @@ public class ScheduleOptimizationBackgroundService : BackgroundService
                     processedUsers++;
 
                     // Add small delay to avoid overwhelming the system
-                    await Task.Delay(TimeSpan.FromMilliseconds(200), cancellationToken);
+                    await Task.Delay(TimeSpan.FromMilliseconds(_settings.BackgroundServices.OptimizationBatchDelayMs), cancellationToken);
                 }
                 catch (Exception ex)
                 {
@@ -131,13 +131,17 @@ public class ScheduleOptimizationBackgroundService : BackgroundService
             // 1. Have active schedules
             // 2. Haven't been optimized recently
             // 3. Have enough activity data for meaningful optimization
-            var activeUsers = await userRepository.GetAllActiveUsersAsync(cancellationToken);
+            
+            // Use pagination to efficiently get active users without loading all into memory
+            var pageSize = _settings.BackgroundServices.OptimizationMaxUsersPerCycle;
+            const int pageNumber = 1; // Get first page of results
+
+            var activeUsers = await userRepository.GetActiveUsersPagedAsync(pageSize, pageNumber, cancellationToken);
 
             // Filter to users who might benefit from optimization
             var usersForOptimization = activeUsers
                 .Where(u => ShouldOptimizeUserSchedule(u.Id))
                 .Select(u => u.Id)
-                .Take(50) // Limit to 50 users per cycle
                 .ToList();
 
             return usersForOptimization;
@@ -157,9 +161,11 @@ public class ScheduleOptimizationBackgroundService : BackgroundService
         // - Schedule complexity
         // - User preferences for automatic optimization
 
-        // For now, use simple time-based logic
-        var random = new Random(userId.GetHashCode());
-        return random.NextDouble() < 0.1; // 10% chance per cycle
+        // For now, use simple time-based logic with Random.Shared for better performance
+        // Use userId hash to ensure deterministic selection for the same user in the same cycle
+        var hash = userId.GetHashCode();
+        var normalizedHash = (hash & 0x7FFFFFFF) / (double)int.MaxValue; // Normalize to 0-1 range
+        return normalizedHash < _settings.BackgroundServices.OptimizationSelectionProbability;
     }
 
     private async Task<bool> HasActiveScheduleAsync(Guid userId, CancellationToken cancellationToken)

@@ -188,10 +188,11 @@ public class UserSchedulingPreferenceService : IUserSchedulingPreferenceService,
             var userRecords = _activityRecords.GetOrAdd(userId, _ => new List<SchedulingActivityRecord>());
             userRecords.Add(activityRecord);
 
-            // Keep only the last 100 records per user
-            if (userRecords.Count > 100)
+            // Keep only the last records per user based on configuration
+            var maxRecords = _settings.BackgroundServices.MaxTaskRecordsPerUser;
+            if (userRecords.Count > maxRecords)
             {
-                userRecords.RemoveRange(0, userRecords.Count - 100);
+                userRecords.RemoveRange(0, userRecords.Count - maxRecords);
             }
 
             // Persist to storage (would implement actual database persistence here)
@@ -356,23 +357,23 @@ public class UserSchedulingPreferenceService : IUserSchedulingPreferenceService,
             var defaultPreferences = new SmartSchedulingPreferences(
                 userId,
                 new WorkingHours(
-                    TimeSpan.FromHours(9),   // 9 AM start
-                    TimeSpan.FromHours(17),  // 5 PM end
+                    TimeSpan.FromHours(_settings.BackgroundServices.DefaultWorkingHoursStartHour),
+                    TimeSpan.FromHours(_settings.BackgroundServices.DefaultWorkingHoursEndHour),
                     new List<DayOfWeek> { DayOfWeek.Monday, DayOfWeek.Tuesday, DayOfWeek.Wednesday, DayOfWeek.Thursday, DayOfWeek.Friday },
-                    TimeSpan.FromHours(12),  // Lunch at noon
-                    TimeSpan.FromMinutes(60), // 1 hour lunch
+                    TimeSpan.FromHours(_settings.BackgroundServices.DefaultLunchTimeHour),
+                    TimeSpan.FromMinutes(_settings.BackgroundServices.DefaultLunchDurationMinutes),
                     false
                 ),
                 new List<TimeSpan> { TimeSpan.FromHours(10.5), TimeSpan.FromHours(15) }, // 10:30 AM and 3 PM breaks
                 3,                        // Max tasks per time block
-                TimeSpan.FromMinutes(15), // Minimum task duration
-                TimeSpan.FromHours(4),    // Maximum task duration
+                TimeSpan.FromMinutes(_settings.DefaultMinimumTaskDurationMinutes),
+                TimeSpan.FromHours(_settings.DefaultMaximumTaskDurationHours),
                 new List<string> { "Work", "Personal", "Administrative" }, // Preferred categories
                 ProductivityPatterns.Consistent, // Default pattern
                 false,                    // Don't allow overlapping tasks
                 true,                     // Prefer morning tasks
                 true,                     // Require buffer time
-                TimeSpan.FromMinutes(15), // 15-minute buffer
+                TimeSpan.FromMinutes(_settings.DefaultBufferTimeMinutes),
                 new List<ScheduleConstraint>() // No custom constraints initially
             );
 
@@ -460,7 +461,7 @@ public class UserSchedulingPreferenceService : IUserSchedulingPreferenceService,
                 IncludeArchived = true
             };
 
-            var pagedTasks = await _taskRepository.SearchAsync(searchCriteria, 1, 1000, "CreatedAt", false);
+            var pagedTasks = await _taskRepository.SearchAsync(searchCriteria, 1, _settings.BackgroundServices.MaxTasksForPatternAnalysis, "CreatedAt", false);
             return pagedTasks.Items.ToList();
         }
         catch (Exception ex)

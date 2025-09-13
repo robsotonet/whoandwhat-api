@@ -129,11 +129,14 @@ public class GenerateInviteCodeCommandHandler : IRequestHandler<GenerateInviteCo
             result.Append(base32Chars[hashBytes[i] % base32Chars.Length]);
         }
 
-        // Add a random 4-character suffix for additional uniqueness
-        var random = new Random();
+        // Add a random 4-character suffix for additional uniqueness using secure random generation
+        using var rng = System.Security.Cryptography.RandomNumberGenerator.Create();
+        var randomBytes = new byte[4];
+        rng.GetBytes(randomBytes);
+        
         for (int i = 0; i < 4; i++)
         {
-            result.Append(base32Chars[random.Next(base32Chars.Length)]);
+            result.Append(base32Chars[randomBytes[i] % base32Chars.Length]);
         }
 
         // Format as XXXX-XXXX-XXXX for readability

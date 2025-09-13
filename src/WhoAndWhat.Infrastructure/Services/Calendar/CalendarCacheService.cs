@@ -811,7 +811,7 @@ public class CalendarCacheService : ICalendarCacheService, IDisposable
                 var server = _redis.GetServer(endpoint);
                 if (server.IsConnected)
                 {
-                    await foreach (var key in server.KeysAsync(_settings.DatabaseIndex, pattern))
+                    await foreach (var key in ScanKeysAsync(server, pattern))
                     {
                         keys.Add(key);
                     }
@@ -825,6 +825,62 @@ public class CalendarCacheService : ICalendarCacheService, IDisposable
         }
 
         return keys.ToArray();
+    }
+
+    /// <summary>
+    /// Efficiently scan Redis keys using cursor-based SCAN operation instead of blocking KEYS command
+    /// This approach is production-safe and doesn't block the Redis server
+    /// </summary>
+    private async IAsyncEnumerable<RedisKey> ScanKeysAsync(IServer server, string pattern, int pageSize = 1000)
+    {
+        if (server == null || !server.IsConnected)
+        {
+            yield break;
+        }
+
+        long cursor = 0;
+        var scanOptions = new ScanOptions
+        {
+            Match = pattern,
+            PageSize = pageSize
+        };
+
+        try
+        {
+            do
+            {
+                // Use SCAN command which is cursor-based and non-blocking
+                var scanResult = await server.ScanAsync(
+                    database: _settings.DatabaseIndex,
+                    cursor: cursor,
+                    pattern: pattern,
+                    pageSize: pageSize);
+
+                cursor = scanResult.Cursor;
+
+                // Yield each key found in this scan iteration
+                foreach (var key in scanResult.Items)
+                {
+                    yield return key;
+                }
+
+                // Add small delay to prevent overwhelming Redis during large scans
+                if (cursor != 0 && scanResult.Items.Any())
+                {
+                    await Task.Delay(1, CancellationToken.None);
+                }
+            }
+            while (cursor != 0); // Continue until cursor returns to 0 (scan complete)
+        }
+        catch (RedisException ex)
+        {
+            _logger.LogWarning(ex, "Redis SCAN operation failed for pattern {Pattern} on server {EndPoint}", 
+                pattern, server.EndPoint);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unexpected error during Redis SCAN operation for pattern {Pattern}", pattern);
+        }
     }
 
     private string GetCacheTypePrefix(CalendarCacheType cacheType)

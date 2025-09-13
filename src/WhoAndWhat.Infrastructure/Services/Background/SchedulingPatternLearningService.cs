@@ -100,7 +100,7 @@ public class SchedulingPatternLearningService : BackgroundService
                     processedUsers++;
 
                     // Add small delay to avoid overwhelming the system
-                    await Task.Delay(TimeSpan.FromMilliseconds(100), cancellationToken);
+                    await Task.Delay(TimeSpan.FromMilliseconds(_settings.BackgroundServices.PatternLearningBatchDelayMs), cancellationToken);
                 }
                 catch (Exception ex)
                 {
@@ -121,10 +121,12 @@ public class SchedulingPatternLearningService : BackgroundService
     {
         try
         {
-            // In a real implementation, this would get users who have been active recently
-            // For now, return a limited set of users to avoid performance issues
-            var users = await userRepository.GetAllActiveUsersAsync(cancellationToken);
-            return users.Take(100).Select(u => u.Id).ToList(); // Limit to 100 users per cycle
+            // Use pagination to efficiently get active users without loading all into memory
+            var pageSize = _settings.BackgroundServices.PatternLearningMaxUsersPerCycle;
+            const int pageNumber = 1; // Get first page of results
+
+            var users = await userRepository.GetActiveUsersPagedAsync(pageSize, pageNumber, cancellationToken);
+            return users.Select(u => u.Id).ToList();
         }
         catch (Exception ex)
         {

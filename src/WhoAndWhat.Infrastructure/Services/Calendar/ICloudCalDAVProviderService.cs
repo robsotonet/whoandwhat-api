@@ -968,54 +968,66 @@ public class ICloudCalDAVProviderService : ICalendarProviderService, IDisposable
         try
         {
             // Basic iCalendar parsing - in a real implementation, you'd use a proper iCalendar library
-            var lines = iCalData.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+            // Use ReadOnlySpan for efficient string parsing without allocations
+            var iCalSpan = iCalData.AsSpan();
             ExternalCalendarEvent? currentEvent = null;
             var eventBuilder = new Dictionary<string, string>();
 
-            foreach (var line in lines)
+            // Parse lines using ReadOnlySpan to avoid string allocations
+            var remainingSpan = iCalSpan;
+            while (!remainingSpan.IsEmpty)
             {
-                var trimmedLine = line.Trim();
+                var lineEndIndex = remainingSpan.IndexOf('\n');
+                var lineSpan = lineEndIndex >= 0 ? remainingSpan[..lineEndIndex] : remainingSpan;
+                var trimmedSpan = lineSpan.Trim();
 
-                if (trimmedLine.StartsWith("BEGIN:VEVENT"))
+                if (!trimmedSpan.IsEmpty)
                 {
-                    eventBuilder.Clear();
-                }
-                else if (trimmedLine.StartsWith("END:VEVENT"))
-                {
-                    if (eventBuilder.Count > 0)
+                    if (trimmedSpan.StartsWith("BEGIN:VEVENT".AsSpan(), StringComparison.Ordinal))
                     {
-                        var parsedEvent = BuildEventFromProperties(eventBuilder);
-                        if (parsedEvent != null)
+                        eventBuilder.Clear();
+                    }
+                    else if (trimmedSpan.StartsWith("END:VEVENT".AsSpan(), StringComparison.Ordinal))
+                    {
+                        if (eventBuilder.Count > 0)
                         {
-                            events.Add(parsedEvent);
+                            var parsedEvent = BuildEventFromProperties(eventBuilder);
+                            if (parsedEvent != null)
+                            {
+                                events.Add(parsedEvent);
+                            }
+                        }
+                        eventBuilder.Clear();
+                    }
+                    else
+                    {
+                        var colonIndex = trimmedSpan.IndexOf(':');
+                        if (colonIndex >= 0 && colonIndex < trimmedSpan.Length - 1)
+                        {
+                            var property = trimmedSpan[..colonIndex].ToString();
+                            var value = trimmedSpan[(colonIndex + 1)..].ToString();
+
+                            // Handle property parameters (e.g., DTSTART;VALUE=DATE:20230101)
+                            var propertyParts = property.Split(';');
+                            var propertyName = propertyParts[0];
+
+                            // Only add non-empty property names
+                            if (!string.IsNullOrWhiteSpace(propertyName))
+                            {
+                                eventBuilder[propertyName] = value;
+                            }
                         }
                     }
-                    eventBuilder.Clear();
                 }
-                else if (trimmedLine.Contains(':'))
+
+                // Advance to next line
+                if (lineEndIndex >= 0)
                 {
-                    var colonIndex = trimmedLine.IndexOf(':');
-
-                    // Validate that colon was found (IndexOf returns -1 if not found)
-                    // Note: colonIndex < trimmedLine.Length is always true when IndexOf succeeds
-                    if (colonIndex >= 0)
-                    {
-                        var property = trimmedLine.Substring(0, colonIndex);
-                        
-                        // Extract value after colon - Substring automatically handles edge cases
-                        // When colonIndex + 1 == trimmedLine.Length (colon at end), Substring returns empty string
-                        var value = trimmedLine.Substring(colonIndex + 1);
-
-                        // Handle property parameters (e.g., DTSTART;VALUE=DATE:20230101)
-                        var propertyParts = property.Split(';');
-                        var propertyName = propertyParts[0];
-
-                        // Only add non-empty property names
-                        if (!string.IsNullOrWhiteSpace(propertyName))
-                        {
-                            eventBuilder[propertyName] = value;
-                        }
-                    }
+                    remainingSpan = remainingSpan[(lineEndIndex + 1)..];
+                }
+                else
+                {
+                    break; // No more lines
                 }
             }
         }

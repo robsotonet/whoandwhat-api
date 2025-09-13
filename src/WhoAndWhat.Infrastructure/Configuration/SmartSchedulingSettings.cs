@@ -94,6 +94,11 @@ public class SmartSchedulingSettings
     /// Time block optimization settings
     /// </summary>
     public TimeBlockSettings TimeBlocks { get; set; } = new();
+
+    /// <summary>
+    /// Background service settings
+    /// </summary>
+    public BackgroundServiceSettings BackgroundServices { get; set; } = new();
 }
 
 /// <summary>
@@ -330,4 +335,70 @@ public class SchedulingPerformanceSettings
     /// Performance alert threshold for schedule generation (in seconds)
     /// </summary>
     public int PerformanceAlertThresholdSeconds { get; set; } = 15;
+}
+
+/// <summary>
+/// Background service configuration settings
+/// </summary>
+public class BackgroundServiceSettings
+{
+    /// <summary>
+    /// Delay between processing batches in pattern learning service (milliseconds)
+    /// </summary>
+    public int PatternLearningBatchDelayMs { get; set; } = 100;
+
+    /// <summary>
+    /// Maximum number of users to process per pattern learning cycle
+    /// </summary>
+    public int PatternLearningMaxUsersPerCycle { get; set; } = 100;
+
+    /// <summary>
+    /// Delay between processing batches in optimization service (milliseconds)
+    /// </summary>
+    public int OptimizationBatchDelayMs { get; set; } = 200;
+
+    /// <summary>
+    /// Maximum number of users to process per optimization cycle
+    /// </summary>
+    public int OptimizationMaxUsersPerCycle { get; set; } = 50;
+
+    /// <summary>
+    /// Percentage chance a user will be selected for optimization per cycle (0.0 to 1.0)
+    /// </summary>
+    public double OptimizationSelectionProbability { get; set; } = 0.1;
+
+    /// <summary>
+    /// Maximum number of task records to keep per user for pattern analysis
+    /// </summary>
+    public int MaxTaskRecordsPerUser { get; set; } = 100;
+
+    /// <summary>
+    /// Maximum number of tasks to query for pattern analysis
+    /// </summary>
+    public int MaxTasksForPatternAnalysis { get; set; } = 1000;
+
+    /// <summary>
+    /// Default working hours start time (hours from midnight)
+    /// </summary>
+    public int DefaultWorkingHoursStartHour { get; set; } = 9;
+
+    /// <summary>
+    /// Default working hours end time (hours from midnight)
+    /// </summary>
+    public int DefaultWorkingHoursEndHour { get; set; } = 17;
+
+    /// <summary>
+    /// Default lunch time (hours from midnight)
+    /// </summary>
+    public int DefaultLunchTimeHour { get; set; } = 12;
+
+    /// <summary>
+    /// Default lunch duration in minutes
+    /// </summary>
+    public int DefaultLunchDurationMinutes { get; set; } = 60;
+
+    /// <summary>
+    /// Default working hours change threshold in minutes
+    /// </summary>
+    public int WorkingHoursChangeThresholdMinutes { get; set; } = 30;
 }

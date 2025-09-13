@@ -24,4 +24,29 @@ public interface IUserRepository : IRepository<User>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>True if username exists, false otherwise</returns>
     public System.Threading.Tasks.Task<bool> UsernameExistsAsync(string username, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Gets all active users (users who have been active recently)
+    /// This method is inefficient for large datasets - use GetActiveUsersPagedAsync instead
+    /// </summary>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>List of all active users</returns>
+    [Obsolete("This method loads all users into memory. Use GetActiveUsersPagedAsync for better performance.")]
+    public System.Threading.Tasks.Task<IEnumerable<User>> GetAllActiveUsersAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Gets active users with pagination support for better performance
+    /// </summary>
+    /// <param name="pageSize">Number of users to return per page</param>
+    /// <param name="pageNumber">Page number (1-based)</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Paged list of active users</returns>
+    public System.Threading.Tasks.Task<IEnumerable<User>> GetActiveUsersPagedAsync(int pageSize, int pageNumber, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Gets count of active users for pagination calculations
+    /// </summary>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Total count of active users</returns>
+    public System.Threading.Tasks.Task<int> GetActiveUsersCountAsync(CancellationToken cancellationToken = default);
 }
