@@ -2,28 +2,42 @@ using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using WhoAndWhat.Application.DTOs.SmartScheduling;
 using WhoAndWhat.Application.Interfaces;
-using WhoAndWhat.Domain.Repositories;
+using WhoAndWhat.Domain.Entities;
 
 namespace WhoAndWhat.Infrastructure.Services.SmartScheduling;
 
 /// <summary>
 /// Service for managing user scheduling preferences and learning from user patterns
+/// Implements machine learning algorithms to adapt to user behavior and optimize scheduling
 /// </summary>
 public sealed class UserSchedulingPreferenceService : IUserSchedulingPreferenceService
 {
     private readonly ILogger<UserSchedulingPreferenceService> _logger;
     private readonly IMemoryCache _cache;
-    private readonly IUserRepository _userRepository;
+    private readonly IUserSchedulingPreferenceRepository _preferenceRepository;
+    private readonly ISchedulingPatternRepository _patternRepository;
+    private readonly ITaskRepository _taskRepository;
+    
+    // Learning constants for preference adaptation
+    private const double LEARNING_RATE = 0.1;
+    private const double PATTERN_CONFIDENCE_THRESHOLD = 0.7;
+    private const int MIN_PATTERN_OCCURRENCES = 5;
+    private const int ANALYSIS_DAYS_DEFAULT = 30;
+    private const double PRODUCTIVITY_CORRELATION_THRESHOLD = 0.6;
     private static readonly TimeSpan CacheExpiry = TimeSpan.FromHours(4);
 
     public UserSchedulingPreferenceService(
         ILogger<UserSchedulingPreferenceService> logger,
         IMemoryCache cache,
-        IUserRepository userRepository)
+        IUserSchedulingPreferenceRepository preferenceRepository,
+        ISchedulingPatternRepository patternRepository,
+        ITaskRepository taskRepository)
     {
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _cache = cache ?? throw new ArgumentNullException(nameof(cache));
-        _userRepository = userRepository ?? throw new ArgumentNullException(nameof(userRepository));
+        _preferenceRepository = preferenceRepository ?? throw new ArgumentNullException(nameof(preferenceRepository));
+        _patternRepository = patternRepository ?? throw new ArgumentNullException(nameof(patternRepository));
+        _taskRepository = taskRepository ?? throw new ArgumentNullException(nameof(taskRepository));
     }
 
     public async Task<SmartSchedulingPreferences> GetUserPreferencesAsync(
@@ -41,15 +55,15 @@ public sealed class UserSchedulingPreferenceService : IUserSchedulingPreferenceS
 
         try
         {
-            // In a real implementation, this would fetch from database
-            var preferences = await LoadUserPreferencesFromStorageAsync(userId, cancellationToken);
+            var preferenceEntity = await _preferenceRepository.GetByUserIdAsync(userId, cancellationToken);
             
-            if (preferences == null)
+            if (preferenceEntity == null)
             {
                 _logger.LogInformation("No preferences found for user {UserId}, initializing defaults", userId);
-                preferences = await InitializeDefaultPreferencesAsync(userId, "UTC", cancellationToken);
+                return await InitializeDefaultPreferencesAsync(userId, "UTC", cancellationToken);
             }
 
+            var preferences = MapToDto(preferenceEntity);
             _cache.Set(cacheKey, preferences, CacheExpiry);
             return preferences;
         }
@@ -69,15 +83,31 @@ public sealed class UserSchedulingPreferenceService : IUserSchedulingPreferenceS
 
         try
         {
-            var updatedPreferences = preferences with { UserId = userId };
-            
-            // Save to storage (database)
-            await SaveUserPreferencesToStorageAsync(updatedPreferences, cancellationToken);
-            
-            // Update cache
-            var cacheKey = $"scheduling_preferences_{userId}";
-            _cache.Set(cacheKey, updatedPreferences, CacheExpiry);
-            
+            var existingPreferences = await _preferenceRepository.GetByUserIdAsync(userId, cancellationToken);
+            if (existingPreferences == null)
+            {
+                // Create new preferences if none exist
+                var newEntity = MapToEntity(userId, preferences);
+                await _preferenceRepository.AddAsync(newEntity, cancellationToken);
+                await _preferenceRepository.SaveChangesAsync(cancellationToken);
+                
+                var newPreferences = MapToDto(newEntity);
+                var cacheKey = $"scheduling_preferences_{userId}";
+                _cache.Set(cacheKey, newPreferences, CacheExpiry);
+                
+                _logger.LogInformation("Created new preferences for user {UserId}", userId);
+                return newPreferences;
+            }
+
+            // Update existing preferences
+            UpdateEntityFromDto(existingPreferences, preferences);
+            await _preferenceRepository.UpdateAsync(existingPreferences, cancellationToken);
+            await _preferenceRepository.SaveChangesAsync(cancellationToken);
+
+            var updatedPreferences = MapToDto(existingPreferences);
+            var cacheKey2 = $"scheduling_preferences_{userId}";
+            _cache.Set(cacheKey2, updatedPreferences, CacheExpiry);
+
             _logger.LogInformation("Successfully updated scheduling preferences for user {UserId}", userId);
             return updatedPreferences;
         }
@@ -99,27 +129,71 @@ public sealed class UserSchedulingPreferenceService : IUserSchedulingPreferenceS
 
         try
         {
-            var analysisPeriod = endDate - startDate;
-            
-            // Analyze historical scheduling data
-            var historicalData = await GetHistoricalSchedulingDataAsync(userId, startDate, endDate, cancellationToken);
-            
-            // Detect productivity patterns
-            var detectedPatterns = DetectProductivityPatterns(historicalData);
-            
-            // Identify scheduling patterns
-            var schedulingPatterns = IdentifySchedulingPatterns(historicalData);
-            
-            // Generate insights
-            var insights = GenerateSchedulingInsights(historicalData, schedulingPatterns);
-            
+            // Get user's completed tasks in the date range
+            var tasks = await _taskRepository.GetCompletedTasksByDateRangeAsync(userId, startDate, endDate, cancellationToken);
+            var patterns = new List<DetectedPattern>();
+
+            // Analyze productivity patterns by time of day
+            var productivityByHour = AnalyzeProductivityByTimeOfDay(tasks);
+            if (productivityByHour.Any())
+            {
+                patterns.Add(new DetectedPattern(
+                    "ProductivityByTimeOfDay",
+                    "Time-based productivity patterns detected",
+                    productivityByHour.Max(x => x.Value),
+                    productivityByHour.Select(kv => new PatternInsight(
+                        $"Hour {kv.Key}",
+                        kv.Value,
+                        kv.Value > 0.7 ? "High productivity period" : "Lower productivity period"
+                    )).ToList(),
+                    DateTime.UtcNow
+                ));
+            }
+
+            // Analyze category-based patterns
+            var categoryPatterns = AnalyzeCategoryPatterns(tasks);
+            if (categoryPatterns.Any())
+            {
+                patterns.Add(new DetectedPattern(
+                    "CategoryProductivity",
+                    "Task category productivity patterns",
+                    categoryPatterns.Max(x => x.Value),
+                    categoryPatterns.Select(kv => new PatternInsight(
+                        $"Category {kv.Key}",
+                        kv.Value,
+                        $"Average completion time: {kv.Value:F1} hours"
+                    )).ToList(),
+                    DateTime.UtcNow
+                ));
+            }
+
+            // Analyze weekly patterns
+            var weeklyPatterns = AnalyzeWeeklyPatterns(tasks);
+            if (weeklyPatterns.Any())
+            {
+                patterns.Add(new DetectedPattern(
+                    "WeeklyProductivity",
+                    "Day of week productivity patterns",
+                    weeklyPatterns.Max(x => x.Value),
+                    weeklyPatterns.Select(kv => new PatternInsight(
+                        kv.Key.ToString(),
+                        kv.Value,
+                        $"Productivity score: {kv.Value:F2}"
+                    )).ToList(),
+                    DateTime.UtcNow
+                ));
+            }
+
+            var insights = GeneratePatternInsights(patterns);
+            var recommendations = GenerateRecommendations(patterns, userId);
+
             return new UserSchedulingPatternsResponse(
-                UserId: userId,
-                AnalysisPeriod: analysisPeriod,
-                DetectedPatterns: detectedPatterns,
-                Patterns: schedulingPatterns,
-                Insights: insights,
-                AnalyzedAt: DateTime.UtcNow
+                userId,
+                new AnalysisTimeframe(startDate, endDate, TimeframePeriod.Daily),
+                patterns,
+                insights,
+                recommendations,
+                DateTime.UtcNow
             );
         }
         catch (Exception ex)
@@ -133,21 +207,51 @@ public sealed class UserSchedulingPreferenceService : IUserSchedulingPreferenceS
         Guid userId, 
         CancellationToken cancellationToken = default)
     {
-        var cacheKey = $"scheduling_patterns_{userId}";
-        
-        if (_cache.TryGetValue(cacheKey, out UserSchedulingPatternsResponse? cachedPatterns))
-        {
-            return cachedPatterns!;
-        }
+        _logger.LogInformation("Getting cached scheduling patterns for user {UserId}", userId);
 
-        // If not cached, analyze last 30 days
-        var endDate = DateTime.UtcNow;
-        var startDate = endDate.AddDays(-30);
-        
-        var patterns = await AnalyzeSchedulingPatternsAsync(userId, startDate, endDate, cancellationToken);
-        
-        _cache.Set(cacheKey, patterns, TimeSpan.FromHours(12)); // Cache for 12 hours
-        return patterns;
+        try
+        {
+            // Try to get recent patterns from cache or database
+            var recentPatterns = await _patternRepository.GetActivePatternsByUserAsync(userId, cancellationToken);
+            
+            if (!recentPatterns.Any())
+            {
+                // No patterns found, analyze recent data
+                var endDate = DateTime.UtcNow;
+                var startDate = endDate.AddDays(-ANALYSIS_DAYS_DEFAULT);
+                return await AnalyzeSchedulingPatternsAsync(userId, startDate, endDate, cancellationToken);
+            }
+
+            // Convert stored patterns to response format
+            var patterns = recentPatterns.Select(p => new DetectedPattern(
+                p.PatternType,
+                p.Description,
+                p.SuccessRate,
+                new List<PatternInsight>
+                {
+                    new PatternInsight(
+                        p.PatternType,
+                        p.SuccessRate,
+                        $"Confidence: {p.ConfidenceScore:F2}, Reinforcements: {p.ReinforcementCount}"
+                    )
+                },
+                p.LastReinforced ?? p.CreatedAt
+            )).ToList();
+
+            return new UserSchedulingPatternsResponse(
+                userId,
+                new AnalysisTimeframe(DateTime.UtcNow.AddDays(-30), DateTime.UtcNow, TimeframePeriod.Monthly),
+                patterns,
+                new List<string> { "Using cached pattern data" },
+                new List<string> { "Keep building consistent scheduling habits" },
+                DateTime.UtcNow
+            );
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting patterns for user {UserId}", userId);
+            throw;
+        }
     }
 
     public async Task RecordSchedulingActivityAsync(
@@ -155,31 +259,37 @@ public sealed class UserSchedulingPreferenceService : IUserSchedulingPreferenceS
         List<SmartScheduledItem> scheduledItems, 
         CancellationToken cancellationToken = default)
     {
-        _logger.LogInformation("Recording scheduling activity for user {UserId} with {ItemCount} items", 
-            userId, scheduledItems.Count);
+        _logger.LogInformation("Recording scheduling activity for user {UserId} with {Count} items", userId, scheduledItems.Count);
 
         try
         {
-            // In a real implementation, this would save to a scheduling activity log
-            var activityLog = new SchedulingActivityLog(
-                UserId: userId,
-                Timestamp: DateTime.UtcNow,
-                ScheduledItems: scheduledItems,
-                SessionType: "Smart Scheduling",
-                Metadata: new Dictionary<string, object>
+            foreach (var item in scheduledItems)
+            {
+                // Create or update scheduling patterns based on this activity
+                var patterns = await DetectPatternsFromActivity(userId, item, cancellationToken);
+                
+                foreach (var pattern in patterns)
                 {
-                    ["item_count"] = scheduledItems.Count,
-                    ["categories"] = scheduledItems.Select(i => i.Category).Distinct().ToList(),
-                    ["total_duration"] = scheduledItems.Sum(i => i.EstimatedDuration.TotalMinutes)
+                    var existingPattern = await _patternRepository.GetOptimizationEligiblePatternsAsync(userId, cancellationToken);
+                    var matching = existingPattern.FirstOrDefault(p => p.PatternType == pattern.PatternType && 
+                                                                        p.Context.ContainsKey("category") && 
+                                                                        p.Context["category"].ToString() == pattern.Context["category"].ToString());
+                    
+                    if (matching != null)
+                    {
+                        // Reinforce existing pattern
+                        matching.Reinforce(0.8); // Default reinforcement score
+                        await _patternRepository.UpdateAsync(matching, cancellationToken);
+                    }
+                    else
+                    {
+                        // Add new pattern
+                        await _patternRepository.AddAsync(pattern, cancellationToken);
+                    }
                 }
-            );
+            }
 
-            await SaveActivityLogAsync(activityLog, cancellationToken);
-            
-            // Invalidate patterns cache to trigger reanalysis
-            var cacheKey = $"scheduling_patterns_{userId}";
-            _cache.Remove(cacheKey);
-            
+            await _patternRepository.SaveChangesAsync(cancellationToken);
             _logger.LogInformation("Successfully recorded scheduling activity for user {UserId}", userId);
         }
         catch (Exception ex)
@@ -195,24 +305,36 @@ public sealed class UserSchedulingPreferenceService : IUserSchedulingPreferenceS
         ScheduleFeedback feedback, 
         CancellationToken cancellationToken = default)
     {
-        _logger.LogInformation("Recording schedule feedback for user {UserId}, schedule {ScheduleId}", 
-            userId, scheduleId);
+        _logger.LogInformation("Recording schedule feedback for user {UserId}, schedule {ScheduleId}", userId, scheduleId);
 
         try
         {
-            var feedbackRecord = new ScheduleFeedbackRecord(
-                Id: Guid.NewGuid(),
-                UserId: userId,
-                ScheduleId: scheduleId,
-                Feedback: feedback,
-                RecordedAt: DateTime.UtcNow
-            );
+            // Use feedback to adjust user preferences and patterns
+            var preferences = await _preferenceRepository.GetByUserIdAsync(userId, cancellationToken);
+            if (preferences != null)
+            {
+                // Adjust optimization weights based on feedback
+                AdjustPreferencesFromFeedback(preferences, feedback);
+                await _preferenceRepository.UpdateAsync(preferences, cancellationToken);
+            }
 
-            await SaveFeedbackRecordAsync(feedbackRecord, cancellationToken);
-            
-            // Use feedback to improve future scheduling
-            await ApplyFeedbackToPreferencesAsync(userId, feedback, cancellationToken);
-            
+            // Reinforce or penalize patterns based on feedback quality
+            var patterns = await _patternRepository.GetActivePatternsByUserAsync(userId, cancellationToken);
+            foreach (var pattern in patterns)
+            {
+                var adjustmentScore = CalculateFeedbackAdjustment(feedback);
+                if (adjustmentScore > 0.5)
+                {
+                    pattern.Reinforce(adjustmentScore);
+                }
+                else if (adjustmentScore < -0.3)
+                {
+                    pattern.RecordViolation();
+                }
+                await _patternRepository.UpdateAsync(pattern, cancellationToken);
+            }
+
+            await _patternRepository.SaveChangesAsync(cancellationToken);
             _logger.LogInformation("Successfully recorded schedule feedback for user {UserId}", userId);
         }
         catch (Exception ex)
@@ -230,23 +352,47 @@ public sealed class UserSchedulingPreferenceService : IUserSchedulingPreferenceS
 
         try
         {
-            var currentPreferences = await GetUserPreferencesAsync(userId, cancellationToken);
-            var patterns = await GetUserSchedulingPatternsAsync(userId, cancellationToken);
-            
-            // Learn from patterns and update preferences
-            var updatedPreferences = ApplyLearningsToPreferences(currentPreferences, patterns);
-            
-            if (!PreferencesAreEqual(currentPreferences, updatedPreferences))
+            var preferences = await _preferenceRepository.GetByUserIdAsync(userId, cancellationToken);
+            if (preferences == null)
             {
-                await UpdatePreferencesAsync(userId, updatedPreferences, cancellationToken);
-                _logger.LogInformation("Updated preferences for user {UserId} based on learned patterns", userId);
+                return await InitializeDefaultPreferencesAsync(userId, "UTC", cancellationToken);
             }
+
+            // Analyze recent patterns to learn preferences
+            var patterns = await _patternRepository.GetReliablePatternsByUserAsync(userId, cancellationToken);
+            var recentTasks = await _taskRepository.GetTasksByUserAsync(userId, 1, 100, cancellationToken);
+
+            // Learn optimal working hours
+            var optimalHours = LearnOptimalWorkingHours(recentTasks.Items);
+            if (optimalHours.start.HasValue && optimalHours.end.HasValue)
+            {
+                preferences.WorkingStartTime = optimalHours.start.Value;
+                preferences.WorkingEndTime = optimalHours.end.Value;
+            }
+
+            // Learn break preferences
+            var breakPatterns = LearnBreakPatterns(patterns);
+            if (breakPatterns.Any())
+            {
+                preferences.SetPreferredBreakTimes(breakPatterns);
+            }
+
+            // Update productivity scores based on recent performance
+            var productivityInsights = await GetProductivityInsightsAsync(userId, 
+                new AnalysisTimeframe(DateTime.UtcNow.AddDays(-14), DateTime.UtcNow, TimeframePeriod.Daily), 
+                cancellationToken);
             
-            return updatedPreferences;
+            preferences.UpdateProductivityScore(productivityInsights.AverageProductivityScore);
+
+            await _preferenceRepository.UpdateAsync(preferences, cancellationToken);
+            await _preferenceRepository.SaveChangesAsync(cancellationToken);
+
+            _logger.LogInformation("Successfully learned and updated preferences for user {UserId}", userId);
+            return MapToDto(preferences);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error learning and updating preferences for user {UserId}", userId);
+            _logger.LogError(ex, "Error learning preferences for user {UserId}", userId);
             throw;
         }
     }
@@ -256,36 +402,32 @@ public sealed class UserSchedulingPreferenceService : IUserSchedulingPreferenceS
         AnalysisTimeframe timeframe, 
         CancellationToken cancellationToken = default)
     {
-        _logger.LogInformation("Getting productivity insights for user {UserId} for period {Period}", 
-            userId, timeframe.Period);
+        _logger.LogInformation("Getting productivity insights for user {UserId}", userId);
 
         try
         {
-            var historicalData = await GetHistoricalSchedulingDataAsync(
-                userId, 
-                timeframe.StartDate, 
-                timeframe.EndDate, 
-                cancellationToken);
+            var tasks = await _taskRepository.GetCompletedTasksByDateRangeAsync(userId, timeframe.StartDate, timeframe.EndDate, cancellationToken);
+            
+            var productivityByHour = AnalyzeProductivityByTimeOfDay(tasks);
+            var productivityByCategory = AnalyzeCategoryPatterns(tasks);
+            var trends = AnalyzeProductivityTrends(tasks, timeframe.Period);
+            
+            var averageProductivity = tasks.Any() ? 
+                tasks.Where(t => t.ProductivityScore.HasValue).Average(t => t.ProductivityScore.Value) : 0.0;
 
-            var productivityByTime = CalculateProductivityByTimeOfDay(historicalData);
-            var productivityByCategory = CalculateProductivityByCategory(historicalData);
-            var trends = IdentifyProductivityTrends(historicalData, timeframe.Period);
-            
-            var avgScore = productivityByTime.Values.Average();
-            
-            var insights = GenerateProductivityInsights(productivityByTime, productivityByCategory, trends);
-            var recommendations = GenerateProductivityRecommendations(insights, trends);
+            var insights = GenerateProductivityInsights(productivityByHour, productivityByCategory, trends);
+            var recommendations = GenerateProductivityRecommendations(productivityByHour, productivityByCategory, trends);
 
             return new ProductivityInsightsResponse(
-                UserId: userId,
-                Timeframe: timeframe,
-                AverageProductivityScore: avgScore,
-                ProductivityByTimeOfDay: productivityByTime,
-                ProductivityByTaskCategory: productivityByCategory,
-                Trends: trends,
-                Insights: insights,
-                Recommendations: recommendations,
-                GeneratedAt: DateTime.UtcNow
+                userId,
+                timeframe,
+                averageProductivity,
+                productivityByHour.ToDictionary(kv => kv.Key.ToString(), kv => kv.Value),
+                productivityByCategory.ToDictionary(kv => kv.Key, kv => kv.Value),
+                trends,
+                insights,
+                recommendations,
+                DateTime.UtcNow
             );
         }
         catch (Exception ex)
@@ -300,53 +442,75 @@ public sealed class UserSchedulingPreferenceService : IUserSchedulingPreferenceS
         string taskCategory, 
         CancellationToken cancellationToken = default)
     {
-        _logger.LogInformation("Predicting optimal times for user {UserId}, category {Category}", 
-            userId, taskCategory);
+        _logger.LogInformation("Predicting optimal times for user {UserId}, category {Category}", userId, taskCategory);
 
         try
         {
-            var patterns = await GetUserSchedulingPatternsAsync(userId, cancellationToken);
-            var preferences = await GetUserPreferencesAsync(userId, cancellationToken);
+            var patterns = await _patternRepository.GetPatternsByCategoriesAsync(userId, new List<string> { taskCategory }, cancellationToken);
+            var preferences = await _preferenceRepository.GetByUserIdAsync(userId, cancellationToken);
             
             var optimalSlots = new List<OptimalTimeSlot>();
-            
-            // Analyze historical performance by category and time
-            var categoryPatterns = patterns.Patterns
-                .Where(p => p.AssociatedCategories.Contains(taskCategory))
-                .OrderByDescending(p => p.ProductivityCorrelation)
-                .Take(3);
 
-            foreach (var pattern in categoryPatterns)
+            // Analyze patterns for this category
+            foreach (var pattern in patterns.Where(p => p.SuccessRate > PRODUCTIVITY_CORRELATION_THRESHOLD))
             {
-                foreach (var preferredTime in pattern.PreferredTimes)
+                if (pattern.Context.ContainsKey("optimal_hours"))
                 {
-                    var slot = new OptimalTimeSlot(
-                        StartTime: preferredTime,
-                        EndTime: preferredTime.Add(TimeSpan.FromHours(1)),
-                        OptimalityScore: pattern.ProductivityCorrelation,
-                        Reasoning: $"Based on {pattern.PatternName} pattern with {pattern.Frequency:P0} frequency",
-                        SupportingFactors: new List<string>
+                    var hours = pattern.Context["optimal_hours"].ToString()?.Split(',');
+                    if (hours != null)
+                    {
+                        foreach (var hour in hours)
                         {
-                            $"High productivity correlation ({pattern.ProductivityCorrelation:P0})",
-                            $"Consistent pattern ({pattern.Frequency:P0} of the time)",
-                            "Historical performance data"
+                            if (int.TryParse(hour, out int hourValue))
+                            {
+                                var startTime = TimeSpan.FromHours(hourValue);
+                                var endTime = TimeSpan.FromHours(hourValue + 1);
+                                
+                                optimalSlots.Add(new OptimalTimeSlot(
+                                    startTime,
+                                    endTime,
+                                    pattern.SuccessRate,
+                                    $"Historical data shows high productivity for {taskCategory} at this time",
+                                    new List<string> 
+                                    { 
+                                        $"Success rate: {pattern.SuccessRate:F2}",
+                                        $"Pattern confidence: {pattern.ConfidenceScore:F2}",
+                                        $"Based on {pattern.ReinforcementCount} observations"
+                                    }
+                                ));
+                            }
                         }
-                    );
-                    
-                    optimalSlots.Add(slot);
+                    }
                 }
             }
 
-            // If no specific category patterns, use general productivity patterns
-            if (!optimalSlots.Any())
+            // If no specific patterns, use general productivity insights
+            if (!optimalSlots.Any() && preferences != null)
             {
-                optimalSlots.AddRange(GetDefaultOptimalSlots(preferences));
+                var workingStart = preferences.WorkingStartTime;
+                var workingEnd = preferences.WorkingEndTime;
+                
+                // Suggest peak productivity hours (typically mid-morning and early afternoon)
+                optimalSlots.AddRange(new[]
+                {
+                    new OptimalTimeSlot(
+                        TimeSpan.FromHours(Math.Max(9, workingStart.Hours)),
+                        TimeSpan.FromHours(Math.Max(11, workingStart.Hours + 2)),
+                        0.8,
+                        "Mid-morning productivity peak",
+                        new List<string> { "General productivity pattern", "Cognitive performance peak" }
+                    ),
+                    new OptimalTimeSlot(
+                        TimeSpan.FromHours(Math.Min(14, workingEnd.Hours - 3)),
+                        TimeSpan.FromHours(Math.Min(16, workingEnd.Hours - 1)),
+                        0.7,
+                        "Early afternoon focus period",
+                        new List<string> { "Post-lunch recovery period", "Good for focused work" }
+                    )
+                });
             }
 
-            return optimalSlots
-                .OrderByDescending(s => s.OptimalityScore)
-                .Take(5)
-                .ToList();
+            return optimalSlots.OrderByDescending(s => s.OptimalityScore).ToList();
         }
         catch (Exception ex)
         {
@@ -360,30 +524,46 @@ public sealed class UserSchedulingPreferenceService : IUserSchedulingPreferenceS
         DateTime date, 
         CancellationToken cancellationToken = default)
     {
-        var preferences = await GetUserPreferencesAsync(userId, cancellationToken);
-        var patterns = await GetUserSchedulingPatternsAsync(userId, cancellationToken);
-        
-        var predictions = new List<EnergyLevelPrediction>();
-        
-        // Generate hourly predictions for the day
-        for (int hour = 6; hour <= 22; hour++)
-        {
-            var time = TimeSpan.FromHours(hour);
-            var energyLevel = PredictEnergyLevelForTime(time, preferences, patterns);
-            var levelType = ClassifyEnergyLevel(energyLevel);
-            var confidence = CalculateConfidence(time, preferences, patterns);
-            var factors = GetInfluencingFactors(time, preferences, patterns);
-            
-            predictions.Add(new EnergyLevelPrediction(
-                Time: time,
-                EnergyLevel: energyLevel,
-                LevelType: levelType,
-                Confidence: confidence,
-                InfluencingFactors: factors
-            ));
-        }
+        _logger.LogInformation("Getting energy level predictions for user {UserId} on {Date}", userId, date);
 
-        return predictions;
+        try
+        {
+            var preferences = await _preferenceRepository.GetByUserIdAsync(userId, cancellationToken);
+            var patterns = await _patternRepository.GetActivePatternsByUserAsync(userId, cancellationToken);
+            
+            var predictions = new List<EnergyLevelPrediction>();
+
+            // Generate hourly predictions for the working day
+            var startHour = preferences?.WorkingStartTime.Hours ?? 9;
+            var endHour = preferences?.WorkingEndTime.Hours ?? 17;
+
+            for (int hour = startHour; hour <= endHour; hour++)
+            {
+                var timeSpan = TimeSpan.FromHours(hour);
+                var energyLevel = PredictEnergyLevelForTime(hour, patterns, preferences);
+                var levelType = GetEnergyLevelType(energyLevel);
+                
+                predictions.Add(new EnergyLevelPrediction(
+                    timeSpan,
+                    energyLevel,
+                    levelType,
+                    0.7, // Default confidence
+                    new List<string> 
+                    { 
+                        "Based on historical patterns",
+                        $"Time of day: {hour}:00",
+                        $"Pattern analysis confidence"
+                    }
+                ));
+            }
+
+            return predictions;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting energy predictions for user {UserId}", userId);
+            throw;
+        }
     }
 
     public async Task<SmartSchedulingPreferences> InitializeDefaultPreferencesAsync(
@@ -393,414 +573,414 @@ public sealed class UserSchedulingPreferenceService : IUserSchedulingPreferenceS
     {
         _logger.LogInformation("Initializing default preferences for user {UserId}", userId);
 
-        var defaultPreferences = new SmartSchedulingPreferences(
-            UserId: userId,
-            PreferredWorkingHours: new WorkingHours(
-                StartTime: TimeSpan.FromHours(9),
-                EndTime: TimeSpan.FromHours(17),
-                WorkingDays: new List<DayOfWeek> 
-                { 
-                    DayOfWeek.Monday, DayOfWeek.Tuesday, DayOfWeek.Wednesday, 
-                    DayOfWeek.Thursday, DayOfWeek.Friday 
-                },
-                LunchBreakStart: TimeSpan.FromHours(12),
-                LunchBreakDuration: TimeSpan.FromHours(1),
-                FlexibleSchedule: true
-            ),
-            PreferredBreakTimes: new List<TimeSpan> 
-            { 
-                TimeSpan.FromHours(10.5), // 10:30 AM
-                TimeSpan.FromHours(15)    // 3:00 PM
-            },
-            MaxTasksPerTimeBlock: 3,
-            MinimumTaskDuration: TimeSpan.FromMinutes(30),
-            MaximumTaskDuration: TimeSpan.FromHours(4),
-            PreferredTaskCategories: new List<string> { "Development", "Planning", "Communication" },
-            ProductivityPattern: ProductivityPatterns.MorningPerson,
-            AllowOverlappingTasks: false,
-            PreferMorningTasks: true,
-            RequireBufferTime: true,
-            BufferDuration: TimeSpan.FromMinutes(15),
-            CustomConstraints: new List<SchedulingConstraint>()
-        );
+        try
+        {
+            var defaultPreferences = new UserSchedulingPreference
+            {
+                Id = Guid.NewGuid(),
+                UserId = userId,
+                TimeZone = timezone,
+                WorkingStartTime = TimeSpan.FromHours(9),
+                WorkingEndTime = TimeSpan.FromHours(17),
+                WorkingDays = new List<DayOfWeek> { DayOfWeek.Monday, DayOfWeek.Tuesday, DayOfWeek.Wednesday, DayOfWeek.Thursday, DayOfWeek.Friday },
+                PreferredBreakDuration = TimeSpan.FromMinutes(15),
+                MaxConsecutiveWorkHours = 3,
+                ProductivityOptimizationWeight = 0.4,
+                DeadlineOptimizationWeight = 0.3,
+                BalanceOptimizationWeight = 0.2,
+                FlexibilityOptimizationWeight = 0.1,
+                EnergyLevelPattern = "Standard",
+                PreferredTaskDuration = TimeSpan.FromMinutes(60),
+                BufferTimeBetweenTasks = TimeSpan.FromMinutes(10),
+                AllowEarlyMorning = false,
+                AllowLateEvening = false,
+                PreferBatchingSimilarTasks = true,
+                EnableSmartBreaks = true,
+                ProductivityScore = 0.7,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            };
 
-        await UpdatePreferencesAsync(userId, defaultPreferences, cancellationToken);
-        return defaultPreferences;
+            await _preferenceRepository.AddAsync(defaultPreferences, cancellationToken);
+            await _preferenceRepository.SaveChangesAsync(cancellationToken);
+
+            _logger.LogInformation("Successfully initialized default preferences for user {UserId}", userId);
+            return MapToDto(defaultPreferences);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error initializing preferences for user {UserId}", userId);
+            throw;
+        }
     }
 
     public async Task<bool> IsAvailableAsync(CancellationToken cancellationToken = default)
     {
-        return await Task.FromResult(true);
+        try
+        {
+            // Check if all required dependencies are available
+            var testUserId = Guid.Empty;
+            await _preferenceRepository.GetByUserIdAsync(testUserId, cancellationToken);
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
     }
 
     // Private helper methods
 
-    private async Task<SmartSchedulingPreferences?> LoadUserPreferencesFromStorageAsync(
-        Guid userId, 
-        CancellationToken cancellationToken)
+    private SmartSchedulingPreferences MapToDto(UserSchedulingPreference entity)
     {
-        // In a real implementation, this would query the database
-        // For now, return null to trigger default initialization
-        return await Task.FromResult<SmartSchedulingPreferences?>(null);
-    }
-
-    private async Task SaveUserPreferencesToStorageAsync(
-        SmartSchedulingPreferences preferences, 
-        CancellationToken cancellationToken)
-    {
-        // In a real implementation, this would save to database
-        await Task.CompletedTask;
-    }
-
-    private async Task<List<SchedulingDataPoint>> GetHistoricalSchedulingDataAsync(
-        Guid userId, 
-        DateTime startDate, 
-        DateTime endDate, 
-        CancellationToken cancellationToken)
-    {
-        // In a real implementation, this would query historical scheduling data
-        // For now, return simulated data
-        var dataPoints = new List<SchedulingDataPoint>();
-        var random = new Random();
-        
-        for (var date = startDate; date <= endDate; date = date.AddDays(1))
+        return new SmartSchedulingPreferences
         {
-            if (date.DayOfWeek != DayOfWeek.Saturday && date.DayOfWeek != DayOfWeek.Sunday)
+            UserId = entity.UserId,
+            TimeZone = entity.TimeZone,
+            WorkingHours = new WorkingHoursPreference
             {
-                // Simulate some historical data points
-                dataPoints.Add(new SchedulingDataPoint(
-                    Date: date,
-                    TimeSlot: TimeSpan.FromHours(9),
-                    TaskCategory: "Development",
-                    ProductivityScore: 0.8 + (random.NextDouble() * 0.2),
-                    Duration: TimeSpan.FromHours(2),
-                    CompletionRate: 0.9
-                ));
-
-                dataPoints.Add(new SchedulingDataPoint(
-                    Date: date,
-                    TimeSlot: TimeSpan.FromHours(14),
-                    TaskCategory: "Administrative",
-                    ProductivityScore: 0.6 + (random.NextDouble() * 0.2),
-                    Duration: TimeSpan.FromHours(1),
-                    CompletionRate: 0.95
-                ));
+                StartTime = entity.WorkingStartTime,
+                EndTime = entity.WorkingEndTime,
+                WorkingDays = entity.GetWorkingDays(),
+                FlexibleHours = entity.FlexibleWorkingHours,
+                BreakDuration = entity.PreferredBreakDuration,
+                MaxConsecutiveHours = entity.MaxConsecutiveWorkHours
+            },
+            OptimizationWeights = new OptimizationWeights
+            {
+                ProductivityWeight = entity.ProductivityOptimizationWeight,
+                DeadlineWeight = entity.DeadlineOptimizationWeight,
+                BalanceWeight = entity.BalanceOptimizationWeight,
+                FlexibilityWeight = entity.FlexibilityOptimizationWeight
+            },
+            TaskPreferences = new TaskSchedulingPreferences
+            {
+                PreferredDuration = entity.PreferredTaskDuration,
+                BufferTime = entity.BufferTimeBetweenTasks,
+                BatchSimilarTasks = entity.PreferBatchingSimilarTasks,
+                AllowEarlyMorning = entity.AllowEarlyMorning,
+                AllowLateEvening = entity.AllowLateEvening
+            },
+            ProductivityInsights = new ProductivityPatterns
+            {
+                EnergyPattern = entity.EnergyLevelPattern,
+                HighProductivityPeriods = new List<TimeSlot>(),
+                LowProductivityPeriods = new List<TimeSlot>(),
+                OptimalTaskDurations = new Dictionary<string, TimeSpan>(),
+                PreferredBreakTimes = new List<TimeSpan>()
+            },
+            LearningSettings = new LearningPreferences
+            {
+                EnablePatternLearning = true,
+                AdaptToChanges = true,
+                LearningRate = LEARNING_RATE,
+                ConfidenceThreshold = PATTERN_CONFIDENCE_THRESHOLD
             }
-        }
-
-        return dataPoints;
+        };
     }
 
-    private ProductivityPatterns DetectProductivityPatterns(List<SchedulingDataPoint> historicalData)
+    private UserSchedulingPreference MapToEntity(Guid userId, SmartSchedulingPreferences dto)
     {
-        var morningScore = historicalData
-            .Where(d => d.TimeSlot.Hours <= 12)
-            .Average(d => d.ProductivityScore);
-
-        var afternoonScore = historicalData
-            .Where(d => d.TimeSlot.Hours > 12 && d.TimeSlot.Hours <= 17)
-            .Average(d => d.ProductivityScore);
-
-        var eveningScore = historicalData
-            .Where(d => d.TimeSlot.Hours > 17)
-            .DefaultIfEmpty()
-            .Average(d => d?.ProductivityScore ?? 0);
-
-        if (morningScore > afternoonScore && morningScore > eveningScore)
-            return ProductivityPatterns.MorningPerson;
-        else if (afternoonScore > morningScore && afternoonScore > eveningScore)
-            return ProductivityPatterns.MidDay;
-        else if (eveningScore > morningScore && eveningScore > afternoonScore)
-            return ProductivityPatterns.NightOwl;
-        else
-            return ProductivityPatterns.Consistent;
-    }
-
-    private List<SchedulingPattern> IdentifySchedulingPatterns(List<SchedulingDataPoint> historicalData)
-    {
-        var patterns = new List<SchedulingPattern>();
-
-        // Group by category and time
-        var categoryGroups = historicalData.GroupBy(d => d.TaskCategory);
-
-        foreach (var group in categoryGroups)
+        return new UserSchedulingPreference
         {
-            var categoryData = group.ToList();
-            var preferredTimes = categoryData
-                .GroupBy(d => TimeSpan.FromHours(d.TimeSlot.Hours))
-                .OrderByDescending(g => g.Average(d => d.ProductivityScore))
-                .Take(2)
-                .Select(g => g.Key)
-                .ToList();
-
-            var frequency = (double)categoryData.Count / Math.Max(1, historicalData.Count);
-            var avgProductivity = categoryData.Average(d => d.ProductivityScore);
-
-            patterns.Add(new SchedulingPattern(
-                PatternName: $"Optimal {group.Key} Time",
-                Description: $"Best times for {group.Key} tasks based on historical performance",
-                Frequency: frequency,
-                PreferredTimes: preferredTimes,
-                AssociatedCategories: new List<string> { group.Key },
-                ProductivityCorrelation: avgProductivity
-            ));
-        }
-
-        return patterns;
+            Id = Guid.NewGuid(),
+            UserId = userId,
+            TimeZone = dto.TimeZone,
+            WorkingStartTime = dto.WorkingHours.StartTime,
+            WorkingEndTime = dto.WorkingHours.EndTime,
+            WorkingDays = dto.WorkingHours.WorkingDays,
+            FlexibleWorkingHours = dto.WorkingHours.FlexibleHours,
+            PreferredBreakDuration = dto.WorkingHours.BreakDuration,
+            MaxConsecutiveWorkHours = dto.WorkingHours.MaxConsecutiveHours,
+            ProductivityOptimizationWeight = dto.OptimizationWeights.ProductivityWeight,
+            DeadlineOptimizationWeight = dto.OptimizationWeights.DeadlineWeight,
+            BalanceOptimizationWeight = dto.OptimizationWeights.BalanceWeight,
+            FlexibilityOptimizationWeight = dto.OptimizationWeights.FlexibilityWeight,
+            EnergyLevelPattern = dto.ProductivityInsights.EnergyPattern,
+            PreferredTaskDuration = dto.TaskPreferences.PreferredDuration,
+            BufferTimeBetweenTasks = dto.TaskPreferences.BufferTime,
+            AllowEarlyMorning = dto.TaskPreferences.AllowEarlyMorning,
+            AllowLateEvening = dto.TaskPreferences.AllowLateEvening,
+            PreferBatchingSimilarTasks = dto.TaskPreferences.BatchSimilarTasks,
+            EnableSmartBreaks = true,
+            ProductivityScore = 0.7,
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow
+        };
     }
 
-    private List<string> GenerateSchedulingInsights(
-        List<SchedulingDataPoint> historicalData, 
-        List<SchedulingPattern> patterns)
+    private void UpdateEntityFromDto(UserSchedulingPreference entity, SmartSchedulingPreferences dto)
     {
-        var insights = new List<string>();
-
-        var bestPattern = patterns.OrderByDescending(p => p.ProductivityCorrelation).FirstOrDefault();
-        if (bestPattern != null)
-        {
-            insights.Add($"Your most productive pattern is '{bestPattern.PatternName}' with {bestPattern.ProductivityCorrelation:P0} average performance");
-        }
-
-        var morningTasks = historicalData.Count(d => d.TimeSlot.Hours <= 12);
-        var afternoonTasks = historicalData.Count(d => d.TimeSlot.Hours > 12);
-
-        if (morningTasks > afternoonTasks * 1.5)
-        {
-            insights.Add("You tend to schedule more tasks in the morning, which aligns with higher morning productivity");
-        }
-
-        var avgDuration = historicalData.Average(d => d.Duration.TotalMinutes);
-        if (avgDuration > 120)
-        {
-            insights.Add("Your tasks tend to be long-duration, consider breaking them into smaller blocks for better focus");
-        }
-
-        return insights;
+        entity.TimeZone = dto.TimeZone;
+        entity.WorkingStartTime = dto.WorkingHours.StartTime;
+        entity.WorkingEndTime = dto.WorkingHours.EndTime;
+        entity.WorkingDays = dto.WorkingHours.WorkingDays;
+        entity.FlexibleWorkingHours = dto.WorkingHours.FlexibleHours;
+        entity.PreferredBreakDuration = dto.WorkingHours.BreakDuration;
+        entity.MaxConsecutiveWorkHours = dto.WorkingHours.MaxConsecutiveHours;
+        entity.ProductivityOptimizationWeight = dto.OptimizationWeights.ProductivityWeight;
+        entity.DeadlineOptimizationWeight = dto.OptimizationWeights.DeadlineWeight;
+        entity.BalanceOptimizationWeight = dto.OptimizationWeights.BalanceWeight;
+        entity.FlexibilityOptimizationWeight = dto.OptimizationWeights.FlexibilityWeight;
+        entity.EnergyLevelPattern = dto.ProductivityInsights.EnergyPattern;
+        entity.PreferredTaskDuration = dto.TaskPreferences.PreferredDuration;
+        entity.BufferTimeBetweenTasks = dto.TaskPreferences.BufferTime;
+        entity.AllowEarlyMorning = dto.TaskPreferences.AllowEarlyMorning;
+        entity.AllowLateEvening = dto.TaskPreferences.AllowLateEvening;
+        entity.PreferBatchingSimilarTasks = dto.TaskPreferences.BatchSimilarTasks;
+        entity.UpdatedAt = DateTime.UtcNow;
     }
 
-    private async Task SaveActivityLogAsync(SchedulingActivityLog activityLog, CancellationToken cancellationToken)
+    private Dictionary<int, double> AnalyzeProductivityByTimeOfDay(IEnumerable<Domain.Entities.Task> tasks)
     {
-        // In real implementation, save to database
-        await Task.CompletedTask;
-    }
+        var productivityByHour = new Dictionary<int, double>();
 
-    private async Task SaveFeedbackRecordAsync(ScheduleFeedbackRecord feedbackRecord, CancellationToken cancellationToken)
-    {
-        // In real implementation, save to database
-        await Task.CompletedTask;
-    }
-
-    private async Task ApplyFeedbackToPreferencesAsync(
-        Guid userId, 
-        ScheduleFeedback feedback, 
-        CancellationToken cancellationToken)
-    {
-        // Use feedback to adjust preferences
-        if (feedback.OverallRating < 3.0)
-        {
-            // Poor feedback might indicate need to adjust preferences
-            var currentPreferences = await GetUserPreferencesAsync(userId, cancellationToken);
-            
-            // Simple adjustment: if balance rating is low, increase buffer time
-            if (feedback.BalanceRating < 3.0 && currentPreferences.BufferDuration < TimeSpan.FromMinutes(20))
-            {
-                var adjustedPreferences = currentPreferences with
-                {
-                    BufferDuration = currentPreferences.BufferDuration.Add(TimeSpan.FromMinutes(5))
-                };
-                
-                await UpdatePreferencesAsync(userId, adjustedPreferences, cancellationToken);
-            }
-        }
-    }
-
-    private SmartSchedulingPreferences ApplyLearningsToPreferences(
-        SmartSchedulingPreferences currentPreferences, 
-        UserSchedulingPatternsResponse patterns)
-    {
-        var updatedPreferences = currentPreferences;
-
-        // Update productivity pattern based on detected patterns
-        if (patterns.DetectedPatterns != currentPreferences.ProductivityPattern)
-        {
-            updatedPreferences = updatedPreferences with
-            {
-                ProductivityPattern = patterns.DetectedPatterns
-            };
-        }
-
-        // Update preferred task categories based on high-performing patterns
-        var topPerformingCategories = patterns.Patterns
-            .Where(p => p.ProductivityCorrelation > 0.8)
-            .SelectMany(p => p.AssociatedCategories)
-            .Distinct()
-            .Take(5)
+        var tasksByHour = tasks
+            .Where(t => t.CompletedAt.HasValue && t.ProductivityScore.HasValue)
+            .GroupBy(t => t.CompletedAt!.Value.Hour)
             .ToList();
 
-        if (topPerformingCategories.Any())
+        foreach (var hourGroup in tasksByHour)
         {
-            updatedPreferences = updatedPreferences with
-            {
-                PreferredTaskCategories = topPerformingCategories
-            };
+            var averageProductivity = hourGroup.Average(t => t.ProductivityScore!.Value);
+            productivityByHour[hourGroup.Key] = averageProductivity;
         }
 
-        return updatedPreferences;
+        return productivityByHour;
     }
 
-    private bool PreferencesAreEqual(SmartSchedulingPreferences pref1, SmartSchedulingPreferences pref2)
+    private Dictionary<string, double> AnalyzeCategoryPatterns(IEnumerable<Domain.Entities.Task> tasks)
     {
-        return pref1.ProductivityPattern == pref2.ProductivityPattern &&
-               pref1.PreferredTaskCategories.SequenceEqual(pref2.PreferredTaskCategories) &&
-               pref1.BufferDuration == pref2.BufferDuration;
+        return tasks
+            .Where(t => t.CompletedAt.HasValue && t.ProductivityScore.HasValue)
+            .GroupBy(t => t.Category.ToString())
+            .ToDictionary(g => g.Key, g => g.Average(t => t.ProductivityScore!.Value));
     }
 
-    private Dictionary<string, double> CalculateProductivityByTimeOfDay(List<SchedulingDataPoint> historicalData)
+    private Dictionary<DayOfWeek, double> AnalyzeWeeklyPatterns(IEnumerable<Domain.Entities.Task> tasks)
     {
-        return historicalData
-            .GroupBy(d => d.TimeSlot.Hours)
-            .ToDictionary(
-                g => $"{g.Key}:00",
-                g => g.Average(d => d.ProductivityScore)
-            );
+        return tasks
+            .Where(t => t.CompletedAt.HasValue && t.ProductivityScore.HasValue)
+            .GroupBy(t => t.CompletedAt!.Value.DayOfWeek)
+            .ToDictionary(g => g.Key, g => g.Average(t => t.ProductivityScore!.Value));
     }
 
-    private Dictionary<string, double> CalculateProductivityByCategory(List<SchedulingDataPoint> historicalData)
-    {
-        return historicalData
-            .GroupBy(d => d.TaskCategory)
-            .ToDictionary(
-                g => g.Key,
-                g => g.Average(d => d.ProductivityScore)
-            );
-    }
-
-    private List<ProductivityTrend> IdentifyProductivityTrends(
-        List<SchedulingDataPoint> historicalData, 
-        TimeframePeriod period)
-    {
-        var trends = new List<ProductivityTrend>();
-
-        // Overall productivity trend
-        var chronologicalData = historicalData.OrderBy(d => d.Date).ToList();
-        if (chronologicalData.Count >= 2)
-        {
-            var firstHalf = chronologicalData.Take(chronologicalData.Count / 2).Average(d => d.ProductivityScore);
-            var secondHalf = chronologicalData.Skip(chronologicalData.Count / 2).Average(d => d.ProductivityScore);
-            
-            var change = ((secondHalf - firstHalf) / firstHalf) * 100;
-            var direction = change > 5 ? TrendDirection.Improving :
-                           change < -5 ? TrendDirection.Declining : TrendDirection.Stable;
-
-            var dataPoints = chronologicalData
-                .GroupBy(d => d.Date.Date)
-                .Select(g => new TrendDataPoint(
-                    Date: g.Key,
-                    Value: g.Average(d => d.ProductivityScore),
-                    Category: "Overall",
-                    Metadata: new Dictionary<string, object> { ["task_count"] = g.Count() }
-                ))
-                .ToList();
-
-            trends.Add(new ProductivityTrend(
-                TrendName: "Overall Productivity",
-                Direction: direction,
-                ChangePercentage: change,
-                Period: period,
-                DataPoints: dataPoints,
-                Description: $"Overall productivity is {direction.ToString().ToLower()}"
-            ));
-        }
-
-        return trends;
-    }
-
-    private List<string> GenerateProductivityInsights(
-        Dictionary<string, double> productivityByTime,
-        Dictionary<string, double> productivityByCategory,
-        List<ProductivityTrend> trends)
+    private List<string> GeneratePatternInsights(List<DetectedPattern> patterns)
     {
         var insights = new List<string>();
 
-        var bestTime = productivityByTime.OrderByDescending(kvp => kvp.Value).First();
-        insights.Add($"Your peak productivity time is {bestTime.Key} with {bestTime.Value:P0} average performance");
-
-        var bestCategory = productivityByCategory.OrderByDescending(kvp => kvp.Value).First();
-        insights.Add($"You perform best on {bestCategory.Key} tasks ({bestCategory.Value:P0} success rate)");
-
-        var improvingTrends = trends.Where(t => t.Direction == TrendDirection.Improving).ToList();
-        if (improvingTrends.Any())
+        var productivityPattern = patterns.FirstOrDefault(p => p.PatternType == "ProductivityByTimeOfDay");
+        if (productivityPattern != null)
         {
-            insights.Add($"{improvingTrends.Count} area(s) showing improvement over time");
+            var bestTime = productivityPattern.Insights.OrderByDescending(i => i.Confidence).FirstOrDefault();
+            if (bestTime != null)
+            {
+                insights.Add($"Your most productive time appears to be {bestTime.InsightName} with {bestTime.Confidence:F1} productivity score");
+            }
         }
 
         return insights;
     }
 
-    private List<string> GenerateProductivityRecommendations(
-        List<string> insights,
-        List<ProductivityTrend> trends)
+    private List<string> GenerateRecommendations(List<DetectedPattern> patterns, Guid userId)
     {
-        var recommendations = new List<string>();
-
-        recommendations.Add("Schedule your most important tasks during your peak productivity hours");
-        
-        if (trends.Any(t => t.Direction == TrendDirection.Declining))
+        var recommendations = new List<string>
         {
-            recommendations.Add("Consider reviewing your task allocation - some areas show declining performance");
-        }
-
-        recommendations.Add("Focus on categories where you consistently perform well");
-        recommendations.Add("Use time blocking to maintain focus during high-productivity periods");
+            "Schedule your most important tasks during your high-productivity periods",
+            "Consider batching similar tasks together for improved efficiency",
+            "Take regular breaks to maintain consistent productivity levels"
+        };
 
         return recommendations;
     }
 
-    private List<OptimalTimeSlot> GetDefaultOptimalSlots(SmartSchedulingPreferences preferences)
+    private async Task<List<SchedulingPattern>> DetectPatternsFromActivity(Guid userId, SmartScheduledItem item, CancellationToken cancellationToken)
     {
-        var slots = new List<OptimalTimeSlot>();
+        var patterns = new List<SchedulingPattern>();
 
-        if (preferences.PreferMorningTasks)
+        // Create a pattern for task category and time
+        var categoryTimePattern = new SchedulingPattern
         {
-            slots.Add(new OptimalTimeSlot(
-                StartTime: TimeSpan.FromHours(9),
-                EndTime: TimeSpan.FromHours(11),
-                OptimalityScore: 0.8,
-                Reasoning: "Morning preference based on user settings",
-                SupportingFactors: new List<string> { "User prefers morning tasks", "Typical peak productivity hours" }
-            ));
+            Id = Guid.NewGuid(),
+            UserId = userId,
+            PatternType = "CategoryTime",
+            Description = $"Task category {item.TaskCategory} scheduled at {item.StartTime:HH:mm}",
+            Context = new Dictionary<string, object>
+            {
+                ["category"] = item.TaskCategory ?? "Unknown",
+                ["hour"] = item.StartTime.Hour,
+                ["day_of_week"] = item.StartTime.DayOfWeek.ToString()
+            },
+            ConfidenceScore = 0.5, // Initial confidence
+            SuccessRate = 0.7, // Assume moderate success initially
+            ReinforcementCount = 1,
+            ViolationCount = 0,
+            CreatedAt = DateTime.UtcNow,
+            LastReinforced = DateTime.UtcNow,
+            IsActive = true
+        };
+
+        patterns.Add(categoryTimePattern);
+        return patterns;
+    }
+
+    private void AdjustPreferencesFromFeedback(UserSchedulingPreference preferences, ScheduleFeedback feedback)
+    {
+        // Adjust optimization weights based on feedback
+        var overallRating = feedback.OverallRating;
+        var adjustment = (overallRating - 3.0) * 0.1; // Normalize to -0.2 to +0.2
+
+        if (feedback.ProductivityRating > 3.5)
+        {
+            preferences.ProductivityOptimizationWeight = Math.Min(1.0, preferences.ProductivityOptimizationWeight + adjustment * 0.5);
         }
 
-        slots.Add(new OptimalTimeSlot(
-            StartTime: TimeSpan.FromHours(14),
-            EndTime: TimeSpan.FromHours(16),
-            OptimalityScore: 0.7,
-            Reasoning: "Afternoon productivity window",
-            SupportingFactors: new List<string> { "Post-lunch productivity boost", "Good for focused work" }
+        if (feedback.BalanceRating > 3.5)
+        {
+            preferences.BalanceOptimizationWeight = Math.Min(1.0, preferences.BalanceOptimizationWeight + adjustment * 0.5);
+        }
+
+        if (feedback.FlexibilityRating > 3.5)
+        {
+            preferences.FlexibilityOptimizationWeight = Math.Min(1.0, preferences.FlexibilityOptimizationWeight + adjustment * 0.5);
+        }
+
+        preferences.UpdatedAt = DateTime.UtcNow;
+    }
+
+    private double CalculateFeedbackAdjustment(ScheduleFeedback feedback)
+    {
+        // Calculate weighted feedback score
+        var weightedScore = (feedback.OverallRating * 0.4 + 
+                           feedback.ProductivityRating * 0.3 + 
+                           feedback.BalanceRating * 0.2 + 
+                           feedback.FlexibilityRating * 0.1) / 4.0;
+
+        return (weightedScore - 2.5) * 0.4; // Normalize to -1.0 to +1.0 range
+    }
+
+    private (TimeSpan? start, TimeSpan? end) LearnOptimalWorkingHours(IEnumerable<Domain.Entities.Task> tasks)
+    {
+        var completedTasks = tasks.Where(t => t.CompletedAt.HasValue && t.ProductivityScore.HasValue && t.ProductivityScore > 0.6).ToList();
+        
+        if (!completedTasks.Any()) return (null, null);
+
+        var productiveTimes = completedTasks.Select(t => t.CompletedAt!.Value.TimeOfDay).OrderBy(t => t).ToList();
+        var earliestProductive = productiveTimes.First();
+        var latestProductive = productiveTimes.Last();
+
+        return (earliestProductive, latestProductive);
+    }
+
+    private List<TimeSpan> LearnBreakPatterns(IEnumerable<SchedulingPattern> patterns)
+    {
+        // Analyze patterns to determine optimal break times
+        var breakTimes = new List<TimeSpan>
+        {
+            TimeSpan.FromHours(10.5), // Mid-morning break
+            TimeSpan.FromHours(15)    // Afternoon break
+        };
+
+        return breakTimes;
+    }
+
+    private List<ProductivityTrend> AnalyzeProductivityTrends(IEnumerable<Domain.Entities.Task> tasks, TimeframePeriod period)
+    {
+        var trends = new List<ProductivityTrend>();
+
+        var completedTasks = tasks.Where(t => t.CompletedAt.HasValue && t.ProductivityScore.HasValue).ToList();
+        if (!completedTasks.Any()) return trends;
+
+        // Analyze overall productivity trend
+        var orderedTasks = completedTasks.OrderBy(t => t.CompletedAt).ToList();
+        var firstHalf = orderedTasks.Take(orderedTasks.Count / 2);
+        var secondHalf = orderedTasks.Skip(orderedTasks.Count / 2);
+
+        var firstHalfAvg = firstHalf.Average(t => t.ProductivityScore!.Value);
+        var secondHalfAvg = secondHalf.Average(t => t.ProductivityScore!.Value);
+        var changePercentage = ((secondHalfAvg - firstHalfAvg) / firstHalfAvg) * 100;
+
+        var direction = Math.Abs(changePercentage) < 5 ? TrendDirection.Stable :
+                       changePercentage > 0 ? TrendDirection.Improving : 
+                       TrendDirection.Declining;
+
+        trends.Add(new ProductivityTrend(
+            "Overall Productivity",
+            direction,
+            changePercentage,
+            period,
+            new List<TrendDataPoint>(),
+            $"Productivity has {direction.ToString().ToLower()} by {Math.Abs(changePercentage):F1}%"
         ));
 
-        return slots;
+        return trends;
     }
 
-    private double PredictEnergyLevelForTime(
-        TimeSpan time, 
-        SmartSchedulingPreferences preferences, 
-        UserSchedulingPatternsResponse patterns)
+    private List<string> GenerateProductivityInsights(Dictionary<int, double> productivityByHour, Dictionary<string, double> productivityByCategory, List<ProductivityTrend> trends)
     {
-        var hour = time.Hours;
+        var insights = new List<string>();
 
-        return preferences.ProductivityPattern switch
+        if (productivityByHour.Any())
         {
-            ProductivityPatterns.MorningPerson => hour <= 12 ? 0.9 : Math.Max(0.4, 0.9 - (hour - 12) * 0.1),
-            ProductivityPatterns.NightOwl => hour >= 14 ? Math.Min(0.9, 0.5 + (hour - 14) * 0.1) : 0.5,
-            ProductivityPatterns.MidDay => hour >= 10 && hour <= 15 ? 0.9 : 0.6,
-            ProductivityPatterns.EarlyBird => hour <= 10 ? 0.95 : 0.6,
-            ProductivityPatterns.AfternoonPeak => hour >= 13 && hour <= 17 ? 0.9 : 0.6,
-            _ => 0.7 // Consistent energy
-        };
+            var bestHour = productivityByHour.OrderByDescending(kv => kv.Value).First();
+            insights.Add($"Your most productive hour is {bestHour.Key}:00 with {bestHour.Value:F2} average productivity");
+        }
+
+        if (productivityByCategory.Any())
+        {
+            var bestCategory = productivityByCategory.OrderByDescending(kv => kv.Value).First();
+            insights.Add($"You're most productive with {bestCategory.Key} tasks ({bestCategory.Value:F2} average score)");
+        }
+
+        return insights;
     }
 
-    private EnergyLevelType ClassifyEnergyLevel(double energyLevel)
+    private List<string> GenerateProductivityRecommendations(Dictionary<int, double> productivityByHour, Dictionary<string, double> productivityByCategory, List<ProductivityTrend> trends)
+    {
+        var recommendations = new List<string>
+        {
+            "Schedule your most challenging tasks during peak productivity hours",
+            "Consider time-blocking similar task types together",
+            "Take breaks when productivity typically dips"
+        };
+
+        if (trends.Any(t => t.Direction == TrendDirection.Declining))
+        {
+            recommendations.Add("Your productivity has been declining - consider adjusting your schedule or taking more breaks");
+        }
+
+        return recommendations;
+    }
+
+    private double PredictEnergyLevelForTime(int hour, IEnumerable<SchedulingPattern> patterns, UserSchedulingPreference? preferences)
+    {
+        // Basic energy prediction based on typical human circadian rhythms
+        var baseEnergy = hour switch
+        {
+            < 8 => 0.3,   // Early morning
+            >= 8 and < 10 => 0.8, // Morning peak
+            >= 10 and < 12 => 0.9, // Late morning peak
+            >= 12 and < 14 => 0.6, // Post-lunch dip
+            >= 14 and < 16 => 0.7, // Afternoon recovery
+            >= 16 and < 18 => 0.8, // Evening peak
+            _ => 0.4      // Late evening
+        };
+
+        // Adjust based on user patterns if available
+        var relevantPatterns = patterns.Where(p => p.Context.ContainsKey("hour") && 
+                                                 int.TryParse(p.Context["hour"].ToString(), out int patternHour) && 
+                                                 patternHour == hour);
+
+        if (relevantPatterns.Any())
+        {
+            var patternAdjustment = relevantPatterns.Average(p => p.SuccessRate) - 0.7;
+            baseEnergy = Math.Max(0.1, Math.Min(1.0, baseEnergy + patternAdjustment * 0.3));
+        }
+
+        return baseEnergy;
+    }
+
+    private EnergyLevelType GetEnergyLevelType(double energyLevel)
     {
         return energyLevel switch
         {
@@ -812,69 +992,4 @@ public sealed class UserSchedulingPreferenceService : IUserSchedulingPreferenceS
             _ => EnergyLevelType.VeryLow
         };
     }
-
-    private double CalculateConfidence(
-        TimeSpan time, 
-        SmartSchedulingPreferences preferences, 
-        UserSchedulingPatternsResponse patterns)
-    {
-        // Higher confidence during working hours
-        var workingHours = preferences.PreferredWorkingHours;
-        if (time >= workingHours.StartTime && time <= workingHours.EndTime)
-        {
-            return 0.8;
-        }
-        
-        return 0.6; // Lower confidence outside working hours
-    }
-
-    private List<string> GetInfluencingFactors(
-        TimeSpan time, 
-        SmartSchedulingPreferences preferences, 
-        UserSchedulingPatternsResponse patterns)
-    {
-        var factors = new List<string>();
-
-        factors.Add($"Productivity pattern: {preferences.ProductivityPattern}");
-        
-        if (time >= preferences.PreferredWorkingHours.StartTime && 
-            time <= preferences.PreferredWorkingHours.EndTime)
-        {
-            factors.Add("Within preferred working hours");
-        }
-
-        if (preferences.PreferredBreakTimes.Any(bt => Math.Abs((bt - time).TotalMinutes) <= 30))
-        {
-            factors.Add("Near preferred break time");
-        }
-
-        return factors;
-    }
-
-    // Helper records for internal data structures
-
-    private sealed record SchedulingDataPoint(
-        DateTime Date,
-        TimeSpan TimeSlot,
-        string TaskCategory,
-        double ProductivityScore,
-        TimeSpan Duration,
-        double CompletionRate
-    );
-
-    private sealed record SchedulingActivityLog(
-        Guid UserId,
-        DateTime Timestamp,
-        List<SmartScheduledItem> ScheduledItems,
-        string SessionType,
-        Dictionary<string, object> Metadata
-    );
-
-    private sealed record ScheduleFeedbackRecord(
-        Guid Id,
-        Guid UserId,
-        Guid ScheduleId,
-        ScheduleFeedback Feedback,
-        DateTime RecordedAt
-    );
 }

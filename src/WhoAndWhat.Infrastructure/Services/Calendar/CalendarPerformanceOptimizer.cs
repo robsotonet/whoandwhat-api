@@ -940,9 +940,10 @@ public class RateLimiter
                 // Additional safety: verify semaphore state before release
                 if (currentCount + releaseCount <= RequestsPerMinute)
                 {
+                    var expectedCountAfterRelease = currentCount + releaseCount;
                     _semaphore.Release(releaseCount);
-                    _logger.LogDebug("Released {ReleaseCount} semaphore permits, current count: {CurrentCount}", 
-                        releaseCount, _semaphore.CurrentCount);
+                    _logger.LogDebug("Released {ReleaseCount} semaphore permits, expected count: {ExpectedCount}", 
+                        releaseCount, expectedCountAfterRelease);
                 }
                 else
                 {
@@ -955,9 +956,11 @@ public class RateLimiter
             Interlocked.Exchange(ref _currentRequests, 0);
             NextResetTime = DateTime.UtcNow.AddMinutes(1);
             
+            // Capture semaphore state before logging to avoid race conditions
+            var currentPermits = _semaphore.CurrentCount;
             _logger.LogDebug("Rate limiter reset completed. Current requests: {CurrentRequests}, " +
                 "Semaphore permits available: {AvailablePermits}", 
-                _currentRequests, _semaphore.CurrentCount);
+                _currentRequests, currentPermits);
         }
         catch (ObjectDisposedException)
         {
