@@ -5,7 +5,7 @@ using Microsoft.Extensions.Options;
 using WhoAndWhat.Application.Interfaces;
 using WhoAndWhat.Infrastructure.Configuration;
 
-namespace WhoAndWhat.Infrastructure.Services;
+namespace WhoAndWhat.Infrastructure.Services.Background;
 
 /// <summary>
 /// Background service that continuously optimizes user schedules

@@ -449,3 +449,15 @@ public sealed record ExternalCalendarEvent(
     string CalendarSource,
     bool IsBlockingTime
 );
+
+
+/// <summary>
+/// Entity task type alias for compatibility
+/// </summary>
+public record TaskEntity(
+    Guid Id,
+    string Title,
+    string Description,
+    DateTime? DueDate,
+    Priority Priority
+);

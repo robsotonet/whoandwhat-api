@@ -2,6 +2,8 @@ using Microsoft.Extensions.Logging;
 using WhoAndWhat.Application.DTOs.SmartScheduling;
 using WhoAndWhat.Application.Interfaces;
 using WhoAndWhat.Domain.Entities;
+using DomainSchedulingPattern = WhoAndWhat.Domain.Entities.SchedulingPattern;
+using DTOSchedulingPattern = WhoAndWhat.Application.DTOs.SmartScheduling.SchedulingPattern;
 
 namespace WhoAndWhat.Infrastructure.Services.SmartScheduling;
 
@@ -40,7 +42,7 @@ public sealed class ScheduleOptimizationEngine : IScheduleOptimizationEngine
 
     public async Task<ScheduleOptimizationResult> OptimizeScheduleAsync(
         Guid userId,
-        ScheduleOptimizationContext context,
+        WhoAndWhat.Application.DTOs.SmartScheduling.ScheduleOptimizationContext context,
         CancellationToken cancellationToken = default)
     {
         _logger.LogInformation("Starting schedule optimization for user {UserId} with {TaskCount} tasks",
@@ -89,7 +91,7 @@ public sealed class ScheduleOptimizationEngine : IScheduleOptimizationEngine
 
     public async Task<ScheduleOptimizationEngineResult> OptimizeExistingScheduleAsync(
         Guid userId,
-        OptimizationContext context,
+        WhoAndWhat.Application.DTOs.SmartScheduling.OptimizationContext context,
         CancellationToken cancellationToken = default)
     {
         _logger.LogInformation("Optimizing existing schedule for user {UserId} with {ItemCount} items",
@@ -526,7 +528,7 @@ public sealed class ScheduleOptimizationEngine : IScheduleOptimizationEngine
     }
 
     // Simplified implementations for demo purposes
-    private Task<List<SmartScheduledItem>> ApplyOptimizationAlgorithmsAsync(Guid userId, List<AppTask> tasks, List<AvailableTimeSlot> availableSlots, SmartSchedulingPreferences preferences, List<SchedulingPattern> patterns, OptimizationGoals goals, CancellationToken cancellationToken)
+    private Task<List<SmartScheduledItem>> ApplyOptimizationAlgorithmsAsync(Guid userId, List<AppTask> tasks, List<AvailableTimeSlot> availableSlots, SmartSchedulingPreferences preferences, List<DomainSchedulingPattern> patterns, OptimizationGoals goals, CancellationToken cancellationToken)
     {
         return Task.FromResult(new List<SmartScheduledItem>());
     }
@@ -536,19 +538,19 @@ public sealed class ScheduleOptimizationEngine : IScheduleOptimizationEngine
         return new Dictionary<string, object> { ["ImprovementScore"] = 0.25 };
     }
 
-    private List<string> GenerateOptimizationInsights(List<SmartScheduledItem> optimizedSchedule, List<SchedulingPattern> patterns, SmartSchedulingPreferences preferences)
+    private List<string> GenerateOptimizationInsights(List<SmartScheduledItem> optimizedSchedule, List<DomainSchedulingPattern> patterns, SmartSchedulingPreferences preferences)
     {
         return new List<string> { "Schedule optimized for productivity" };
     }
 
     // Additional placeholder methods
-    private Task<List<OptimizationChange>> ApplyIncrementalOptimizationAsync(Guid userId, List<SmartScheduledItem> existingSchedule, OptimizationGoals goals, List<ScheduleConstraint> constraints, List<SchedulingPattern> patterns, UserSchedulingPreference? preferences, CancellationToken cancellationToken) => Task.FromResult<List<OptimizationChange>>(new());
+    private Task<List<OptimizationChange>> ApplyIncrementalOptimizationAsync(Guid userId, List<SmartScheduledItem> existingSchedule, OptimizationGoals goals, List<ScheduleConstraint> constraints, List<DomainSchedulingPattern> patterns, UserSchedulingPreference? preferences, CancellationToken cancellationToken) => Task.FromResult<List<OptimizationChange>>(new());
     private List<SmartScheduledItem> ApplyOptimizationChanges(List<SmartScheduledItem> existingSchedule, List<OptimizationChange> optimizationChanges) => existingSchedule;
     private double CalculateImprovementScore(List<SmartScheduledItem> existingSchedule, List<SmartScheduledItem> optimizedSchedule, UserSchedulingPreference? preferences) => 0.15;
     private Dictionary<string, double> CalculateQualityMetrics(List<SmartScheduledItem> optimizedSchedule, UserSchedulingPreference? preferences) => new();
     private List<string> GenerateOptimizationReasons(List<OptimizationChange> optimizationChanges, ScheduleQualityAnalysis qualityAnalysis) => new();
     private double CalculateTimeUtilization(List<SmartScheduledItem> schedule, UserSchedulingPreference? preferences) => 0.8;
-    private Task<double> CalculateProductivityAlignmentAsync(List<SmartScheduledItem> schedule, List<SchedulingPattern> patterns, CancellationToken cancellationToken) => Task.FromResult(0.7);
+    private Task<double> CalculateProductivityAlignmentAsync(List<SmartScheduledItem> schedule, List<DomainSchedulingPattern> patterns, CancellationToken cancellationToken) => Task.FromResult(0.7);
     private double CalculateDeadlineCompliance(List<SmartScheduledItem> schedule) => 0.9;
     private double CalculateContextSwitchingScore(List<SmartScheduledItem> schedule) => 0.8;
     private double CalculateEnergyOptimizationScore(List<SmartScheduledItem> schedule, UserSchedulingPreference? preferences) => 0.7;
@@ -556,15 +558,15 @@ public sealed class ScheduleOptimizationEngine : IScheduleOptimizationEngine
     private double CalculateWorkLifeBalanceScore(List<SmartScheduledItem> schedule, UserSchedulingPreference? preferences) => 0.8;
     private List<QualityIssue> IdentifyQualityIssues(List<SmartScheduledItem> schedule, Dictionary<string, double> qualityDimensions, UserSchedulingPreference? preferences) => new();
     private List<QualityImprovement> GenerateQualityImprovements(List<SmartScheduledItem> schedule, Dictionary<string, double> qualityDimensions, List<QualityIssue> issues, UserSchedulingPreference? preferences) => new();
-    private Task AnalyzeProductivityFactorsAsync(List<SmartScheduledItem> schedule, List<SchedulingPattern> patterns, SmartSchedulingPreferences preferences, Dictionary<string, double> factorContributions, List<ProductivityFactor> positiveFactors, List<ProductivityFactor> negativeFactors, CancellationToken cancellationToken)
+    private Task AnalyzeProductivityFactorsAsync(List<SmartScheduledItem> schedule, List<DomainSchedulingPattern> patterns, SmartSchedulingPreferences preferences, Dictionary<string, double> factorContributions, List<ProductivityFactor> positiveFactors, List<ProductivityFactor> negativeFactors, CancellationToken cancellationToken)
     {
         return Task.CompletedTask;
     }
     private double CalculateWeightedProductivityScore(Dictionary<string, double> factorContributions) => factorContributions.Values.DefaultIfEmpty(0.7).Average();
     private List<string> GenerateProductivityImprovements(List<ProductivityFactor> negativeFactors, List<SmartScheduledItem> schedule) => new();
-    private Task<AvailableTimeSlot?> FindBestTimeSlotForTaskAsync(SmartScheduledItem task, List<AvailableTimeSlot> availableSlots, List<SchedulingPattern> patterns, SmartSchedulingPreferences preferences, List<TimeSlotAssignment> assignments, CancellationToken cancellationToken) => Task.FromResult(availableSlots.FirstOrDefault());
-    private double CalculateSlotFitnessScore(SmartScheduledItem task, AvailableTimeSlot slot, List<SchedulingPattern> patterns, SmartSchedulingPreferences preferences) => 0.8;
-    private List<string> GenerateAssignmentReasons(SmartScheduledItem task, AvailableTimeSlot slot, List<SchedulingPattern> patterns) => new() { "Optimal time slot identified" };
+    private Task<AvailableTimeSlot?> FindBestTimeSlotForTaskAsync(SmartScheduledItem task, List<AvailableTimeSlot> availableSlots, List<DomainSchedulingPattern> patterns, SmartSchedulingPreferences preferences, List<TimeSlotAssignment> assignments, CancellationToken cancellationToken) => Task.FromResult(availableSlots.FirstOrDefault());
+    private double CalculateSlotFitnessScore(SmartScheduledItem task, AvailableTimeSlot slot, List<DomainSchedulingPattern> patterns, SmartSchedulingPreferences preferences) => 0.8;
+    private List<string> GenerateAssignmentReasons(SmartScheduledItem task, AvailableTimeSlot slot, List<DomainSchedulingPattern> patterns) => new() { "Optimal time slot identified" };
     private List<AvailableTimeSlot> UpdateAvailableSlots(List<AvailableTimeSlot> slots, TimeSlotAssignment assignment) => slots.Where(s => s.Id != assignment.SlotId).ToList();
 
     #endregion

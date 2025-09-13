@@ -4,6 +4,7 @@ using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using WhoAndWhat.Application.DTOs.Calendar;
 using WhoAndWhat.Application.Interfaces;
 using WhoAndWhat.Infrastructure.Services.Calendar;
 

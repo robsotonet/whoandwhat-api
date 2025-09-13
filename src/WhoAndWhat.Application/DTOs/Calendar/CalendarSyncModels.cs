@@ -1198,3 +1198,92 @@ public sealed record PotentialConflict(
     List<string> AffectedItems,
     float Probability
 );
+
+/// <summary>
+/// Calendar access role for external calendars
+/// </summary>
+public enum CalendarAccessRole
+{
+    None,
+    FreeBusyReader,
+    Reader,
+    Writer,
+    Owner
+}
+
+/// <summary>
+/// External attendee status for calendar events
+/// </summary>
+public enum ExternalAttendeeStatus
+{
+    NeedsAction,
+    Accepted,
+    Declined,
+    Tentative
+}
+
+/// <summary>
+/// Internal attendee status for mapping
+/// </summary>
+public enum InternalAttendeeStatus
+{
+    Pending,
+    Accepted,
+    Declined,
+    Maybe
+}
+
+/// <summary>
+/// Webhook change type for calendar events
+/// </summary>
+public enum WebhookChangeType
+{
+    Created,
+    Updated,
+    Deleted,
+    Moved
+}
+
+/// <summary>
+/// Detected scheduling pattern
+/// </summary>
+public sealed record DetectedPattern(
+    string PatternId,
+    string PatternType,
+    string Description,
+    float Confidence,
+    DateTime FirstDetected,
+    DateTime LastSeen,
+    int Occurrences
+);
+
+/// <summary>
+/// Conflict impact assessment
+/// </summary>
+public enum ConflictImpact
+{
+    Low,
+    Medium,
+    High,
+    Critical
+}
+
+/// <summary>
+/// Resolution recommendation for conflicts
+/// </summary>
+public sealed record ResolutionRecommendation(
+    ConflictResolutionAction RecommendedAction,
+    string Reasoning,
+    float Confidence,
+    Dictionary<string, object> Parameters
+);
+
+/// <summary>
+/// Risk assessment for scheduling conflicts
+/// </summary>
+public sealed record RiskAssessment(
+    ConflictImpact Impact,
+    float Probability,
+    string Description,
+    List<string> Factors
+);

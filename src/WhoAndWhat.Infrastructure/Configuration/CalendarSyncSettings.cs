@@ -1,3 +1,5 @@
+using WhoAndWhat.Application.DTOs.Calendar;
+
 namespace WhoAndWhat.Infrastructure.Configuration;
 
 /// <summary>
@@ -493,73 +495,3 @@ public class CalendarFeatureFlags
     public bool EnableExperimentalFeatures { get; set; } = false;
 }
 
-/// <summary>
-/// Supported calendar providers
-/// </summary>
-public enum CalendarProvider
-{
-    Google,
-    Outlook,
-    ICloud,
-    CalDAV,
-    Exchange,
-    Yahoo,
-    Custom
-}
-
-/// <summary>
-/// Calendar synchronization modes
-/// </summary>
-public enum SyncMode
-{
-    /// <summary>
-    /// Sync from WhoAndWhat to external calendar only
-    /// </summary>
-    OneWayToExternal,
-
-    /// <summary>
-    /// Sync from external calendar to WhoAndWhat only
-    /// </summary>
-    OneWayFromExternal,
-
-    /// <summary>
-    /// Two-way synchronization between WhoAndWhat and external calendar
-    /// </summary>
-    BiDirectional
-}
-
-/// <summary>
-/// Conflict resolution strategies when events/tasks have conflicting changes
-/// </summary>
-public enum ConflictResolutionStrategy
-{
-    /// <summary>
-    /// The most recently modified item wins
-    /// </summary>
-    LastModifiedWins,
-
-    /// <summary>
-    /// External calendar takes precedence
-    /// </summary>
-    ExternalWins,
-
-    /// <summary>
-    /// WhoAndWhat internal data takes precedence
-    /// </summary>
-    InternalWins,
-
-    /// <summary>
-    /// Prompt user to resolve conflicts manually
-    /// </summary>
-    UserResolves,
-
-    /// <summary>
-    /// Create duplicate entries for manual resolution
-    /// </summary>
-    CreateDuplicates,
-
-    /// <summary>
-    /// Merge changes when possible, fallback to LastModifiedWins
-    /// </summary>
-    SmartMerge
-}

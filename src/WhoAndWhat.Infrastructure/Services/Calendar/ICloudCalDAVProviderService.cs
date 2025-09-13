@@ -1002,12 +1002,9 @@ public class ICloudCalDAVProviderService : ICalendarProviderService, IDisposable
                     {
                         var property = trimmedLine.Substring(0, colonIndex);
                         
-                        // Extract value after colon, handling edge case where colon is at end of string
+                        // Extract value after colon - Substring automatically handles edge cases
                         // When colonIndex + 1 == trimmedLine.Length (colon at end), Substring returns empty string
-                        // When colonIndex + 1 < trimmedLine.Length (chars after colon), extract them
-                        var value = colonIndex + 1 < trimmedLine.Length
-                            ? trimmedLine.Substring(colonIndex + 1)
-                            : string.Empty;
+                        var value = trimmedLine.Substring(colonIndex + 1);
 
                         // Handle property parameters (e.g., DTSTART;VALUE=DATE:20230101)
                         var propertyParts = property.Split(';');

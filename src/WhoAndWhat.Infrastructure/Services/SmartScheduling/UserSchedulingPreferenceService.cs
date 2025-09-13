@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
+using WhoAndWhat.Application.DTOs.Calendar;
 using WhoAndWhat.Application.DTOs.SmartScheduling;
 using WhoAndWhat.Application.Interfaces;
 using WhoAndWhat.Domain.Entities;
@@ -16,7 +17,7 @@ public sealed class UserSchedulingPreferenceService : IUserSchedulingPreferenceS
     private readonly IMemoryCache _cache;
     private readonly IUserSchedulingPreferenceRepository _preferenceRepository;
     private readonly ISchedulingPatternRepository _patternRepository;
-    private readonly ITaskRepository _taskRepository;
+    private readonly IAppTaskRepository _taskRepository;
 
     // Learning constants for preference adaptation
     private const double LEARNING_RATE = 0.1;
@@ -31,7 +32,7 @@ public sealed class UserSchedulingPreferenceService : IUserSchedulingPreferenceS
         IMemoryCache cache,
         IUserSchedulingPreferenceRepository preferenceRepository,
         ISchedulingPatternRepository patternRepository,
-        ITaskRepository taskRepository)
+        IAppTaskRepository taskRepository)
     {
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _cache = cache ?? throw new ArgumentNullException(nameof(cache));
@@ -731,7 +732,7 @@ public sealed class UserSchedulingPreferenceService : IUserSchedulingPreferenceS
         entity.UpdatedAt = DateTime.UtcNow;
     }
 
-    private Dictionary<int, double> AnalyzeProductivityByTimeOfDay(IEnumerable<Domain.Entities.Task> tasks)
+    private Dictionary<int, double> AnalyzeProductivityByTimeOfDay(IEnumerable<AppTask> tasks)
     {
         var productivityByHour = new Dictionary<int, double>();
 
@@ -749,7 +750,7 @@ public sealed class UserSchedulingPreferenceService : IUserSchedulingPreferenceS
         return productivityByHour;
     }
 
-    private Dictionary<string, double> AnalyzeCategoryPatterns(IEnumerable<Domain.Entities.Task> tasks)
+    private Dictionary<string, double> AnalyzeCategoryPatterns(IEnumerable<AppTask> tasks)
     {
         return tasks
             .Where(t => t.CompletedAt.HasValue && t.ProductivityScore.HasValue)
@@ -757,7 +758,7 @@ public sealed class UserSchedulingPreferenceService : IUserSchedulingPreferenceS
             .ToDictionary(g => g.Key, g => g.Average(t => t.ProductivityScore!.Value));
     }
 
-    private Dictionary<DayOfWeek, double> AnalyzeWeeklyPatterns(IEnumerable<Domain.Entities.Task> tasks)
+    private Dictionary<DayOfWeek, double> AnalyzeWeeklyPatterns(IEnumerable<AppTask> tasks)
     {
         return tasks
             .Where(t => t.CompletedAt.HasValue && t.ProductivityScore.HasValue)
@@ -794,12 +795,12 @@ public sealed class UserSchedulingPreferenceService : IUserSchedulingPreferenceS
         return recommendations;
     }
 
-    private Task<List<SchedulingPattern>> DetectPatternsFromActivity(Guid userId, SmartScheduledItem item, CancellationToken cancellationToken)
+    private Task<List<Domain.Entities.SchedulingPattern>> DetectPatternsFromActivity(Guid userId, SmartScheduledItem item, CancellationToken cancellationToken)
     {
-        var patterns = new List<SchedulingPattern>();
+        var patterns = new List<Domain.Entities.SchedulingPattern>();
 
         // Create a pattern for task category and time
-        var categoryTimePattern = new SchedulingPattern
+        var categoryTimePattern = new Domain.Entities.SchedulingPattern
         {
             Id = Guid.NewGuid(),
             UserId = userId,
@@ -821,7 +822,7 @@ public sealed class UserSchedulingPreferenceService : IUserSchedulingPreferenceS
         };
 
         patterns.Add(categoryTimePattern);
-        return Task.FromResult<List<Domain.Entities.SchedulingPattern>>(patterns);
+        return Task.FromResult(patterns);
     }
 
     private void AdjustPreferencesFromFeedback(UserSchedulingPreference preferences, ScheduleFeedback feedback)
@@ -859,7 +860,7 @@ public sealed class UserSchedulingPreferenceService : IUserSchedulingPreferenceS
         return (weightedScore - 2.5) * 0.4; // Normalize to -1.0 to +1.0 range
     }
 
-    private (TimeSpan? start, TimeSpan? end) LearnOptimalWorkingHours(IEnumerable<Domain.Entities.Task> tasks)
+    private (TimeSpan? start, TimeSpan? end) LearnOptimalWorkingHours(IEnumerable<AppTask> tasks)
     {
         var completedTasks = tasks.Where(t => t.CompletedAt.HasValue && t.ProductivityScore.HasValue && t.ProductivityScore > 0.6).ToList();
 
@@ -875,7 +876,7 @@ public sealed class UserSchedulingPreferenceService : IUserSchedulingPreferenceS
         return (earliestProductive, latestProductive);
     }
 
-    private List<TimeSpan> LearnBreakPatterns(IEnumerable<SchedulingPattern> patterns)
+    private List<TimeSpan> LearnBreakPatterns(IEnumerable<Domain.Entities.SchedulingPattern> patterns)
     {
         // Analyze patterns to determine optimal break times
         var breakTimes = new List<TimeSpan>
@@ -887,7 +888,7 @@ public sealed class UserSchedulingPreferenceService : IUserSchedulingPreferenceS
         return breakTimes;
     }
 
-    private List<ProductivityTrend> AnalyzeProductivityTrends(IEnumerable<Domain.Entities.Task> tasks, TimeframePeriod period)
+    private List<ProductivityTrend> AnalyzeProductivityTrends(IEnumerable<AppTask> tasks, TimeframePeriod period)
     {
         var trends = new List<ProductivityTrend>();
 
@@ -958,7 +959,7 @@ public sealed class UserSchedulingPreferenceService : IUserSchedulingPreferenceS
         return recommendations;
     }
 
-    private double PredictEnergyLevelForTime(int hour, IEnumerable<SchedulingPattern> patterns, UserSchedulingPreference? preferences)
+    private double PredictEnergyLevelForTime(int hour, IEnumerable<Domain.Entities.SchedulingPattern> patterns, UserSchedulingPreference? preferences)
     {
         // Basic energy prediction based on typical human circadian rhythms
         var baseEnergy = hour switch

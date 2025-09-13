@@ -15,7 +15,7 @@ public sealed class SmartSchedulingService : ISmartSchedulingService
     private readonly IScheduleOptimizationEngine _optimizationEngine;
     private readonly ITimeBlockManager _timeBlockManager;
     private readonly IUserSchedulingPreferenceService _preferenceService;
-    private readonly ITaskRepository _taskRepository;
+    private readonly IAppTaskRepository _taskRepository;
     private readonly ICalendarProviderService _calendarService;
 
     public SmartSchedulingService(
@@ -23,7 +23,7 @@ public sealed class SmartSchedulingService : ISmartSchedulingService
         IScheduleOptimizationEngine optimizationEngine,
         ITimeBlockManager timeBlockManager,
         IUserSchedulingPreferenceService preferenceService,
-        ITaskRepository taskRepository,
+        IAppTaskRepository taskRepository,
         ICalendarProviderService calendarService)
     {
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
@@ -387,7 +387,7 @@ public sealed class SmartSchedulingService : ISmartSchedulingService
             }
 
             // Generate time block recommendations for the adjusted schedule
-            var timeBlocks = await _timeBlockManager.GetTimeBlockRecommendationsAsync(
+            var timeBlocks = await _timeBlockManager.GenerateTimeBlockRecommendationsAsync(
                 userId,
                 DateTime.Today,
                 preferences,

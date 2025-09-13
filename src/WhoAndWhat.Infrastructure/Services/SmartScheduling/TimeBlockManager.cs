@@ -2,6 +2,10 @@ using Microsoft.Extensions.Logging;
 using WhoAndWhat.Application.DTOs.SmartScheduling;
 using WhoAndWhat.Application.Interfaces;
 using WhoAndWhat.Domain.Entities;
+using DomainSchedulingPattern = WhoAndWhat.Domain.Entities.SchedulingPattern;
+using DTOSchedulingPattern = WhoAndWhat.Application.DTOs.SmartScheduling.SchedulingPattern;
+using DomainTimeBlockPurpose = WhoAndWhat.Domain.Entities.TimeBlockPurpose;
+using DTOTimeBlockPurpose = WhoAndWhat.Application.DTOs.SmartScheduling.TimeBlockPurpose;
 
 namespace WhoAndWhat.Infrastructure.Services.SmartScheduling;
 
@@ -194,7 +198,7 @@ public sealed class TimeBlockManager : ITimeBlockManager
                         Title: "Deep Work Session",
                         StartTime: slot.StartTime,
                         EndTime: slot.StartTime.Add(duration),
-                        Purpose: TimeBlockPurpose.DeepWork,
+                        Purpose: DTOTimeBlockPurpose.DeepWork,
                         Description: "Focused time for complex, high-value work requiring sustained attention",
                         SuggestedActivities: new List<string>
                         {
@@ -248,7 +252,7 @@ public sealed class TimeBlockManager : ITimeBlockManager
                     Title: "Administrative Tasks",
                     StartTime: slot.StartTime,
                     EndTime: slot.StartTime.Add(duration),
-                    Purpose: TimeBlockPurpose.Administrative,
+                    Purpose: DTOTimeBlockPurpose.Administrative,
                     Description: "Time dedicated to routine administrative and organizational tasks",
                     SuggestedActivities: new List<string>
                     {
@@ -307,7 +311,7 @@ public sealed class TimeBlockManager : ITimeBlockManager
                             Title: "Buffer Time",
                             StartTime: bufferStart,
                             EndTime: bufferEnd,
-                            Purpose: TimeBlockPurpose.Buffer,
+                            Purpose: DTOTimeBlockPurpose.Buffer,
                             Description: $"Buffer time between '{currentItem.Title}' and '{nextItem.Title}'",
                             SuggestedActivities: new List<string>
                             {
@@ -347,11 +351,11 @@ public sealed class TimeBlockManager : ITimeBlockManager
             var patterns = await _patternRepository.GetOptimizationEligiblePatternsAsync(userId, cancellationToken);
             var historicalData = await _timeBlockRepository.GetCompletedTimeBlocksAsync(userId, DateTime.UtcNow.AddDays(-30), DateTime.UtcNow, cancellationToken);
 
-            var effectivenessByPurpose = new Dictionary<TimeBlockPurpose, double>();
+            var effectivenessByPurpose = new Dictionary<DTOTimeBlockPurpose, double>();
             var insights = new List<TimeBlockInsight>();
 
             // Analyze effectiveness by purpose
-            foreach (var purpose in Enum.GetValues<TimeBlockPurpose>())
+            foreach (var purpose in Enum.GetValues<DTOTimeBlockPurpose>())
             {
                 var purposeBlocks = timeBlocks.Where(tb => tb.Purpose == purpose).ToList();
                 if (purposeBlocks.Any())
@@ -401,7 +405,7 @@ public sealed class TimeBlockManager : ITimeBlockManager
 
     public async Task<TimeBlockDurationRecommendation> GetOptimalBlockDurationAsync(
         Guid userId,
-        TimeBlockPurpose blockPurpose,
+        DTOTimeBlockPurpose blockPurpose,
         CancellationToken cancellationToken = default)
     {
         _logger.LogInformation("Getting optimal block duration for user {UserId}, purpose {Purpose}", userId, blockPurpose);
@@ -513,9 +517,9 @@ public sealed class TimeBlockManager : ITimeBlockManager
     }
 
     // Time block purpose determination
-    private Task<TimeBlockPurpose> DetermineOptimalBlockPurposeAsync(
+    private Task<DTOTimeBlockPurpose> DetermineOptimalBlockPurposeAsync(
         TimeSlot gap, List<SmartScheduledItem> scheduledItems, SmartSchedulingPreferences preferences,
-        List<SchedulingPattern> patterns, CancellationToken cancellationToken)
+        List<DomainSchedulingPattern> patterns, CancellationToken cancellationToken)
     {
         var hour = gap.StartTime.Hour;
         var duration = gap.EndTime - gap.StartTime;
@@ -527,24 +531,24 @@ public sealed class TimeBlockManager : ITimeBlockManager
             var productivityPatterns = applicablePatterns.Where(p => p.ProductivityCorrelation > 0.6).ToList();
             if (productivityPatterns.Any() && duration >= TimeSpan.FromMinutes(MIN_DEEP_WORK_MINUTES))
             {
-                return Task.FromResult<Domain.Entities.TimeBlockPurpose>(TimeBlockPurpose.DeepWork);
+                return Task.FromResult(DTOTimeBlockPurpose.DeepWork);
             }
         }
 
         // Fall back to time-based heuristics
-        return Task.FromResult<Domain.Entities.TimeBlockPurpose>(hour switch
+        return Task.FromResult(hour switch
         {
-            >= 8 and <= 11 when duration >= TimeSpan.FromMinutes(MIN_DEEP_WORK_MINUTES) => TimeBlockPurpose.DeepWork,
-            >= 14 and <= 17 => TimeBlockPurpose.Administrative,
-            >= 10 and <= 12 when duration >= TimeSpan.FromMinutes(60) => TimeBlockPurpose.Creative,
-            _ => TimeBlockPurpose.Buffer
+            >= 8 and <= 11 when duration >= TimeSpan.FromMinutes(MIN_DEEP_WORK_MINUTES) => DTOTimeBlockPurpose.DeepWork,
+            >= 14 and <= 17 => DTOTimeBlockPurpose.Administrative,
+            >= 10 and <= 12 when duration >= TimeSpan.FromMinutes(60) => DTOTimeBlockPurpose.Creative,
+            _ => DTOTimeBlockPurpose.Buffer
         });
     }
 
     // Time block creation with AI insights
     private Task<TimeBlockSuggestion?> CreateTimeBlockSuggestionAsync(
-        Guid userId, TimeSlot gap, TimeBlockPurpose purpose, SmartSchedulingPreferences preferences,
-        List<SchedulingPattern> patterns, CancellationToken cancellationToken)
+        Guid userId, TimeSlot gap, DTOTimeBlockPurpose purpose, SmartSchedulingPreferences preferences,
+        List<DomainSchedulingPattern> patterns, CancellationToken cancellationToken)
     {
         var duration = CalculateOptimalDuration(gap, purpose, preferences);
         if (duration < TimeSpan.FromMinutes(15))
@@ -570,18 +574,18 @@ public sealed class TimeBlockManager : ITimeBlockManager
     }
 
     // Simplified helper methods for demo
-    private Task<List<TimeBlockSuggestion>> CreateSpecializedTimeBlocksAsync(Guid userId, List<TimeSlot> gaps, SmartSchedulingPreferences preferences, List<SchedulingPattern> patterns, CancellationToken cancellationToken) => Task.FromResult<List<TimeBlockSuggestion>>(new());
+    private Task<List<TimeBlockSuggestion>> CreateSpecializedTimeBlocksAsync(Guid userId, List<TimeSlot> gaps, SmartSchedulingPreferences preferences, List<DomainSchedulingPattern> patterns, CancellationToken cancellationToken) => Task.FromResult<List<TimeBlockSuggestion>>(new());
     private Task<List<TimeBlockSuggestion>> OptimizeTimeBlocksForProductivityAsync(Guid userId, List<TimeBlockSuggestion> timeBlocks, SmartSchedulingPreferences preferences, CancellationToken cancellationToken) => Task.FromResult(timeBlocks);
-    private Task<List<TimeSlot>> GenerateOptimalTimeSlotsAsync(Guid userId, DateTime date, SmartSchedulingPreferences preferences, List<SchedulingPattern> patterns, CancellationToken cancellationToken) => Task.FromResult<List<TimeSlot>>(new());
-    private Task<TimeBlockPurpose> DetermineBestPurposeForTimeSlotAsync(Guid userId, TimeSlot slot, List<SchedulingPattern> patterns, CancellationToken cancellationToken) => Task.FromResult<Domain.Entities.TimeBlockPurpose>(TimeBlockPurpose.DeepWork);
-    private Task<TimeBlockSuggestion?> CreateOptimizedTimeBlockSuggestionAsync(Guid userId, TimeSlot slot, TimeBlockPurpose purpose, SmartSchedulingPreferences preferences, List<SchedulingPattern> patterns, CancellationToken cancellationToken) => Task.FromResult<TimeBlockSuggestion?>(null);
-    private Task<TimeBlockSuggestion> OptimizeSingleTimeBlockAsync(Guid userId, TimeBlockSuggestion block, SmartSchedulingPreferences preferences, List<SchedulingPattern> patterns, CancellationToken cancellationToken) => Task.FromResult(block);
+    private Task<List<TimeSlot>> GenerateOptimalTimeSlotsAsync(Guid userId, DateTime date, SmartSchedulingPreferences preferences, List<DomainSchedulingPattern> patterns, CancellationToken cancellationToken) => Task.FromResult<List<TimeSlot>>(new());
+    private Task<DTOTimeBlockPurpose> DetermineBestPurposeForTimeSlotAsync(Guid userId, TimeSlot slot, List<DomainSchedulingPattern> patterns, CancellationToken cancellationToken) => Task.FromResult(DTOTimeBlockPurpose.DeepWork);
+    private Task<TimeBlockSuggestion?> CreateOptimizedTimeBlockSuggestionAsync(Guid userId, TimeSlot slot, DTOTimeBlockPurpose purpose, SmartSchedulingPreferences preferences, List<DomainSchedulingPattern> patterns, CancellationToken cancellationToken) => Task.FromResult<TimeBlockSuggestion?>(null);
+    private Task<TimeBlockSuggestion> OptimizeSingleTimeBlockAsync(Guid userId, TimeBlockSuggestion block, SmartSchedulingPreferences preferences, List<DomainSchedulingPattern> patterns, CancellationToken cancellationToken) => Task.FromResult(block);
     private Task<List<TimeBlockSuggestion>> ResolveTimeBlockConflictsAsync(List<TimeBlockSuggestion> blocks, SmartSchedulingPreferences preferences, CancellationToken cancellationToken) => Task.FromResult(blocks);
-    private Task<List<TimeBlockSuggestion>> ReorderForProductivityAsync(Guid userId, List<TimeBlockSuggestion> blocks, List<SchedulingPattern> patterns, CancellationToken cancellationToken) => Task.FromResult(blocks);
-    private Task<List<TimeSpan>> GetOptimalDeepWorkTimesAsync(Guid userId, List<SchedulingPattern> patterns, CancellationToken cancellationToken) => Task.FromResult<List<TimeSpan>>(new() { TimeSpan.FromHours(9), TimeSpan.FromHours(14) });
-    private Task<double> CalculatePurposeEffectivenessAsync(Guid userId, TimeBlockPurpose purpose, List<TimeBlockSuggestion> blocks, List<TimeBlock> historical, CancellationToken cancellationToken) => Task.FromResult(0.8);
-    private Task<List<TimeBlockInsight>> GenerateTimeBlockInsightsAsync(Guid userId, List<TimeBlockSuggestion> blocks, List<TimeBlock> historical, List<SchedulingPattern> patterns, CancellationToken cancellationToken) => Task.FromResult<List<TimeBlockInsight>>(new());
-    private Task<TimeSpan> CalculateRecommendedDurationAsync(TimeBlockPurpose purpose, List<TimeBlock> historical, List<SchedulingPattern> patterns, CancellationToken cancellationToken) => Task.FromResult(TimeSpan.FromHours(2));
+    private Task<List<TimeBlockSuggestion>> ReorderForProductivityAsync(Guid userId, List<TimeBlockSuggestion> blocks, List<DomainSchedulingPattern> patterns, CancellationToken cancellationToken) => Task.FromResult(blocks);
+    private Task<List<TimeSpan>> GetOptimalDeepWorkTimesAsync(Guid userId, List<DomainSchedulingPattern> patterns, CancellationToken cancellationToken) => Task.FromResult<List<TimeSpan>>(new() { TimeSpan.FromHours(9), TimeSpan.FromHours(14) });
+    private Task<double> CalculatePurposeEffectivenessAsync(Guid userId, DTOTimeBlockPurpose purpose, List<TimeBlockSuggestion> blocks, List<TimeBlock> historical, CancellationToken cancellationToken) => Task.FromResult(0.8);
+    private Task<List<TimeBlockInsight>> GenerateTimeBlockInsightsAsync(Guid userId, List<TimeBlockSuggestion> blocks, List<TimeBlock> historical, List<DomainSchedulingPattern> patterns, CancellationToken cancellationToken) => Task.FromResult<List<TimeBlockInsight>>(new());
+    private Task<TimeSpan> CalculateRecommendedDurationAsync(DTOTimeBlockPurpose purpose, List<TimeBlock> historical, List<DomainSchedulingPattern> patterns, CancellationToken cancellationToken) => Task.FromResult(TimeSpan.FromHours(2));
 
     private bool IsOptimalForDeepWork(TimeSlot slot, List<TimeSpan> optimalTimes, SmartSchedulingPreferences preferences)
     {
@@ -600,7 +604,7 @@ public sealed class TimeBlockManager : ITimeBlockManager
         return TimeSpan.FromMinutes(Math.Max(MIN_ADMIN_MINUTES, maxDuration));
     }
 
-    private double CalculateDeepWorkProductivityScore(TimeSlot slot, List<SchedulingPattern> patterns, SmartSchedulingPreferences preferences)
+    private double CalculateDeepWorkProductivityScore(TimeSlot slot, List<DomainSchedulingPattern> patterns, SmartSchedulingPreferences preferences)
     {
         var baseScore = 0.8;
         var hour = slot.StartTime.Hour;
@@ -621,14 +625,14 @@ public sealed class TimeBlockManager : ITimeBlockManager
         return Math.Min(1.0, baseScore);
     }
 
-    private double CalculateAdminProductivityScore(TimeSlot slot, List<SchedulingPattern> patterns, SmartSchedulingPreferences preferences)
+    private double CalculateAdminProductivityScore(TimeSlot slot, List<DomainSchedulingPattern> patterns, SmartSchedulingPreferences preferences)
     {
         // Administrative tasks typically better in afternoon
         var hour = slot.StartTime.Hour;
         return hour >= 13 && hour <= 17 ? 0.7 : 0.5;
     }
 
-    private string GenerateDeepWorkReasoning(TimeSlot slot, List<SchedulingPattern> patterns, SmartSchedulingPreferences preferences)
+    private string GenerateDeepWorkReasoning(TimeSlot slot, List<DomainSchedulingPattern> patterns, SmartSchedulingPreferences preferences)
     {
         var hour = slot.StartTime.Hour;
         var reasons = new List<string>();
@@ -646,21 +650,21 @@ public sealed class TimeBlockManager : ITimeBlockManager
         return string.Join("; ", reasons.DefaultIfEmpty("Good time slot for focused work"));
     }
 
-    private TimeSpan CalculateOptimalDuration(TimeSlot gap, TimeBlockPurpose purpose, SmartSchedulingPreferences preferences)
+    private TimeSpan CalculateOptimalDuration(TimeSlot gap, DTOTimeBlockPurpose purpose, SmartSchedulingPreferences preferences)
     {
         var availableTime = gap.EndTime - gap.StartTime;
 
         return purpose switch
         {
-            TimeBlockPurpose.DeepWork => TimeSpan.FromMinutes(Math.Min(availableTime.TotalMinutes, 120)),
-            TimeBlockPurpose.Administrative => TimeSpan.FromMinutes(Math.Min(availableTime.TotalMinutes, 60)),
-            TimeBlockPurpose.Creative => TimeSpan.FromMinutes(Math.Min(availableTime.TotalMinutes, 90)),
-            TimeBlockPurpose.Break => TimeSpan.FromMinutes(Math.Min(availableTime.TotalMinutes, 15)),
+            DTOTimeBlockPurpose.DeepWork => TimeSpan.FromMinutes(Math.Min(availableTime.TotalMinutes, 120)),
+            DTOTimeBlockPurpose.Administrative => TimeSpan.FromMinutes(Math.Min(availableTime.TotalMinutes, 60)),
+            DTOTimeBlockPurpose.Creative => TimeSpan.FromMinutes(Math.Min(availableTime.TotalMinutes, 90)),
+            DTOTimeBlockPurpose.Break => TimeSpan.FromMinutes(Math.Min(availableTime.TotalMinutes, 15)),
             _ => TimeSpan.FromMinutes(Math.Min(availableTime.TotalMinutes, 60))
         };
     }
 
-    private double CalculateTimeSlotProductivityScore(TimeSlot gap, TimeBlockPurpose purpose, List<SchedulingPattern> patterns, SmartSchedulingPreferences preferences)
+    private double CalculateTimeSlotProductivityScore(TimeSlot gap, DTOTimeBlockPurpose purpose, List<DomainSchedulingPattern> patterns, SmartSchedulingPreferences preferences)
     {
         var baseScore = 0.7;
         var applicablePatterns = patterns.Where(p => p.AppliesTo(gap.StartTime)).ToList();
@@ -673,48 +677,48 @@ public sealed class TimeBlockManager : ITimeBlockManager
         return Math.Max(0.1, Math.Min(1.0, baseScore));
     }
 
-    private List<string> GenerateSuggestedActivities(TimeBlockPurpose purpose)
+    private List<string> GenerateSuggestedActivities(DTOTimeBlockPurpose purpose)
     {
         return purpose switch
         {
-            TimeBlockPurpose.DeepWork => new() { "Complex analysis", "Strategic thinking", "Creative problem solving" },
-            TimeBlockPurpose.Administrative => new() { "Email processing", "Documentation", "Planning" },
-            TimeBlockPurpose.Creative => new() { "Brainstorming", "Design work", "Writing" },
-            TimeBlockPurpose.Break => new() { "Rest", "Walk", "Stretch" },
+            DTOTimeBlockPurpose.DeepWork => new() { "Complex analysis", "Strategic thinking", "Creative problem solving" },
+            DTOTimeBlockPurpose.Administrative => new() { "Email processing", "Documentation", "Planning" },
+            DTOTimeBlockPurpose.Creative => new() { "Brainstorming", "Design work", "Writing" },
+            DTOTimeBlockPurpose.Break => new() { "Rest", "Walk", "Stretch" },
             _ => new() { "Focused work", "Task completion" }
         };
     }
 
-    private string GenerateTimeBlockReasoning(TimeSlot gap, TimeBlockPurpose purpose, List<SchedulingPattern> patterns, SmartSchedulingPreferences preferences)
+    private string GenerateTimeBlockReasoning(TimeSlot gap, DTOTimeBlockPurpose purpose, List<DomainSchedulingPattern> patterns, SmartSchedulingPreferences preferences)
     {
         return $"Optimal {purpose} time block based on available time slot and productivity patterns";
     }
 
-    private string GetTimeBlockTitle(TimeBlockPurpose purpose)
+    private string GetTimeBlockTitle(DTOTimeBlockPurpose purpose)
     {
         return purpose switch
         {
-            TimeBlockPurpose.DeepWork => "Deep Work",
-            TimeBlockPurpose.Administrative => "Admin Tasks",
-            TimeBlockPurpose.Creative => "Creative Time",
-            TimeBlockPurpose.Break => "Break",
+            DTOTimeBlockPurpose.DeepWork => "Deep Work",
+            DTOTimeBlockPurpose.Administrative => "Admin Tasks",
+            DTOTimeBlockPurpose.Creative => "Creative Time",
+            DTOTimeBlockPurpose.Break => "Break",
             _ => "Focus Block"
         };
     }
 
-    private string GetTimeBlockDescription(TimeBlockPurpose purpose)
+    private string GetTimeBlockDescription(DTOTimeBlockPurpose purpose)
     {
         return purpose switch
         {
-            TimeBlockPurpose.DeepWork => "Dedicated time for complex, high-value work requiring deep concentration",
-            TimeBlockPurpose.Administrative => "Time for routine administrative tasks and organization",
-            TimeBlockPurpose.Creative => "Space for creative thinking and innovative problem-solving",
-            TimeBlockPurpose.Break => "Rest period for mental recovery and rejuvenation",
+            DTOTimeBlockPurpose.DeepWork => "Dedicated time for complex, high-value work requiring deep concentration",
+            DTOTimeBlockPurpose.Administrative => "Time for routine administrative tasks and organization",
+            DTOTimeBlockPurpose.Creative => "Space for creative thinking and innovative problem-solving",
+            DTOTimeBlockPurpose.Break => "Rest period for mental recovery and rejuvenation",
             _ => "Focused time block for productive work"
         };
     }
 
-    private List<string> GenerateImprovementActions(TimeBlockPurpose purpose, double effectiveness)
+    private List<string> GenerateImprovementActions(DTOTimeBlockPurpose purpose, double effectiveness)
     {
         return new List<string>
         {
@@ -758,14 +762,14 @@ public sealed class TimeBlockManager : ITimeBlockManager
         return recommendations;
     }
 
-    private (TimeSpan Min, TimeSpan Max) GetDurationBounds(TimeBlockPurpose purpose)
+    private (TimeSpan Min, TimeSpan Max) GetDurationBounds(DTOTimeBlockPurpose purpose)
     {
         return purpose switch
         {
-            TimeBlockPurpose.DeepWork => (TimeSpan.FromMinutes(90), TimeSpan.FromMinutes(240)),
-            TimeBlockPurpose.Administrative => (TimeSpan.FromMinutes(30), TimeSpan.FromMinutes(120)),
-            TimeBlockPurpose.Creative => (TimeSpan.FromMinutes(45), TimeSpan.FromMinutes(180)),
-            TimeBlockPurpose.Break => (TimeSpan.FromMinutes(5), TimeSpan.FromMinutes(30)),
+            DTOTimeBlockPurpose.DeepWork => (TimeSpan.FromMinutes(90), TimeSpan.FromMinutes(240)),
+            DTOTimeBlockPurpose.Administrative => (TimeSpan.FromMinutes(30), TimeSpan.FromMinutes(120)),
+            DTOTimeBlockPurpose.Creative => (TimeSpan.FromMinutes(45), TimeSpan.FromMinutes(180)),
+            DTOTimeBlockPurpose.Break => (TimeSpan.FromMinutes(5), TimeSpan.FromMinutes(30)),
             _ => (TimeSpan.FromMinutes(30), TimeSpan.FromMinutes(120))
         };
     }
@@ -781,7 +785,7 @@ public sealed class TimeBlockManager : ITimeBlockManager
         return Math.Max(0.3, Math.Min(1.0, averageEfficiency));
     }
 
-    private List<string> GetDurationFactors(TimeBlockPurpose purpose, List<TimeBlock> historical, List<SchedulingPattern> patterns)
+    private List<string> GetDurationFactors(DTOTimeBlockPurpose purpose, List<TimeBlock> historical, List<DomainSchedulingPattern> patterns)
     {
         return new List<string>
         {
@@ -792,7 +796,7 @@ public sealed class TimeBlockManager : ITimeBlockManager
         };
     }
 
-    private string GenerateDurationReasoning(TimeBlockPurpose purpose, TimeSpan duration, List<string> factors)
+    private string GenerateDurationReasoning(DTOTimeBlockPurpose purpose, TimeSpan duration, List<string> factors)
     {
         return $"Recommended {duration.TotalMinutes} minutes for {purpose} based on {string.Join(", ", factors)}";
     }
@@ -818,7 +822,7 @@ private Task<List<TimeBlockSuggestion>> GenerateStrategicTimeBlocksAsync(
             Title: "Daily Review",
             StartTime: reviewTime,
             EndTime: reviewTime.AddMinutes(15),
-            Purpose: TimeBlockPurpose.Planning,
+            Purpose: DTOTimeBlockPurpose.Planning,
             Description: "Review today's accomplishments and plan tomorrow",
             SuggestedActivities: new List<string>
             {
@@ -844,7 +848,7 @@ private Task<List<TimeBlockSuggestion>> GenerateStrategicTimeBlocksAsync(
                 Title: "Weekly Planning",
                 StartTime: planningTime,
                 EndTime: planningTime.AddMinutes(30),
-                Purpose: TimeBlockPurpose.Planning,
+                Purpose: DTOTimeBlockPurpose.Planning,
                 Description: "Strategic planning for the week ahead",
                 SuggestedActivities: new List<string>
                 {
@@ -936,7 +940,7 @@ private TimeBlockSuggestion CreateDeepWorkBlock(DateTime startTime, TimeSpan dur
         Title: title,
         StartTime: startTime,
         EndTime: startTime.Add(duration),
-        Purpose: TimeBlockPurpose.DeepWork,
+        Purpose: DTOTimeBlockPurpose.DeepWork,
         Description: "Uninterrupted time for focused, high-value work",
         SuggestedActivities: new List<string>
         {
@@ -958,7 +962,7 @@ private TimeBlockSuggestion CreatePlanningBlock(DateTime startTime, TimeSpan dur
         Title: title,
         StartTime: startTime,
         EndTime: startTime.Add(duration),
-        Purpose: TimeBlockPurpose.Planning,
+        Purpose: DTOTimeBlockPurpose.Planning,
         Description: "Strategic planning and goal setting time",
         SuggestedActivities: new List<string>
         {
@@ -980,7 +984,7 @@ private TimeBlockSuggestion CreateCreativeBlock(DateTime startTime, TimeSpan dur
         Title: title,
         StartTime: startTime,
         EndTime: startTime.Add(duration),
-        Purpose: TimeBlockPurpose.Creative,
+        Purpose: DTOTimeBlockPurpose.Creative,
         Description: "Dedicated time for creative and innovative thinking",
         SuggestedActivities: new List<string>
         {
@@ -1006,7 +1010,7 @@ private List<TimeBlockSuggestion> GenerateBreakBlocks(DateTime date, WorkingHour
         Title: "Morning Break",
         StartTime: morningBreak,
         EndTime: morningBreak.Add(bufferDuration),
-        Purpose: TimeBlockPurpose.Break,
+        Purpose: DTOTimeBlockPurpose.Break,
         Description: "Short break for refreshment and mental reset",
         SuggestedActivities: new List<string> { "Stretch", "Hydrate", "Brief walk", "Deep breathing" },
         ProductivityScore: 0.7,
@@ -1020,7 +1024,7 @@ private List<TimeBlockSuggestion> GenerateBreakBlocks(DateTime date, WorkingHour
         Title: "Afternoon Break",
         StartTime: afternoonBreak,
         EndTime: afternoonBreak.Add(bufferDuration),
-        Purpose: TimeBlockPurpose.Break,
+        Purpose: DTOTimeBlockPurpose.Break,
         Description: "Afternoon energy boost break",
         SuggestedActivities: new List<string> { "Light snack", "Stretch", "Fresh air", "Quick meditation" },
         ProductivityScore: 0.7,
@@ -1086,83 +1090,53 @@ private bool HasHighPriorityTasksAround(TimeGap gap, List<SmartScheduledItem> sc
     return (beforeTask?.Priority.Value >= 3) && (afterTask?.Priority.Value >= 3);
 }
 
-private TimeSpan CalculateOptimalDuration(TimeSpan availableDuration, TimeBlockPurpose purpose)
+private TimeSpan CalculateOptimalDuration(TimeSpan availableDuration, DTOTimeBlockPurpose purpose)
 {
     return purpose switch
     {
-        TimeBlockPurpose.DeepWork => TimeSpan.FromMinutes(Math.Min(120, Math.Max(90, availableDuration.TotalMinutes - 15))),
-        TimeBlockPurpose.Administrative => TimeSpan.FromMinutes(Math.Min(90, Math.Max(30, availableDuration.TotalMinutes - 10))),
-        TimeBlockPurpose.Creative => TimeSpan.FromMinutes(Math.Min(120, Math.Max(60, availableDuration.TotalMinutes - 15))),
-        TimeBlockPurpose.Planning => TimeSpan.FromMinutes(Math.Min(45, Math.Max(15, availableDuration.TotalMinutes - 5))),
-        TimeBlockPurpose.Communication => TimeSpan.FromMinutes(Math.Min(60, Math.Max(30, availableDuration.TotalMinutes - 10))),
-        TimeBlockPurpose.Break => TimeSpan.FromMinutes(Math.Min(20, Math.Max(10, availableDuration.TotalMinutes - 5))),
-        TimeBlockPurpose.Buffer => TimeSpan.FromMinutes(Math.Min(15, availableDuration.TotalMinutes)),
+        DTOTimeBlockPurpose.DeepWork => TimeSpan.FromMinutes(Math.Min(120, Math.Max(90, availableDuration.TotalMinutes - 15))),
+        DTOTimeBlockPurpose.Administrative => TimeSpan.FromMinutes(Math.Min(90, Math.Max(30, availableDuration.TotalMinutes - 10))),
+        DTOTimeBlockPurpose.Creative => TimeSpan.FromMinutes(Math.Min(120, Math.Max(60, availableDuration.TotalMinutes - 15))),
+        DTOTimeBlockPurpose.Planning => TimeSpan.FromMinutes(Math.Min(45, Math.Max(15, availableDuration.TotalMinutes - 5))),
+        DTOTimeBlockPurpose.Communication => TimeSpan.FromMinutes(Math.Min(60, Math.Max(30, availableDuration.TotalMinutes - 10))),
+        DTOTimeBlockPurpose.Break => TimeSpan.FromMinutes(Math.Min(20, Math.Max(10, availableDuration.TotalMinutes - 5))),
+        DTOTimeBlockPurpose.Buffer => TimeSpan.FromMinutes(Math.Min(15, availableDuration.TotalMinutes)),
         _ => TimeSpan.FromMinutes(Math.Min(60, availableDuration.TotalMinutes - 10))
     };
 }
 
-private List<string> GetSuggestedActivities(TimeBlockPurpose purpose)
+private List<string> GetSuggestedActivities(DTOTimeBlockPurpose purpose)
 {
     return purpose switch
     {
-        TimeBlockPurpose.DeepWork => new List<string> { "Complex analysis", "Strategic planning", "Creative work", "Important projects" },
-        TimeBlockPurpose.Administrative => new List<string> { "Email processing", "Document organization", "Scheduling", "Status updates" },
-        TimeBlockPurpose.Creative => new List<string> { "Brainstorming", "Design work", "Innovation", "Problem solving" },
-        TimeBlockPurpose.Planning => new List<string> { "Goal setting", "Task prioritization", "Schedule review", "Progress analysis" },
-        TimeBlockPurpose.Communication => new List<string> { "Team meetings", "Client calls", "Feedback sessions", "Collaboration" },
-        TimeBlockPurpose.Break => new List<string> { "Rest and recovery", "Stretching", "Fresh air", "Mindfulness" },
-        TimeBlockPurpose.Buffer => new List<string> { "Preparation", "Transition", "Quick tasks", "Mental reset" },
+        DTOTimeBlockPurpose.DeepWork => new List<string> { "Complex analysis", "Strategic planning", "Creative work", "Important projects" },
+        DTOTimeBlockPurpose.Administrative => new List<string> { "Email processing", "Document organization", "Scheduling", "Status updates" },
+        DTOTimeBlockPurpose.Creative => new List<string> { "Brainstorming", "Design work", "Innovation", "Problem solving" },
+        DTOTimeBlockPurpose.Planning => new List<string> { "Goal setting", "Task prioritization", "Schedule review", "Progress analysis" },
+        DTOTimeBlockPurpose.Communication => new List<string> { "Team meetings", "Client calls", "Feedback sessions", "Collaboration" },
+        DTOTimeBlockPurpose.Break => new List<string> { "Rest and recovery", "Stretching", "Fresh air", "Mindfulness" },
+        DTOTimeBlockPurpose.Buffer => new List<string> { "Preparation", "Transition", "Quick tasks", "Mental reset" },
         _ => new List<string> { "Focused work", "Task completion", "Productivity activities" }
     };
 }
 
-private string GetTimeBlockTitle(TimeBlockPurpose purpose)
-{
-    return purpose switch
-    {
-        TimeBlockPurpose.DeepWork => "Deep Work Session",
-        TimeBlockPurpose.Administrative => "Administrative Tasks",
-        TimeBlockPurpose.Creative => "Creative Time",
-        TimeBlockPurpose.Planning => "Planning Session",
-        TimeBlockPurpose.Communication => "Communication Block",
-        TimeBlockPurpose.Break => "Break Time",
-        TimeBlockPurpose.Buffer => "Buffer Time",
-        _ => "Focus Block"
-    };
-}
-
-private string GetTimeBlockDescription(TimeBlockPurpose purpose)
-{
-    return purpose switch
-    {
-        TimeBlockPurpose.DeepWork => "Uninterrupted time for complex, high-value work",
-        TimeBlockPurpose.Administrative => "Handle routine tasks and organizational activities",
-        TimeBlockPurpose.Creative => "Dedicated time for creative thinking and innovation",
-        TimeBlockPurpose.Planning => "Strategic planning and goal-setting session",
-        TimeBlockPurpose.Communication => "Time for meetings, calls, and collaboration",
-        TimeBlockPurpose.Break => "Rest and recovery time to maintain energy",
-        TimeBlockPurpose.Buffer => "Transition time between different activities",
-        _ => "Focused work session"
-    };
-}
-
-private string GetTimeBlockReasoning(TimeGap gap, TimeBlockPurpose purpose)
+private string GetTimeBlockReasoning(TimeGap gap, DTOTimeBlockPurpose purpose)
 {
     return $"Optimal {purpose.ToString().ToLower()} time based on {gap.Duration.TotalMinutes:F0}-minute availability window";
 }
 
-private double CalculateProductivityScore(DateTime startTime, TimeBlockPurpose purpose, SmartSchedulingPreferences preferences)
+private double CalculateProductivityScore(DateTime startTime, DTOTimeBlockPurpose purpose, SmartSchedulingPreferences preferences)
 {
     var timeQuality = CalculateTimeQuality(startTime, preferences);
     var purposeMultiplier = purpose switch
     {
-        TimeBlockPurpose.DeepWork => 1.0,
-        TimeBlockPurpose.Creative => 0.9,
-        TimeBlockPurpose.Planning => 0.85,
-        TimeBlockPurpose.Communication => 0.75,
-        TimeBlockPurpose.Administrative => 0.6,
-        TimeBlockPurpose.Break => 0.7,
-        TimeBlockPurpose.Buffer => 0.5,
+        DTOTimeBlockPurpose.DeepWork => 1.0,
+        DTOTimeBlockPurpose.Creative => 0.9,
+        DTOTimeBlockPurpose.Planning => 0.85,
+        DTOTimeBlockPurpose.Communication => 0.75,
+        DTOTimeBlockPurpose.Administrative => 0.6,
+        DTOTimeBlockPurpose.Break => 0.7,
+        DTOTimeBlockPurpose.Buffer => 0.5,
         _ => 0.7
     };
 
@@ -1176,30 +1150,30 @@ private bool HasConflict(DateTime startTime, TimeSpan duration, List<SmartSchedu
         item.StartTime < endTime && startTime < item.EndTime);
 }
 
-private DateTime? FindOptimalTimeForPurpose(TimeBlockPurpose purpose, DateTime date, SmartSchedulingPreferences preferences)
+private DateTime? FindOptimalTimeForPurpose(DTOTimeBlockPurpose purpose, DateTime date, SmartSchedulingPreferences preferences)
 {
     return purpose switch
     {
-        TimeBlockPurpose.DeepWork => preferences.PreferMorningTasks ? date.AddHours(9) : date.AddHours(14),
-        TimeBlockPurpose.Administrative => date.AddHours(15),
-        TimeBlockPurpose.Creative => date.AddHours(10),
-        TimeBlockPurpose.Planning => date.AddHours(8),
-        TimeBlockPurpose.Communication => date.AddHours(13),
+        DTOTimeBlockPurpose.DeepWork => preferences.PreferMorningTasks ? date.AddHours(9) : date.AddHours(14),
+        DTOTimeBlockPurpose.Administrative => date.AddHours(15),
+        DTOTimeBlockPurpose.Creative => date.AddHours(10),
+        DTOTimeBlockPurpose.Planning => date.AddHours(8),
+        DTOTimeBlockPurpose.Communication => date.AddHours(13),
         _ => null
     };
 }
 
-private TimeSpan GetRequiredGapBetweenBlocks(TimeBlockPurpose previousPurpose, TimeBlockPurpose nextPurpose)
+private TimeSpan GetRequiredGapBetweenBlocks(DTOTimeBlockPurpose previousPurpose, DTOTimeBlockPurpose nextPurpose)
 {
     // Deep work needs more buffer time
-    if (previousPurpose == TimeBlockPurpose.DeepWork || nextPurpose == TimeBlockPurpose.DeepWork)
+    if (previousPurpose == DTOTimeBlockPurpose.DeepWork || nextPurpose == DTOTimeBlockPurpose.DeepWork)
     {
         return TimeSpan.FromMinutes(10);
     }
 
     // Administrative to creative needs transition time
-    if ((previousPurpose == TimeBlockPurpose.Administrative && nextPurpose == TimeBlockPurpose.Creative) ||
-        (previousPurpose == TimeBlockPurpose.Creative && nextPurpose == TimeBlockPurpose.Administrative))
+    if ((previousPurpose == DTOTimeBlockPurpose.Administrative && nextPurpose == DTOTimeBlockPurpose.Creative) ||
+        (previousPurpose == DTOTimeBlockPurpose.Creative && nextPurpose == DTOTimeBlockPurpose.Administrative))
     {
         return TimeSpan.FromMinutes(15);
     }

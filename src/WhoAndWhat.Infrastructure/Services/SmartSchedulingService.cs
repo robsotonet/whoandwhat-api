@@ -8,6 +8,8 @@ using WhoAndWhat.Domain.Common;
 using WhoAndWhat.Infrastructure.Configuration;
 using DomainTask = WhoAndWhat.Domain.Entities.AppTask;
 using DomainTaskStatus = WhoAndWhat.Domain.ValueObjects.AppTaskStatus;
+using AIScheduleOptimizationResult = WhoAndWhat.Application.DTOs.AI.ScheduleOptimizationResult;
+using SmartScheduleOptimizationResult = WhoAndWhat.Application.DTOs.SmartScheduling.ScheduleOptimizationResult;
 
 namespace WhoAndWhat.Infrastructure.Services;
 
@@ -518,7 +520,7 @@ public class SmartSchedulingService : ISmartSchedulingService, IDisposable
     }
 
     private Task<List<SmartScheduledItem>> CreateScheduledItemsAsync(
-        ScheduleOptimizationResult optimizationResult,
+        SmartScheduleOptimizationResult optimizationResult,
         List<DomainTask> tasks,
         List<TimeBlockSuggestion> timeBlocks,
         CancellationToken cancellationToken)
@@ -553,7 +555,7 @@ public class SmartSchedulingService : ISmartSchedulingService, IDisposable
         return Task.FromResult(scheduledItems);
     }
 
-    private List<string> GenerateOptimizationInsights(ScheduleOptimizationResult optimizationResult, AIGeneratedPlan? aiPlan, SmartSchedulingPreferences preferences)
+    private List<string> GenerateOptimizationInsights(SmartScheduleOptimizationResult optimizationResult, AIGeneratedPlan? aiPlan, SmartSchedulingPreferences preferences)
     {
         var insights = new List<string>();
 
@@ -590,7 +592,7 @@ public class SmartSchedulingService : ISmartSchedulingService, IDisposable
         );
     }
 
-    private double CalculateConfidenceScore(ScheduleOptimizationResult optimizationResult, AIGeneratedPlan? aiPlan)
+    private double CalculateConfidenceScore(SmartScheduleOptimizationResult optimizationResult, AIGeneratedPlan? aiPlan)
     {
         // Calculate confidence based on various factors
         double baseScore = 0.7;
@@ -635,7 +637,7 @@ public class SmartSchedulingService : ISmartSchedulingService, IDisposable
         return new List<ScheduleChange>();
     }
 
-    private List<string> GenerateOptimizationRecommendations(ScheduleOptimizationResult optimizationResult, ScheduleValidationResult validationResult)
+    private List<string> GenerateOptimizationRecommendations(SmartScheduleOptimizationResult optimizationResult, ScheduleValidationResult validationResult)
     {
         var recommendations = new List<string>();
 
