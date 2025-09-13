@@ -1063,7 +1063,6 @@ public class OutlookCalendarProviderService : ICalendarProviderService, IDisposa
     public void Dispose()
     {
         if (_disposed) return;
-        _httpClient?.Dispose();
         _disposed = true;
     }
 }

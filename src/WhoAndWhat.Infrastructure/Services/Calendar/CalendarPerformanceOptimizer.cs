@@ -929,7 +929,12 @@ public class RateLimiter
 
     private void ResetRequests(object? state)
     {
-        _semaphore.Release(RequestsPerMinute - _semaphore.CurrentCount);
+        // Ensure we don't try to release more permits than available to prevent exceptions
+        var releaseCount = Math.Max(0, RequestsPerMinute - _semaphore.CurrentCount);
+        if (releaseCount > 0)
+        {
+            _semaphore.Release(releaseCount);
+        }
         Interlocked.Exchange(ref _currentRequests, 0);
         NextResetTime = DateTime.UtcNow.AddMinutes(1);
     }

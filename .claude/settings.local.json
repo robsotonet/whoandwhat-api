@@ -47,7 +47,8 @@
       "Bash(dotnet --version)",
       "Bash(verbosity=normal)",
       "Bash(cat:*)",
-      "Bash(dotnet nuget locals:*)"
+      "Bash(dotnet nuget locals:*)",
+      "Bash(csc:*)"
     ],
     "deny": [],
     "ask": []

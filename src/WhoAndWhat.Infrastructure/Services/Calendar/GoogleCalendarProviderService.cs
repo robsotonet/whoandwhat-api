@@ -1100,7 +1100,6 @@ public class GoogleCalendarProviderService : ICalendarProviderService, IDisposab
     public void Dispose()
     {
         if (_disposed) return;
-        _httpClient?.Dispose();
         _disposed = true;
     }
 }

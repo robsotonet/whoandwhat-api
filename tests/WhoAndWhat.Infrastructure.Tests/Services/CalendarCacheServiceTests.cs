@@ -737,7 +737,12 @@ public class CalendarCacheServiceTests : IDisposable
 // Extension method to convert IEnumerable to IAsyncEnumerable for testing
 internal static class AsyncEnumerableExtensions
 {
-    public static async IAsyncEnumerable<T> ToAsyncEnumerable<T>(this IEnumerable<T> source)
+    public static IAsyncEnumerable<T> ToAsyncEnumerable<T>(this IEnumerable<T> source)
+    {
+        return ToAsyncEnumerableInternal(source);
+    }
+
+    private static async IAsyncEnumerable<T> ToAsyncEnumerableInternal<T>(IEnumerable<T> source)
     {
         foreach (var item in source)
         {

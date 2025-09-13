@@ -1243,7 +1243,6 @@ public class ICloudCalDAVProviderService : ICalendarProviderService, IDisposable
     public void Dispose()
     {
         if (_disposed) return;
-        _httpClient?.Dispose();
         _disposed = true;
     }
 }
