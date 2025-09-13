@@ -214,10 +214,10 @@ public class CalendarSyncDomainService
         // Event priority affects sync priority
         priorityScore += calendarEvent.Priority switch
         {
-            (int)Priority.Critical => 40,
-            (int)Priority.High => 30,
-            (int)Priority.Medium => 20,
-            (int)Priority.Low => 10,
+            3 => 40, // Priority.Urgent
+            2 => 30, // Priority.High
+            1 => 20, // Priority.Medium
+            0 => 10, // Priority.Low
             _ => 10
         };
 

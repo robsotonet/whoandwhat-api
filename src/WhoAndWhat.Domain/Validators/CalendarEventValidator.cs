@@ -12,10 +12,10 @@ public static class CalendarEventValidator
     /// <summary>
     /// Validates a calendar event for creation
     /// </summary>
-    public static ValidationResult ValidateForCreation(CalendarEvent calendarEvent)
+    public static WhoAndWhat.Domain.Common.ValidationResult ValidateForCreation(CalendarEvent calendarEvent)
     {
         if (calendarEvent == null)
-            return ValidationResult.Fail("Calendar event is required");
+            return ValidationResult.Failure("Calendar event is required");
 
         var errors = new List<string>();
 
@@ -34,16 +34,16 @@ public static class CalendarEventValidator
         // Validate external integration fields
         ValidateExternalIntegrationFields(calendarEvent, errors);
 
-        return errors.Any() ? ValidationResult.Fail(errors) : ValidationResult.Success();
+        return errors.Any() ? ValidationResult.Failure(errors) : ValidationResult.Success();
     }
 
     /// <summary>
     /// Validates a calendar event for update
     /// </summary>
-    public static ValidationResult ValidateForUpdate(CalendarEvent calendarEvent, CalendarEvent? existingEvent = null)
+    public static WhoAndWhat.Domain.Common.ValidationResult ValidateForUpdate(CalendarEvent calendarEvent, CalendarEvent? existingEvent = null)
     {
         var result = ValidateForCreation(calendarEvent);
-        if (!result.IsSuccess)
+        if (!result.IsValid)
             return result;
 
         var errors = new List<string>();
@@ -54,16 +54,16 @@ public static class CalendarEventValidator
             ValidateUpdateConstraints(calendarEvent, existingEvent, errors);
         }
 
-        return errors.Any() ? ValidationResult.Fail(errors) : ValidationResult.Success();
+        return errors.Any() ? ValidationResult.Failure(errors) : ValidationResult.Success();
     }
 
     /// <summary>
     /// Validates calendar event for deletion
     /// </summary>
-    public static ValidationResult ValidateForDeletion(CalendarEvent calendarEvent)
+    public static WhoAndWhat.Domain.Common.ValidationResult ValidateForDeletion(CalendarEvent calendarEvent)
     {
         if (calendarEvent == null)
-            return ValidationResult.Fail("Calendar event is required");
+            return ValidationResult.Failure("Calendar event is required");
 
         var errors = new List<string>();
 
@@ -87,16 +87,16 @@ public static class CalendarEventValidator
             // Add provider-specific validation here
         }
 
-        return errors.Any() ? ValidationResult.Fail(errors) : ValidationResult.Success();
+        return errors.Any() ? ValidationResult.Failure(errors) : ValidationResult.Success();
     }
 
     /// <summary>
     /// Validates event scheduling constraints
     /// </summary>
-    public static ValidationResult ValidateScheduling(CalendarEvent calendarEvent, List<CalendarEvent>? existingEvents = null)
+    public static WhoAndWhat.Domain.Common.ValidationResult ValidateScheduling(CalendarEvent calendarEvent, List<CalendarEvent>? existingEvents = null)
     {
         if (calendarEvent == null)
-            return ValidationResult.Fail("Calendar event is required");
+            return ValidationResult.Failure("Calendar event is required");
 
         var errors = new List<string>();
 
@@ -139,13 +139,13 @@ public static class CalendarEventValidator
             errors.Add("Non-all-day events must be at least 1 minute long");
         }
 
-        return errors.Any() ? ValidationResult.Fail(errors) : ValidationResult.Success();
+        return errors.Any() ? ValidationResult.Failure(errors) : ValidationResult.Success();
     }
 
     /// <summary>
     /// Validates recurrence settings
     /// </summary>
-    public static ValidationResult ValidateRecurrence(CalendarEvent calendarEvent)
+    public static WhoAndWhat.Domain.Common.ValidationResult ValidateRecurrence(CalendarEvent calendarEvent)
     {
         if (calendarEvent == null || !calendarEvent.IsRecurring)
             return ValidationResult.Success();
@@ -180,13 +180,13 @@ public static class CalendarEventValidator
             errors.Add("Recurrence exceptions must have original start time");
         }
 
-        return errors.Any() ? ValidationResult.Fail(errors) : ValidationResult.Success();
+        return errors.Any() ? ValidationResult.Failure(errors) : ValidationResult.Success();
     }
 
     /// <summary>
     /// Validates attendee information
     /// </summary>
-    public static ValidationResult ValidateAttendees(CalendarEvent calendarEvent)
+    public static WhoAndWhat.Domain.Common.ValidationResult ValidateAttendees(CalendarEvent calendarEvent)
     {
         if (calendarEvent == null || !calendarEvent.HasAttendees)
             return ValidationResult.Success();
@@ -218,13 +218,13 @@ public static class CalendarEventValidator
             errors.Add("Invalid attendee data format");
         }
 
-        return errors.Any() ? ValidationResult.Fail(errors) : ValidationResult.Success();
+        return errors.Any() ? ValidationResult.Failure(errors) : ValidationResult.Success();
     }
 
     /// <summary>
     /// Validates reminder settings
     /// </summary>
-    public static ValidationResult ValidateReminders(CalendarEvent calendarEvent)
+    public static WhoAndWhat.Domain.Common.ValidationResult ValidateReminders(CalendarEvent calendarEvent)
     {
         if (calendarEvent == null || !calendarEvent.HasReminders)
             return ValidationResult.Success();
@@ -261,7 +261,7 @@ public static class CalendarEventValidator
             errors.Add("Invalid reminder data format");
         }
 
-        return errors.Any() ? ValidationResult.Fail(errors) : ValidationResult.Success();
+        return errors.Any() ? ValidationResult.Failure(errors) : ValidationResult.Success();
     }
 
     private static void ValidateRequiredFields(CalendarEvent calendarEvent, List<string> errors)

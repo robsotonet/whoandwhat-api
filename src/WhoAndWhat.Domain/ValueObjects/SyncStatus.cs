@@ -34,57 +34,57 @@ public sealed record SyncStatus
     /// <summary>
     /// Current synchronization state
     /// </summary>
-    public SyncState State { get; }
+    public SyncState State { get; init; }
 
     /// <summary>
     /// When the last synchronization occurred
     /// </summary>
-    public DateTime? LastSyncTime { get; }
+    public DateTime? LastSyncTime { get; init; }
 
     /// <summary>
     /// When the next synchronization is scheduled
     /// </summary>
-    public DateTime? NextSyncTime { get; }
+    public DateTime? NextSyncTime { get; init; }
 
     /// <summary>
     /// Token from the last successful sync (for incremental sync)
     /// </summary>
-    public string? LastSyncToken { get; }
+    public string? LastSyncToken { get; init; }
 
     /// <summary>
     /// Number of successful synchronizations
     /// </summary>
-    public int SuccessfulSyncs { get; }
+    public int SuccessfulSyncs { get; init; }
 
     /// <summary>
     /// Number of failed synchronizations
     /// </summary>
-    public int FailedSyncs { get; }
+    public int FailedSyncs { get; init; }
 
     /// <summary>
     /// Average duration of synchronization operations
     /// </summary>
-    public TimeSpan? AverageSyncDuration { get; }
+    public TimeSpan? AverageSyncDuration { get; init; }
 
     /// <summary>
     /// Last error message (if any)
     /// </summary>
-    public string? LastError { get; }
+    public string? LastError { get; init; }
 
     /// <summary>
     /// When the last error occurred
     /// </summary>
-    public DateTime? LastErrorTime { get; }
+    public DateTime? LastErrorTime { get; init; }
 
     /// <summary>
     /// Overall health level of the sync integration
     /// </summary>
-    public SyncHealthLevel HealthLevel { get; }
+    public SyncHealthLevel HealthLevel { get; init; }
 
     /// <summary>
     /// Additional metadata about sync status
     /// </summary>
-    public Dictionary<string, object> Metadata { get; }
+    public Dictionary<string, object> Metadata { get; init; }
 
     /// <summary>
     /// Gets the total number of sync attempts

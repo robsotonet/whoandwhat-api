@@ -29,7 +29,7 @@ public class CalendarEvent : BaseEntity
     public int EventType { get; set; } // Maps to EventType enum
     public int Status { get; set; } = (int)EventStatus.Confirmed; // Maps to EventStatus enum
     public int Visibility { get; set; } = (int)EventVisibility.Private; // Maps to EventVisibility enum
-    public int Priority { get; set; } = (int)Priority.Medium;
+    public int Priority { get; set; } = 1; // Priority.Medium
 
     // User and Ownership
     public Guid UserId { get; set; }
@@ -38,7 +38,7 @@ public class CalendarEvent : BaseEntity
     // External Calendar Integration
     public string? ExternalEventId { get; set; }
     public string? ExternalCalendarId { get; set; }
-    public int CalendarProvider { get; set; } = (int)CalendarProvider.None; // Maps to CalendarProvider enum
+    public int CalendarProvider { get; set; } = 0; // CalendarProvider.None
     public string? ProviderMetadata { get; set; } // JSON storage for provider-specific data
     public DateTime? LastSyncTime { get; set; }
     public string? SyncVersion { get; set; } // ETag or version from external provider
@@ -322,11 +322,11 @@ public class CalendarEvent : BaseEntity
             UserId = task.UserId,
             RelatedTaskId = task.Id,
             RelatedTask = task,
-            EventType = (int)EventType.Task,
+            EventType = 0, // EventType.Task
             Priority = task.Priority,
-            Status = (int)EventStatus.Confirmed,
-            Visibility = (int)EventVisibility.Private,
-            CalendarProvider = (int)CalendarProvider.None
+            Status = 0, // EventStatus.Confirmed
+            Visibility = 1, // EventVisibility.Private
+            CalendarProvider = 0 // CalendarProvider.None
         };
     }
 
@@ -344,11 +344,11 @@ public class CalendarEvent : BaseEntity
             UserId = project.UserId,
             RelatedProjectId = project.Id,
             RelatedProject = project,
-            EventType = (int)EventType.Project,
-            Priority = (int)Priority.Medium,
-            Status = (int)EventStatus.Confirmed,
-            Visibility = (int)EventVisibility.Private,
-            CalendarProvider = (int)CalendarProvider.None
+            EventType = 3, // EventType.Project
+            Priority = 1, // Priority.Medium
+            Status = 0, // EventStatus.Confirmed
+            Visibility = 1, // EventVisibility.Private
+            CalendarProvider = 0 // CalendarProvider.None
         };
     }
 
@@ -367,9 +367,9 @@ public class CalendarEvent : BaseEntity
             ExternalEventId = externalEventId,
             ExternalCalendarId = externalCalendarId,
             CalendarProvider = (int)provider,
-            EventType = (int)EventType.External,
-            Status = (int)EventStatus.Confirmed,
-            Visibility = (int)EventVisibility.Private,
+            EventType = 4, // EventType.External
+            Status = 0, // EventStatus.Confirmed
+            Visibility = 1, // EventVisibility.Private
             LastSyncTime = DateTime.UtcNow
         };
     }

@@ -383,11 +383,14 @@ public sealed record EventRecurrence
     public static EventRecurrence FromRRule(string rrule)
     {
         var parts = rrule.Split(';');
-        var rules = parts.ToDictionary(
-            part => part.Split('=')[0],
-            part => part.Split('=')[1],
-            StringComparer.OrdinalIgnoreCase
-        );
+        var rules = parts
+            .Select(part => part.Split('='))
+            .Where(keyValue => keyValue.Length >= 2)
+            .ToDictionary(
+                keyValue => keyValue[0],
+                keyValue => keyValue[1],
+                StringComparer.OrdinalIgnoreCase
+            );
 
         var frequency = Enum.Parse<RecurrenceFrequency>(rules["FREQ"], true);
         var interval = rules.ContainsKey("INTERVAL") ? int.Parse(rules["INTERVAL"]) : 1;
@@ -476,8 +479,8 @@ public sealed record EventRecurrence
 
     private DateTime? CalculateNextWeekly(DateTime fromDate, DateTime eventStartTime)
     {
-        if (!DaysOfWeek.Any())
-            DaysOfWeek.Add(eventStartTime.DayOfWeek);
+        // Use effective days - if none specified, default to the event start day
+        var effectiveDays = DaysOfWeek.Any() ? DaysOfWeek : new List<DayOfWeek> { eventStartTime.DayOfWeek };
 
         var weeksSinceStart = (fromDate.Date - eventStartTime.Date).Days / 7 / Interval;
         var baseWeek = eventStartTime.Date.AddDays(weeksSinceStart * Interval * 7);
@@ -486,7 +489,7 @@ public sealed record EventRecurrence
         for (int i = 0; i < 7; i++)
         {
             var candidate = baseWeek.AddDays(i);
-            if (candidate >= fromDate.Date && DaysOfWeek.Contains(candidate.DayOfWeek))
+            if (candidate >= fromDate.Date && effectiveDays.Contains(candidate.DayOfWeek))
             {
                 return candidate.Add(eventStartTime.TimeOfDay);
             }

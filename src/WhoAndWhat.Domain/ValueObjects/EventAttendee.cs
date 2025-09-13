@@ -32,52 +32,52 @@ public sealed record EventAttendee
     /// <summary>
     /// Email address of the attendee (required)
     /// </summary>
-    public string Email { get; }
+    public string Email { get; init; }
 
     /// <summary>
     /// Display name of the attendee
     /// </summary>
-    public string? Name { get; }
+    public string? Name { get; init; }
 
     /// <summary>
     /// Response status of the attendee
     /// </summary>
-    public AttendeeStatus Status { get; }
+    public AttendeeStatus Status { get; init; }
 
     /// <summary>
     /// Role of the attendee in the event
     /// </summary>
-    public AttendeeRole Role { get; }
+    public AttendeeRole Role { get; init; }
 
     /// <summary>
     /// Whether this attendee is the event organizer
     /// </summary>
-    public bool IsOrganizer { get; }
+    public bool IsOrganizer { get; init; }
 
     /// <summary>
     /// Whether this attendee represents a resource (room, equipment, etc.)
     /// </summary>
-    public bool IsResource { get; }
+    public bool IsResource { get; init; }
 
     /// <summary>
     /// Whether attendance is optional for this attendee
     /// </summary>
-    public bool IsOptional { get; }
+    public bool IsOptional { get; init; }
 
     /// <summary>
     /// Message provided with the response
     /// </summary>
-    public string? ResponseMessage { get; }
+    public string? ResponseMessage { get; init; }
 
     /// <summary>
     /// When the response was given
     /// </summary>
-    public DateTime? ResponseTime { get; }
+    public DateTime? ResponseTime { get; init; }
 
     /// <summary>
     /// Additional metadata for the attendee
     /// </summary>
-    public Dictionary<string, object> Metadata { get; }
+    public Dictionary<string, object> Metadata { get; init; }
 
     /// <summary>
     /// Gets the display name or email if name is not available

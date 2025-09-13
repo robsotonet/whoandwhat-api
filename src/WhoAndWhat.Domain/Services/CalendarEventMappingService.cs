@@ -536,9 +536,10 @@ public class CalendarEventMappingService
         if (string.IsNullOrWhiteSpace(title))
             return "Untitled Event";
 
-        return title.Trim().Length > CalendarEvent.MaxTitleLength 
-            ? title.Trim().Substring(0, CalendarEvent.MaxTitleLength - 3) + "..."
-            : title.Trim();
+        var trimmed = title.Trim();
+        return trimmed.Length > CalendarEvent.MaxTitleLength 
+            ? trimmed.Substring(0, CalendarEvent.MaxTitleLength - 3) + "..."
+            : trimmed;
     }
 
     private string? SanitizeDescription(string? description)
@@ -666,48 +667,48 @@ public class CalendarEventMappingService
 // Supporting classes and enums would go here...
 public record ExternalEventData
 {
-    public string? Id { get; init; }
-    public string? CalendarId { get; init; }
-    public string Title { get; init; } = "";
-    public string? Description { get; init; }
-    public DateTime StartTime { get; init; }
-    public DateTime EndTime { get; init; }
-    public bool IsAllDay { get; init; }
-    public string? Location { get; init; }
-    public string? TimeZone { get; init; }
-    public string Status { get; init; } = "confirmed";
-    public string Visibility { get; init; } = "private";
-    public string? ETag { get; init; }
-    public ExternalRecurrenceData? Recurrence { get; init; }
-    public IEnumerable<ExternalAttendeeData>? Attendees { get; init; }
-    public IEnumerable<ExternalReminderData>? Reminders { get; init; }
-    public Dictionary<string, object>? ProviderData { get; init; }
+    public string? Id { get; set; }
+    public string? CalendarId { get; set; }
+    public string Title { get; set; } = "";
+    public string? Description { get; set; }
+    public DateTime StartTime { get; set; }
+    public DateTime EndTime { get; set; }
+    public bool IsAllDay { get; set; }
+    public string? Location { get; set; }
+    public string? TimeZone { get; set; }
+    public string Status { get; set; } = "confirmed";
+    public string Visibility { get; set; } = "private";
+    public string? ETag { get; set; }
+    public ExternalRecurrenceData? Recurrence { get; set; }
+    public IEnumerable<ExternalAttendeeData>? Attendees { get; set; }
+    public IEnumerable<ExternalReminderData>? Reminders { get; set; }
+    public Dictionary<string, object>? ProviderData { get; set; }
 }
 
 public record ExternalAttendeeData
 {
-    public string Email { get; init; } = "";
-    public string? Name { get; init; }
-    public string Status { get; init; } = "needsAction";
-    public string Role { get; init; } = "required-participant";
-    public bool IsOrganizer { get; init; }
-    public bool IsOptional { get; init; }
+    public string Email { get; set; } = "";
+    public string? Name { get; set; }
+    public string Status { get; set; } = "needsAction";
+    public string Role { get; set; } = "required-participant";
+    public bool IsOrganizer { get; set; }
+    public bool IsOptional { get; set; }
 }
 
 public record ExternalReminderData
 {
-    public string Method { get; init; } = "display";
-    public int MinutesBefore { get; init; }
-    public string? CustomMessage { get; init; }
+    public string Method { get; set; } = "display";
+    public int MinutesBefore { get; set; }
+    public string? CustomMessage { get; set; }
 }
 
 public record ExternalRecurrenceData
 {
-    public string Frequency { get; init; } = "DAILY";
-    public int Interval { get; init; } = 1;
-    public List<string>? DaysOfWeek { get; init; }
-    public DateTime? EndDate { get; init; }
-    public int? Count { get; init; }
+    public string Frequency { get; set; } = "DAILY";
+    public int Interval { get; set; } = 1;
+    public List<string>? DaysOfWeek { get; set; }
+    public DateTime? EndDate { get; set; }
+    public int? Count { get; set; }
 }
 
 public enum MergeStrategy

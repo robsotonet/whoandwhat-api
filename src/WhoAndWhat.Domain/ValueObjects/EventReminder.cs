@@ -1,3 +1,5 @@
+using WhoAndWhat.Domain.Entities;
+
 namespace WhoAndWhat.Domain.ValueObjects;
 
 /// <summary>

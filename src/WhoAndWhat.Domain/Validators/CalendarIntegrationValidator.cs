@@ -11,10 +11,10 @@ public static class CalendarIntegrationValidator
     /// <summary>
     /// Validates a calendar integration for creation
     /// </summary>
-    public static ValidationResult ValidateForCreation(CalendarIntegration integration)
+    public static WhoAndWhat.Domain.Common.ValidationResult ValidateForCreation(CalendarIntegration integration)
     {
         if (integration == null)
-            return ValidationResult.Fail("Calendar integration is required");
+            return ValidationResult.Failure("Calendar integration is required");
 
         var errors = new List<string>();
 
@@ -30,16 +30,16 @@ public static class CalendarIntegrationValidator
         // Validate provider-specific requirements
         ValidateProviderRequirements(integration, errors);
 
-        return errors.Any() ? ValidationResult.Fail(errors) : ValidationResult.Success();
+        return errors.Any() ? ValidationResult.Failure(errors) : ValidationResult.Success();
     }
 
     /// <summary>
     /// Validates a calendar integration for update
     /// </summary>
-    public static ValidationResult ValidateForUpdate(CalendarIntegration integration, CalendarIntegration? existingIntegration = null)
+    public static WhoAndWhat.Domain.Common.ValidationResult ValidateForUpdate(CalendarIntegration integration, CalendarIntegration? existingIntegration = null)
     {
         var result = ValidateForCreation(integration);
-        if (!result.IsSuccess)
+        if (!result.IsValid)
             return result;
 
         var errors = new List<string>();
@@ -50,16 +50,16 @@ public static class CalendarIntegrationValidator
             ValidateUpdateConstraints(integration, existingIntegration, errors);
         }
 
-        return errors.Any() ? ValidationResult.Fail(errors) : ValidationResult.Success();
+        return errors.Any() ? ValidationResult.Failure(errors) : ValidationResult.Success();
     }
 
     /// <summary>
     /// Validates calendar integration for deletion
     /// </summary>
-    public static ValidationResult ValidateForDeletion(CalendarIntegration integration)
+    public static WhoAndWhat.Domain.Common.ValidationResult ValidateForDeletion(CalendarIntegration integration)
     {
         if (integration == null)
-            return ValidationResult.Fail("Calendar integration is required");
+            return ValidationResult.Failure("Calendar integration is required");
 
         var errors = new List<string>();
 
@@ -77,16 +77,16 @@ public static class CalendarIntegrationValidator
             // In real implementation, you might want to require user confirmation
         }
 
-        return errors.Any() ? ValidationResult.Fail(errors) : ValidationResult.Success();
+        return errors.Any() ? ValidationResult.Failure(errors) : ValidationResult.Success();
     }
 
     /// <summary>
     /// Validates token information
     /// </summary>
-    public static ValidationResult ValidateTokens(CalendarIntegration integration)
+    public static WhoAndWhat.Domain.Common.ValidationResult ValidateTokens(CalendarIntegration integration)
     {
         if (integration == null)
-            return ValidationResult.Fail("Calendar integration is required");
+            return ValidationResult.Failure("Calendar integration is required");
 
         var errors = new List<string>();
 
@@ -133,16 +133,16 @@ public static class CalendarIntegrationValidator
             }
         }
 
-        return errors.Any() ? ValidationResult.Fail(errors) : ValidationResult.Success();
+        return errors.Any() ? ValidationResult.Failure(errors) : ValidationResult.Success();
     }
 
     /// <summary>
     /// Validates sync configuration
     /// </summary>
-    public static ValidationResult ValidateSyncConfiguration(CalendarIntegration integration)
+    public static WhoAndWhat.Domain.Common.ValidationResult ValidateSyncConfiguration(CalendarIntegration integration)
     {
         if (integration == null)
-            return ValidationResult.Fail("Calendar integration is required");
+            return ValidationResult.Failure("Calendar integration is required");
 
         var errors = new List<string>();
 
@@ -187,16 +187,16 @@ public static class CalendarIntegrationValidator
             errors.Add("Next scheduled sync cannot be in the past");
         }
 
-        return errors.Any() ? ValidationResult.Fail(errors) : ValidationResult.Success();
+        return errors.Any() ? ValidationResult.Failure(errors) : ValidationResult.Success();
     }
 
     /// <summary>
     /// Validates webhook configuration
     /// </summary>
-    public static ValidationResult ValidateWebhookConfiguration(CalendarIntegration integration)
+    public static WhoAndWhat.Domain.Common.ValidationResult ValidateWebhookConfiguration(CalendarIntegration integration)
     {
         if (integration == null)
-            return ValidationResult.Fail("Calendar integration is required");
+            return ValidationResult.Failure("Calendar integration is required");
 
         var errors = new List<string>();
 
@@ -239,16 +239,16 @@ public static class CalendarIntegrationValidator
             }
         }
 
-        return errors.Any() ? ValidationResult.Fail(errors) : ValidationResult.Success();
+        return errors.Any() ? ValidationResult.Failure(errors) : ValidationResult.Success();
     }
 
     /// <summary>
     /// Validates health and monitoring configuration
     /// </summary>
-    public static ValidationResult ValidateHealthConfiguration(CalendarIntegration integration)
+    public static WhoAndWhat.Domain.Common.ValidationResult ValidateHealthConfiguration(CalendarIntegration integration)
     {
         if (integration == null)
-            return ValidationResult.Fail("Calendar integration is required");
+            return ValidationResult.Failure("Calendar integration is required");
 
         var errors = new List<string>();
 
@@ -293,7 +293,7 @@ public static class CalendarIntegrationValidator
             errors.Add("Integration cannot be quarantined with zero consecutive failures");
         }
 
-        return errors.Any() ? ValidationResult.Fail(errors) : ValidationResult.Success();
+        return errors.Any() ? ValidationResult.Failure(errors) : ValidationResult.Success();
     }
 
     private static void ValidateRequiredFields(CalendarIntegration integration, List<string> errors)

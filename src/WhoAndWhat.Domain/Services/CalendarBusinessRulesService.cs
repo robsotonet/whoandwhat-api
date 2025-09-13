@@ -32,7 +32,7 @@ public class CalendarBusinessRulesService
     {
         // Basic validation
         var validationResult = CalendarEventValidator.ValidateForCreation(calendarEvent);
-        if (!validationResult.IsSuccess)
+        if (!validationResult.IsValid)
         {
             return BusinessRuleResult<CalendarEvent>.Fail(validationResult.ErrorMessages);
         }
@@ -64,7 +64,7 @@ public class CalendarBusinessRulesService
     {
         // Basic validation
         var validationResult = CalendarEventValidator.ValidateForUpdate(updatedEvent, existingEvent);
-        if (!validationResult.IsSuccess)
+        if (!validationResult.IsValid)
         {
             return BusinessRuleResult<CalendarEvent>.Fail(validationResult.ErrorMessages);
         }
@@ -96,7 +96,7 @@ public class CalendarBusinessRulesService
     {
         // Basic validation
         var validationResult = CalendarIntegrationValidator.ValidateForCreation(integration);
-        if (!validationResult.IsSuccess)
+        if (!validationResult.IsValid)
         {
             return BusinessRuleResult<CalendarIntegration>.Fail(validationResult.ErrorMessages);
         }

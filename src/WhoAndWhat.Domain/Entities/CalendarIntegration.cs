@@ -39,14 +39,14 @@ public class CalendarIntegration : BaseEntity
     // Synchronization Settings
     public bool IsEnabled { get; set; } = true;
     public bool AutoSyncEnabled { get; set; } = true;
-    public int SyncDirection { get; set; } = (int)SyncDirection.Bidirectional; // Maps to SyncDirection enum
+    public int SyncDirection { get; set; } = 2; // SyncDirection.Bidirectional
     public TimeSpan SyncInterval { get; set; } = TimeSpan.FromMinutes(15);
     public DateTime? LastSyncTime { get; set; }
     public string? LastSyncToken { get; set; } // Provider-specific sync token
     public DateTime? NextScheduledSync { get; set; }
 
     // Conflict Resolution
-    public int ConflictResolutionStrategy { get; set; } = (int)ConflictResolutionStrategy.UserResolves; // Maps to ConflictResolutionStrategy enum
+    public int ConflictResolutionStrategy { get; set; } = 3; // ConflictResolutionStrategy.UserResolves
     public bool AutoResolveSimpleConflicts { get; set; } = false;
     public int ConflictToleranceMinutes { get; set; } = 5; // Buffer time for conflict detection
 
@@ -385,9 +385,9 @@ public class CalendarIntegration : BaseEntity
             TokenExpiresAt = tokenExpires,
             IsEnabled = true,
             AutoSyncEnabled = true,
-            SyncDirection = (int)SyncDirection.Bidirectional,
+            SyncDirection = 2, // SyncDirection.Bidirectional
             SyncInterval = TimeSpan.FromMinutes(15),
-            ConflictResolutionStrategy = (int)ConflictResolutionStrategy.UserResolves,
+            ConflictResolutionStrategy = 3, // ConflictResolutionStrategy.UserResolves
             HealthStatus = (int)IntegrationHealthStatus.Unknown,
             ConflictToleranceMinutes = 5
         };

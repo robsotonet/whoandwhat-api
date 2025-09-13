@@ -1,4 +1,5 @@
 using WhoAndWhat.Domain.ValueObjects;
+using WhoAndWhat.Domain.Common;
 
 namespace WhoAndWhat.Domain.Entities;
 
@@ -22,7 +23,7 @@ public class CalendarConflict : BaseEntity
     public User User { get; set; } = null!;
 
     public int ConflictType { get; set; } // Maps to ConflictType enum
-    public int Severity { get; set; } = (int)ConflictSeverity.Medium; // Maps to ConflictSeverity enum
+    public int Severity { get; set; } = 1; // ConflictSeverity.Medium
     public string Title { get; set; } = null!;
     public string Description { get; set; } = null!;
 
@@ -31,7 +32,7 @@ public class CalendarConflict : BaseEntity
     public CalendarEvent? InternalEvent { get; set; }
     public string? ExternalEventId { get; set; }
     public string? ExternalCalendarId { get; set; }
-    public int CalendarProvider { get; set; } = (int)CalendarProvider.None; // Maps to CalendarProvider enum
+    public int CalendarProvider { get; set; } = 0; // CalendarProvider.None
 
     // Conflict Details
     public string? ConflictingFields { get; set; } // JSON storage for list of conflicting fields
@@ -42,7 +43,7 @@ public class CalendarConflict : BaseEntity
     public int? OverlapMinutes { get; set; } // Duration of time overlap for time conflicts
 
     // Resolution Information
-    public int ResolutionStatus { get; set; } = (int)ConflictResolutionStatus.Pending; // Maps to ConflictResolutionStatus enum
+    public int ResolutionStatus { get; set; } = 0; // ConflictResolutionStatus.Pending
     public int? RecommendedAction { get; set; } // Maps to ConflictResolutionAction enum
     public string? ResolutionOptions { get; set; } // JSON storage for available resolution options
     public double? AutoResolutionConfidence { get; set; } // 0.0 to 1.0, confidence in auto-resolution
@@ -60,7 +61,7 @@ public class CalendarConflict : BaseEntity
     public string? AnalysisData { get; set; } // JSON storage for ML/AI analysis data
     public bool RequiresUserAction { get; set; } = true;
     public bool CanAutoResolve { get; set; } = false;
-    public int Priority { get; set; } = (int)Priority.Medium;
+    public int Priority { get; set; } = 1; // Priority.Medium
 
     // Lifecycle Management
     public bool IsActive { get; set; } = true;
@@ -93,22 +94,22 @@ public class CalendarConflict : BaseEntity
     /// <summary>
     /// Gets whether the conflict is high priority requiring immediate attention
     /// </summary>
-    public bool IsHighPriority => Severity >= (int)ConflictSeverity.High || Priority >= (int)Priority.High;
+    public bool IsHighPriority => Severity >= 2 || Priority >= 2; // ConflictSeverity.High || Priority.High
 
     /// <summary>
     /// Gets whether the conflict is a time overlap conflict
     /// </summary>
-    public bool IsTimeOverlapConflict => ConflictType == (int)ConflictType.TimeOverlap;
+    public bool IsTimeOverlapConflict => ConflictType == 0; // ConflictType.TimeOverlap
 
     /// <summary>
     /// Gets whether the conflict is a duplicate event conflict
     /// </summary>
-    public bool IsDuplicateConflict => ConflictType == (int)ConflictType.DuplicateEvent;
+    public bool IsDuplicateConflict => ConflictType == 1; // ConflictType.DuplicateEvent
 
     /// <summary>
     /// Gets whether the conflict involves external calendar data
     /// </summary>
-    public bool InvolvesExternalCalendar => !string.IsNullOrEmpty(ExternalEventId) || CalendarProvider != (int)CalendarProvider.None;
+    public bool InvolvesExternalCalendar => !string.IsNullOrEmpty(ExternalEventId) || CalendarProvider != 0; // CalendarProvider.None
 
     /// <summary>
     /// Gets whether the conflict has expired and should be automatically resolved
@@ -126,7 +127,7 @@ public class CalendarConflict : BaseEntity
     public bool IsSafeToAutoResolve => CanAutoResolve && 
         AutoResolutionConfidence.HasValue && 
         AutoResolutionConfidence.Value >= 0.8 &&
-        Severity <= (int)ConflictSeverity.Low;
+        Severity <= 0; // ConflictSeverity.Low
 
     // Domain Methods
 
@@ -321,7 +322,7 @@ public class CalendarConflict : BaseEntity
         return new CalendarConflict
         {
             UserId = userId,
-            ConflictType = (int)ConflictType.TimeOverlap,
+            ConflictType = 0, // ConflictType.TimeOverlap
             Severity = overlapMinutes > 30 ? (int)ConflictSeverity.High : (int)ConflictSeverity.Medium,
             Title = "Time Overlap Conflict",
             Description = $"Events '{event1.Title}' and '{event2.Title}' have overlapping times",
@@ -332,7 +333,7 @@ public class CalendarConflict : BaseEntity
             OverlapMinutes = overlapMinutes,
             RequiresUserAction = overlapMinutes > 15,
             CanAutoResolve = overlapMinutes <= 5,
-            Priority = overlapMinutes > 60 ? (int)Priority.High : (int)Priority.Medium
+            Priority = overlapMinutes > 60 ? 2 : 1 // Priority.High : Priority.Medium
         };
     }
 
@@ -345,7 +346,7 @@ public class CalendarConflict : BaseEntity
         return new CalendarConflict
         {
             UserId = userId,
-            ConflictType = (int)ConflictType.DuplicateEvent,
+            ConflictType = 1, // ConflictType.DuplicateEvent
             Severity = similarityScore > 0.9 ? (int)ConflictSeverity.High : (int)ConflictSeverity.Medium,
             Title = "Duplicate Event Detected",
             Description = $"Event '{internalEvent.Title}' appears to be duplicated in external calendar",
@@ -356,7 +357,7 @@ public class CalendarConflict : BaseEntity
             SimilarityScore = similarityScore,
             RequiresUserAction = similarityScore < 0.95,
             CanAutoResolve = similarityScore > 0.95,
-            Priority = (int)Priority.Medium
+            Priority = 1 // Priority.Medium
         };
     }
 
@@ -369,7 +370,7 @@ public class CalendarConflict : BaseEntity
         var conflict = new CalendarConflict
         {
             UserId = userId,
-            ConflictType = (int)ConflictType.DataInconsistency,
+            ConflictType = 2, // ConflictType.DataInconsistency
             Severity = conflictingFields.Count > 3 ? (int)ConflictSeverity.High : (int)ConflictSeverity.Medium,
             Title = "Data Inconsistency Detected",
             Description = $"Event '{internalEvent.Title}' has inconsistent data between internal and external calendars",
@@ -379,7 +380,7 @@ public class CalendarConflict : BaseEntity
             CalendarProvider = (int)provider,
             RequiresUserAction = conflictingFields.Contains("StartTime") || conflictingFields.Contains("EndTime"),
             CanAutoResolve = !conflictingFields.Contains("StartTime") && !conflictingFields.Contains("EndTime"),
-            Priority = conflictingFields.Contains("StartTime") ? (int)Priority.High : (int)Priority.Medium
+            Priority = conflictingFields.Contains("StartTime") ? 2 : 1 // Priority.High : Priority.Medium
         };
 
         conflict.SetConflictingFields(conflictingFields);

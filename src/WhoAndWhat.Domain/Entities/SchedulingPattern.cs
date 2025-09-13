@@ -293,10 +293,10 @@ public class SchedulingPattern : BaseEntity
         if (preferredTimes.Any())
         {
             var timeOfDay = time.TimeOfDay;
-            var tolerance = TimeSpan.FromMinutes(30); // 30-minute tolerance
+            var toleranceMinutes = 30.0; // 30-minute tolerance
 
             var timeMatches = preferredTimes.Any(pt =>
-                Math.Abs((timeOfDay - pt).TotalMinutes) <= tolerance.TotalMinutes);
+                Math.Abs(timeOfDay.TotalMinutes - pt.TotalMinutes) <= toleranceMinutes);
 
             if (!timeMatches)
             {

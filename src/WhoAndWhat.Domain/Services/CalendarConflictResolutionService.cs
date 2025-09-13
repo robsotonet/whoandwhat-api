@@ -261,9 +261,9 @@ public class CalendarConflictResolutionService
         {
             severityScore += conflict.InternalEvent.Priority switch
             {
-                (int)Priority.Critical => 25,
-                (int)Priority.High => 20,
-                (int)Priority.Medium => 10,
+                3 => 25, // Priority.Urgent
+                2 => 20, // Priority.High
+                1 => 10, // Priority.Medium
                 _ => 0
             };
 
@@ -637,7 +637,7 @@ public sealed record ConflictResolutionResult
         List<string>? steps, string? message, double? confidence)
     {
         ConflictId = conflictId;
-        Success = success;
+        IsSuccess = success;
         Action = action;
         ResolutionSteps = steps ?? new List<string>();
         Message = message;
@@ -645,7 +645,7 @@ public sealed record ConflictResolutionResult
     }
 
     public Guid ConflictId { get; }
-    public bool Success { get; }
+    public bool IsSuccess { get; }
     public ConflictResolutionAction? Action { get; }
     public List<string> ResolutionSteps { get; }
     public string? Message { get; }

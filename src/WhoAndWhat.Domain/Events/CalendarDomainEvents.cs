@@ -1,4 +1,5 @@
 using WhoAndWhat.Domain.Entities;
+using WhoAndWhat.Domain.ValueObjects;
 
 namespace WhoAndWhat.Domain.Events;
 
@@ -32,6 +33,7 @@ public sealed record CalendarEventCreatedEvent : IDomainEvent
     public CalendarProvider Provider { get; }
     public bool IsFromSync { get; }
     public DateTime OccurredOn { get; }
+    public DateTime DateOccurred => OccurredOn;
 }
 
 /// <summary>
@@ -56,6 +58,7 @@ public sealed record CalendarEventUpdatedEvent : IDomainEvent
     public Dictionary<string, object> PreviousValues { get; }
     public bool IsFromSync { get; }
     public DateTime OccurredOn { get; }
+    public DateTime DateOccurred => OccurredOn;
 }
 
 /// <summary>
@@ -84,6 +87,7 @@ public sealed record CalendarEventDeletedEvent : IDomainEvent
     public bool IsFromSync { get; }
     public string? Reason { get; }
     public DateTime OccurredOn { get; }
+    public DateTime DateOccurred => OccurredOn;
 }
 
 /// <summary>
@@ -112,6 +116,7 @@ public sealed record CalendarEventCompletedEvent : IDomainEvent
     public bool WasAttended { get; }
     public string? Notes { get; }
     public DateTime OccurredOn { get; }
+    public DateTime DateOccurred => OccurredOn;
 }
 
 /// <summary>
@@ -143,6 +148,7 @@ public sealed record CalendarEventRescheduledEvent : IDomainEvent
     public DateTime NewEndTime { get; }
     public string? Reason { get; }
     public DateTime OccurredOn { get; }
+    public DateTime DateOccurred => OccurredOn;
 }
 
 /// <summary>
@@ -169,6 +175,7 @@ public sealed record CalendarEventCancelledEvent : IDomainEvent
     public string? Reason { get; }
     public bool NotifyAttendees { get; }
     public DateTime OccurredOn { get; }
+    public DateTime DateOccurred => OccurredOn;
 }
 
 // Calendar Integration Domain Events
@@ -195,6 +202,7 @@ public sealed record CalendarIntegrationCreatedEvent : IDomainEvent
     public string ProviderName { get; }
     public bool AutoSyncEnabled { get; }
     public DateTime OccurredOn { get; }
+    public DateTime DateOccurred => OccurredOn;
 }
 
 /// <summary>
@@ -221,6 +229,7 @@ public sealed record CalendarIntegrationStatusChangedEvent : IDomainEvent
     public bool CurrentEnabled { get; }
     public string? Reason { get; }
     public DateTime OccurredOn { get; }
+    public DateTime DateOccurred => OccurredOn;
 }
 
 /// <summary>
@@ -247,6 +256,7 @@ public sealed record CalendarIntegrationHealthChangedEvent : IDomainEvent
     public IntegrationHealthStatus CurrentHealth { get; }
     public string? Reason { get; }
     public DateTime OccurredOn { get; }
+    public DateTime DateOccurred => OccurredOn;
 }
 
 /// <summary>
@@ -271,6 +281,7 @@ public sealed record CalendarIntegrationDeletedEvent : IDomainEvent
     public int TotalEventsSynced { get; }
     public string? Reason { get; }
     public DateTime OccurredOn { get; }
+    public DateTime DateOccurred => OccurredOn;
 }
 
 // Calendar Sync Domain Events
@@ -299,6 +310,7 @@ public sealed record CalendarSyncStartedEvent : IDomainEvent
     public SyncStrategy Strategy { get; }
     public SyncDirection Direction { get; }
     public DateTime OccurredOn { get; }
+    public DateTime DateOccurred => OccurredOn;
 }
 
 /// <summary>
@@ -331,6 +343,7 @@ public sealed record CalendarSyncCompletedEvent : IDomainEvent
     public TimeSpan Duration { get; }
     public string? SyncToken { get; }
     public DateTime OccurredOn { get; }
+    public DateTime DateOccurred => OccurredOn;
 }
 
 /// <summary>
@@ -359,6 +372,7 @@ public sealed record CalendarSyncFailedEvent : IDomainEvent
     public Exception? Exception { get; }
     public int AttemptNumber { get; }
     public DateTime OccurredOn { get; }
+    public DateTime DateOccurred => OccurredOn;
 }
 
 // Calendar Conflict Domain Events
@@ -390,6 +404,7 @@ public sealed record CalendarConflictDetectedEvent : IDomainEvent
     public string? ExternalEventId { get; }
     public CalendarProvider? Provider { get; }
     public DateTime OccurredOn { get; }
+    public DateTime DateOccurred => OccurredOn;
 }
 
 /// <summary>
@@ -416,6 +431,7 @@ public sealed record CalendarConflictResolvedEvent : IDomainEvent
     public bool WasAutoResolved { get; }
     public string? Notes { get; }
     public DateTime OccurredOn { get; }
+    public DateTime DateOccurred => OccurredOn;
 }
 
 /// <summary>
@@ -440,6 +456,7 @@ public sealed record CalendarConflictEscalatedEvent : IDomainEvent
     public ConflictSeverity NewSeverity { get; }
     public string? Reason { get; }
     public DateTime OccurredOn { get; }
+    public DateTime DateOccurred => OccurredOn;
 }
 
 /// <summary>
@@ -464,6 +481,7 @@ public sealed record CalendarConflictBatchResolvedEvent : IDomainEvent
     public int TotalResolved { get; }
     public int TotalFailed { get; }
     public DateTime OccurredOn { get; }
+    public DateTime DateOccurred => OccurredOn;
 }
 
 // Calendar Reminder Domain Events
@@ -494,6 +512,7 @@ public sealed record CalendarEventReminderTriggeredEvent : IDomainEvent
     public int MinutesBefore { get; }
     public string? CustomMessage { get; }
     public DateTime OccurredOn { get; }
+    public DateTime DateOccurred => OccurredOn;
 }
 
 // Calendar Analytics Domain Events
@@ -518,6 +537,7 @@ public sealed record CalendarAnalyticsUpdatedEvent : IDomainEvent
     public DateTime PeriodStart { get; }
     public DateTime PeriodEnd { get; }
     public DateTime OccurredOn { get; }
+    public DateTime DateOccurred => OccurredOn;
 }
 
 // Required enums and supporting types from other parts of the domain
