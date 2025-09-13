@@ -720,7 +720,7 @@ public class UserContentPreferencesTests
         var contentType = MotivationalContentType.Achievement;
         var scoreKey = $"score_{contentType}";
         var historicalScore = 0.7;
-        
+
         var preferences = UserContentPreferencesBuilder.New()
             .WithEngagementHistory(scoreKey, historicalScore)
             .Build();

@@ -1,6 +1,6 @@
+using FluentAssertions;
 using WhoAndWhat.Domain.Entities;
 using WhoAndWhat.Domain.Tests.Builders;
-using FluentAssertions;
 
 namespace WhoAndWhat.Domain.Tests.Helpers;
 

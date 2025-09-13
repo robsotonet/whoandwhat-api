@@ -25,7 +25,7 @@ public class UpdateDashboardSettingsCommandHandlerTests
     {
         _mockUserRepository = new Mock<IUserRepository>();
         _mockLogger = new Mock<ILogger<UpdateDashboardSettingsCommandHandler>>();
-        
+
         _handler = new UpdateDashboardSettingsCommandHandler(
             _mockUserRepository.Object,
             _mockLogger.Object);
@@ -49,11 +49,11 @@ public class UpdateDashboardSettingsCommandHandlerTests
         // Assert
         result.IsSuccess.Should().BeTrue();
         var response = result.Value;
-        
+
         response.Success.Should().BeTrue();
         response.UpdatedSettings.Should().BeEquivalentTo(settings);
         response.ValidationWarnings.Should().BeEmpty();
-        
+
         // Verify user lookup was called
         _mockUserRepository.Verify(x => x.GetByIdAsync(_testUserId, It.IsAny<CancellationToken>()), Times.Once);
     }
@@ -98,7 +98,7 @@ public class UpdateDashboardSettingsCommandHandlerTests
         // Assert
         result.IsSuccess.Should().BeTrue();
         var response = result.Value;
-        
+
         response.Success.Should().BeTrue();
         response.ValidationWarnings.Should().Contain(w => w.Contains($"Invalid theme '{invalidTheme}'"));
     }
@@ -240,9 +240,9 @@ public class UpdateDashboardSettingsCommandHandlerTests
 
         // Assert
         result.IsSuccess.Should().BeTrue();
-        result.Value.ValidationWarnings.Should().Contain(w => 
-            w.Contains("Invalid widgets") && 
-            w.Contains("invalid-widget") && 
+        result.Value.ValidationWarnings.Should().Contain(w =>
+            w.Contains("Invalid widgets") &&
+            w.Contains("invalid-widget") &&
             w.Contains("another-invalid"));
     }
 
@@ -251,11 +251,11 @@ public class UpdateDashboardSettingsCommandHandlerTests
     {
         // Arrange
         var user = CreateTestUser();
-        var validWidgets = new List<string> 
-        { 
-            "completion-stats", 
-            "productivity-streak", 
-            "overdue-tasks", 
+        var validWidgets = new List<string>
+        {
+            "completion-stats",
+            "productivity-streak",
+            "overdue-tasks",
             "motivational-content",
             "recent-activity"
         };
@@ -404,7 +404,7 @@ public class UpdateDashboardSettingsCommandHandlerTests
         // Assert
         result.IsSuccess.Should().BeTrue();
         var response = result.Value;
-        
+
         response.ValidationWarnings.Should().HaveCount(5);
         response.ValidationWarnings.Should().Contain(w => w.Contains("Invalid theme"));
         response.ValidationWarnings.Should().Contain(w => w.Contains("Invalid language"));
@@ -431,7 +431,7 @@ public class UpdateDashboardSettingsCommandHandlerTests
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("Failed to update dashboard settings");
         result.Error.Should().Contain("Database connection failed");
-        
+
         // Verify logging
         _mockLogger.Verify(
             x => x.Log(
@@ -460,7 +460,7 @@ public class UpdateDashboardSettingsCommandHandlerTests
 
         // Assert
         result.IsSuccess.Should().BeTrue();
-        
+
         // Verify logging
         _mockLogger.Verify(
             x => x.Log(
@@ -470,7 +470,7 @@ public class UpdateDashboardSettingsCommandHandlerTests
                 It.IsAny<Exception>(),
                 It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
             Times.Once);
-            
+
         _mockLogger.Verify(
             x => x.Log(
                 LogLevel.Information,
@@ -486,9 +486,9 @@ public class UpdateDashboardSettingsCommandHandlerTests
     {
         // Arrange
         var user = CreateTestUser();
-        
+
         // Test boundary conditions that should be corrected in conversion
-        var boundarySettings = CreateValidDashboardSettings() with 
+        var boundarySettings = CreateValidDashboardSettings() with
         {
             RefreshInterval = 10, // Should be corrected to 30
             DisplaySettings = CreateValidDisplaySettings() with { ItemsPerPage = 500 } // Should be corrected to 100
@@ -504,7 +504,7 @@ public class UpdateDashboardSettingsCommandHandlerTests
 
         // Assert
         result.IsSuccess.Should().BeTrue();
-        
+
         // The response should return the original settings as provided
         // The boundary corrections happen during conversion to preferences (internal logic)
         result.Value.UpdatedSettings.RefreshInterval.Should().Be(10); // Original value in response

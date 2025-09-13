@@ -91,7 +91,9 @@ public class TimeBlock : BaseEntity
     public List<string> GetSuggestedActivities()
     {
         if (string.IsNullOrEmpty(SuggestedActivities))
+        {
             return new List<string>();
+        }
 
         return SuggestedActivities
             .Split(',', StringSplitOptions.RemoveEmptyEntries)
@@ -114,7 +116,9 @@ public class TimeBlock : BaseEntity
     public void Start()
     {
         if (IsActive || IsCompleted)
+        {
             return;
+        }
 
         IsActive = true;
 
@@ -133,7 +137,9 @@ public class TimeBlock : BaseEntity
     public void Complete(double? productivityScore = null)
     {
         if (IsCompleted)
+        {
             return;
+        }
 
         IsActive = false;
         IsCompleted = true;
@@ -161,7 +167,9 @@ public class TimeBlock : BaseEntity
     public void Pause()
     {
         if (!IsActive || IsCompleted)
+        {
             return;
+        }
 
         IsActive = false;
         MarkAsModified();
@@ -173,7 +181,9 @@ public class TimeBlock : BaseEntity
     public void Resume()
     {
         if (IsActive || IsCompleted || IsOverdue)
+        {
             return;
+        }
 
         IsActive = true;
         MarkAsModified();
@@ -194,7 +204,9 @@ public class TimeBlock : BaseEntity
     public void ExtendDuration(TimeSpan extension)
     {
         if (extension <= TimeSpan.Zero)
+        {
             throw new ArgumentException("Extension must be positive");
+        }
 
         EndTime = EndTime.Add(extension);
         Duration = Duration.Add(extension);
@@ -207,10 +219,14 @@ public class TimeBlock : BaseEntity
     public void Reschedule(DateTime newStartTime, DateTime newEndTime)
     {
         if (newStartTime >= newEndTime)
+        {
             throw new ArgumentException("Start time must be before end time");
+        }
 
         if (IsActive)
+        {
             throw new InvalidOperationException("Cannot reschedule an active time block");
+        }
 
         StartTime = newStartTime;
         EndTime = newEndTime;
@@ -252,7 +268,9 @@ public class TimeBlock : BaseEntity
     public bool ConflictsWith(TimeBlock other)
     {
         if (other == null || Id == other.Id)
+        {
             return false;
+        }
 
         return StartTime < other.EndTime && other.StartTime < EndTime;
     }
@@ -315,7 +333,9 @@ public class TimeBlock : BaseEntity
     private Dictionary<string, object> GetPerformanceMetrics()
     {
         if (string.IsNullOrEmpty(PerformanceMetrics))
+        {
             return new Dictionary<string, object>();
+        }
 
         try
         {

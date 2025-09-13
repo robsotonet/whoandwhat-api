@@ -23,8 +23,8 @@ public interface IUserContentPreferencesRepository : IRepository<UserContentPref
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>True if update was successful</returns>
     public Task<bool> UpdateDeliveryCountAsync(
-        Guid userId, 
-        int deliveryCount, 
+        Guid userId,
+        int deliveryCount,
         CancellationToken cancellationToken = default);
 
     /// <summary>

@@ -24,7 +24,7 @@ public class AIPlanningService : IAIPlanningService
     private readonly object _lockObject = new();
 
     public AIPlanningService(
-        IOptions<AISettings> aiSettings, 
+        IOptions<AISettings> aiSettings,
         ILogger<AIPlanningService> logger,
         HttpClient httpClient,
         IAICacheService cacheService)
@@ -41,9 +41,9 @@ public class AIPlanningService : IAIPlanningService
 
     /// <inheritdoc />
     public async Task<AIGeneratedPlan?> GenerateDayPlanAsync(
-        Guid userId, 
-        DateTime planDate, 
-        UserPlanningPreferences preferences, 
+        Guid userId,
+        DateTime planDate,
+        UserPlanningPreferences preferences,
         CancellationToken cancellationToken = default)
     {
         if (!_aiSettings.Enabled || !_aiSettings.Features.EnableDayPlanning)
@@ -71,7 +71,7 @@ public class AIPlanningService : IAIPlanningService
 
                 var prompt = BuildDayPlanPrompt(userId, planDate, preferences);
                 var response = await CallAIServiceAsync(prompt, AIRequestType.DayPlanning, cancellationToken);
-                
+
                 if (response == null)
                 {
                     _logger.LogWarning("Failed to generate day plan for user {UserId}, date {PlanDate}", userId, planDate);
@@ -102,9 +102,9 @@ public class AIPlanningService : IAIPlanningService
 
     /// <inheritdoc />
     public async Task<IEnumerable<TaskPrioritySuggestion>?> GetTaskPrioritySuggestionsAsync(
-        Guid userId, 
-        IEnumerable<TaskAnalysisContext> taskContexts, 
-        PriorityAnalysisContext analysisContext, 
+        Guid userId,
+        IEnumerable<TaskAnalysisContext> taskContexts,
+        PriorityAnalysisContext analysisContext,
         CancellationToken cancellationToken = default)
     {
         if (!_aiSettings.Enabled || !_aiSettings.Features.EnablePrioritySuggestions)
@@ -122,7 +122,7 @@ public class AIPlanningService : IAIPlanningService
 
                 var prompt = BuildPrioritySuggestionsPrompt(userId, taskContexts, analysisContext);
                 var response = await CallAIServiceAsync(prompt, AIRequestType.PrioritySuggestions, cancellationToken);
-                
+
                 if (response == null)
                 {
                     _logger.LogWarning("Failed to get priority suggestions for user {UserId}", userId);
@@ -130,15 +130,15 @@ public class AIPlanningService : IAIPlanningService
                 }
 
                 var suggestions = ParsePrioritySuggestionsResponse(response, taskContexts);
-                
+
                 // Cache individual suggestions
                 if (suggestions != null)
                 {
                     foreach (var suggestion in suggestions)
                     {
                         await _cacheService.CachePrioritySuggestionAsync(
-                            suggestion, 
-                            _aiSettings.Cache.PrioritySuggestionExpirationMinutes, 
+                            suggestion,
+                            _aiSettings.Cache.PrioritySuggestionExpirationMinutes,
                             cancellationToken);
                     }
                     _logger.LogInformation("Successfully generated {Count} priority suggestions for user {UserId}", suggestions.Count(), userId);
@@ -160,9 +160,9 @@ public class AIPlanningService : IAIPlanningService
 
     /// <inheritdoc />
     public async Task<ScheduleOptimizationResult?> GenerateScheduleOptimizationsAsync(
-        Guid userId, 
-        IEnumerable<TimeSlot> timeSlots, 
-        ScheduleOptimizationPreferences optimizationPreferences, 
+        Guid userId,
+        IEnumerable<TimeSlot> timeSlots,
+        ScheduleOptimizationPreferences optimizationPreferences,
         CancellationToken cancellationToken = default)
     {
         if (!_aiSettings.Enabled || !_aiSettings.Features.EnableScheduleOptimization)
@@ -180,7 +180,7 @@ public class AIPlanningService : IAIPlanningService
 
                 var prompt = BuildScheduleOptimizationPrompt(userId, timeSlots, optimizationPreferences);
                 var response = await CallAIServiceAsync(prompt, AIRequestType.ScheduleOptimization, cancellationToken);
-                
+
                 var result = ParseScheduleOptimizationResponse(response, userId);
                 if (result != null)
                 {
@@ -203,8 +203,8 @@ public class AIPlanningService : IAIPlanningService
 
     /// <inheritdoc />
     public async Task<IEnumerable<BreakRecommendation>?> GetBreakRecommendationsAsync(
-        Guid userId, 
-        WorkloadAnalysis workloadAnalysis, 
+        Guid userId,
+        WorkloadAnalysis workloadAnalysis,
         CancellationToken cancellationToken = default)
     {
         if (!_aiSettings.Enabled || !_aiSettings.Features.EnableBreakRecommendations)
@@ -222,7 +222,7 @@ public class AIPlanningService : IAIPlanningService
 
                 var prompt = BuildBreakRecommendationsPrompt(userId, workloadAnalysis);
                 var response = await CallAIServiceAsync(prompt, AIRequestType.BreakRecommendations, cancellationToken);
-                
+
                 var recommendations = ParseBreakRecommendationsResponse(response);
                 if (recommendations != null)
                 {
@@ -245,8 +245,8 @@ public class AIPlanningService : IAIPlanningService
 
     /// <inheritdoc />
     public async Task<ProductivityInsights?> GetProductivityInsightsAsync(
-        Guid userId, 
-        TimeframeAnalysis analysisTimeframe, 
+        Guid userId,
+        TimeframeAnalysis analysisTimeframe,
         CancellationToken cancellationToken = default)
     {
         if (!_aiSettings.Enabled || !_aiSettings.Features.EnableProductivityInsights)
@@ -272,14 +272,14 @@ public class AIPlanningService : IAIPlanningService
 
                 var prompt = BuildProductivityInsightsPrompt(userId, analysisTimeframe);
                 var response = await CallAIServiceAsync(prompt, AIRequestType.ProductivityInsights, cancellationToken);
-                
+
                 var insights = ParseProductivityInsightsResponse(response, userId, analysisTimeframe.StartDate);
                 if (insights != null)
                 {
                     // Cache the insights
                     await _cacheService.CacheProductivityInsightsAsync(
-                        insights, 
-                        _aiSettings.Cache.ProductivityInsightsExpirationMinutes, 
+                        insights,
+                        _aiSettings.Cache.ProductivityInsightsExpirationMinutes,
                         cancellationToken);
                     _logger.LogInformation("Successfully generated and cached productivity insights for user {UserId}", userId);
                 }
@@ -300,9 +300,9 @@ public class AIPlanningService : IAIPlanningService
 
     /// <inheritdoc />
     public async Task<IEnumerable<CategorySuggestion>?> GetTaskCategorizationSuggestionsAsync(
-        Guid userId, 
-        string taskContent, 
-        UserCategoryHistory userCategoryHistory, 
+        Guid userId,
+        string taskContent,
+        UserCategoryHistory userCategoryHistory,
         CancellationToken cancellationToken = default)
     {
         if (!_aiSettings.Enabled || !_aiSettings.Features.EnableTaskCategorization)
@@ -320,7 +320,7 @@ public class AIPlanningService : IAIPlanningService
 
                 var prompt = BuildCategorizationPrompt(taskContent, userCategoryHistory);
                 var response = await CallAIServiceAsync(prompt, AIRequestType.TaskCategorization, cancellationToken);
-                
+
                 var suggestions = ParseCategorizationResponse(response);
                 if (suggestions != null)
                 {
@@ -394,13 +394,40 @@ public class AIPlanningService : IAIPlanningService
             }
 
             // Check enabled capabilities
-            if (_aiSettings.Features.EnableDayPlanning) availableCapabilities.Add("DayPlanning");
-            if (_aiSettings.Features.EnablePrioritySuggestions) availableCapabilities.Add("PrioritySuggestions");
-            if (_aiSettings.Features.EnableScheduleOptimization) availableCapabilities.Add("ScheduleOptimization");
-            if (_aiSettings.Features.EnableBreakRecommendations) availableCapabilities.Add("BreakRecommendations");
-            if (_aiSettings.Features.EnableProductivityInsights) availableCapabilities.Add("ProductivityInsights");
-            if (_aiSettings.Features.EnableTaskCategorization) availableCapabilities.Add("TaskCategorization");
-            if (_aiSettings.Features.EnableTimeEstimation) availableCapabilities.Add("TimeEstimation");
+            if (_aiSettings.Features.EnableDayPlanning)
+            {
+                availableCapabilities.Add("DayPlanning");
+            }
+
+            if (_aiSettings.Features.EnablePrioritySuggestions)
+            {
+                availableCapabilities.Add("PrioritySuggestions");
+            }
+
+            if (_aiSettings.Features.EnableScheduleOptimization)
+            {
+                availableCapabilities.Add("ScheduleOptimization");
+            }
+
+            if (_aiSettings.Features.EnableBreakRecommendations)
+            {
+                availableCapabilities.Add("BreakRecommendations");
+            }
+
+            if (_aiSettings.Features.EnableProductivityInsights)
+            {
+                availableCapabilities.Add("ProductivityInsights");
+            }
+
+            if (_aiSettings.Features.EnableTaskCategorization)
+            {
+                availableCapabilities.Add("TaskCategorization");
+            }
+
+            if (_aiSettings.Features.EnableTimeEstimation)
+            {
+                availableCapabilities.Add("TimeEstimation");
+            }
 
             var responseTime = DateTime.UtcNow - startTime;
             var isHealthy = healthChecks.Any(h => h.Passed) && _aiSettings.Enabled;
@@ -439,9 +466,9 @@ public class AIPlanningService : IAIPlanningService
 
     /// <inheritdoc />
     public async Task<IEnumerable<TaskTimeEstimate>?> GenerateTaskTimeEstimatesAsync(
-        Guid userId, 
-        IEnumerable<TaskEstimationRequest> taskEstimationRequests, 
-        UserHistoricalPerformance historicalPerformance, 
+        Guid userId,
+        IEnumerable<TaskEstimationRequest> taskEstimationRequests,
+        UserHistoricalPerformance historicalPerformance,
         CancellationToken cancellationToken = default)
     {
         if (!_aiSettings.Enabled || !_aiSettings.Features.EnableTimeEstimation)
@@ -459,7 +486,7 @@ public class AIPlanningService : IAIPlanningService
 
                 var prompt = BuildTimeEstimationPrompt(taskEstimationRequests, historicalPerformance);
                 var response = await CallAIServiceAsync(prompt, AIRequestType.TimeEstimation, cancellationToken);
-                
+
                 var estimates = ParseTimeEstimationResponse(response, taskEstimationRequests);
                 if (estimates != null)
                 {
@@ -491,7 +518,7 @@ public class AIPlanningService : IAIPlanningService
     private async Task<string?> CallAIServiceAsync(string prompt, AIRequestType requestType, CancellationToken cancellationToken)
     {
         var provider = _aiSettings.Provider;
-        
+
         // Check if primary provider recently failed and use fallback
         if (ShouldUseFallback(provider) && _aiSettings.FallbackProvider.HasValue)
         {
@@ -518,7 +545,7 @@ public class AIPlanningService : IAIPlanningService
             {
                 _logger.LogWarning("AI service request timeout on attempt {Attempt} for provider {Provider}", attempt + 1, provider);
                 RecordProviderFailure(provider);
-                
+
                 if (attempt < _aiSettings.MaxRetryAttempts)
                 {
                     await Task.Delay(TimeSpan.FromMilliseconds(Math.Pow(2, attempt) * 1000), cancellationToken);
@@ -528,7 +555,7 @@ public class AIPlanningService : IAIPlanningService
             {
                 _logger.LogError(ex, "AI service request failed on attempt {Attempt} for provider {Provider}", attempt + 1, provider);
                 RecordProviderFailure(provider);
-                
+
                 if (attempt < _aiSettings.MaxRetryAttempts)
                 {
                     await Task.Delay(TimeSpan.FromMilliseconds(Math.Pow(2, attempt) * 1000), cancellationToken);
@@ -599,7 +626,7 @@ public class AIPlanningService : IAIPlanningService
         // Implementation for OpenAI API calls
         // This would contain the actual HTTP request logic for OpenAI
         _logger.LogDebug("Calling OpenAI for request type {RequestType}", requestType);
-        
+
         // Placeholder implementation - would contain actual OpenAI API integration
         await Task.Delay(100, cancellationToken); // Simulate API call
         return "OpenAI response placeholder";

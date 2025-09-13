@@ -10,7 +10,7 @@ namespace WhoAndWhat.Application.Features.Dashboard.Queries.GetProductivityStrea
 /// <summary>
 /// Handler for retrieving user's productivity streak information
 /// </summary>
-public sealed class GetProductivityStreakQueryHandler 
+public sealed class GetProductivityStreakQueryHandler
     : IRequestHandler<GetProductivityStreakQuery, Result<GetProductivityStreakResponse>>
 {
     private readonly IAppTaskRepository _taskRepository;
@@ -25,7 +25,7 @@ public sealed class GetProductivityStreakQueryHandler
     }
 
     public async Task<Result<GetProductivityStreakResponse>> Handle(
-        GetProductivityStreakQuery request, 
+        GetProductivityStreakQuery request,
         CancellationToken cancellationToken)
     {
         try
@@ -155,7 +155,7 @@ public sealed class GetProductivityStreakQueryHandler
         }
 
         var monthlyStreaks = new Dictionary<string, int>();
-        
+
         foreach (var dateGroup in activeDates.GroupBy(d => $"{d.Year}-{d.Month:D2}"))
         {
             var monthDates = dateGroup.OrderBy(d => d).ToList();
@@ -233,7 +233,7 @@ public sealed class GetProductivityStreakQueryHandler
         var weekStart = today.AddDays(-(int)today.DayOfWeek);
         var weekTasks = completedTasks.Where(t => t.UpdatedAt >= weekStart).ToList();
         var activeDays = weekTasks.Select(t => t.UpdatedAt.Date).Distinct().Count();
-        
+
         return new StreakStats(
             TotalDays: 7,
             ActiveDays: activeDays,
@@ -249,7 +249,7 @@ public sealed class GetProductivityStreakQueryHandler
         var daysInMonth = DateTime.DaysInMonth(today.Year, today.Month);
         var monthTasks = completedTasks.Where(t => t.UpdatedAt >= monthStart).ToList();
         var activeDays = monthTasks.Select(t => t.UpdatedAt.Date).Distinct().Count();
-        
+
         return new StreakStats(
             TotalDays: daysInMonth,
             ActiveDays: activeDays,
@@ -260,13 +260,13 @@ public sealed class GetProductivityStreakQueryHandler
     }
 
     private List<DailyStreakPoint> GenerateLast30DaysData(
-        List<Domain.Entities.AppTask> completedTasks, 
-        List<DateTime> activeDates, 
-        DateTime today, 
+        List<Domain.Entities.AppTask> completedTasks,
+        List<DateTime> activeDates,
+        DateTime today,
         int currentStreak)
     {
         var last30Days = new List<DailyStreakPoint>();
-        
+
         for (int i = 29; i >= 0; i--)
         {
             var date = today.AddDays(-i);

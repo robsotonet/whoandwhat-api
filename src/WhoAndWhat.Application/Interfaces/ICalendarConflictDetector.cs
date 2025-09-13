@@ -16,7 +16,7 @@ public interface ICalendarConflictDetector
     /// <param name="detectionOptions">Options for conflict detection</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>List of detected conflicts with severity and type information</returns>
-    Task<IEnumerable<DetectedConflict>> DetectConflictsAsync(Guid userId, IEnumerable<InternalCalendarEvent> internalEvents, IEnumerable<ExternalCalendarEvent> externalEvents, ConflictDetectionOptions detectionOptions, CancellationToken cancellationToken = default);
+    public Task<IEnumerable<DetectedConflict>> DetectConflictsAsync(Guid userId, IEnumerable<InternalCalendarEvent> internalEvents, IEnumerable<ExternalCalendarEvent> externalEvents, ConflictDetectionOptions detectionOptions, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Detect time overlap conflicts for a specific time period
@@ -27,7 +27,7 @@ public interface ICalendarConflictDetector
     /// <param name="conflictTolerance">Tolerance for time overlaps (buffer minutes)</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>List of time overlap conflicts</returns>
-    Task<IEnumerable<TimeOverlapConflict>> DetectTimeOverlapAsync(Guid userId, TimeRange targetTimeRange, IEnumerable<InternalCalendarEvent> existingEvents, int conflictTolerance, CancellationToken cancellationToken = default);
+    public Task<IEnumerable<TimeOverlapConflict>> DetectTimeOverlapAsync(Guid userId, TimeRange targetTimeRange, IEnumerable<InternalCalendarEvent> existingEvents, int conflictTolerance, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Detect duplicate events across internal and external calendars
@@ -38,7 +38,7 @@ public interface ICalendarConflictDetector
     /// <param name="duplicateDetectionCriteria">Criteria for determining duplicates</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>List of potential duplicate events</returns>
-    Task<IEnumerable<DuplicateEventConflict>> DetectDuplicatesAsync(Guid userId, IEnumerable<InternalCalendarEvent> internalEvents, IEnumerable<ExternalCalendarEvent> externalEvents, DuplicateDetectionCriteria duplicateDetectionCriteria, CancellationToken cancellationToken = default);
+    public Task<IEnumerable<DuplicateEventConflict>> DetectDuplicatesAsync(Guid userId, IEnumerable<InternalCalendarEvent> internalEvents, IEnumerable<ExternalCalendarEvent> externalEvents, DuplicateDetectionCriteria duplicateDetectionCriteria, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Detect data consistency conflicts (same event with different data)
@@ -48,7 +48,7 @@ public interface ICalendarConflictDetector
     /// <param name="consistencyOptions">Options for data consistency checking</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>List of data consistency conflicts</returns>
-    Task<IEnumerable<DataConsistencyConflict>> DetectDataInconsistencyAsync(Guid userId, IEnumerable<EventPair> eventPairs, DataConsistencyOptions consistencyOptions, CancellationToken cancellationToken = default);
+    public Task<IEnumerable<DataConsistencyConflict>> DetectDataInconsistencyAsync(Guid userId, IEnumerable<EventPair> eventPairs, DataConsistencyOptions consistencyOptions, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Analyze a specific conflict and provide resolution recommendations
@@ -58,7 +58,7 @@ public interface ICalendarConflictDetector
     /// <param name="historicalResolutions">Previous conflict resolution patterns</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Conflict analysis with recommended resolution strategies</returns>
-    Task<ConflictAnalysis> AnalyzeConflictAsync(DetectedConflict conflict, UserConflictPreferences userPreferences, IEnumerable<HistoricalResolution> historicalResolutions, CancellationToken cancellationToken = default);
+    public Task<ConflictAnalysis> AnalyzeConflictAsync(DetectedConflict conflict, UserConflictPreferences userPreferences, IEnumerable<HistoricalResolution> historicalResolutions, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Auto-resolve conflicts based on configured resolution strategy
@@ -68,7 +68,7 @@ public interface ICalendarConflictDetector
     /// <param name="resolutionStrategy">Strategy to use for resolution</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Results of automatic conflict resolution</returns>
-    Task<IEnumerable<AutoResolutionResult>> AutoResolveConflictsAsync(Guid userId, IEnumerable<DetectedConflict> conflicts, ConflictResolutionStrategy resolutionStrategy, CancellationToken cancellationToken = default);
+    public Task<IEnumerable<AutoResolutionResult>> AutoResolveConflictsAsync(Guid userId, IEnumerable<DetectedConflict> conflicts, ConflictResolutionStrategy resolutionStrategy, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Apply user-specified resolution to a conflict
@@ -78,7 +78,7 @@ public interface ICalendarConflictDetector
     /// <param name="resolution">User's chosen resolution</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Result of manual conflict resolution</returns>
-    Task<ManualResolutionResult> ApplyResolutionAsync(Guid userId, Guid conflictId, ConflictResolution resolution, CancellationToken cancellationToken = default);
+    public Task<ManualResolutionResult> ApplyResolutionAsync(Guid userId, Guid conflictId, ConflictResolution resolution, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Validate proposed conflict resolution to ensure it won't create new conflicts
@@ -88,7 +88,7 @@ public interface ICalendarConflictDetector
     /// <param name="proposedResolution">Proposed resolution</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Validation result with potential issues</returns>
-    Task<ResolutionValidationResult> ValidateResolutionAsync(Guid userId, Guid conflictId, ConflictResolution proposedResolution, CancellationToken cancellationToken = default);
+    public Task<ResolutionValidationResult> ValidateResolutionAsync(Guid userId, Guid conflictId, ConflictResolution proposedResolution, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Get conflict resolution suggestions based on user patterns and preferences
@@ -97,7 +97,7 @@ public interface ICalendarConflictDetector
     /// <param name="conflict">Conflict requiring resolution</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Intelligent suggestions for conflict resolution</returns>
-    Task<IEnumerable<ResolutionSuggestion>> GetResolutionSuggestionsAsync(Guid userId, DetectedConflict conflict, CancellationToken cancellationToken = default);
+    public Task<IEnumerable<ResolutionSuggestion>> GetResolutionSuggestionsAsync(Guid userId, DetectedConflict conflict, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Predict potential conflicts before they occur during sync operations
@@ -107,7 +107,7 @@ public interface ICalendarConflictDetector
     /// <param name="currentState">Current state of events</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Predicted conflicts that may occur</returns>
-    Task<IEnumerable<PredictedConflict>> PredictConflictsAsync(Guid userId, IEnumerable<PlannedSyncChange> plannedChanges, CalendarSyncState currentState, CancellationToken cancellationToken = default);
+    public Task<IEnumerable<PredictedConflict>> PredictConflictsAsync(Guid userId, IEnumerable<PlannedSyncChange> plannedChanges, CalendarSyncState currentState, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Get statistics about conflict patterns for a user
@@ -116,7 +116,7 @@ public interface ICalendarConflictDetector
     /// <param name="timeRange">Time range for statistics</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Conflict statistics and patterns</returns>
-    Task<ConflictStatistics> GetConflictStatisticsAsync(Guid userId, TimeRange timeRange, CancellationToken cancellationToken = default);
+    public Task<ConflictStatistics> GetConflictStatisticsAsync(Guid userId, TimeRange timeRange, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Update user conflict resolution preferences based on their resolution patterns
@@ -125,7 +125,7 @@ public interface ICalendarConflictDetector
     /// <param name="recentResolutions">Recent conflict resolutions by the user</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Updated preferences based on user behavior</returns>
-    Task<UserConflictPreferences> UpdateUserPreferencesAsync(Guid userId, IEnumerable<HistoricalResolution> recentResolutions, CancellationToken cancellationToken = default);
+    public Task<UserConflictPreferences> UpdateUserPreferencesAsync(Guid userId, IEnumerable<HistoricalResolution> recentResolutions, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Merge conflicting events into a single consistent event
@@ -135,7 +135,7 @@ public interface ICalendarConflictDetector
     /// <param name="mergeStrategy">Strategy for merging data</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Merged event result</returns>
-    Task<EventMergeResult> MergeConflictingEventsAsync(Guid userId, IEnumerable<ConflictingEventData> conflictingEvents, EventMergeStrategy mergeStrategy, CancellationToken cancellationToken = default);
+    public Task<EventMergeResult> MergeConflictingEventsAsync(Guid userId, IEnumerable<ConflictingEventData> conflictingEvents, EventMergeStrategy mergeStrategy, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Check if a specific conflict has been resolved and is no longer active
@@ -143,7 +143,7 @@ public interface ICalendarConflictDetector
     /// <param name="conflictId">Conflict ID to check</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>True if conflict is resolved</returns>
-    Task<bool> IsConflictResolvedAsync(Guid conflictId, CancellationToken cancellationToken = default);
+    public Task<bool> IsConflictResolvedAsync(Guid conflictId, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Get all pending conflicts for a user that require manual resolution
@@ -152,7 +152,7 @@ public interface ICalendarConflictDetector
     /// <param name="filterOptions">Options to filter conflicts</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>List of pending conflicts</returns>
-    Task<IEnumerable<DetectedConflict>> GetPendingConflictsAsync(Guid userId, ConflictFilterOptions filterOptions, CancellationToken cancellationToken = default);
+    public Task<IEnumerable<DetectedConflict>> GetPendingConflictsAsync(Guid userId, ConflictFilterOptions filterOptions, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Mark a conflict as ignored (won't be shown to user again)
@@ -162,5 +162,5 @@ public interface ICalendarConflictDetector
     /// <param name="ignoreReason">Reason for ignoring the conflict</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Result of ignore operation</returns>
-    Task<ConflictIgnoreResult> IgnoreConflictAsync(Guid userId, Guid conflictId, string ignoreReason, CancellationToken cancellationToken = default);
+    public Task<ConflictIgnoreResult> IgnoreConflictAsync(Guid userId, Guid conflictId, string ignoreReason, CancellationToken cancellationToken = default);
 }

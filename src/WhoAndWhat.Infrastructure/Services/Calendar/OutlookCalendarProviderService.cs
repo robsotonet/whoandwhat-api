@@ -44,9 +44,9 @@ public class OutlookCalendarProviderService : ICalendarProviderService, IDisposa
         {
             using var request = new HttpRequestMessage(HttpMethod.Get, $"{MicrosoftGraphBaseUrl}/me/calendars?$top=1");
             request.Headers.Add("Authorization", "Bearer test_token_for_health_check");
-            
+
             var response = await _httpClient.SendAsync(request, cancellationToken);
-            
+
             // We expect 401 (unauthorized) which means the API is available but we need proper auth
             // 503 or timeout would indicate service unavailability
             return response.StatusCode != System.Net.HttpStatusCode.ServiceUnavailable;
@@ -67,9 +67,9 @@ public class OutlookCalendarProviderService : ICalendarProviderService, IDisposa
     }
 
     public async Task<CalendarAuthResult> AuthenticateAsync(
-        Guid userId, 
-        string authorizationCode, 
-        string redirectUri, 
+        Guid userId,
+        string authorizationCode,
+        string redirectUri,
         CancellationToken cancellationToken = default)
     {
         try
@@ -88,7 +88,7 @@ public class OutlookCalendarProviderService : ICalendarProviderService, IDisposa
 
             var tokenEndpoint = $"{MicrosoftOAuthBaseUrl}/{_outlookSettings.TenantId}/oauth2/v2.0/token";
             var tokenResponse = await SendTokenRequest(tokenEndpoint, tokenRequest, cancellationToken);
-            
+
             if (!tokenResponse.Success)
             {
                 return new CalendarAuthResult(
@@ -103,7 +103,7 @@ public class OutlookCalendarProviderService : ICalendarProviderService, IDisposa
 
             // Verify token by getting user profile
             var userInfo = await GetUserInfo(tokenResponse.AccessToken!, cancellationToken);
-            
+
             return new CalendarAuthResult(
                 true,
                 tokenResponse.AccessToken!,
@@ -130,8 +130,8 @@ public class OutlookCalendarProviderService : ICalendarProviderService, IDisposa
     }
 
     public async Task<TokenRefreshResult> RefreshTokensAsync(
-        Guid userId, 
-        string refreshToken, 
+        Guid userId,
+        string refreshToken,
         CancellationToken cancellationToken = default)
     {
         try
@@ -186,8 +186,8 @@ public class OutlookCalendarProviderService : ICalendarProviderService, IDisposa
     }
 
     public async Task<IEnumerable<ExternalCalendar>> GetCalendarsAsync(
-        Guid userId, 
-        string accessToken, 
+        Guid userId,
+        string accessToken,
         CancellationToken cancellationToken = default)
     {
         try
@@ -234,12 +234,12 @@ public class OutlookCalendarProviderService : ICalendarProviderService, IDisposa
     }
 
     public async Task<ExternalCalendarEventsResult> GetEventsAsync(
-        Guid userId, 
-        string calendarId, 
-        string accessToken, 
-        DateTime startDate, 
-        DateTime endDate, 
-        string? syncToken = null, 
+        Guid userId,
+        string calendarId,
+        string accessToken,
+        DateTime startDate,
+        DateTime endDate,
+        string? syncToken = null,
         CancellationToken cancellationToken = default)
     {
         try
@@ -280,7 +280,7 @@ public class OutlookCalendarProviderService : ICalendarProviderService, IDisposa
                 }
             }
 
-            _logger.LogInformation("Retrieved {EventCount} events for user {UserId} from calendar {CalendarId}", 
+            _logger.LogInformation("Retrieved {EventCount} events for user {UserId} from calendar {CalendarId}",
                 events.Count, userId, calendarId);
 
             return new ExternalCalendarEventsResult(
@@ -305,10 +305,10 @@ public class OutlookCalendarProviderService : ICalendarProviderService, IDisposa
     }
 
     public async Task<ExternalEventResult> CreateEventAsync(
-        Guid userId, 
-        string calendarId, 
-        string accessToken, 
-        ExternalEventCreateRequest eventData, 
+        Guid userId,
+        string calendarId,
+        string accessToken,
+        ExternalEventCreateRequest eventData,
         CancellationToken cancellationToken = default)
     {
         try
@@ -349,16 +349,16 @@ public class OutlookCalendarProviderService : ICalendarProviderService, IDisposa
     }
 
     public async Task<ExternalEventResult> UpdateEventAsync(
-        Guid userId, 
-        string calendarId, 
-        string eventId, 
-        string accessToken, 
-        ExternalEventUpdateRequest eventData, 
+        Guid userId,
+        string calendarId,
+        string eventId,
+        string accessToken,
+        ExternalEventUpdateRequest eventData,
         CancellationToken cancellationToken = default)
     {
         try
         {
-            _logger.LogInformation("Updating event {EventId} for user {UserId} in calendar {CalendarId}", 
+            _logger.LogInformation("Updating event {EventId} for user {UserId} in calendar {CalendarId}",
                 eventId, userId, calendarId);
 
             var outlookEvent = ConvertToOutlookEvent(eventData);
@@ -384,7 +384,7 @@ public class OutlookCalendarProviderService : ICalendarProviderService, IDisposa
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to update event {EventId} for user {UserId} in calendar {CalendarId}", 
+            _logger.LogError(ex, "Failed to update event {EventId} for user {UserId} in calendar {CalendarId}",
                 eventId, userId, calendarId);
             return new ExternalEventResult(
                 false,
@@ -396,15 +396,15 @@ public class OutlookCalendarProviderService : ICalendarProviderService, IDisposa
     }
 
     public async Task<ExternalEventDeleteResult> DeleteEventAsync(
-        Guid userId, 
-        string calendarId, 
-        string eventId, 
-        string accessToken, 
+        Guid userId,
+        string calendarId,
+        string eventId,
+        string accessToken,
         CancellationToken cancellationToken = default)
     {
         try
         {
-            _logger.LogInformation("Deleting event {EventId} for user {UserId} from calendar {CalendarId}", 
+            _logger.LogInformation("Deleting event {EventId} for user {UserId} from calendar {CalendarId}",
                 eventId, userId, calendarId);
 
             var url = $"{MicrosoftGraphBaseUrl}/me/calendars/{calendarId}/events/{eventId}";
@@ -422,7 +422,7 @@ public class OutlookCalendarProviderService : ICalendarProviderService, IDisposa
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to delete event {EventId} for user {UserId} from calendar {CalendarId}", 
+            _logger.LogError(ex, "Failed to delete event {EventId} for user {UserId} from calendar {CalendarId}",
                 eventId, userId, calendarId);
             return new ExternalEventDeleteResult(
                 false,
@@ -433,19 +433,19 @@ public class OutlookCalendarProviderService : ICalendarProviderService, IDisposa
     }
 
     public async Task<IEnumerable<ExternalEventResult>> CreateEventsAsync(
-        Guid userId, 
-        string calendarId, 
-        string accessToken, 
-        IEnumerable<ExternalEventCreateRequest> eventRequests, 
+        Guid userId,
+        string calendarId,
+        string accessToken,
+        IEnumerable<ExternalEventCreateRequest> eventRequests,
         CancellationToken cancellationToken = default)
     {
         var results = new List<ExternalEventResult>();
-        
+
         foreach (var eventRequest in eventRequests)
         {
             var result = await CreateEventAsync(userId, calendarId, accessToken, eventRequest, cancellationToken);
             results.Add(result);
-            
+
             // Add small delay to respect rate limits
             if (results.Count > 1)
             {
@@ -457,20 +457,20 @@ public class OutlookCalendarProviderService : ICalendarProviderService, IDisposa
     }
 
     public async Task<IEnumerable<ExternalEventResult>> UpdateEventsAsync(
-        Guid userId, 
-        string calendarId, 
-        string accessToken, 
-        IEnumerable<ExternalEventUpdateWithId> eventUpdates, 
+        Guid userId,
+        string calendarId,
+        string accessToken,
+        IEnumerable<ExternalEventUpdateWithId> eventUpdates,
         CancellationToken cancellationToken = default)
     {
         var results = new List<ExternalEventResult>();
-        
+
         foreach (var eventUpdate in eventUpdates)
         {
-            var result = await UpdateEventAsync(userId, calendarId, eventUpdate.EventId, accessToken, 
+            var result = await UpdateEventAsync(userId, calendarId, eventUpdate.EventId, accessToken,
                 eventUpdate.UpdateRequest, cancellationToken);
             results.Add(result);
-            
+
             // Add small delay to respect rate limits
             if (results.Count > 1)
             {
@@ -482,10 +482,10 @@ public class OutlookCalendarProviderService : ICalendarProviderService, IDisposa
     }
 
     public async Task<FreeBusyResult> GetFreeBusyAsync(
-        Guid userId, 
-        IEnumerable<string> calendarIds, 
-        string accessToken, 
-        IEnumerable<TimeRange> timeRanges, 
+        Guid userId,
+        IEnumerable<string> calendarIds,
+        string accessToken,
+        IEnumerable<TimeRange> timeRanges,
         CancellationToken cancellationToken = default)
     {
         try
@@ -506,7 +506,7 @@ public class OutlookCalendarProviderService : ICalendarProviderService, IDisposa
 
             var json = JsonSerializer.Serialize(requestBody, GetJsonOptions());
             var url = $"{MicrosoftGraphBaseUrl}/me/calendar/getSchedule";
-            
+
             using var request = new HttpRequestMessage(HttpMethod.Post, url);
             request.Headers.Add("Authorization", $"Bearer {accessToken}");
             request.Content = new StringContent(json, Encoding.UTF8, "application/json");
@@ -518,7 +518,7 @@ public class OutlookCalendarProviderService : ICalendarProviderService, IDisposa
             var freeBusyResponse = JsonSerializer.Deserialize<OutlookFreeBusyResponse>(responseContent, GetJsonOptions());
 
             var freeBusyInfo = new List<CalendarFreeBusy>();
-            
+
             if (freeBusyResponse?.Value != null)
             {
                 for (int i = 0; i < schedules.Count && i < freeBusyResponse.Value.Length; i++)
@@ -556,11 +556,11 @@ public class OutlookCalendarProviderService : ICalendarProviderService, IDisposa
     }
 
     public async Task<CalendarWatchResult> WatchCalendarAsync(
-        Guid userId, 
-        string calendarId, 
-        string accessToken, 
-        string webhookUrl, 
-        DateTime expirationTime, 
+        Guid userId,
+        string calendarId,
+        string accessToken,
+        string webhookUrl,
+        DateTime expirationTime,
         CancellationToken cancellationToken = default)
     {
         try
@@ -578,7 +578,7 @@ public class OutlookCalendarProviderService : ICalendarProviderService, IDisposa
 
             var json = JsonSerializer.Serialize(subscription, GetJsonOptions());
             var url = $"{MicrosoftGraphBaseUrl}/subscriptions";
-            
+
             using var request = new HttpRequestMessage(HttpMethod.Post, url);
             request.Headers.Add("Authorization", $"Bearer {accessToken}");
             request.Content = new StringContent(json, Encoding.UTF8, "application/json");
@@ -611,9 +611,9 @@ public class OutlookCalendarProviderService : ICalendarProviderService, IDisposa
     }
 
     public async Task<CalendarWatchStopResult> StopWatchingAsync(
-        Guid userId, 
-        string watchId, 
-        string accessToken, 
+        Guid userId,
+        string watchId,
+        string accessToken,
         CancellationToken cancellationToken = default)
     {
         try
@@ -621,7 +621,7 @@ public class OutlookCalendarProviderService : ICalendarProviderService, IDisposa
             _logger.LogInformation("Stopping calendar watch {WatchId} for user {UserId}", watchId, userId);
 
             var url = $"{MicrosoftGraphBaseUrl}/subscriptions/{watchId}";
-            
+
             using var request = new HttpRequestMessage(HttpMethod.Delete, url);
             request.Headers.Add("Authorization", $"Bearer {accessToken}");
 
@@ -645,9 +645,9 @@ public class OutlookCalendarProviderService : ICalendarProviderService, IDisposa
         }
     }
 
-    public async Task<WebhookProcessResult> ProcessWebhookAsync(
-        string webhookData, 
-        IDictionary<string, string> headers, 
+    public Task<WebhookProcessResult> ProcessWebhookAsync(
+        string webhookData,
+        IDictionary<string, string> headers,
         CancellationToken cancellationToken = default)
     {
         try
@@ -655,58 +655,58 @@ public class OutlookCalendarProviderService : ICalendarProviderService, IDisposa
             _logger.LogInformation("Processing Outlook Calendar webhook notification");
 
             var notification = JsonSerializer.Deserialize<OutlookWebhookNotification>(webhookData, GetJsonOptions());
-            
+
             if (notification?.Value?.Any() == true)
             {
                 var firstNotification = notification.Value.First();
                 var changeType = MapOutlookChangeType(firstNotification.ChangeType);
-                
-                return new WebhookProcessResult(
+
+                return Task.FromResult(new WebhookProcessResult(
                     true,
                     changeType,
                     firstNotification.SubscriptionId,
                     firstNotification.Resource,
                     firstNotification.ResourceData
-                );
+                ));
             }
 
-            return new WebhookProcessResult(
+            return Task.FromResult(new WebhookProcessResult(
                 false,
                 WebhookChangeType.Unknown,
                 null,
                 null,
                 "Invalid webhook payload"
-            );
+            ));
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to process Outlook Calendar webhook");
-            return new WebhookProcessResult(
+            return Task.FromResult(new WebhookProcessResult(
                 false,
                 WebhookChangeType.Unknown,
                 null,
                 null,
                 ex.Message
-            );
+            ));
         }
     }
 
-    public async Task<ProviderRateLimitStatus> GetRateLimitStatusAsync(CancellationToken cancellationToken = default)
+    public Task<ProviderRateLimitStatus> GetRateLimitStatusAsync(CancellationToken cancellationToken = default)
     {
         // Microsoft Graph API rate limits are typically:
         // - 10,000 requests per 10 minutes per application per tenant
         // - Varies by endpoint and license type
-        return new ProviderRateLimitStatus(
+        return Task.FromResult(new ProviderRateLimitStatus(
             _outlookSettings.RateLimit.RequestsPerMinute,
             _outlookSettings.RateLimit.RequestsPerMinute, // Assuming we haven't tracked usage
             TimeSpan.FromMinutes(1),
             false // Not currently throttled
-        );
+        ));
     }
 
     public async Task<TokenValidationResult> ValidateTokenAsync(
-        Guid userId, 
-        string accessToken, 
+        Guid userId,
+        string accessToken,
         CancellationToken cancellationToken = default)
     {
         try
@@ -743,7 +743,7 @@ public class OutlookCalendarProviderService : ICalendarProviderService, IDisposa
             SupportsAttendees: true,
             SupportsAttachments: true,
             SupportedEventFields: [
-                "subject", "body", "start", "end", "location", "attendees", 
+                "subject", "body", "start", "end", "location", "attendees",
                 "recurrence", "attachments", "importance", "sensitivity", "showAs"
             ],
             MaxBatchSize: TimeSpan.FromDays(365), // Outlook allows broad date ranges
@@ -752,7 +752,7 @@ public class OutlookCalendarProviderService : ICalendarProviderService, IDisposa
     }
 
     public ExternalEventCreateRequest ConvertFromInternalEvent(
-        InternalCalendarEvent internalEvent, 
+        InternalCalendarEvent internalEvent,
         EventConversionOptions conversionOptions)
     {
         return new ExternalEventCreateRequest(
@@ -785,7 +785,7 @@ public class OutlookCalendarProviderService : ICalendarProviderService, IDisposa
     }
 
     public InternalCalendarEvent ConvertToInternalEvent(
-        ExternalCalendarEvent externalEvent, 
+        ExternalCalendarEvent externalEvent,
         EventConversionOptions conversionOptions)
     {
         return new InternalCalendarEvent(
@@ -806,7 +806,7 @@ public class OutlookCalendarProviderService : ICalendarProviderService, IDisposa
             )).ToList() ?? [],
             externalEvent.Recurrence?.FirstOrDefault(),
             externalEvent.Reminders?.Select(r => new InternalEventReminder(
-                MapExternalReminderMethod(r.Method),
+                MapExternalReminderMethod((ExternalReminderMethod)r.Method),
                 r.MinutesBeforeStart
             )).ToList() ?? [],
             externalEvent.Attachments?.Select(a => new InternalEventAttachment(
@@ -832,11 +832,11 @@ public class OutlookCalendarProviderService : ICalendarProviderService, IDisposa
 
     private async Task<OutlookTokenResponse> SendTokenRequest(
         string endpoint,
-        Dictionary<string, string> parameters, 
+        Dictionary<string, string> parameters,
         CancellationToken cancellationToken)
     {
         var content = new FormUrlEncodedContent(parameters);
-        
+
         using var request = new HttpRequestMessage(HttpMethod.Post, endpoint);
         request.Content = content;
 
@@ -850,9 +850,9 @@ public class OutlookCalendarProviderService : ICalendarProviderService, IDisposa
         }
 
         var errorResponse = JsonSerializer.Deserialize<OutlookErrorResponse>(responseContent, GetJsonOptions());
-        return new OutlookTokenResponse 
-        { 
-            Success = false, 
+        return new OutlookTokenResponse
+        {
+            Success = false,
             Error = errorResponse?.ErrorDescription ?? errorResponse?.Error ?? "Unknown error"
         };
     }
@@ -933,7 +933,10 @@ public class OutlookCalendarProviderService : ICalendarProviderService, IDisposa
     private static DateTime ParseOutlookDateTime(OutlookDateTime? dateTime)
     {
         if (dateTime?.DateTime != null && DateTime.TryParse(dateTime.DateTime, out var dt))
+        {
             return dt;
+        }
+
         return DateTime.UtcNow;
     }
 
@@ -943,15 +946,15 @@ public class OutlookCalendarProviderService : ICalendarProviderService, IDisposa
         {
             subject = eventData.Title,
             body = eventData.Description != null ? new { contentType = "text", content = eventData.Description } : null,
-            start = new 
-            { 
-                dateTime = eventData.StartTime.ToString("yyyy-MM-ddTHH:mm:ss.fffK"), 
-                timeZone = "UTC" 
+            start = new
+            {
+                dateTime = eventData.StartTime.ToString("yyyy-MM-ddTHH:mm:ss.fffK"),
+                timeZone = "UTC"
             },
-            end = new 
-            { 
-                dateTime = eventData.EndTime.ToString("yyyy-MM-ddTHH:mm:ss.fffK"), 
-                timeZone = "UTC" 
+            end = new
+            {
+                dateTime = eventData.EndTime.ToString("yyyy-MM-ddTHH:mm:ss.fffK"),
+                timeZone = "UTC"
             },
             isAllDay = eventData.IsAllDay,
             location = eventData.Location != null ? new { displayName = eventData.Location } : null,
@@ -975,15 +978,15 @@ public class OutlookCalendarProviderService : ICalendarProviderService, IDisposa
         {
             subject = eventData.Title,
             body = eventData.Description != null ? new { contentType = "text", content = eventData.Description } : null,
-            start = new 
-            { 
-                dateTime = eventData.StartTime.ToString("yyyy-MM-ddTHH:mm:ss.fffK"), 
-                timeZone = "UTC" 
+            start = new
+            {
+                dateTime = eventData.StartTime.ToString("yyyy-MM-ddTHH:mm:ss.fffK"),
+                timeZone = "UTC"
             },
-            end = new 
-            { 
-                dateTime = eventData.EndTime.ToString("yyyy-MM-ddTHH:mm:ss.fffK"), 
-                timeZone = "UTC" 
+            end = new
+            {
+                dateTime = eventData.EndTime.ToString("yyyy-MM-ddTHH:mm:ss.fffK"),
+                timeZone = "UTC"
             },
             isAllDay = eventData.IsAllDay,
             location = eventData.Location != null ? new { displayName = eventData.Location } : null,
@@ -1062,7 +1065,11 @@ public class OutlookCalendarProviderService : ICalendarProviderService, IDisposa
 
     public void Dispose()
     {
-        if (_disposed) return;
+        if (_disposed)
+        {
+            return;
+        }
+
         _disposed = true;
     }
 }

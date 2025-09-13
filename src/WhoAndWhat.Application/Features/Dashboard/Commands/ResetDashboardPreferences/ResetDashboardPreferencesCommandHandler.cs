@@ -9,7 +9,7 @@ namespace WhoAndWhat.Application.Features.Dashboard.Commands.ResetDashboardPrefe
 /// <summary>
 /// Handler for resetting user's dashboard preferences to default values
 /// </summary>
-public sealed class ResetDashboardPreferencesCommandHandler 
+public sealed class ResetDashboardPreferencesCommandHandler
     : IRequestHandler<ResetDashboardPreferencesCommand, Result<ResetDashboardPreferencesResponse>>
 {
     private readonly IUserRepository _userRepository;
@@ -24,12 +24,12 @@ public sealed class ResetDashboardPreferencesCommandHandler
     }
 
     public async Task<Result<ResetDashboardPreferencesResponse>> Handle(
-        ResetDashboardPreferencesCommand request, 
+        ResetDashboardPreferencesCommand request,
         CancellationToken cancellationToken)
     {
         try
         {
-            _logger.LogInformation("Resetting dashboard preferences for user {UserId}, ConfirmReset: {ConfirmReset}", 
+            _logger.LogInformation("Resetting dashboard preferences for user {UserId}, ConfirmReset: {ConfirmReset}",
                 request.UserId, request.ConfirmReset);
 
             // Verify user exists
@@ -61,7 +61,7 @@ public sealed class ResetDashboardPreferencesCommandHandler
                 ResetTimestamp: DateTime.UtcNow
             );
 
-            _logger.LogInformation("Successfully reset dashboard preferences for user {UserId}. Reset settings: {Settings}", 
+            _logger.LogInformation("Successfully reset dashboard preferences for user {UserId}. Reset settings: {Settings}",
                 request.UserId, string.Join(", ", settingsToReset));
 
             return Result<ResetDashboardPreferencesResponse>.Success(response);
@@ -83,12 +83,12 @@ public sealed class ResetDashboardPreferencesCommandHandler
             ShowOverdueTasks: true,
             ShowMotivationalContent: true,
             RefreshInterval: 300, // 5 minutes
-            VisibleWidgets: new List<string> 
-            { 
-                "completion-stats", 
-                "productivity-streak", 
-                "overdue-tasks", 
-                "motivational-content" 
+            VisibleWidgets: new List<string>
+            {
+                "completion-stats",
+                "productivity-streak",
+                "overdue-tasks",
+                "motivational-content"
             },
             WidgetSettings: new Dictionary<string, object>
             {
@@ -146,7 +146,7 @@ public sealed class ResetDashboardPreferencesCommandHandler
 
     private async Task ResetPreferences(Guid userId, List<string> settingsToReset, CancellationToken cancellationToken)
     {
-        _logger.LogDebug("Resetting preferences for user {UserId}, settings: {Settings}", 
+        _logger.LogDebug("Resetting preferences for user {UserId}, settings: {Settings}",
             userId, string.Join(", ", settingsToReset));
 
         // This would typically:
@@ -220,7 +220,7 @@ public sealed class ResetDashboardPreferencesCommandHandler
         // Store the reset preferences
         await StoreDashboardPreferences(userId, preferencesToUpdate, cancellationToken);
 
-        _logger.LogInformation("Reset {Count} dashboard preference settings for user {UserId}", 
+        _logger.LogInformation("Reset {Count} dashboard preference settings for user {UserId}",
             preferencesToUpdate.Count, userId);
     }
 
@@ -229,7 +229,7 @@ public sealed class ResetDashboardPreferencesCommandHandler
         // Placeholder for actual preference storage
         // In reality, this would interact with a DashboardPreferences repository
         _logger.LogDebug("Storing dashboard preferences for user {UserId}", userId);
-        
+
         await Task.CompletedTask; // Placeholder for async operation
     }
 }

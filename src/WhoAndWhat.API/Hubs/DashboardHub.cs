@@ -1,6 +1,6 @@
+using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
-using System.Security.Claims;
 using WhoAndWhat.Application.Interfaces;
 
 namespace WhoAndWhat.API.Hubs;
@@ -162,7 +162,7 @@ public class DashboardHub : Hub
 
             // Get cached dashboard data if available
             var dashboardSummary = await _dashboardCacheService.GetCachedDashboardSummaryAsync(userId.Value);
-            
+
             if (dashboardSummary != null)
             {
                 await Clients.Caller.SendAsync("DashboardDataUpdate", new
@@ -231,8 +231,8 @@ public class DashboardHub : Hub
 
             if (contentService != null)
             {
-                TimeSpan? viewDuration = viewDurationSeconds.HasValue 
-                    ? TimeSpan.FromSeconds(viewDurationSeconds.Value) 
+                TimeSpan? viewDuration = viewDurationSeconds.HasValue
+                    ? TimeSpan.FromSeconds(viewDurationSeconds.Value)
                     : null;
 
                 var success = await contentService.LogContentEngagementAsync(
@@ -294,7 +294,7 @@ public class DashboardHub : Hub
             if (schedulingService != null)
             {
                 await schedulingService.TriggerContentDeliveryAsync(userId.Value, triggerReason);
-                
+
                 await Clients.Caller.SendAsync("ContentRequested", new
                 {
                     triggerReason,
@@ -340,7 +340,7 @@ public class DashboardHub : Hub
 
             // Get cached productivity metrics if available
             var metrics = await _dashboardCacheService.GetCachedProductivityMetricsAsync(userId.Value, period);
-            
+
             if (metrics != null)
             {
                 await Clients.Caller.SendAsync("ProductivityMetricsUpdate", new
@@ -410,7 +410,7 @@ public static class DashboardHubExtensions
     /// <summary>
     /// Send dashboard summary update to a specific user
     /// </summary>
-    public static async Task SendDashboardSummaryUpdate(this IHubContext<DashboardHub> hubContext, 
+    public static async Task SendDashboardSummaryUpdate(this IHubContext<DashboardHub> hubContext,
         Guid userId, object dashboardSummary)
     {
         var groupName = $"dashboard:user:{userId}";

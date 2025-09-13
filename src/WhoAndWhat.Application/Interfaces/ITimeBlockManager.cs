@@ -15,7 +15,7 @@ public interface ITimeBlockManager
     /// <param name="preferences">User scheduling preferences</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>List of suggested time blocks</returns>
-    Task<List<TimeBlockSuggestion>> GenerateTimeBlocksAsync(
+    public Task<List<TimeBlockSuggestion>> GenerateTimeBlocksAsync(
         Guid userId,
         List<SmartScheduledItem> scheduledItems,
         SmartSchedulingPreferences preferences,
@@ -29,7 +29,7 @@ public interface ITimeBlockManager
     /// <param name="preferences">User preferences</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>List of time block recommendations</returns>
-    Task<List<TimeBlockSuggestion>> GenerateTimeBlockRecommendationsAsync(
+    public Task<List<TimeBlockSuggestion>> GenerateTimeBlockRecommendationsAsync(
         Guid userId,
         DateTime date,
         SmartSchedulingPreferences preferences,
@@ -43,7 +43,7 @@ public interface ITimeBlockManager
     /// <param name="preferences">User preferences</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Optimized time blocks</returns>
-    Task<List<TimeBlockSuggestion>> OptimizeTimeBlocksAsync(
+    public Task<List<TimeBlockSuggestion>> OptimizeTimeBlocksAsync(
         Guid userId,
         List<TimeBlockSuggestion> currentTimeBlocks,
         SmartSchedulingPreferences preferences,
@@ -57,7 +57,7 @@ public interface ITimeBlockManager
     /// <param name="preferences">User preferences</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Deep work time blocks</returns>
-    Task<List<TimeBlockSuggestion>> CreateDeepWorkBlocksAsync(
+    public Task<List<TimeBlockSuggestion>> CreateDeepWorkBlocksAsync(
         Guid userId,
         List<TimeSlot> availableTime,
         SmartSchedulingPreferences preferences,
@@ -71,7 +71,7 @@ public interface ITimeBlockManager
     /// <param name="preferences">User preferences</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Administrative time blocks</returns>
-    Task<List<TimeBlockSuggestion>> CreateAdministrativeBlocksAsync(
+    public Task<List<TimeBlockSuggestion>> CreateAdministrativeBlocksAsync(
         Guid userId,
         List<TimeSlot> availableTime,
         SmartSchedulingPreferences preferences,
@@ -85,7 +85,7 @@ public interface ITimeBlockManager
     /// <param name="bufferDuration">Duration of buffer blocks</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Buffer time blocks</returns>
-    Task<List<TimeBlockSuggestion>> CreateBufferBlocksAsync(
+    public Task<List<TimeBlockSuggestion>> CreateBufferBlocksAsync(
         Guid userId,
         List<SmartScheduledItem> scheduledItems,
         TimeSpan bufferDuration,
@@ -98,7 +98,7 @@ public interface ITimeBlockManager
     /// <param name="timeBlocks">Time blocks to analyze</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Analysis of time block effectiveness</returns>
-    Task<TimeBlockAnalysis> AnalyzeTimeBlockEffectivenessAsync(
+    public Task<TimeBlockAnalysis> AnalyzeTimeBlockEffectivenessAsync(
         Guid userId,
         List<TimeBlockSuggestion> timeBlocks,
         CancellationToken cancellationToken = default);
@@ -110,7 +110,7 @@ public interface ITimeBlockManager
     /// <param name="blockPurpose">Purpose of the time block</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Recommended time block duration</returns>
-    Task<TimeBlockDurationRecommendation> GetOptimalBlockDurationAsync(
+    public Task<TimeBlockDurationRecommendation> GetOptimalBlockDurationAsync(
         Guid userId,
         TimeBlockPurpose blockPurpose,
         CancellationToken cancellationToken = default);
@@ -120,7 +120,7 @@ public interface ITimeBlockManager
     /// </summary>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>True if manager is ready for time block operations</returns>
-    Task<bool> IsAvailableAsync(CancellationToken cancellationToken = default);
+    public Task<bool> IsAvailableAsync(CancellationToken cancellationToken = default);
 }
 
 /// <summary>

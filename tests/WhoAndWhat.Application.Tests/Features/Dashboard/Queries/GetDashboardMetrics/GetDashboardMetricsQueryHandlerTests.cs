@@ -26,7 +26,7 @@ public class GetDashboardMetricsQueryHandlerTests
     {
         _mockTaskRepository = new Mock<IAppTaskRepository>();
         _mockLogger = new Mock<ILogger<GetDashboardMetricsQueryHandler>>();
-        
+
         _handler = new GetDashboardMetricsQueryHandler(
             _mockTaskRepository.Object,
             _mockLogger.Object);
@@ -49,7 +49,7 @@ public class GetDashboardMetricsQueryHandlerTests
         // Assert
         result.IsSuccess.Should().BeTrue();
         var response = result.Value;
-        
+
         response.CompletedTasksToday.Should().Be(0);
         response.CompletedTasksThisWeek.Should().Be(0);
         response.CompletedTasksThisMonth.Should().Be(0);
@@ -59,21 +59,21 @@ public class GetDashboardMetricsQueryHandlerTests
         response.TasksCompletedLate.Should().Be(0);
         response.CompletionRate.Should().Be(0.0);
         response.OnTimeCompletionRate.Should().Be(0.0);
-        
+
         // Category breakdown should all be zero
         response.CategoryBreakdown.TodoTasks.Should().Be(0);
         response.CategoryBreakdown.IdeaTasks.Should().Be(0);
         response.CategoryBreakdown.AppointmentTasks.Should().Be(0);
         response.CategoryBreakdown.BillReminderTasks.Should().Be(0);
         response.CategoryBreakdown.ProjectTasks.Should().Be(0);
-        
+
         // Priority breakdown should all be zero
         response.PriorityBreakdown.CriticalTasks.Should().Be(0);
         response.PriorityBreakdown.HighTasks.Should().Be(0);
         response.PriorityBreakdown.MediumTasks.Should().Be(0);
         response.PriorityBreakdown.LowTasks.Should().Be(0);
         response.PriorityBreakdown.NoneTasks.Should().Be(0);
-        
+
         // Trends should be empty but not null
         response.Trends.Should().NotBeNull();
         response.Trends.CurrentStreak.Should().Be(0);
@@ -88,7 +88,7 @@ public class GetDashboardMetricsQueryHandlerTests
         // Arrange
         var query = new GetDashboardMetricsQuery(_testUserId);
         var today = DateTime.UtcNow.Date;
-        
+
         var tasks = new List<AppTask>
         {
             CreateCompletedTask(today, AppTaskCategory.ToDo), // Completed today
@@ -107,7 +107,7 @@ public class GetDashboardMetricsQueryHandlerTests
         // Assert
         result.IsSuccess.Should().BeTrue();
         var response = result.Value;
-        
+
         response.CompletedTasksToday.Should().Be(2);
         response.TotalActiveTasks.Should().Be(1); // Only the active task
         response.CompletionRate.Should().Be(75.0); // 3 completed out of 4 total
@@ -119,7 +119,7 @@ public class GetDashboardMetricsQueryHandlerTests
         // Arrange
         var query = new GetDashboardMetricsQuery(_testUserId);
         var today = DateTime.UtcNow.Date;
-        
+
         var tasks = new List<AppTask>
         {
             CreateActiveTaskWithDueDate(today.AddDays(-1)), // Overdue (due yesterday)
@@ -138,7 +138,7 @@ public class GetDashboardMetricsQueryHandlerTests
         // Assert
         result.IsSuccess.Should().BeTrue();
         var response = result.Value;
-        
+
         response.TotalActiveTasks.Should().Be(4);
         response.OverdueTasks.Should().Be(2); // 2 tasks are overdue
     }
@@ -149,7 +149,7 @@ public class GetDashboardMetricsQueryHandlerTests
         // Arrange
         var query = new GetDashboardMetricsQuery(_testUserId);
         var today = DateTime.UtcNow.Date;
-        
+
         var tasks = new List<AppTask>
         {
             // On-time completions
@@ -173,7 +173,7 @@ public class GetDashboardMetricsQueryHandlerTests
         // Assert
         result.IsSuccess.Should().BeTrue();
         var response = result.Value;
-        
+
         response.TasksCompletedOnTime.Should().Be(2); // 2 tasks completed on time or early
         response.TasksCompletedLate.Should().Be(1);   // 1 task completed late
         response.OnTimeCompletionRate.Should().Be(66.7); // 2/3 * 100, rounded to 1 decimal
@@ -185,7 +185,7 @@ public class GetDashboardMetricsQueryHandlerTests
     {
         // Arrange
         var query = new GetDashboardMetricsQuery(_testUserId);
-        
+
         var tasks = new List<AppTask>
         {
             CreateActiveTask(AppTaskCategory.ToDo),
@@ -214,14 +214,14 @@ public class GetDashboardMetricsQueryHandlerTests
         // Assert
         result.IsSuccess.Should().BeTrue();
         var response = result.Value;
-        
+
         var categoryBreakdown = response.CategoryBreakdown;
         categoryBreakdown.TodoTasks.Should().Be(2);
         categoryBreakdown.IdeaTasks.Should().Be(1);
         categoryBreakdown.AppointmentTasks.Should().Be(1);
         categoryBreakdown.BillReminderTasks.Should().Be(1);
         categoryBreakdown.ProjectTasks.Should().Be(3);
-        
+
         response.TotalActiveTasks.Should().Be(8); // Only active, non-archived tasks
     }
 
@@ -230,7 +230,7 @@ public class GetDashboardMetricsQueryHandlerTests
     {
         // Arrange
         var query = new GetDashboardMetricsQuery(_testUserId);
-        
+
         var tasks = new List<AppTask>
         {
             CreateActiveTaskWithPriority(Priority.Urgent),
@@ -255,7 +255,7 @@ public class GetDashboardMetricsQueryHandlerTests
         // Assert
         result.IsSuccess.Should().BeTrue();
         var response = result.Value;
-        
+
         var priorityBreakdown = response.PriorityBreakdown;
         priorityBreakdown.CriticalTasks.Should().Be(2); // Urgent maps to Critical
         priorityBreakdown.HighTasks.Should().Be(1);
@@ -272,7 +272,7 @@ public class GetDashboardMetricsQueryHandlerTests
         var today = new DateTime(2024, 6, 15); // Fixed date for predictable testing
         var startOfWeek = today.AddDays(-(int)today.DayOfWeek); // Sunday of current week
         var startOfMonth = new DateTime(2024, 6, 1);
-        
+
         var tasks = new List<AppTask>
         {
             // This week (2 tasks)
@@ -302,7 +302,7 @@ public class GetDashboardMetricsQueryHandlerTests
         // Assert
         result.IsSuccess.Should().BeTrue();
         var response = result.Value;
-        
+
         response.CompletedTasksThisWeek.Should().Be(2);
         response.CompletedTasksThisMonth.Should().Be(3);
     }
@@ -313,7 +313,7 @@ public class GetDashboardMetricsQueryHandlerTests
         // Arrange
         var query = new GetDashboardMetricsQuery(_testUserId);
         var today = DateTime.UtcNow.Date;
-        
+
         // Create a 5-day streak
         var tasks = new List<AppTask>();
         for (int i = 0; i < 5; i++)
@@ -333,18 +333,18 @@ public class GetDashboardMetricsQueryHandlerTests
         // Assert
         result.IsSuccess.Should().BeTrue();
         var response = result.Value;
-        
+
         var trends = response.Trends;
         trends.Should().NotBeNull();
         trends.CurrentStreak.Should().Be(5);
         trends.LongestStreak.Should().Be(5);
         trends.DailyAverageCompletions.Should().BeGreaterThan(0);
         trends.WeeklyAverageCompletions.Should().BeGreaterThan(0);
-        
+
         // Should have 7 days of data
         trends.Last7Days.Should().HaveCount(7);
         trends.Last7Days.Should().BeInAscendingOrder(d => d.Date);
-        
+
         // Should have 4 weeks of data
         trends.Last4Weeks.Should().HaveCount(4);
         trends.Last4Weeks.Should().BeInAscendingOrder(w => w.WeekStarting);
@@ -367,7 +367,7 @@ public class GetDashboardMetricsQueryHandlerTests
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("Failed to retrieve dashboard metrics");
         result.Error.Should().Contain("Database connection failed");
-        
+
         // Verify logging
         _mockLogger.Verify(
             x => x.Log(
@@ -395,7 +395,7 @@ public class GetDashboardMetricsQueryHandlerTests
 
         // Assert
         result.IsSuccess.Should().BeTrue();
-        
+
         // Verify logging
         _mockLogger.Verify(
             x => x.Log(
@@ -405,7 +405,7 @@ public class GetDashboardMetricsQueryHandlerTests
                 It.IsAny<Exception>(),
                 It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
             Times.Once);
-            
+
         _mockLogger.Verify(
             x => x.Log(
                 LogLevel.Information,
@@ -421,7 +421,7 @@ public class GetDashboardMetricsQueryHandlerTests
     {
         // Arrange
         var query = new GetDashboardMetricsQuery(_testUserId);
-        
+
         var tasks = new List<AppTask>
         {
             CreateActiveTask(AppTaskCategory.ToDo),      // Should count in active
@@ -440,7 +440,7 @@ public class GetDashboardMetricsQueryHandlerTests
         // Assert
         result.IsSuccess.Should().BeTrue();
         var response = result.Value;
-        
+
         response.TotalActiveTasks.Should().Be(1); // Only the active task
         response.CompletionRate.Should().Be(25.0); // 1 completed out of 4 total tasks
     }
@@ -456,79 +456,79 @@ public class GetDashboardMetricsQueryHandlerTests
     private AppTask CreateActiveTaskWithPriority(Priority priority)
     {
         var task = new AppTask { Title = $"Test Task {Guid.NewGuid()}", Category = (int)AppTaskCategory.ToDo, UserId = _testUserId, Status = (int)AppTaskStatus.Pending };
-        
+
         // Set priority using reflection
         var priorityField = typeof(AppTask).GetField("_priority", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
         priorityField?.SetValue(task, (int)priority);
-        
+
         return task;
     }
 
     private AppTask CreateActiveTaskWithDueDate(DateTime dueDate)
     {
         var task = new AppTask { Title = $"Test Task {Guid.NewGuid()}", Category = (int)AppTaskCategory.ToDo, UserId = _testUserId, Status = (int)AppTaskStatus.Pending };
-        
+
         // Set due date using reflection
         var dueDateField = typeof(AppTask).GetField("_dueDate", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
         dueDateField?.SetValue(task, dueDate);
-        
+
         return task;
     }
 
     private AppTask CreateCompletedTask(DateTime completionDate, AppTaskCategory category)
     {
         var task = new AppTask { Title = $"Test Task {Guid.NewGuid()}", Category = (int)category, UserId = _testUserId, Status = (int)AppTaskStatus.Pending };
-        
+
         // Set as completed
         var statusField = typeof(AppTask).GetField("_status", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
         statusField?.SetValue(task, (int)AppTaskStatus.Completed);
-        
+
         SetTaskCompletionDate(task, completionDate);
-        
+
         return task;
     }
 
     private AppTask CreateCompletedTaskWithPriority(Priority priority)
     {
         var task = CreateCompletedTask(DateTime.UtcNow.Date, AppTaskCategory.ToDo);
-        
+
         // Set priority
         var priorityField = typeof(AppTask).GetField("_priority", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
         priorityField?.SetValue(task, (int)priority);
-        
+
         return task;
     }
 
     private AppTask CreateCompletedTaskWithDueDate(DateTime completionDate, DateTime dueDate, DateTime createdDate)
     {
         var task = CreateCompletedTask(completionDate, AppTaskCategory.ToDo);
-        
+
         // Set due date
         var dueDateField = typeof(AppTask).GetField("_dueDate", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
         dueDateField?.SetValue(task, dueDate);
-        
+
         return task;
     }
 
     private AppTask CreateArchivedTask(AppTaskCategory category)
     {
         var task = new AppTask { Title = $"Test Task {Guid.NewGuid()}", Category = (int)category, UserId = _testUserId, Status = (int)AppTaskStatus.Pending };
-        
+
         // Set as archived
         var statusField = typeof(AppTask).GetField("_status", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
         statusField?.SetValue(task, (int)AppTaskStatus.Archived);
-        
+
         return task;
     }
 
     private AppTask CreateDeletedTask(AppTaskCategory category)
     {
         var task = new AppTask { Title = $"Test Task {Guid.NewGuid()}", Category = (int)category, UserId = _testUserId, Status = (int)AppTaskStatus.Pending };
-        
+
         // Set as deleted
         var isDeletedField = typeof(AppTask).GetField("_isDeleted", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
         isDeletedField?.SetValue(task, true);
-        
+
         return task;
     }
 

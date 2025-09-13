@@ -478,11 +478,11 @@ public class SmartSchedulingService : ISmartSchedulingService, IDisposable
         return pagedTasks.Items.ToList();
     }
 
-    private async Task<List<CalendarEventSummary>> GetCalendarEventsAsync(Guid userId, DateTime startDate, DateTime endDate, CancellationToken cancellationToken)
+    private Task<List<CalendarEventSummary>> GetCalendarEventsAsync(Guid userId, DateTime startDate, DateTime endDate, CancellationToken cancellationToken)
     {
         // This would integrate with the calendar service to get events
         // For now, return empty list as placeholder
-        return new List<CalendarEventSummary>();
+        return Task.FromResult(new List<CalendarEventSummary>());
     }
 
     private UserPlanningPreferences BuildAIPlanRequest(GenerateSmartScheduleRequest request, SmartSchedulingPreferences preferences, List<DomainTask> tasks)
@@ -517,7 +517,7 @@ public class SmartSchedulingService : ISmartSchedulingService, IDisposable
         };
     }
 
-    private async Task<List<SmartScheduledItem>> CreateScheduledItemsAsync(
+    private Task<List<SmartScheduledItem>> CreateScheduledItemsAsync(
         ScheduleOptimizationResult optimizationResult,
         List<DomainTask> tasks,
         List<TimeBlockSuggestion> timeBlocks,
@@ -538,7 +538,7 @@ public class SmartSchedulingService : ISmartSchedulingService, IDisposable
                 DateTime.Now.AddHours(scheduledItems.Count),
                 DateTime.Now.AddHours(scheduledItems.Count + 1),
                 ScheduledItemType.Task,
-                task.Priority,
+                (Domain.ValueObjects.Priority)task.Priority,
                 task.Category.ToString(),
                 new List<string>(),
                 TimeSpan.FromHours(1),
@@ -550,7 +550,7 @@ public class SmartSchedulingService : ISmartSchedulingService, IDisposable
             ));
         }
 
-        return scheduledItems;
+        return Task.FromResult(scheduledItems);
     }
 
     private List<string> GenerateOptimizationInsights(ScheduleOptimizationResult optimizationResult, AIGeneratedPlan? aiPlan, SmartSchedulingPreferences preferences)
@@ -594,7 +594,7 @@ public class SmartSchedulingService : ISmartSchedulingService, IDisposable
     {
         // Calculate confidence based on various factors
         double baseScore = 0.7;
-        
+
         if (aiPlan != null)
         {
             baseScore += aiPlan.ConfidenceScore * 0.3;
@@ -638,7 +638,7 @@ public class SmartSchedulingService : ISmartSchedulingService, IDisposable
     private List<string> GenerateOptimizationRecommendations(ScheduleOptimizationResult optimizationResult, ScheduleValidationResult validationResult)
     {
         var recommendations = new List<string>();
-        
+
         recommendations.AddRange(validationResult.Recommendations);
         recommendations.Add("Consider adding buffer time between tasks");
         recommendations.Add("Schedule demanding tasks during peak energy hours");
@@ -661,7 +661,7 @@ public class SmartSchedulingService : ISmartSchedulingService, IDisposable
         );
     }
 
-    private async Task<List<SchedulingSuggestion>> GenerateIntelligentSuggestionsAsync(
+    private Task<List<SchedulingSuggestion>> GenerateIntelligentSuggestionsAsync(
         List<DomainTask> tasks,
         SmartSchedulingPreferences preferences,
         UserSchedulingPatternsResponse patterns,
@@ -675,7 +675,7 @@ public class SmartSchedulingService : ISmartSchedulingService, IDisposable
         foreach (var task in tasks.Take(maxSuggestions))
         {
             var suggestedTime = DetermineBestTimeSlot(task, preferences, patterns, calendarEvents, date);
-            
+
             suggestions.Add(new SchedulingSuggestion(
                 task.Id,
                 task.Title,
@@ -688,7 +688,7 @@ public class SmartSchedulingService : ISmartSchedulingService, IDisposable
             ));
         }
 
-        return suggestions;
+        return Task.FromResult(suggestions);
     }
 
     private DateTime DetermineBestTimeSlot(DomainTask task, SmartSchedulingPreferences preferences, UserSchedulingPatternsResponse patterns, List<CalendarEventSummary> calendarEvents, DateTime date)
@@ -696,17 +696,17 @@ public class SmartSchedulingService : ISmartSchedulingService, IDisposable
         // Implement intelligent time slot determination
         var workingHours = preferences.PreferredWorkingHours;
         var startTime = date.Date.Add(workingHours.StartTime);
-        
+
         // Simple implementation: schedule high priority tasks in the morning
         if (task.Priority == Domain.ValueObjects.Priority.High)
         {
             return startTime;
         }
-        
+
         return startTime.AddHours(2); // Schedule other tasks later
     }
 
-    private async Task<List<ScheduleConflict>> DetectTimeConflictsAsync(List<SmartScheduledItem> scheduledItems)
+    private Task<List<ScheduleConflict>> DetectTimeConflictsAsync(List<SmartScheduledItem> scheduledItems)
     {
         var conflicts = new List<ScheduleConflict>();
 
@@ -730,7 +730,7 @@ public class SmartSchedulingService : ISmartSchedulingService, IDisposable
             }
         }
 
-        return conflicts;
+        return Task.FromResult(conflicts);
     }
 
     private List<ScheduleWarning> DetectWorkloadWarnings(List<SmartScheduledItem> scheduledItems)
@@ -739,7 +739,7 @@ public class SmartSchedulingService : ISmartSchedulingService, IDisposable
 
         // Check for overloaded time periods
         var groupedByHour = scheduledItems.GroupBy(i => i.StartTime.Date.AddHours(i.StartTime.Hour));
-        
+
         foreach (var hourGroup in groupedByHour)
         {
             if (hourGroup.Count() > 2)
@@ -804,7 +804,10 @@ public class SmartSchedulingService : ISmartSchedulingService, IDisposable
 
     public void Dispose()
     {
-        if (_disposed) return;
+        if (_disposed)
+        {
+            return;
+        }
 
         foreach (var semaphore in _userSchedulingSemaphores.Values)
         {

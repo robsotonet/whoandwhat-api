@@ -39,18 +39,18 @@ public sealed class ScheduleOptimizationEngine : IScheduleOptimizationEngine
     }
 
     public async Task<ScheduleOptimizationResult> OptimizeScheduleAsync(
-        Guid userId, 
-        ScheduleOptimizationContext context, 
+        Guid userId,
+        ScheduleOptimizationContext context,
         CancellationToken cancellationToken = default)
     {
-        _logger.LogInformation("Starting schedule optimization for user {UserId} with {TaskCount} tasks", 
+        _logger.LogInformation("Starting schedule optimization for user {UserId} with {TaskCount} tasks",
             userId, context.TaskIds.Count);
 
         try
         {
             // Load tasks to be scheduled
             var tasks = await LoadTasksAsync(context.TaskIds, cancellationToken);
-            
+
             // Generate time slots based on preferences and calendar events
             var availableSlots = await GenerateAvailableTimeSlotsAsync(
                 userId, context.StartDate, context.EndDate, context.CalendarEvents, context.Preferences, cancellationToken);
@@ -68,7 +68,7 @@ public sealed class ScheduleOptimizationEngine : IScheduleOptimizationEngine
             // Generate optimization insights
             var insights = GenerateOptimizationInsights(optimizedSchedule, patterns.ToList(), context.Preferences);
 
-            _logger.LogInformation("Schedule optimization completed for user {UserId}. Scheduled {Count} items with improvement score {Score:F2}", 
+            _logger.LogInformation("Schedule optimization completed for user {UserId}. Scheduled {Count} items with improvement score {Score:F2}",
                 userId, optimizedSchedule.Count, metrics["ImprovementScore"]);
 
             return new ScheduleOptimizationResult(
@@ -88,11 +88,11 @@ public sealed class ScheduleOptimizationEngine : IScheduleOptimizationEngine
     }
 
     public async Task<ScheduleOptimizationEngineResult> OptimizeExistingScheduleAsync(
-        Guid userId, 
-        OptimizationContext context, 
+        Guid userId,
+        OptimizationContext context,
         CancellationToken cancellationToken = default)
     {
-        _logger.LogInformation("Optimizing existing schedule for user {UserId} with {ItemCount} items", 
+        _logger.LogInformation("Optimizing existing schedule for user {UserId} with {ItemCount} items",
             userId, context.ExistingSchedule.Count);
 
         try
@@ -106,7 +106,7 @@ public sealed class ScheduleOptimizationEngine : IScheduleOptimizationEngine
 
             // Apply incremental optimization techniques
             var optimizationChanges = await ApplyIncrementalOptimizationAsync(
-                userId, context.ExistingSchedule, context.Goals, context.Constraints, 
+                userId, context.ExistingSchedule, context.Goals, context.Constraints,
                 patterns.ToList(), preferences, cancellationToken);
 
             // Apply changes to create optimized schedule
@@ -116,7 +116,7 @@ public sealed class ScheduleOptimizationEngine : IScheduleOptimizationEngine
             var improvementScore = CalculateImprovementScore(context.ExistingSchedule, optimizedSchedule, preferences);
             var qualityMetrics = CalculateQualityMetrics(optimizedSchedule, preferences);
 
-            _logger.LogInformation("Existing schedule optimization completed for user {UserId}. Applied {ChangeCount} changes with improvement score {Score:F2}", 
+            _logger.LogInformation("Existing schedule optimization completed for user {UserId}. Applied {ChangeCount} changes with improvement score {Score:F2}",
                 userId, optimizationChanges.Count, improvementScore);
 
             return new ScheduleOptimizationEngineResult(
@@ -142,7 +142,7 @@ public sealed class ScheduleOptimizationEngine : IScheduleOptimizationEngine
         SmartSchedulingPreferences preferences,
         CancellationToken cancellationToken = default)
     {
-        _logger.LogInformation("Finding optimal time slots for {TaskCount} tasks with {SlotCount} available slots", 
+        _logger.LogInformation("Finding optimal time slots for {TaskCount} tasks with {SlotCount} available slots",
             taskIds.Count, availableSlots.Count);
 
         try
@@ -178,7 +178,7 @@ public sealed class ScheduleOptimizationEngine : IScheduleOptimizationEngine
                 }
             }
 
-            _logger.LogInformation("Found optimal time slots for {AssignedCount} out of {TotalCount} tasks", 
+            _logger.LogInformation("Found optimal time slots for {AssignedCount} out of {TotalCount} tasks",
                 assignments.Count, taskIds.Count);
 
             return assignments;
@@ -195,7 +195,7 @@ public sealed class ScheduleOptimizationEngine : IScheduleOptimizationEngine
         List<SmartScheduledItem> schedule,
         CancellationToken cancellationToken = default)
     {
-        _logger.LogInformation("Analyzing schedule quality for user {UserId} with {ItemCount} items", 
+        _logger.LogInformation("Analyzing schedule quality for user {UserId} with {ItemCount} items",
             userId, schedule.Count);
 
         try
@@ -223,7 +223,7 @@ public sealed class ScheduleOptimizationEngine : IScheduleOptimizationEngine
             // Generate improvement suggestions
             var suggestions = GenerateQualityImprovements(schedule, qualityDimensions, issues, preferences);
 
-            _logger.LogInformation("Schedule quality analysis completed for user {UserId}. Overall score: {Score:F2}", 
+            _logger.LogInformation("Schedule quality analysis completed for user {UserId}. Overall score: {Score:F2}",
                 userId, overallScore);
 
             return new ScheduleQualityAnalysis(
@@ -256,7 +256,7 @@ public sealed class ScheduleOptimizationEngine : IScheduleOptimizationEngine
             var negativeFactors = new List<ProductivityFactor>();
 
             // Analyze productivity factors
-            await AnalyzeProductivityFactorsAsync(schedule, patterns.ToList(), preferences, 
+            await AnalyzeProductivityFactorsAsync(schedule, patterns.ToList(), preferences,
                 factorContributions, positiveFactors, negativeFactors, cancellationToken);
 
             var overallScore = CalculateWeightedProductivityScore(factorContributions);
@@ -283,7 +283,7 @@ public sealed class ScheduleOptimizationEngine : IScheduleOptimizationEngine
         {
             // Check if all dependencies are available
             var aiAvailable = await _aiPlanningService.IsAIServiceAvailableAsync(cancellationToken);
-            
+
             // Simple health check - could be expanded with more sophisticated checks
             return aiAvailable;
         }
@@ -310,7 +310,7 @@ public sealed class ScheduleOptimizationEngine : IScheduleOptimizationEngine
         return tasks;
     }
 
-    private async Task<List<AvailableTimeSlot>> GenerateAvailableTimeSlotsAsync(
+    private Task<List<AvailableTimeSlot>> GenerateAvailableTimeSlotsAsync(
         Guid userId, DateTime startDate, DateTime endDate, List<ExternalCalendarEvent> calendarEvents,
         SmartSchedulingPreferences preferences, CancellationToken cancellationToken)
     {
@@ -327,7 +327,7 @@ public sealed class ScheduleOptimizationEngine : IScheduleOptimizationEngine
             currentDate = currentDate.AddDays(1);
         }
 
-        return slots;
+        return Task.FromResult(slots);
     }
 
     private bool IsWorkingDay(DateTime date, SmartSchedulingPreferences preferences)
@@ -346,10 +346,13 @@ public sealed class ScheduleOptimizationEngine : IScheduleOptimizationEngine
         while (currentTime < workEnd)
         {
             var slotEnd = currentTime.AddMinutes(30);
-            if (slotEnd > workEnd) break;
+            if (slotEnd > workEnd)
+            {
+                break;
+            }
 
             // Check if slot conflicts with calendar events
-            var hasConflict = calendarEvents.Any(ce => 
+            var hasConflict = calendarEvents.Any(ce =>
                 ce.StartTime < slotEnd && ce.EndTime > currentTime);
 
             if (!hasConflict)
@@ -376,14 +379,22 @@ public sealed class ScheduleOptimizationEngine : IScheduleOptimizationEngine
     private TimeSlotType DetermineSlotType(DateTime time, SmartSchedulingPreferences preferences)
     {
         var hour = time.Hour;
-        
+
         if (preferences.ProductivityPattern == ProductivityPatterns.MorningPerson && hour < 12)
+        {
             return TimeSlotType.WorkingTime;
+        }
+
         if (preferences.ProductivityPattern == ProductivityPatterns.NightOwl && hour > 14)
+        {
             return TimeSlotType.WorkingTime;
+        }
+
         if (hour >= 12 && hour <= 13)
+        {
             return TimeSlotType.BreakTime;
-        
+        }
+
         return TimeSlotType.Available;
     }
 
@@ -396,15 +407,35 @@ public sealed class ScheduleOptimizationEngine : IScheduleOptimizationEngine
         switch (preferences.ProductivityPattern)
         {
             case ProductivityPatterns.MorningPerson:
-                if (hour >= 8 && hour <= 11) baseScore += 0.2;
-                if (hour >= 14 && hour <= 17) baseScore -= 0.1;
+                if (hour >= 8 && hour <= 11)
+                {
+                    baseScore += 0.2;
+                }
+
+                if (hour >= 14 && hour <= 17)
+                {
+                    baseScore -= 0.1;
+                }
+
                 break;
             case ProductivityPatterns.NightOwl:
-                if (hour >= 14 && hour <= 18) baseScore += 0.2;
-                if (hour >= 8 && hour <= 11) baseScore -= 0.1;
+                if (hour >= 14 && hour <= 18)
+                {
+                    baseScore += 0.2;
+                }
+
+                if (hour >= 8 && hour <= 11)
+                {
+                    baseScore -= 0.1;
+                }
+
                 break;
             case ProductivityPatterns.MidDay:
-                if (hour >= 10 && hour <= 15) baseScore += 0.15;
+                if (hour >= 10 && hour <= 15)
+                {
+                    baseScore += 0.15;
+                }
+
                 break;
         }
 
@@ -416,15 +447,35 @@ public sealed class ScheduleOptimizationEngine : IScheduleOptimizationEngine
         var characteristics = new List<string>();
         var hour = time.Hour;
 
-        if (hour >= 8 && hour <= 11) characteristics.Add("Morning");
-        if (hour >= 12 && hour <= 13) characteristics.Add("Lunch");
-        if (hour >= 14 && hour <= 17) characteristics.Add("Afternoon");
-        if (hour >= 17) characteristics.Add("Evening");
+        if (hour >= 8 && hour <= 11)
+        {
+            characteristics.Add("Morning");
+        }
+
+        if (hour >= 12 && hour <= 13)
+        {
+            characteristics.Add("Lunch");
+        }
+
+        if (hour >= 14 && hour <= 17)
+        {
+            characteristics.Add("Afternoon");
+        }
+
+        if (hour >= 17)
+        {
+            characteristics.Add("Evening");
+        }
 
         if (preferences.ProductivityPattern == ProductivityPatterns.MorningPerson && hour < 12)
+        {
             characteristics.Add("HighEnergy");
+        }
+
         if (preferences.ProductivityPattern == ProductivityPatterns.NightOwl && hour > 14)
+        {
             characteristics.Add("HighEnergy");
+        }
 
         return characteristics;
     }
@@ -475,9 +526,9 @@ public sealed class ScheduleOptimizationEngine : IScheduleOptimizationEngine
     }
 
     // Simplified implementations for demo purposes
-    private async Task<List<SmartScheduledItem>> ApplyOptimizationAlgorithmsAsync(Guid userId, List<AppTask> tasks, List<AvailableTimeSlot> availableSlots, SmartSchedulingPreferences preferences, List<SchedulingPattern> patterns, OptimizationGoals goals, CancellationToken cancellationToken)
+    private Task<List<SmartScheduledItem>> ApplyOptimizationAlgorithmsAsync(Guid userId, List<AppTask> tasks, List<AvailableTimeSlot> availableSlots, SmartSchedulingPreferences preferences, List<SchedulingPattern> patterns, OptimizationGoals goals, CancellationToken cancellationToken)
     {
-        return new List<SmartScheduledItem>();
+        return Task.FromResult(new List<SmartScheduledItem>());
     }
 
     private Dictionary<string, object> CalculateOptimizationMetrics(List<SmartScheduledItem> currentSchedule, List<SmartScheduledItem> optimizedSchedule)
@@ -491,13 +542,13 @@ public sealed class ScheduleOptimizationEngine : IScheduleOptimizationEngine
     }
 
     // Additional placeholder methods
-    private async Task<List<OptimizationChange>> ApplyIncrementalOptimizationAsync(Guid userId, List<SmartScheduledItem> existingSchedule, OptimizationGoals goals, List<ScheduleConstraint> constraints, List<SchedulingPattern> patterns, UserSchedulingPreference? preferences, CancellationToken cancellationToken) => new();
+    private Task<List<OptimizationChange>> ApplyIncrementalOptimizationAsync(Guid userId, List<SmartScheduledItem> existingSchedule, OptimizationGoals goals, List<ScheduleConstraint> constraints, List<SchedulingPattern> patterns, UserSchedulingPreference? preferences, CancellationToken cancellationToken) => Task.FromResult<List<OptimizationChange>>(new());
     private List<SmartScheduledItem> ApplyOptimizationChanges(List<SmartScheduledItem> existingSchedule, List<OptimizationChange> optimizationChanges) => existingSchedule;
     private double CalculateImprovementScore(List<SmartScheduledItem> existingSchedule, List<SmartScheduledItem> optimizedSchedule, UserSchedulingPreference? preferences) => 0.15;
     private Dictionary<string, double> CalculateQualityMetrics(List<SmartScheduledItem> optimizedSchedule, UserSchedulingPreference? preferences) => new();
     private List<string> GenerateOptimizationReasons(List<OptimizationChange> optimizationChanges, ScheduleQualityAnalysis qualityAnalysis) => new();
     private double CalculateTimeUtilization(List<SmartScheduledItem> schedule, UserSchedulingPreference? preferences) => 0.8;
-    private async Task<double> CalculateProductivityAlignmentAsync(List<SmartScheduledItem> schedule, List<SchedulingPattern> patterns, CancellationToken cancellationToken) => 0.7;
+    private Task<double> CalculateProductivityAlignmentAsync(List<SmartScheduledItem> schedule, List<SchedulingPattern> patterns, CancellationToken cancellationToken) => Task.FromResult(0.7);
     private double CalculateDeadlineCompliance(List<SmartScheduledItem> schedule) => 0.9;
     private double CalculateContextSwitchingScore(List<SmartScheduledItem> schedule) => 0.8;
     private double CalculateEnergyOptimizationScore(List<SmartScheduledItem> schedule, UserSchedulingPreference? preferences) => 0.7;
@@ -505,10 +556,13 @@ public sealed class ScheduleOptimizationEngine : IScheduleOptimizationEngine
     private double CalculateWorkLifeBalanceScore(List<SmartScheduledItem> schedule, UserSchedulingPreference? preferences) => 0.8;
     private List<QualityIssue> IdentifyQualityIssues(List<SmartScheduledItem> schedule, Dictionary<string, double> qualityDimensions, UserSchedulingPreference? preferences) => new();
     private List<QualityImprovement> GenerateQualityImprovements(List<SmartScheduledItem> schedule, Dictionary<string, double> qualityDimensions, List<QualityIssue> issues, UserSchedulingPreference? preferences) => new();
-    private async Task AnalyzeProductivityFactorsAsync(List<SmartScheduledItem> schedule, List<SchedulingPattern> patterns, SmartSchedulingPreferences preferences, Dictionary<string, double> factorContributions, List<ProductivityFactor> positiveFactors, List<ProductivityFactor> negativeFactors, CancellationToken cancellationToken) { }
+    private Task AnalyzeProductivityFactorsAsync(List<SmartScheduledItem> schedule, List<SchedulingPattern> patterns, SmartSchedulingPreferences preferences, Dictionary<string, double> factorContributions, List<ProductivityFactor> positiveFactors, List<ProductivityFactor> negativeFactors, CancellationToken cancellationToken)
+    {
+        return Task.CompletedTask;
+    }
     private double CalculateWeightedProductivityScore(Dictionary<string, double> factorContributions) => factorContributions.Values.DefaultIfEmpty(0.7).Average();
     private List<string> GenerateProductivityImprovements(List<ProductivityFactor> negativeFactors, List<SmartScheduledItem> schedule) => new();
-    private async Task<AvailableTimeSlot?> FindBestTimeSlotForTaskAsync(SmartScheduledItem task, List<AvailableTimeSlot> availableSlots, List<SchedulingPattern> patterns, SmartSchedulingPreferences preferences, List<TimeSlotAssignment> assignments, CancellationToken cancellationToken) => availableSlots.FirstOrDefault();
+    private Task<AvailableTimeSlot?> FindBestTimeSlotForTaskAsync(SmartScheduledItem task, List<AvailableTimeSlot> availableSlots, List<SchedulingPattern> patterns, SmartSchedulingPreferences preferences, List<TimeSlotAssignment> assignments, CancellationToken cancellationToken) => Task.FromResult(availableSlots.FirstOrDefault());
     private double CalculateSlotFitnessScore(SmartScheduledItem task, AvailableTimeSlot slot, List<SchedulingPattern> patterns, SmartSchedulingPreferences preferences) => 0.8;
     private List<string> GenerateAssignmentReasons(SmartScheduledItem task, AvailableTimeSlot slot, List<SchedulingPattern> patterns) => new() { "Optimal time slot identified" };
     private List<AvailableTimeSlot> UpdateAvailableSlots(List<AvailableTimeSlot> slots, TimeSlotAssignment assignment) => slots.Where(s => s.Id != assignment.SlotId).ToList();
@@ -535,11 +589,11 @@ public sealed class ScheduleOptimizationEngine : IScheduleOptimizationEngine
     }
 
     public async Task<ScheduleOptimizationResult> OptimizeScheduleAsync(
-        Guid userId, 
-        ScheduleOptimizationContext context, 
+        Guid userId,
+        ScheduleOptimizationContext context,
         CancellationToken cancellationToken = default)
     {
-        _logger.LogInformation("Starting schedule optimization for user {UserId} with {TaskCount} tasks", 
+        _logger.LogInformation("Starting schedule optimization for user {UserId} with {TaskCount} tasks",
             userId, context.TaskIds.Count);
 
         try
@@ -550,7 +604,7 @@ public sealed class ScheduleOptimizationEngine : IScheduleOptimizationEngine
 
             // Get available time slots
             var availableSlots = GenerateAvailableTimeSlots(context);
-            
+
             // Score and prioritize tasks
             var prioritizedTasks = await PrioritizeTasksAsync(context.CurrentSchedule, context.Preferences);
 
@@ -606,7 +660,7 @@ public sealed class ScheduleOptimizationEngine : IScheduleOptimizationEngine
 
             insights.AddRange(GenerateOptimizationInsights(optimizedSchedule, context));
 
-            _logger.LogInformation("Completed schedule optimization for user {UserId}, improvement score: {Score}", 
+            _logger.LogInformation("Completed schedule optimization for user {UserId}, improvement score: {Score}",
                 userId, improvementScore);
 
             return new ScheduleOptimizationResult(
@@ -625,12 +679,12 @@ public sealed class ScheduleOptimizationEngine : IScheduleOptimizationEngine
         }
     }
 
-    public async Task<ScheduleOptimizationEngineResult> OptimizeExistingScheduleAsync(
-        Guid userId, 
-        OptimizationContext context, 
+    public Task<ScheduleOptimizationEngineResult> OptimizeExistingScheduleAsync(
+        Guid userId,
+        OptimizationContext context,
         CancellationToken cancellationToken = default)
     {
-        _logger.LogInformation("Optimizing existing schedule for user {UserId} with {ItemCount} items", 
+        _logger.LogInformation("Optimizing existing schedule for user {UserId} with {ItemCount} items",
             userId, context.ExistingSchedule.Count);
 
         try
@@ -657,17 +711,17 @@ public sealed class ScheduleOptimizationEngine : IScheduleOptimizationEngine
             qualityMetrics["ProductivityScore"] = CalculateProductivityScore(optimizedSchedule, context.Preferences);
             qualityMetrics["ConflictScore"] = CalculateConflictScore(optimizedSchedule);
 
-            _logger.LogInformation("Existing schedule optimization completed for user {UserId}, {ChangeCount} changes applied", 
+            _logger.LogInformation("Existing schedule optimization completed for user {UserId}, {ChangeCount} changes applied",
                 userId, changesApplied.Count);
 
-            return new ScheduleOptimizationEngineResult(
+            return Task.FromResult(new ScheduleOptimizationEngineResult(
                 OptimizedSchedule: optimizedSchedule,
                 ChangesApplied: changesApplied,
                 ImprovementScore: improvementScore,
                 OptimizationReasons: GenerateOptimizationReasons(changesApplied),
                 QualityMetrics: qualityMetrics,
                 OptimizedAt: DateTime.UtcNow
-            );
+            ));
         }
         catch (Exception ex)
         {
@@ -676,7 +730,7 @@ public sealed class ScheduleOptimizationEngine : IScheduleOptimizationEngine
         }
     }
 
-    public async Task<List<TimeSlotAssignment>> FindOptimalTimeSlotsAsync(
+    public Task<List<TimeSlotAssignment>> FindOptimalTimeSlotsAsync(
         Guid userId,
         List<Guid> taskIds,
         List<AvailableTimeSlot> availableSlots,
@@ -700,9 +754,9 @@ public sealed class ScheduleOptimizationEngine : IScheduleOptimizationEngine
                     StartTime: bestSlot.StartTime,
                     EndTime: bestSlot.EndTime,
                     FitnessScore: CalculateSlotFitnessScore(bestSlot, preferences),
-                    AssignmentReasons: new List<string> 
-                    { 
-                        "High availability score", 
+                    AssignmentReasons: new List<string>
+                    {
+                        "High availability score",
                         "Matches user preferences",
                         "Optimal productivity window"
                     }
@@ -713,10 +767,10 @@ public sealed class ScheduleOptimizationEngine : IScheduleOptimizationEngine
             }
         }
 
-        return assignments;
+        return Task.FromResult(assignments);
     }
 
-    public async Task<ScheduleQualityAnalysis> AnalyzeScheduleQualityAsync(
+    public Task<ScheduleQualityAnalysis> AnalyzeScheduleQualityAsync(
         Guid userId,
         List<SmartScheduledItem> schedule,
         CancellationToken cancellationToken = default)
@@ -749,8 +803,8 @@ public sealed class ScheduleOptimizationEngine : IScheduleOptimizationEngine
                 Description: "Add more tasks or extend existing task durations",
                 ExpectedImpact: 0.3,
                 AffectedItems: schedule.Select(s => s.Id).ToList(),
-                ActionSteps: new List<string> 
-                { 
+                ActionSteps: new List<string>
+                {
                     "Review task priorities",
                     "Consider adding buffer tasks",
                     "Optimize task duration estimates"
@@ -758,16 +812,16 @@ public sealed class ScheduleOptimizationEngine : IScheduleOptimizationEngine
             ));
         }
 
-        return new ScheduleQualityAnalysis(
+        return Task.FromResult(new ScheduleQualityAnalysis(
             OverallScore: overallScore,
             QualityDimensions: qualityDimensions,
             Issues: issues,
             Suggestions: suggestions,
             AnalyzedAt: DateTime.UtcNow
-        );
+        ));
     }
 
-    public async Task<ProductivityScore> CalculateProductivityScoreAsync(
+    public Task<ProductivityScore> CalculateProductivityScoreAsync(
         Guid userId,
         List<SmartScheduledItem> schedule,
         SmartSchedulingPreferences preferences,
@@ -830,13 +884,13 @@ public sealed class ScheduleOptimizationEngine : IScheduleOptimizationEngine
             improvementSuggestions.Add("Balance workload more evenly throughout the day");
         }
 
-        return new ProductivityScore(
+        return Task.FromResult(new ProductivityScore(
             Score: overallScore,
             FactorContributions: factorContributions,
             PositiveFactors: positiveFactors,
             NegativeFactors: negativeFactors,
             ImprovementSuggestions: improvementSuggestions
-        );
+        ));
     }
 
     public async Task<bool> IsAvailableAsync(CancellationToken cancellationToken = default)
@@ -851,7 +905,7 @@ public sealed class ScheduleOptimizationEngine : IScheduleOptimizationEngine
     {
         var slots = new List<AvailableTimeSlot>();
         var workingHours = context.Preferences.PreferredWorkingHours;
-        
+
         for (var date = context.StartDate.Date; date <= context.EndDate.Date; date = date.AddDays(1))
         {
             if (workingHours.WorkingDays.Contains(date.DayOfWeek))
@@ -879,7 +933,7 @@ public sealed class ScheduleOptimizationEngine : IScheduleOptimizationEngine
         {
             if (calendarEvent.IsBlockingTime)
             {
-                slots.RemoveAll(slot => 
+                slots.RemoveAll(slot =>
                     slot.StartTime < calendarEvent.EndTime && calendarEvent.StartTime < slot.EndTime);
             }
         }
@@ -887,20 +941,20 @@ public sealed class ScheduleOptimizationEngine : IScheduleOptimizationEngine
         return slots;
     }
 
-    private async Task<List<SmartScheduledItem>> PrioritizeTasksAsync(
-        List<SmartScheduledItem> tasks, 
+    private Task<List<SmartScheduledItem>> PrioritizeTasksAsync(
+        List<SmartScheduledItem> tasks,
         SmartSchedulingPreferences preferences)
     {
-        return tasks
+        return Task.FromResult(tasks
             .OrderByDescending(t => t.Priority.Value) // Higher priority first
             .ThenByDescending(t => CalculateTaskUrgencyScore(t))
             .ThenBy(t => t.EstimatedDuration) // Shorter tasks first for same priority
-            .ToList();
+            .ToList());
     }
 
     private AvailableTimeSlot? FindOptimalTimeSlot(
-        SmartScheduledItem task, 
-        List<AvailableTimeSlot> availableSlots, 
+        SmartScheduledItem task,
+        List<AvailableTimeSlot> availableSlots,
         SmartSchedulingPreferences preferences)
     {
         return availableSlots
@@ -910,12 +964,12 @@ public sealed class ScheduleOptimizationEngine : IScheduleOptimizationEngine
     }
 
     private void RemoveUsedTimeSlot(
-        List<AvailableTimeSlot> availableSlots, 
-        AvailableTimeSlot usedSlot, 
+        List<AvailableTimeSlot> availableSlots,
+        AvailableTimeSlot usedSlot,
         TimeSpan taskDuration)
     {
         availableSlots.Remove(usedSlot);
-        
+
         // Add remaining time as new slot if any
         var remainingTime = (usedSlot.EndTime - usedSlot.StartTime) - taskDuration;
         if (remainingTime > TimeSpan.Zero)
@@ -932,7 +986,7 @@ public sealed class ScheduleOptimizationEngine : IScheduleOptimizationEngine
     }
 
     private void ApplyOptimizationHeuristics(
-        List<SmartScheduledItem> schedule, 
+        List<SmartScheduledItem> schedule,
         SmartSchedulingPreferences preferences)
     {
         // Group similar tasks together to reduce context switching
@@ -955,13 +1009,16 @@ public sealed class ScheduleOptimizationEngine : IScheduleOptimizationEngine
     {
         var originalScore = CalculateScheduleScore(originalSchedule, preferences);
         var optimizedScore = CalculateScheduleScore(optimizedSchedule, preferences);
-        
+
         return Math.Max(0, (optimizedScore - originalScore) / Math.Max(originalScore, 0.1));
     }
 
     private double CalculateScheduleScore(List<SmartScheduledItem> schedule, SmartSchedulingPreferences preferences)
     {
-        if (!schedule.Any()) return 0;
+        if (!schedule.Any())
+        {
+            return 0;
+        }
 
         var priorityScore = schedule.Average(t => t.Priority.Value / 4.0); // Normalize to 0-1
         var utilizationScore = CalculateTimeUtilization(schedule);
@@ -971,7 +1028,7 @@ public sealed class ScheduleOptimizationEngine : IScheduleOptimizationEngine
     }
 
     private Dictionary<string, double> CalculateOptimizationMetrics(
-        List<SmartScheduledItem> schedule, 
+        List<SmartScheduledItem> schedule,
         ScheduleOptimizationContext context)
     {
         return new Dictionary<string, double>
@@ -984,7 +1041,7 @@ public sealed class ScheduleOptimizationEngine : IScheduleOptimizationEngine
     }
 
     private List<string> GenerateOptimizationInsights(
-        List<SmartScheduledItem> schedule, 
+        List<SmartScheduledItem> schedule,
         ScheduleOptimizationContext context)
     {
         var insights = new List<string>();
@@ -1011,8 +1068,8 @@ public sealed class ScheduleOptimizationEngine : IScheduleOptimizationEngine
     }
 
     private void ApplyTimeOptimizations(
-        List<SmartScheduledItem> schedule, 
-        List<OptimizationChange> changes, 
+        List<SmartScheduledItem> schedule,
+        List<OptimizationChange> changes,
         OptimizationContext context)
     {
         // Move tasks to better time slots based on preferences and patterns
@@ -1020,14 +1077,14 @@ public sealed class ScheduleOptimizationEngine : IScheduleOptimizationEngine
         {
             var currentHour = task.StartTime.Hour;
             var optimalHour = GetOptimalHourForTask(task, context.Preferences);
-            
+
             if (Math.Abs(currentHour - optimalHour) > 2) // Significant time difference
             {
                 var newStartTime = task.StartTime.Date.AddHours(optimalHour);
                 var newEndTime = newStartTime.Add(task.EstimatedDuration);
 
-                var optimizedTask = task with 
-                { 
+                var optimizedTask = task with
+                {
                     StartTime = newStartTime,
                     EndTime = newEndTime
                 };
@@ -1051,8 +1108,8 @@ public sealed class ScheduleOptimizationEngine : IScheduleOptimizationEngine
     }
 
     private void ApplyPriorityOptimizations(
-        List<SmartScheduledItem> schedule, 
-        List<OptimizationChange> changes, 
+        List<SmartScheduledItem> schedule,
+        List<OptimizationChange> changes,
         OptimizationContext context)
     {
         // Ensure high-priority tasks get the best time slots
@@ -1067,8 +1124,8 @@ public sealed class ScheduleOptimizationEngine : IScheduleOptimizationEngine
                 var primeTime = task.StartTime.Date.AddHours(9 + _random.Next(0, 3));
                 if (IsTimeSlotAvailable(schedule, primeTime, task.EstimatedDuration, task.Id))
                 {
-                    var optimizedTask = task with 
-                    { 
+                    var optimizedTask = task with
+                    {
                         StartTime = primeTime,
                         EndTime = primeTime.Add(task.EstimatedDuration)
                     };
@@ -1093,14 +1150,14 @@ public sealed class ScheduleOptimizationEngine : IScheduleOptimizationEngine
     }
 
     private void ApplyEnergyOptimizations(
-        List<SmartScheduledItem> schedule, 
-        List<OptimizationChange> changes, 
+        List<SmartScheduledItem> schedule,
+        List<OptimizationChange> changes,
         OptimizationContext context)
     {
         // Schedule demanding tasks during high-energy periods
-        var demandingTasks = schedule.Where(t => 
-            t.EstimatedDuration.TotalHours >= 2 || 
-            t.Category == "Development" || 
+        var demandingTasks = schedule.Where(t =>
+            t.EstimatedDuration.TotalHours >= 2 ||
+            t.Category == "Development" ||
             t.Category == "Creative").ToList();
 
         foreach (var task in demandingTasks)
@@ -1109,11 +1166,11 @@ public sealed class ScheduleOptimizationEngine : IScheduleOptimizationEngine
             if (energyLevel < 0.6) // Low energy time
             {
                 var highEnergyTime = FindHighEnergyTimeSlot(task.StartTime.Date, context.Preferences);
-                if (highEnergyTime.HasValue && 
+                if (highEnergyTime.HasValue &&
                     IsTimeSlotAvailable(schedule, highEnergyTime.Value, task.EstimatedDuration, task.Id))
                 {
-                    var optimizedTask = task with 
-                    { 
+                    var optimizedTask = task with
+                    {
                         StartTime = highEnergyTime.Value,
                         EndTime = highEnergyTime.Value.Add(task.EstimatedDuration)
                     };
@@ -1156,16 +1213,24 @@ public sealed class ScheduleOptimizationEngine : IScheduleOptimizationEngine
     {
         var hour = time.Hour;
         var workingHours = preferences.PreferredWorkingHours;
-        
+
         // Higher score for core working hours
         if (hour >= workingHours.StartTime.Hours && hour <= workingHours.EndTime.Hours)
         {
             // Peak productivity hours get higher score
-            if (hour >= 9 && hour <= 11) return 0.9;
-            if (hour >= 14 && hour <= 16) return 0.8;
+            if (hour >= 9 && hour <= 11)
+            {
+                return 0.9;
+            }
+
+            if (hour >= 14 && hour <= 16)
+            {
+                return 0.8;
+            }
+
             return 0.7;
         }
-        
+
         return 0.3; // Outside working hours
     }
 
@@ -1182,52 +1247,64 @@ public sealed class ScheduleOptimizationEngine : IScheduleOptimizationEngine
     }
 
     private double CalculateSlotTaskFitness(
-        AvailableTimeSlot slot, 
-        SmartScheduledItem task, 
+        AvailableTimeSlot slot,
+        SmartScheduledItem task,
         SmartSchedulingPreferences preferences)
     {
         var slotScore = CalculateSlotFitnessScore(slot, preferences);
         var durationFit = Math.Min(1.0, (slot.EndTime - slot.StartTime).TotalHours / task.EstimatedDuration.TotalHours);
         var priorityBonus = task.Priority.Value / 4.0;
-        
+
         return slotScore * 0.5 + durationFit * 0.3 + priorityBonus * 0.2;
     }
 
     private double CalculateEfficiencyScore(List<SmartScheduledItem> schedule)
     {
-        if (!schedule.Any()) return 0;
-        
+        if (!schedule.Any())
+        {
+            return 0;
+        }
+
         var totalTime = schedule.Sum(s => s.EstimatedDuration.TotalHours);
         var timeSpan = schedule.Max(s => s.EndTime) - schedule.Min(s => s.StartTime);
-        
+
         return Math.Min(1.0, totalTime / Math.Max(timeSpan.TotalHours, 0.1));
     }
 
     private double CalculateBalanceScore(List<SmartScheduledItem> schedule, SmartSchedulingPreferences preferences)
     {
-        if (!schedule.Any()) return 0;
-        
+        if (!schedule.Any())
+        {
+            return 0;
+        }
+
         var dailyGroups = schedule.GroupBy(s => s.StartTime.Date).ToList();
         var dailyWorkloads = dailyGroups.Select(g => g.Sum(s => s.EstimatedDuration.TotalHours)).ToList();
-        
-        if (!dailyWorkloads.Any()) return 0;
-        
+
+        if (!dailyWorkloads.Any())
+        {
+            return 0;
+        }
+
         var avgWorkload = dailyWorkloads.Average();
         var variance = dailyWorkloads.Sum(w => Math.Pow(w - avgWorkload, 2)) / dailyWorkloads.Count;
-        
+
         return Math.Max(0, 1.0 - (variance / Math.Max(avgWorkload, 1.0)));
     }
 
     private double CalculateProductivityScore(List<SmartScheduledItem> schedule, SmartSchedulingPreferences preferences)
     {
-        if (!schedule.Any()) return 0;
-        
-        var highPriorityInPeakHours = schedule.Count(s => 
-            s.Priority.Value >= 3 && 
+        if (!schedule.Any())
+        {
+            return 0;
+        }
+
+        var highPriorityInPeakHours = schedule.Count(s =>
+            s.Priority.Value >= 3 &&
             s.StartTime.Hour >= 9 && s.StartTime.Hour <= 11);
-            
+
         var totalHighPriority = schedule.Count(s => s.Priority.Value >= 3);
-        
+
         return totalHighPriority > 0 ? (double)highPriorityInPeakHours / totalHighPriority : 0.5;
     }
 
@@ -1244,43 +1321,52 @@ public sealed class ScheduleOptimizationEngine : IScheduleOptimizationEngine
                 }
             }
         }
-        
+
         return Math.Max(0, 1.0 - (conflictCount * 0.2)); // Each conflict reduces score by 0.2
     }
 
     private double CalculateTimeUtilization(List<SmartScheduledItem> schedule)
     {
-        if (!schedule.Any()) return 0;
-        
+        if (!schedule.Any())
+        {
+            return 0;
+        }
+
         var totalTaskTime = schedule.Sum(s => s.EstimatedDuration.TotalHours);
         var availableWorkHours = 8.0; // Assume 8-hour work day
-        
+
         return Math.Min(1.0, totalTaskTime / availableWorkHours);
     }
 
     private double CalculateTaskDistribution(List<SmartScheduledItem> schedule)
     {
-        if (!schedule.Any()) return 0;
-        
+        if (!schedule.Any())
+        {
+            return 0;
+        }
+
         var categoryGroups = schedule.GroupBy(s => s.Category).ToList();
         var distribution = categoryGroups.Select(g => g.Count() / (double)schedule.Count).ToList();
-        
+
         // Calculate Shannon entropy for diversity
         var entropy = -distribution.Sum(p => p * Math.Log2(p));
         var maxEntropy = Math.Log2(categoryGroups.Count);
-        
+
         return maxEntropy > 0 ? entropy / maxEntropy : 0;
     }
 
     private double CalculatePriorityAlignment(List<SmartScheduledItem> schedule)
     {
-        if (!schedule.Any()) return 0;
-        
-        var priorityWeightedScore = schedule.Sum(s => 
+        if (!schedule.Any())
+        {
+            return 0;
+        }
+
+        var priorityWeightedScore = schedule.Sum(s =>
             (s.Priority.Value / 4.0) * CalculateTimeSlotQuality(s.StartTime));
-            
+
         var totalPriorityWeight = schedule.Sum(s => s.Priority.Value / 4.0);
-        
+
         return totalPriorityWeight > 0 ? priorityWeightedScore / totalPriorityWeight : 0;
     }
 
@@ -1312,9 +1398,12 @@ public sealed class ScheduleOptimizationEngine : IScheduleOptimizationEngine
 
     private double CalculateTimeAlignmentScore(List<SmartScheduledItem> schedule, SmartSchedulingPreferences preferences)
     {
-        if (!schedule.Any()) return 0;
-        
-        return schedule.Average(s => 
+        if (!schedule.Any())
+        {
+            return 0;
+        }
+
+        return schedule.Average(s =>
         {
             var timeQuality = CalculateTimeSlotQuality(s.StartTime);
             var preferenceAlignment = CalculatePreferenceAlignment(s, preferences);
@@ -1324,14 +1413,17 @@ public sealed class ScheduleOptimizationEngine : IScheduleOptimizationEngine
 
     private double CalculatePriorityOptimizationScore(List<SmartScheduledItem> schedule)
     {
-        if (!schedule.Any()) return 0;
-        
+        if (!schedule.Any())
+        {
+            return 0;
+        }
+
         // Higher priority tasks should be scheduled earlier in better time slots
-        var priorityTimeScore = schedule.Sum(s => 
+        var priorityTimeScore = schedule.Sum(s =>
             (s.Priority.Value / 4.0) * (1.0 - (s.StartTime.Hour - 9) / 8.0));
-            
+
         var totalPriorityWeight = schedule.Sum(s => s.Priority.Value / 4.0);
-        
+
         return totalPriorityWeight > 0 ? Math.Max(0, priorityTimeScore / totalPriorityWeight) : 0;
     }
 
@@ -1342,11 +1434,14 @@ public sealed class ScheduleOptimizationEngine : IScheduleOptimizationEngine
 
     private double CalculateContextSwitchingScore(List<SmartScheduledItem> schedule)
     {
-        if (schedule.Count <= 1) return 1.0;
-        
+        if (schedule.Count <= 1)
+        {
+            return 1.0;
+        }
+
         var contextSwitches = 0;
         var orderedSchedule = schedule.OrderBy(s => s.StartTime).ToList();
-        
+
         for (int i = 1; i < orderedSchedule.Count; i++)
         {
             if (orderedSchedule[i].Category != orderedSchedule[i - 1].Category)
@@ -1354,7 +1449,7 @@ public sealed class ScheduleOptimizationEngine : IScheduleOptimizationEngine
                 contextSwitches++;
             }
         }
-        
+
         // Lower context switches = higher score
         var maxPossibleSwitches = schedule.Count - 1;
         return maxPossibleSwitches > 0 ? 1.0 - ((double)contextSwitches / maxPossibleSwitches) : 1.0;
@@ -1363,33 +1458,44 @@ public sealed class ScheduleOptimizationEngine : IScheduleOptimizationEngine
     private double CalculateTimeSlotQuality(DateTime time)
     {
         var hour = time.Hour;
-        
+
         // Peak productivity hours
-        if (hour >= 9 && hour <= 11) return 1.0;
-        if (hour >= 14 && hour <= 16) return 0.8;
-        if (hour >= 8 && hour <= 17) return 0.6;
-        
+        if (hour >= 9 && hour <= 11)
+        {
+            return 1.0;
+        }
+
+        if (hour >= 14 && hour <= 16)
+        {
+            return 0.8;
+        }
+
+        if (hour >= 8 && hour <= 17)
+        {
+            return 0.6;
+        }
+
         return 0.3; // Outside normal working hours
     }
 
     private double CalculatePreferenceAlignment(SmartScheduledItem task, SmartSchedulingPreferences preferences)
     {
         double score = 0.5; // Base score
-        
+
         // Check if task category is preferred
         if (preferences.PreferredTaskCategories.Contains(task.Category))
         {
             score += 0.3;
         }
-        
+
         // Check if time aligns with working hours
         var workingHours = preferences.PreferredWorkingHours;
-        if (task.StartTime.TimeOfDay >= workingHours.StartTime && 
+        if (task.StartTime.TimeOfDay >= workingHours.StartTime &&
             task.EndTime.TimeOfDay <= workingHours.EndTime)
         {
             score += 0.2;
         }
-        
+
         return Math.Min(1.0, score);
     }
 
@@ -1400,26 +1506,26 @@ public sealed class ScheduleOptimizationEngine : IScheduleOptimizationEngine
         {
             return preferences.PreferMorningTasks ? 9 : 14;
         }
-        
+
         return preferences.PreferMorningTasks ? 10 : 15;
     }
 
     private bool IsTimeSlotAvailable(
-        List<SmartScheduledItem> schedule, 
-        DateTime startTime, 
-        TimeSpan duration, 
+        List<SmartScheduledItem> schedule,
+        DateTime startTime,
+        TimeSpan duration,
         Guid excludeTaskId)
     {
         var endTime = startTime.Add(duration);
-        
-        return !schedule.Any(s => s.Id != excludeTaskId && 
+
+        return !schedule.Any(s => s.Id != excludeTaskId &&
             s.StartTime < endTime && startTime < s.EndTime);
     }
 
     private double GetEnergyLevelAtTime(DateTime time, SmartSchedulingPreferences preferences)
     {
         var hour = time.Hour;
-        
+
         return preferences.ProductivityPattern switch
         {
             ProductivityPatterns.MorningPerson => hour <= 12 ? 0.9 : 0.5,

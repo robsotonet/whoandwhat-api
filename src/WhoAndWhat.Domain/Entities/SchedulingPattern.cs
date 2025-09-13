@@ -85,7 +85,9 @@ public class SchedulingPattern : BaseEntity
     public List<TimeSpan> GetPreferredTimes()
     {
         if (string.IsNullOrEmpty(PreferredTimes))
+        {
             return new List<TimeSpan>();
+        }
 
         return PreferredTimes
             .Split(',', StringSplitOptions.RemoveEmptyEntries)
@@ -108,7 +110,9 @@ public class SchedulingPattern : BaseEntity
     public List<DayOfWeek> GetAssociatedDays()
     {
         if (string.IsNullOrEmpty(AssociatedDays))
+        {
             return new List<DayOfWeek>();
+        }
 
         return AssociatedDays
             .Split(',', StringSplitOptions.RemoveEmptyEntries)
@@ -131,7 +135,9 @@ public class SchedulingPattern : BaseEntity
     public List<string> GetAssociatedCategories()
     {
         if (string.IsNullOrEmpty(AssociatedCategories))
+        {
             return new List<string>();
+        }
 
         return AssociatedCategories
             .Split(',', StringSplitOptions.RemoveEmptyEntries)
@@ -154,7 +160,9 @@ public class SchedulingPattern : BaseEntity
     public List<string> GetAssociatedTags()
     {
         if (string.IsNullOrEmpty(AssociatedTags))
+        {
             return new List<string>();
+        }
 
         return AssociatedTags
             .Split(',', StringSplitOptions.RemoveEmptyEntries)
@@ -248,7 +256,9 @@ public class SchedulingPattern : BaseEntity
     public Dictionary<string, object> GetAnalysisData()
     {
         if (string.IsNullOrEmpty(AnalysisData))
+        {
             return new Dictionary<string, object>();
+        }
 
         try
         {
@@ -267,12 +277,16 @@ public class SchedulingPattern : BaseEntity
     public bool AppliesTo(DateTime time, string category = "", List<string>? tags = null)
     {
         if (!IsActive || !ShouldApplyToOptimization)
+        {
             return false;
+        }
 
         // Check day of week
         var associatedDays = GetAssociatedDays();
         if (associatedDays.Any() && !associatedDays.Contains(time.DayOfWeek))
+        {
             return false;
+        }
 
         // Check time of day
         var preferredTimes = GetPreferredTimes();
@@ -285,7 +299,9 @@ public class SchedulingPattern : BaseEntity
                 Math.Abs((timeOfDay - pt).TotalMinutes) <= tolerance.TotalMinutes);
 
             if (!timeMatches)
+            {
                 return false;
+            }
         }
 
         // Check category
@@ -293,7 +309,9 @@ public class SchedulingPattern : BaseEntity
         {
             var associatedCategories = GetAssociatedCategories();
             if (associatedCategories.Any() && !associatedCategories.Contains(category, StringComparer.OrdinalIgnoreCase))
+            {
                 return false;
+            }
         }
 
         // Check tags
@@ -301,7 +319,9 @@ public class SchedulingPattern : BaseEntity
         {
             var associatedTags = GetAssociatedTags();
             if (associatedTags.Any() && !tags.Intersect(associatedTags, StringComparer.OrdinalIgnoreCase).Any())
+            {
                 return false;
+            }
         }
 
         return true;
@@ -313,7 +333,9 @@ public class SchedulingPattern : BaseEntity
     public double GetOptimizationWeight()
     {
         if (!ShouldApplyToOptimization)
+        {
             return 0.0;
+        }
 
         return PatternStrength * (IsReliable ? 1.2 : 0.8);
     }

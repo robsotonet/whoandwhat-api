@@ -42,11 +42,11 @@ public class CalendarCacheService : ICalendarCacheService, IDisposable
     }
 
     public async Task<bool> CacheCalendarEventsAsync(
-        Guid userId, 
-        CalendarProvider provider, 
-        string calendarId, 
-        IEnumerable<ExternalCalendarEvent> events, 
-        int expirationMinutes, 
+        Guid userId,
+        CalendarProvider provider,
+        string calendarId,
+        IEnumerable<ExternalCalendarEvent> events,
+        int expirationMinutes,
         CancellationToken cancellationToken = default)
     {
         try
@@ -61,14 +61,14 @@ public class CalendarCacheService : ICalendarCacheService, IDisposable
             }, cancellationToken);
 
             TrackCacheOperation("CalendarEvents", true);
-            _logger.LogDebug("Cached {EventCount} events for user {UserId} provider {Provider} calendar {CalendarId}", 
+            _logger.LogDebug("Cached {EventCount} events for user {UserId} provider {Provider} calendar {CalendarId}",
                 events.Count(), userId, provider, calendarId);
-            
+
             return true;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to cache calendar events for user {UserId} provider {Provider} calendar {CalendarId}", 
+            _logger.LogError(ex, "Failed to cache calendar events for user {UserId} provider {Provider} calendar {CalendarId}",
                 userId, provider, calendarId);
             TrackCacheOperation("CalendarEvents", false);
             return false;
@@ -76,10 +76,10 @@ public class CalendarCacheService : ICalendarCacheService, IDisposable
     }
 
     public async Task<IEnumerable<ExternalCalendarEvent>?> GetCachedCalendarEventsAsync(
-        Guid userId, 
-        CalendarProvider provider, 
-        string calendarId, 
-        TimeRange? dateRange = null, 
+        Guid userId,
+        CalendarProvider provider,
+        string calendarId,
+        TimeRange? dateRange = null,
         CancellationToken cancellationToken = default)
     {
         try
@@ -94,11 +94,11 @@ public class CalendarCacheService : ICalendarCacheService, IDisposable
             }
 
             var events = JsonSerializer.Deserialize<IEnumerable<ExternalCalendarEvent>>(json);
-            
+
             // Filter by date range if specified
             if (dateRange != null && events != null)
             {
-                events = events.Where(e => 
+                events = events.Where(e =>
                     e.StartTime < dateRange.End && e.EndTime > dateRange.Start);
             }
 
@@ -107,7 +107,7 @@ public class CalendarCacheService : ICalendarCacheService, IDisposable
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to get cached calendar events for user {UserId} provider {Provider} calendar {CalendarId}", 
+            _logger.LogError(ex, "Failed to get cached calendar events for user {UserId} provider {Provider} calendar {CalendarId}",
                 userId, provider, calendarId);
             TrackCacheOperation("CalendarEvents", false);
             return null;
@@ -115,11 +115,11 @@ public class CalendarCacheService : ICalendarCacheService, IDisposable
     }
 
     public async Task<bool> CacheSyncTokenAsync(
-        Guid userId, 
-        CalendarProvider provider, 
-        string calendarId, 
-        string syncToken, 
-        int expirationMinutes, 
+        Guid userId,
+        CalendarProvider provider,
+        string calendarId,
+        string syncToken,
+        int expirationMinutes,
         CancellationToken cancellationToken = default)
     {
         try
@@ -133,14 +133,14 @@ public class CalendarCacheService : ICalendarCacheService, IDisposable
             }, cancellationToken);
 
             TrackCacheOperation("SyncToken", true);
-            _logger.LogDebug("Cached sync token for user {UserId} provider {Provider} calendar {CalendarId}", 
+            _logger.LogDebug("Cached sync token for user {UserId} provider {Provider} calendar {CalendarId}",
                 userId, provider, calendarId);
-            
+
             return true;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to cache sync token for user {UserId} provider {Provider} calendar {CalendarId}", 
+            _logger.LogError(ex, "Failed to cache sync token for user {UserId} provider {Provider} calendar {CalendarId}",
                 userId, provider, calendarId);
             TrackCacheOperation("SyncToken", false);
             return false;
@@ -148,9 +148,9 @@ public class CalendarCacheService : ICalendarCacheService, IDisposable
     }
 
     public async Task<string?> GetCachedSyncTokenAsync(
-        Guid userId, 
-        CalendarProvider provider, 
-        string calendarId, 
+        Guid userId,
+        CalendarProvider provider,
+        string calendarId,
         CancellationToken cancellationToken = default)
     {
         try
@@ -163,7 +163,7 @@ public class CalendarCacheService : ICalendarCacheService, IDisposable
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to get cached sync token for user {UserId} provider {Provider} calendar {CalendarId}", 
+            _logger.LogError(ex, "Failed to get cached sync token for user {UserId} provider {Provider} calendar {CalendarId}",
                 userId, provider, calendarId);
             TrackCacheOperation("SyncToken", false);
             return null;
@@ -171,10 +171,10 @@ public class CalendarCacheService : ICalendarCacheService, IDisposable
     }
 
     public async Task<bool> CacheConflictResolutionAsync(
-        Guid userId, 
-        Guid conflictId, 
-        ConflictResolution resolution, 
-        int expirationMinutes, 
+        Guid userId,
+        Guid conflictId,
+        ConflictResolution resolution,
+        int expirationMinutes,
         CancellationToken cancellationToken = default)
     {
         try
@@ -190,12 +190,12 @@ public class CalendarCacheService : ICalendarCacheService, IDisposable
 
             TrackCacheOperation("ConflictResolution", true);
             _logger.LogDebug("Cached conflict resolution for user {UserId} conflict {ConflictId}", userId, conflictId);
-            
+
             return true;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to cache conflict resolution for user {UserId} conflict {ConflictId}", 
+            _logger.LogError(ex, "Failed to cache conflict resolution for user {UserId} conflict {ConflictId}",
                 userId, conflictId);
             TrackCacheOperation("ConflictResolution", false);
             return false;
@@ -203,8 +203,8 @@ public class CalendarCacheService : ICalendarCacheService, IDisposable
     }
 
     public async Task<ConflictResolution?> GetCachedConflictResolutionAsync(
-        Guid userId, 
-        Guid conflictId, 
+        Guid userId,
+        Guid conflictId,
         CancellationToken cancellationToken = default)
     {
         try
@@ -223,7 +223,7 @@ public class CalendarCacheService : ICalendarCacheService, IDisposable
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to get cached conflict resolution for user {UserId} conflict {ConflictId}", 
+            _logger.LogError(ex, "Failed to get cached conflict resolution for user {UserId} conflict {ConflictId}",
                 userId, conflictId);
             TrackCacheOperation("ConflictResolution", false);
             return null;
@@ -231,10 +231,10 @@ public class CalendarCacheService : ICalendarCacheService, IDisposable
     }
 
     public async Task<bool> CacheAccessTokenAsync(
-        Guid userId, 
-        CalendarProvider provider, 
-        CalendarAccessToken tokenData, 
-        int expirationMinutes, 
+        Guid userId,
+        CalendarProvider provider,
+        CalendarAccessToken tokenData,
+        int expirationMinutes,
         CancellationToken cancellationToken = default)
     {
         try
@@ -250,7 +250,7 @@ public class CalendarCacheService : ICalendarCacheService, IDisposable
 
             TrackCacheOperation("AccessToken", true);
             _logger.LogDebug("Cached access token for user {UserId} provider {Provider}", userId, provider);
-            
+
             return true;
         }
         catch (Exception ex)
@@ -262,8 +262,8 @@ public class CalendarCacheService : ICalendarCacheService, IDisposable
     }
 
     public async Task<CalendarAccessToken?> GetCachedAccessTokenAsync(
-        Guid userId, 
-        CalendarProvider provider, 
+        Guid userId,
+        CalendarProvider provider,
         CancellationToken cancellationToken = default)
     {
         try
@@ -278,7 +278,7 @@ public class CalendarCacheService : ICalendarCacheService, IDisposable
             }
 
             var tokenData = JsonSerializer.Deserialize<CalendarAccessToken>(json);
-            
+
             // Check if token is expired
             if (tokenData != null && tokenData.ExpiresAt <= DateTime.UtcNow)
             {
@@ -300,10 +300,10 @@ public class CalendarCacheService : ICalendarCacheService, IDisposable
     }
 
     public async Task<bool> CacheSyncStatusAsync(
-        Guid userId, 
-        CalendarProvider provider, 
-        CalendarSyncStatus syncStatus, 
-        int expirationMinutes, 
+        Guid userId,
+        CalendarProvider provider,
+        CalendarSyncStatus syncStatus,
+        int expirationMinutes,
         CancellationToken cancellationToken = default)
     {
         try
@@ -319,7 +319,7 @@ public class CalendarCacheService : ICalendarCacheService, IDisposable
 
             TrackCacheOperation("SyncStatus", true);
             _logger.LogDebug("Cached sync status for user {UserId} provider {Provider}", userId, provider);
-            
+
             return true;
         }
         catch (Exception ex)
@@ -331,8 +331,8 @@ public class CalendarCacheService : ICalendarCacheService, IDisposable
     }
 
     public async Task<CalendarSyncStatus?> GetCachedSyncStatusAsync(
-        Guid userId, 
-        CalendarProvider provider, 
+        Guid userId,
+        CalendarProvider provider,
         CancellationToken cancellationToken = default)
     {
         try
@@ -358,11 +358,11 @@ public class CalendarCacheService : ICalendarCacheService, IDisposable
     }
 
     public async Task<bool> CacheFreeBusyDataAsync(
-        Guid userId, 
-        CalendarProvider provider, 
-        TimeRange timeRange, 
-        FreeBusyResult freeBusyData, 
-        int expirationMinutes, 
+        Guid userId,
+        CalendarProvider provider,
+        TimeRange timeRange,
+        FreeBusyResult freeBusyData,
+        int expirationMinutes,
         CancellationToken cancellationToken = default)
     {
         try
@@ -378,9 +378,9 @@ public class CalendarCacheService : ICalendarCacheService, IDisposable
             }, cancellationToken);
 
             TrackCacheOperation("FreeBusyData", true);
-            _logger.LogDebug("Cached free/busy data for user {UserId} provider {Provider} timeRange {TimeRange}", 
+            _logger.LogDebug("Cached free/busy data for user {UserId} provider {Provider} timeRange {TimeRange}",
                 userId, provider, timeKey);
-            
+
             return true;
         }
         catch (Exception ex)
@@ -392,9 +392,9 @@ public class CalendarCacheService : ICalendarCacheService, IDisposable
     }
 
     public async Task<FreeBusyResult?> GetCachedFreeBusyDataAsync(
-        Guid userId, 
-        CalendarProvider provider, 
-        TimeRange timeRange, 
+        Guid userId,
+        CalendarProvider provider,
+        TimeRange timeRange,
         CancellationToken cancellationToken = default)
     {
         try
@@ -421,10 +421,10 @@ public class CalendarCacheService : ICalendarCacheService, IDisposable
     }
 
     public async Task<bool> CacheCalendarMetadataAsync(
-        Guid userId, 
-        CalendarProvider provider, 
-        IEnumerable<ExternalCalendar> calendars, 
-        int expirationMinutes, 
+        Guid userId,
+        CalendarProvider provider,
+        IEnumerable<ExternalCalendar> calendars,
+        int expirationMinutes,
         CancellationToken cancellationToken = default)
     {
         try
@@ -439,9 +439,9 @@ public class CalendarCacheService : ICalendarCacheService, IDisposable
             }, cancellationToken);
 
             TrackCacheOperation("CalendarMetadata", true);
-            _logger.LogDebug("Cached {CalendarCount} calendar metadata for user {UserId} provider {Provider}", 
+            _logger.LogDebug("Cached {CalendarCount} calendar metadata for user {UserId} provider {Provider}",
                 calendars.Count(), userId, provider);
-            
+
             return true;
         }
         catch (Exception ex)
@@ -453,8 +453,8 @@ public class CalendarCacheService : ICalendarCacheService, IDisposable
     }
 
     public async Task<IEnumerable<ExternalCalendar>?> GetCachedCalendarMetadataAsync(
-        Guid userId, 
-        CalendarProvider provider, 
+        Guid userId,
+        CalendarProvider provider,
         CancellationToken cancellationToken = default)
     {
         try
@@ -485,7 +485,7 @@ public class CalendarCacheService : ICalendarCacheService, IDisposable
         {
             var pattern = $"{_keyPrefix}:*:{userId}:*";
             var keys = await GetKeysAsync(pattern);
-            
+
             if (keys.Any())
             {
                 await _database.KeyDeleteAsync(keys.ToArray());
@@ -504,15 +504,15 @@ public class CalendarCacheService : ICalendarCacheService, IDisposable
     }
 
     public async Task<bool> InvalidateCalendarCacheByTypeAsync(
-        Guid userId, 
-        CalendarProvider? provider, 
-        IEnumerable<CalendarCacheType> cacheTypes, 
+        Guid userId,
+        CalendarProvider? provider,
+        IEnumerable<CalendarCacheType> cacheTypes,
         CancellationToken cancellationToken = default)
     {
         try
         {
             var patterns = new List<string>();
-            
+
             foreach (var cacheType in cacheTypes)
             {
                 if (cacheType == CalendarCacheType.All)
@@ -537,7 +537,7 @@ public class CalendarCacheService : ICalendarCacheService, IDisposable
             if (allKeys.Any())
             {
                 await _database.KeyDeleteAsync(allKeys.Distinct().ToArray());
-                _logger.LogDebug("Invalidated {KeyCount} cache keys for user {UserId} types {CacheTypes}", 
+                _logger.LogDebug("Invalidated {KeyCount} cache keys for user {UserId} types {CacheTypes}",
                     allKeys.Count, userId, string.Join(",", cacheTypes));
             }
 
@@ -553,10 +553,10 @@ public class CalendarCacheService : ICalendarCacheService, IDisposable
     }
 
     public async Task<bool> InvalidateEventCacheAsync(
-        Guid userId, 
-        CalendarProvider provider, 
-        string calendarId, 
-        IEnumerable<string> modifiedEventIds, 
+        Guid userId,
+        CalendarProvider provider,
+        string calendarId,
+        IEnumerable<string> modifiedEventIds,
         CancellationToken cancellationToken = default)
     {
         try
@@ -564,12 +564,12 @@ public class CalendarCacheService : ICalendarCacheService, IDisposable
             // Invalidate the entire event cache for this calendar since events have changed
             var eventKey = $"{_keyPrefix}:events:{userId}:{provider}:{calendarId}";
             await _distributedCache.RemoveAsync(eventKey, cancellationToken);
-            
+
             // Also invalidate sync status since it may have changed
             var syncStatusKey = $"{_keyPrefix}:syncstatus:{userId}:{provider}";
             await _distributedCache.RemoveAsync(syncStatusKey, cancellationToken);
 
-            _logger.LogDebug("Invalidated event cache for user {UserId} provider {Provider} calendar {CalendarId} ({EventCount} events)", 
+            _logger.LogDebug("Invalidated event cache for user {UserId} provider {Provider} calendar {CalendarId} ({EventCount} events)",
                 userId, provider, calendarId, modifiedEventIds.Count());
 
             TrackCacheOperation("InvalidateEvents", true);
@@ -577,32 +577,32 @@ public class CalendarCacheService : ICalendarCacheService, IDisposable
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to invalidate event cache for user {UserId} provider {Provider} calendar {CalendarId}", 
+            _logger.LogError(ex, "Failed to invalidate event cache for user {UserId} provider {Provider} calendar {CalendarId}",
                 userId, provider, calendarId);
             TrackCacheOperation("InvalidateEvents", false);
             return false;
         }
     }
 
-    public async Task<CalendarCacheMetrics> GetCalendarCacheMetricsAsync(CancellationToken cancellationToken = default)
+    public Task<CalendarCacheMetrics> GetCalendarCacheMetricsAsync(CancellationToken cancellationToken = default)
     {
         try
         {
             var allMetrics = _metricsTracker.Values.ToList();
-            
+
             var totalEntries = allMetrics.Sum(m => m.TotalEntries);
             var totalSizeBytes = allMetrics.Sum(m => m.TotalSizeBytes);
             var hitCount = allMetrics.Sum(m => m.HitCount);
             var missCount = allMetrics.Sum(m => m.MissCount);
             var hitRate = (hitCount + missCount) > 0 ? (double)hitCount / (hitCount + missCount) : 0.0;
-            
+
             var entriesByType = allMetrics
                 .GroupBy(m => ParseCacheTypeFromMetrics(m))
                 .ToDictionary(g => g.Key, g => g.Sum(m => m.TotalEntries));
-            
+
             var hitRatesByType = allMetrics
                 .GroupBy(m => ParseCacheTypeFromMetrics(m))
-                .ToDictionary(g => g.Key, g => 
+                .ToDictionary(g => g.Key, g =>
                 {
                     var typeHits = g.Sum(m => m.HitCount);
                     var typeMisses = g.Sum(m => m.MissCount);
@@ -611,7 +611,7 @@ public class CalendarCacheService : ICalendarCacheService, IDisposable
 
             var entriesByProvider = new Dictionary<CalendarProvider, int>(); // Would need provider tracking
 
-            return new CalendarCacheMetrics(
+            return Task.FromResult(new CalendarCacheMetrics(
                 totalEntries,
                 totalSizeBytes,
                 hitCount,
@@ -622,14 +622,14 @@ public class CalendarCacheService : ICalendarCacheService, IDisposable
                 entriesByProvider,
                 DateTime.UtcNow.AddHours(-1), // Approximate last reset time
                 TimeSpan.FromMilliseconds(50) // Average response time estimate
-            );
+            ));
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to get calendar cache metrics");
-            return new CalendarCacheMetrics(0, 0, 0, 0, 0.0, new Dictionary<CalendarCacheType, int>(), 
-                new Dictionary<CalendarCacheType, double>(), new Dictionary<CalendarProvider, int>(), 
-                DateTime.UtcNow, TimeSpan.Zero);
+            return Task.FromResult(new CalendarCacheMetrics(0, 0, 0, 0, 0.0, new Dictionary<CalendarCacheType, int>(),
+                new Dictionary<CalendarCacheType, double>(), new Dictionary<CalendarProvider, int>(),
+                DateTime.UtcNow, TimeSpan.Zero));
         }
     }
 
@@ -639,7 +639,7 @@ public class CalendarCacheService : ICalendarCacheService, IDisposable
         {
             var pattern = $"{_keyPrefix}:*";
             var keys = await GetKeysAsync(pattern);
-            
+
             if (keys.Any())
             {
                 await _database.KeyDeleteAsync(keys);
@@ -660,15 +660,15 @@ public class CalendarCacheService : ICalendarCacheService, IDisposable
         }
     }
 
-    public async Task<int> WarmUserCalendarCacheAsync(
-        Guid userId, 
-        IEnumerable<CalendarProvider> providers, 
+    public Task<int> WarmUserCalendarCacheAsync(
+        Guid userId,
+        IEnumerable<CalendarProvider> providers,
         CancellationToken cancellationToken = default)
     {
         try
         {
             var entriesWarmed = 0;
-            
+
             // This would typically pre-load frequently accessed data
             // For now, we'll return a success count based on providers
             foreach (var provider in providers)
@@ -678,25 +678,25 @@ public class CalendarCacheService : ICalendarCacheService, IDisposable
             }
 
             TrackCacheOperation("WarmCache", true);
-            return entriesWarmed;
+            return Task.FromResult(entriesWarmed);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to warm user calendar cache for user {UserId}", userId);
             TrackCacheOperation("WarmCache", false);
-            return 0;
+            return Task.FromResult(0);
         }
     }
 
-    public async Task<int> PreloadUpcomingEventsAsync(
-        Guid userId, 
-        CalendarProvider provider, 
-        int lookAheadDays, 
+    public Task<int> PreloadUpcomingEventsAsync(
+        Guid userId,
+        CalendarProvider provider,
+        int lookAheadDays,
         CancellationToken cancellationToken = default)
     {
         try
         {
-            _logger.LogDebug("Preloading upcoming events for user {UserId} provider {Provider} ({Days} days ahead)", 
+            _logger.LogDebug("Preloading upcoming events for user {UserId} provider {Provider} ({Days} days ahead)",
                 userId, provider, lookAheadDays);
 
             // This would typically fetch and cache upcoming events
@@ -704,20 +704,20 @@ public class CalendarCacheService : ICalendarCacheService, IDisposable
             var eventsPreloaded = lookAheadDays * 5; // Estimate 5 events per day
 
             TrackCacheOperation("PreloadEvents", true);
-            return eventsPreloaded;
+            return Task.FromResult(eventsPreloaded);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to preload upcoming events for user {UserId} provider {Provider}", userId, provider);
             TrackCacheOperation("PreloadEvents", false);
-            return 0;
+            return Task.FromResult(0);
         }
     }
 
     public async Task<bool> CacheEventMappingsAsync(
-        Guid userId, 
-        IEnumerable<EventIdMapping> mappings, 
-        int expirationMinutes, 
+        Guid userId,
+        IEnumerable<EventIdMapping> mappings,
+        int expirationMinutes,
         CancellationToken cancellationToken = default)
     {
         try
@@ -733,7 +733,7 @@ public class CalendarCacheService : ICalendarCacheService, IDisposable
 
             TrackCacheOperation("EventMappings", true);
             _logger.LogDebug("Cached {MappingCount} event mappings for user {UserId}", mappings.Count(), userId);
-            
+
             return true;
         }
         catch (Exception ex)
@@ -745,8 +745,8 @@ public class CalendarCacheService : ICalendarCacheService, IDisposable
     }
 
     public async Task<IEnumerable<EventIdMapping>?> GetCachedEventMappingsAsync(
-        Guid userId, 
-        CalendarProvider provider, 
+        Guid userId,
+        CalendarProvider provider,
         CancellationToken cancellationToken = default)
     {
         try
@@ -761,7 +761,7 @@ public class CalendarCacheService : ICalendarCacheService, IDisposable
             }
 
             var allMappings = JsonSerializer.Deserialize<IEnumerable<EventIdMapping>>(json);
-            
+
             // Filter by provider if needed
             var filteredMappings = allMappings?.Where(m => m.Provider == provider);
 
@@ -780,9 +780,9 @@ public class CalendarCacheService : ICalendarCacheService, IDisposable
 
     private void TrackCacheOperation(string operationType, bool wasHit)
     {
-        _metricsTracker.AddOrUpdate(operationType, 
-            new CalendarCacheMetrics(1, 0, wasHit ? 1 : 0, wasHit ? 0 : 1, wasHit ? 1.0 : 0.0, 
-                new Dictionary<CalendarCacheType, int>(), new Dictionary<CalendarCacheType, double>(), 
+        _metricsTracker.AddOrUpdate(operationType,
+            new CalendarCacheMetrics(1, 0, wasHit ? 1 : 0, wasHit ? 0 : 1, wasHit ? 1.0 : 0.0,
+                new Dictionary<CalendarCacheType, int>(), new Dictionary<CalendarCacheType, double>(),
                 new Dictionary<CalendarProvider, int>(), DateTime.UtcNow, TimeSpan.Zero),
             (key, existing) => new CalendarCacheMetrics(
                 existing.TotalEntries + 1,
@@ -802,7 +802,7 @@ public class CalendarCacheService : ICalendarCacheService, IDisposable
     private async Task<RedisKey[]> GetKeysAsync(string pattern)
     {
         var keys = new List<RedisKey>();
-        
+
         try
         {
             var endpoints = _redis.GetEndPoints();
@@ -851,7 +851,10 @@ public class CalendarCacheService : ICalendarCacheService, IDisposable
 
     public void Dispose()
     {
-        if (_disposed) return;
+        if (_disposed)
+        {
+            return;
+        }
 
         _metricsTracker?.Clear();
         _disposed = true;

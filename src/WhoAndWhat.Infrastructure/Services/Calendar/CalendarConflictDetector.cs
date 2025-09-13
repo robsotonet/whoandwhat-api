@@ -1,10 +1,10 @@
+using System.Collections.Concurrent;
+using System.Text.RegularExpressions;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using WhoAndWhat.Application.DTOs.Calendar;
 using WhoAndWhat.Application.Interfaces;
 using WhoAndWhat.Infrastructure.Configuration;
-using System.Collections.Concurrent;
-using System.Text.RegularExpressions;
 
 namespace WhoAndWhat.Infrastructure.Services.Calendar;
 
@@ -34,15 +34,15 @@ public class CalendarConflictDetector : ICalendarConflictDetector, IDisposable
     }
 
     public async Task<IEnumerable<DetectedConflict>> DetectConflictsAsync(
-        Guid userId, 
-        IEnumerable<InternalCalendarEvent> internalEvents, 
-        IEnumerable<ExternalCalendarEvent> externalEvents, 
-        ConflictDetectionOptions detectionOptions, 
+        Guid userId,
+        IEnumerable<InternalCalendarEvent> internalEvents,
+        IEnumerable<ExternalCalendarEvent> externalEvents,
+        ConflictDetectionOptions detectionOptions,
         CancellationToken cancellationToken = default)
     {
         try
         {
-            _logger.LogInformation("Starting conflict detection for user {UserId} with {InternalCount} internal and {ExternalCount} external events", 
+            _logger.LogInformation("Starting conflict detection for user {UserId} with {InternalCount} internal and {ExternalCount} external events",
                 userId, internalEvents.Count(), externalEvents.Count());
 
             var conflicts = new List<DetectedConflict>();
@@ -56,7 +56,7 @@ public class CalendarConflictDetector : ICalendarConflictDetector, IDisposable
 
             if (detectionOptions.DetectDuplicates)
             {
-                var duplicateConflicts = await DetectDuplicatesAsync(userId, internalEvents, externalEvents, 
+                var duplicateConflicts = await DetectDuplicatesAsync(userId, internalEvents, externalEvents,
                     detectionOptions.DuplicateDetectionCriteria, cancellationToken);
                 conflicts.AddRange(duplicateConflicts.Select(d => new DetectedConflict(
                     d.ConflictId,
@@ -96,16 +96,16 @@ public class CalendarConflictDetector : ICalendarConflictDetector, IDisposable
         }
     }
 
-    public async Task<IEnumerable<TimeOverlapConflict>> DetectTimeOverlapAsync(
-        Guid userId, 
-        TimeRange targetTimeRange, 
-        IEnumerable<InternalCalendarEvent> existingEvents, 
-        int conflictTolerance, 
+    public Task<IEnumerable<TimeOverlapConflict>> DetectTimeOverlapAsync(
+        Guid userId,
+        TimeRange targetTimeRange,
+        IEnumerable<InternalCalendarEvent> existingEvents,
+        int conflictTolerance,
         CancellationToken cancellationToken = default)
     {
         try
         {
-            _logger.LogInformation("Detecting time overlaps for user {UserId} in range {Start} to {End}", 
+            _logger.LogInformation("Detecting time overlaps for user {UserId} in range {Start} to {End}",
                 userId, targetTimeRange.Start, targetTimeRange.End);
 
             var conflicts = new List<TimeOverlapConflict>();
@@ -114,7 +114,7 @@ public class CalendarConflictDetector : ICalendarConflictDetector, IDisposable
             foreach (var existingEvent in existingEvents)
             {
                 var overlap = CalculateOverlap(targetTimeRange, new TimeRange(existingEvent.StartTime, existingEvent.EndTime), toleranceSpan);
-                
+
                 if (overlap.HasValue)
                 {
                     var severity = CalculateOverlapSeverity(overlap.Value, targetTimeRange);
@@ -139,20 +139,20 @@ public class CalendarConflictDetector : ICalendarConflictDetector, IDisposable
                 }
             }
 
-            return conflicts.OrderByDescending(c => c.Severity);
+            return Task.FromResult<IEnumerable<TimeOverlapConflict>>(conflicts.OrderByDescending(c => c.Severity));
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to detect time overlaps for user {UserId}", userId);
-            return [];
+            return Task.FromResult<IEnumerable<TimeOverlapConflict>>([]);
         }
     }
 
-    public async Task<IEnumerable<DuplicateEventConflict>> DetectDuplicatesAsync(
-        Guid userId, 
-        IEnumerable<InternalCalendarEvent> internalEvents, 
-        IEnumerable<ExternalCalendarEvent> externalEvents, 
-        DuplicateDetectionCriteria duplicateDetectionCriteria, 
+    public Task<IEnumerable<DuplicateEventConflict>> DetectDuplicatesAsync(
+        Guid userId,
+        IEnumerable<InternalCalendarEvent> internalEvents,
+        IEnumerable<ExternalCalendarEvent> externalEvents,
+        DuplicateDetectionCriteria duplicateDetectionCriteria,
         CancellationToken cancellationToken = default)
     {
         try
@@ -164,15 +164,15 @@ public class CalendarConflictDetector : ICalendarConflictDetector, IDisposable
             foreach (var internalEvent in internalEvents)
             {
                 var potentialDuplicates = FindPotentialDuplicates(internalEvent, externalEvents, duplicateDetectionCriteria);
-                
+
                 foreach (var externalEvent in potentialDuplicates)
                 {
                     var similarity = CalculateEventSimilarity(internalEvent, externalEvent, duplicateDetectionCriteria);
-                    
+
                     if (similarity >= duplicateDetectionCriteria.MinimumSimilarityThreshold)
                     {
-                        var severity = similarity > 0.9 ? ConflictSeverity.High : 
-                                     similarity > 0.7 ? ConflictSeverity.Medium : 
+                        var severity = similarity > 0.9 ? ConflictSeverity.High :
+                                     similarity > 0.7 ? ConflictSeverity.Medium :
                                      ConflictSeverity.Low;
 
                         var suggestions = GenerateDuplicateResolutions(internalEvent, externalEvent, similarity);
@@ -197,24 +197,24 @@ public class CalendarConflictDetector : ICalendarConflictDetector, IDisposable
                 }
             }
 
-            return conflicts.OrderByDescending(c => c.SimilarityScore);
+            return Task.FromResult<IEnumerable<DuplicateEventConflict>>(conflicts.OrderByDescending(c => c.SimilarityScore));
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to detect duplicates for user {UserId}", userId);
-            return [];
+            return Task.FromResult<IEnumerable<DuplicateEventConflict>>([]);
         }
     }
 
     public async Task<IEnumerable<DataConsistencyConflict>> DetectDataInconsistencyAsync(
-        Guid userId, 
-        IEnumerable<EventPair> eventPairs, 
-        DataConsistencyOptions consistencyOptions, 
+        Guid userId,
+        IEnumerable<EventPair> eventPairs,
+        DataConsistencyOptions consistencyOptions,
         CancellationToken cancellationToken = default)
     {
         try
         {
-            _logger.LogInformation("Detecting data inconsistencies for user {UserId} with {PairCount} event pairs", 
+            _logger.LogInformation("Detecting data inconsistencies for user {UserId} with {PairCount} event pairs",
                 userId, eventPairs.Count());
 
             var conflicts = new List<DataConsistencyConflict>();
@@ -235,9 +235,9 @@ public class CalendarConflictDetector : ICalendarConflictDetector, IDisposable
     }
 
     public async Task<ConflictAnalysis> AnalyzeConflictAsync(
-        DetectedConflict conflict, 
-        UserConflictPreferences userPreferences, 
-        IEnumerable<HistoricalResolution> historicalResolutions, 
+        DetectedConflict conflict,
+        UserConflictPreferences userPreferences,
+        IEnumerable<HistoricalResolution> historicalResolutions,
         CancellationToken cancellationToken = default)
     {
         try
@@ -273,14 +273,14 @@ public class CalendarConflictDetector : ICalendarConflictDetector, IDisposable
     }
 
     public async Task<IEnumerable<AutoResolutionResult>> AutoResolveConflictsAsync(
-        Guid userId, 
-        IEnumerable<DetectedConflict> conflicts, 
-        ConflictResolutionStrategy resolutionStrategy, 
+        Guid userId,
+        IEnumerable<DetectedConflict> conflicts,
+        ConflictResolutionStrategy resolutionStrategy,
         CancellationToken cancellationToken = default)
     {
         try
         {
-            _logger.LogInformation("Auto-resolving {ConflictCount} conflicts for user {UserId} using strategy {Strategy}", 
+            _logger.LogInformation("Auto-resolving {ConflictCount} conflicts for user {UserId} using strategy {Strategy}",
                 conflicts.Count(), userId, resolutionStrategy.StrategyType);
 
             var results = new List<AutoResolutionResult>();
@@ -290,7 +290,7 @@ public class CalendarConflictDetector : ICalendarConflictDetector, IDisposable
                 try
                 {
                     var canAutoResolve = CanAutoResolveConflict(conflict, resolutionStrategy);
-                    
+
                     if (canAutoResolve)
                     {
                         var resolution = SelectAutomaticResolution(conflict, resolutionStrategy);
@@ -341,9 +341,9 @@ public class CalendarConflictDetector : ICalendarConflictDetector, IDisposable
     }
 
     public async Task<ManualResolutionResult> ApplyResolutionAsync(
-        Guid userId, 
-        Guid conflictId, 
-        ConflictResolution resolution, 
+        Guid userId,
+        Guid conflictId,
+        ConflictResolution resolution,
         CancellationToken cancellationToken = default)
     {
         try
@@ -352,7 +352,7 @@ public class CalendarConflictDetector : ICalendarConflictDetector, IDisposable
 
             // Validate the resolution
             var validationResult = await ValidateResolutionAsync(userId, conflictId, resolution, cancellationToken);
-            
+
             if (!validationResult.IsValid)
             {
                 return new ManualResolutionResult(
@@ -391,9 +391,9 @@ public class CalendarConflictDetector : ICalendarConflictDetector, IDisposable
     }
 
     public async Task<ResolutionValidationResult> ValidateResolutionAsync(
-        Guid userId, 
-        Guid conflictId, 
-        ConflictResolution proposedResolution, 
+        Guid userId,
+        Guid conflictId,
+        ConflictResolution proposedResolution,
         CancellationToken cancellationToken = default)
     {
         try
@@ -442,8 +442,8 @@ public class CalendarConflictDetector : ICalendarConflictDetector, IDisposable
     }
 
     public async Task<IEnumerable<ResolutionSuggestion>> GetResolutionSuggestionsAsync(
-        Guid userId, 
-        DetectedConflict conflict, 
+        Guid userId,
+        DetectedConflict conflict,
         CancellationToken cancellationToken = default)
     {
         try
@@ -452,7 +452,7 @@ public class CalendarConflictDetector : ICalendarConflictDetector, IDisposable
             var historicalResolutions = await GetUserResolutionHistory(userId, cancellationToken);
 
             var suggestions = await GenerateIntelligentSuggestions(conflict, userPreferences, historicalResolutions, cancellationToken);
-            
+
             return suggestions.OrderByDescending(s => s.Confidence);
         }
         catch (Exception ex)
@@ -463,14 +463,14 @@ public class CalendarConflictDetector : ICalendarConflictDetector, IDisposable
     }
 
     public async Task<IEnumerable<PredictedConflict>> PredictConflictsAsync(
-        Guid userId, 
-        IEnumerable<PlannedSyncChange> plannedChanges, 
-        CalendarSyncState currentState, 
+        Guid userId,
+        IEnumerable<PlannedSyncChange> plannedChanges,
+        CalendarSyncState currentState,
         CancellationToken cancellationToken = default)
     {
         try
         {
-            _logger.LogInformation("Predicting conflicts for user {UserId} with {ChangeCount} planned changes", 
+            _logger.LogInformation("Predicting conflicts for user {UserId} with {ChangeCount} planned changes",
                 userId, plannedChanges.Count());
 
             var predictedConflicts = new List<PredictedConflict>();
@@ -491,14 +491,14 @@ public class CalendarConflictDetector : ICalendarConflictDetector, IDisposable
     }
 
     public async Task<ConflictStatistics> GetConflictStatisticsAsync(
-        Guid userId, 
-        TimeRange timeRange, 
+        Guid userId,
+        TimeRange timeRange,
         CancellationToken cancellationToken = default)
     {
         try
         {
             var resolutionHistory = await GetUserResolutionHistory(userId, cancellationToken);
-            var relevantHistory = resolutionHistory.Where(h => 
+            var relevantHistory = resolutionHistory.Where(h =>
                 h.ResolvedAt >= timeRange.Start && h.ResolvedAt <= timeRange.End).ToList();
 
             var statistics = CalculateConflictStatistics(relevantHistory, timeRange);
@@ -520,18 +520,18 @@ public class CalendarConflictDetector : ICalendarConflictDetector, IDisposable
     }
 
     public async Task<UserConflictPreferences> UpdateUserPreferencesAsync(
-        Guid userId, 
-        IEnumerable<HistoricalResolution> recentResolutions, 
+        Guid userId,
+        IEnumerable<HistoricalResolution> recentResolutions,
         CancellationToken cancellationToken = default)
     {
         try
         {
             var currentPreferences = await GetUserPreferences(userId, cancellationToken);
             var updatedPreferences = AnalyzeAndUpdatePreferences(currentPreferences, recentResolutions);
-            
+
             // Cache the updated preferences
             _userPreferencesCache[userId] = updatedPreferences;
-            
+
             return updatedPreferences;
         }
         catch (Exception ex)
@@ -542,18 +542,18 @@ public class CalendarConflictDetector : ICalendarConflictDetector, IDisposable
     }
 
     public async Task<EventMergeResult> MergeConflictingEventsAsync(
-        Guid userId, 
-        IEnumerable<ConflictingEventData> conflictingEvents, 
-        EventMergeStrategy mergeStrategy, 
+        Guid userId,
+        IEnumerable<ConflictingEventData> conflictingEvents,
+        EventMergeStrategy mergeStrategy,
         CancellationToken cancellationToken = default)
     {
         try
         {
-            _logger.LogInformation("Merging {EventCount} conflicting events for user {UserId} using strategy {Strategy}", 
+            _logger.LogInformation("Merging {EventCount} conflicting events for user {UserId} using strategy {Strategy}",
                 conflictingEvents.Count(), userId, mergeStrategy.StrategyType);
 
             var mergedEvent = await ExecuteEventMerge(conflictingEvents, mergeStrategy, cancellationToken);
-            
+
             return new EventMergeResult(
                 true,
                 mergedEvent,
@@ -591,8 +591,8 @@ public class CalendarConflictDetector : ICalendarConflictDetector, IDisposable
     }
 
     public async Task<IEnumerable<DetectedConflict>> GetPendingConflictsAsync(
-        Guid userId, 
-        ConflictFilterOptions filterOptions, 
+        Guid userId,
+        ConflictFilterOptions filterOptions,
         CancellationToken cancellationToken = default)
     {
         try
@@ -608,43 +608,43 @@ public class CalendarConflictDetector : ICalendarConflictDetector, IDisposable
         }
     }
 
-    public async Task<ConflictIgnoreResult> IgnoreConflictAsync(
-        Guid userId, 
-        Guid conflictId, 
-        string ignoreReason, 
+    public Task<ConflictIgnoreResult> IgnoreConflictAsync(
+        Guid userId,
+        Guid conflictId,
+        string ignoreReason,
         CancellationToken cancellationToken = default)
     {
         try
         {
-            _logger.LogInformation("Ignoring conflict {ConflictId} for user {UserId} with reason: {Reason}", 
+            _logger.LogInformation("Ignoring conflict {ConflictId} for user {UserId} with reason: {Reason}",
                 conflictId, userId, ignoreReason);
 
             // In a real implementation, this would update the database to mark the conflict as ignored
-            
-            return new ConflictIgnoreResult(
+
+            return Task.FromResult(new ConflictIgnoreResult(
                 conflictId,
                 userId,
                 true,
                 ignoreReason,
                 DateTime.UtcNow
-            );
+            ));
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to ignore conflict {ConflictId} for user {UserId}", conflictId, userId);
-            return new ConflictIgnoreResult(
+            return Task.FromResult(new ConflictIgnoreResult(
                 conflictId,
                 userId,
                 false,
                 ex.Message,
                 DateTime.UtcNow
-            );
+            ));
         }
     }
 
     // Private helper methods
 
-    private async Task<IEnumerable<DetectedConflict>> DetectTimeOverlapConflictsAdvanced(
+    private Task<IEnumerable<DetectedConflict>> DetectTimeOverlapConflictsAdvanced(
         Guid userId,
         IEnumerable<InternalCalendarEvent> internalEvents,
         IEnumerable<ExternalCalendarEvent> externalEvents,
@@ -659,9 +659,9 @@ public class CalendarConflictDetector : ICalendarConflictDetector, IDisposable
             {
                 var internalRange = new TimeRange(internalEvent.StartTime, internalEvent.EndTime);
                 var externalRange = new TimeRange(externalEvent.StartTime, externalEvent.EndTime);
-                
+
                 var overlap = CalculateOverlap(internalRange, externalRange, TimeSpan.FromMinutes(options.TimeOverlapToleranceMinutes));
-                
+
                 if (overlap.HasValue)
                 {
                     var severity = CalculateOverlapSeverity(overlap.Value, internalRange);
@@ -686,10 +686,10 @@ public class CalendarConflictDetector : ICalendarConflictDetector, IDisposable
             }
         }
 
-        return conflicts;
+        return Task.FromResult<IEnumerable<DetectedConflict>>(conflicts);
     }
 
-    private async Task<IEnumerable<DetectedConflict>> DetectDataInconsistencyAdvanced(
+    private Task<IEnumerable<DetectedConflict>> DetectDataInconsistencyAdvanced(
         Guid userId,
         IEnumerable<InternalCalendarEvent> internalEvents,
         IEnumerable<ExternalCalendarEvent> externalEvents,
@@ -700,10 +700,10 @@ public class CalendarConflictDetector : ICalendarConflictDetector, IDisposable
 
         // This would implement sophisticated data consistency checking
         // For now, return empty list as placeholder
-        return conflicts;
+        return Task.FromResult<IEnumerable<DetectedConflict>>(conflicts);
     }
 
-    private async Task<IEnumerable<DetectedConflict>> DetectSchedulingConflicts(
+    private Task<IEnumerable<DetectedConflict>> DetectSchedulingConflicts(
         Guid userId,
         IEnumerable<InternalCalendarEvent> internalEvents,
         IEnumerable<ExternalCalendarEvent> externalEvents,
@@ -714,7 +714,7 @@ public class CalendarConflictDetector : ICalendarConflictDetector, IDisposable
 
         // This would implement scheduling conflict detection (e.g., double-booking, availability conflicts)
         // For now, return empty list as placeholder
-        return conflicts;
+        return Task.FromResult<IEnumerable<DetectedConflict>>(conflicts);
     }
 
     private TimeSpan? CalculateOverlap(TimeRange range1, TimeRange range2, TimeSpan tolerance)
@@ -733,7 +733,7 @@ public class CalendarConflictDetector : ICalendarConflictDetector, IDisposable
     private ConflictSeverity CalculateOverlapSeverity(TimeSpan overlap, TimeRange originalRange)
     {
         var overlapPercentage = CalculateOverlapPercentage(overlap, originalRange);
-        
+
         return overlapPercentage switch
         {
             >= 0.8 => ConflictSeverity.Critical,
@@ -790,7 +790,10 @@ public class CalendarConflictDetector : ICalendarConflictDetector, IDisposable
         {
             totalCriteria++;
             similarity += CalculateStringSimilarity(internal1.Title, external1.Title) * criteria.TitleWeight;
-            if (CalculateStringSimilarity(internal1.Title, external1.Title) > 0.8) criteriaMet++;
+            if (CalculateStringSimilarity(internal1.Title, external1.Title) > 0.8)
+            {
+                criteriaMet++;
+            }
         }
 
         // Time similarity
@@ -799,7 +802,10 @@ public class CalendarConflictDetector : ICalendarConflictDetector, IDisposable
             totalCriteria++;
             var timeSimilarity = CalculateTimeSimilarity(internal1.StartTime, internal1.EndTime, external1.StartTime, external1.EndTime);
             similarity += timeSimilarity * criteria.TimeWeight;
-            if (timeSimilarity > 0.8) criteriaMet++;
+            if (timeSimilarity > 0.8)
+            {
+                criteriaMet++;
+            }
         }
 
         // Location similarity
@@ -815,15 +821,19 @@ public class CalendarConflictDetector : ICalendarConflictDetector, IDisposable
     private double CalculateStringSimilarity(string str1, string str2)
     {
         if (string.IsNullOrEmpty(str1) || string.IsNullOrEmpty(str2))
+        {
             return 0.0;
+        }
 
         if (str1.Equals(str2, StringComparison.OrdinalIgnoreCase))
+        {
             return 1.0;
+        }
 
         // Simple Levenshtein distance-based similarity
         var distance = ComputeLevenshteinDistance(str1.ToLowerInvariant(), str2.ToLowerInvariant());
         var maxLength = Math.Max(str1.Length, str2.Length);
-        
+
         return maxLength > 0 ? 1.0 - (double)distance / maxLength : 0.0;
     }
 
@@ -831,21 +841,25 @@ public class CalendarConflictDetector : ICalendarConflictDetector, IDisposable
     {
         var startDiff = Math.Abs((start1 - start2).TotalMinutes);
         var endDiff = Math.Abs((end1 - end2).TotalMinutes);
-        
+
         // Consider events similar if they start and end within 15 minutes of each other
         var startSimilarity = Math.Max(0, 1.0 - startDiff / 60.0); // 1 hour tolerance
         var endSimilarity = Math.Max(0, 1.0 - endDiff / 60.0);
-        
+
         return (startSimilarity + endSimilarity) / 2.0;
     }
 
     private static int ComputeLevenshteinDistance(string s, string t)
     {
         if (string.IsNullOrEmpty(s))
+        {
             return string.IsNullOrEmpty(t) ? 0 : t.Length;
+        }
 
         if (string.IsNullOrEmpty(t))
+        {
             return s.Length;
+        }
 
         int n = s.Length;
         int m = t.Length;
@@ -882,19 +896,25 @@ public class CalendarConflictDetector : ICalendarConflictDetector, IDisposable
         var matchingFields = new List<string>();
 
         if (criteria.CompareTitle && CalculateStringSimilarity(internal1.Title, external1.Title) > 0.8)
+        {
             matchingFields.Add("title");
+        }
 
         if (criteria.CompareTime && CalculateTimeSimilarity(internal1.StartTime, internal1.EndTime, external1.StartTime, external1.EndTime) > 0.8)
+        {
             matchingFields.Add("time");
+        }
 
         if (criteria.CompareLocation && !string.IsNullOrEmpty(internal1.Location) && !string.IsNullOrEmpty(external1.Location) &&
             CalculateStringSimilarity(internal1.Location, external1.Location) > 0.8)
+        {
             matchingFields.Add("location");
+        }
 
         return matchingFields;
     }
 
-    private async Task<IEnumerable<DataConsistencyConflict>> DetectEventPairInconsistencies(
+    private Task<IEnumerable<DataConsistencyConflict>> DetectEventPairInconsistencies(
         EventPair eventPair,
         DataConsistencyOptions consistencyOptions,
         CancellationToken cancellationToken)
@@ -903,7 +923,7 @@ public class CalendarConflictDetector : ICalendarConflictDetector, IDisposable
 
         // Detect field-level inconsistencies
         var fieldInconsistencies = DetectFieldInconsistencies(eventPair.InternalEvent, eventPair.ExternalEvent, consistencyOptions);
-        
+
         foreach (var inconsistency in fieldInconsistencies)
         {
             conflicts.Add(new DataConsistencyConflict(
@@ -921,7 +941,7 @@ public class CalendarConflictDetector : ICalendarConflictDetector, IDisposable
             ));
         }
 
-        return conflicts;
+        return Task.FromResult<IEnumerable<DataConsistencyConflict>>(conflicts);
     }
 
     private IEnumerable<FieldInconsistency> DetectFieldInconsistencies(
@@ -1009,13 +1029,13 @@ public class CalendarConflictDetector : ICalendarConflictDetector, IDisposable
         };
     }
 
-    private async Task<IEnumerable<DetectedConflict>> PrioritizeConflicts(Guid userId, List<DetectedConflict> conflicts, CancellationToken cancellationToken)
+    private Task<IEnumerable<DetectedConflict>> PrioritizeConflicts(Guid userId, List<DetectedConflict> conflicts, CancellationToken cancellationToken)
     {
         // Apply business rules for conflict prioritization
-        return conflicts
+        return Task.FromResult<IEnumerable<DetectedConflict>>(conflicts
             .OrderByDescending(c => c.Severity)
             .ThenByDescending(c => c.ConflictType == ConflictType.TimeOverlap ? 1 : 0) // Prioritize time overlaps
-            .ThenBy(c => c.DetectedAt);
+            .ThenBy(c => c.DetectedAt));
     }
 
     private ConflictImpact AnalyzeConflictImpact(DetectedConflict conflict)
@@ -1059,7 +1079,7 @@ public class CalendarConflictDetector : ICalendarConflictDetector, IDisposable
         };
     }
 
-    private async Task<IEnumerable<ResolutionRecommendation>> GenerateResolutionRecommendations(
+    private Task<IEnumerable<ResolutionRecommendation>> GenerateResolutionRecommendations(
         DetectedConflict conflict,
         UserConflictPreferences userPreferences,
         IEnumerable<HistoricalResolution> historicalResolutions,
@@ -1082,7 +1102,7 @@ public class CalendarConflictDetector : ICalendarConflictDetector, IDisposable
             ));
         }
 
-        return recommendations.OrderByDescending(r => r.Confidence);
+        return Task.FromResult<IEnumerable<ResolutionRecommendation>>(recommendations.OrderByDescending(r => r.Confidence));
     }
 
     private double CalculateRecommendationConfidence(
@@ -1091,20 +1111,23 @@ public class CalendarConflictDetector : ICalendarConflictDetector, IDisposable
         IEnumerable<HistoricalResolution> history)
     {
         var baseConfidence = resolution.Confidence;
-        
+
         // Adjust based on user preferences
         var preferenceBoost = preferences.PreferredResolutionTypes.Contains(resolution.ResolutionType) ? 0.2 : 0.0;
-        
+
         // Adjust based on historical success
         var historicalSuccessRate = CalculateHistoricalSuccessRate(resolution.ResolutionType, history);
-        
+
         return Math.Min(1.0, baseConfidence + preferenceBoost + (historicalSuccessRate * 0.3));
     }
 
     private double CalculateHistoricalSuccessRate(ConflictResolutionType resolutionType, IEnumerable<HistoricalResolution> history)
     {
         var relevantResolutions = history.Where(h => h.ResolutionType == resolutionType).ToList();
-        if (!relevantResolutions.Any()) return 0.5; // Default success rate
+        if (!relevantResolutions.Any())
+        {
+            return 0.5; // Default success rate
+        }
 
         var successCount = relevantResolutions.Count(r => r.WasSuccessful);
         return (double)successCount / relevantResolutions.Count;
@@ -1153,10 +1176,14 @@ public class CalendarConflictDetector : ICalendarConflictDetector, IDisposable
         var riskFactors = new List<string>();
 
         if (conflict.Severity == ConflictSeverity.Critical)
+        {
             riskFactors.Add("Critical severity conflict");
+        }
 
         if (recommendations.Any(r => r.ImplementationComplexity == ImplementationComplexity.High))
+        {
             riskFactors.Add("Complex implementation required");
+        }
 
         return new RiskAssessment(
             highestRisk switch
@@ -1172,20 +1199,20 @@ public class CalendarConflictDetector : ICalendarConflictDetector, IDisposable
     private double CalculateConfidenceScore(DetectedConflict conflict, IEnumerable<HistoricalResolution> history)
     {
         var baseScore = conflict.SuggestedResolutions.Any() ? conflict.SuggestedResolutions.Max(r => r.Confidence) : 0.5;
-        
+
         // Adjust based on historical data availability
         var historyBoost = history.Any() ? 0.2 : 0.0;
-        
+
         // Adjust based on conflict complexity
         var complexityPenalty = CalculateConflictComplexity(conflict) > 0.7 ? -0.1 : 0.0;
-        
+
         return Math.Max(0.0, Math.Min(1.0, baseScore + historyBoost + complexityPenalty));
     }
 
     private double CalculateConflictComplexity(DetectedConflict conflict)
     {
         var complexity = 0.0;
-        
+
         // Factor in conflict type complexity
         complexity += conflict.ConflictType switch
         {
@@ -1211,7 +1238,7 @@ public class CalendarConflictDetector : ICalendarConflictDetector, IDisposable
     private bool CanAutoResolveConflict(DetectedConflict conflict, ConflictResolutionStrategy strategy)
     {
         // Determine if conflict can be automatically resolved based on strategy
-        return strategy.AutoResolveThreshold >= conflict.Severity && 
+        return strategy.AutoResolveThreshold >= conflict.Severity &&
                strategy.AllowedResolutionTypes.Intersect(conflict.SuggestedResolutions.Select(r => r.ResolutionType)).Any();
     }
 
@@ -1221,11 +1248,11 @@ public class CalendarConflictDetector : ICalendarConflictDetector, IDisposable
             .Where(r => strategy.AllowedResolutionTypes.Contains(r.ResolutionType))
             .OrderByDescending(r => r.Confidence);
 
-        return applicableResolutions.FirstOrDefault() ?? 
+        return applicableResolutions.FirstOrDefault() ??
                new ConflictResolution(ConflictResolutionType.ManualRequired, "Manual resolution required", 0.0, null);
     }
 
-    private async Task<ManualResolutionResult> ApplyAutomaticResolution(
+    private Task<ManualResolutionResult> ApplyAutomaticResolution(
         Guid userId,
         DetectedConflict conflict,
         ConflictResolution resolution,
@@ -1233,17 +1260,17 @@ public class CalendarConflictDetector : ICalendarConflictDetector, IDisposable
     {
         // Apply the automatic resolution
         // This would involve actual event modifications based on the resolution type
-        return new ManualResolutionResult(
+        return Task.FromResult(new ManualResolutionResult(
             conflict.ConflictId,
             userId,
             true,
             "Conflict resolved automatically",
             resolution.ResolvedEventData,
             DateTime.UtcNow
-        );
+        ));
     }
 
-    private async Task<ManualResolutionResult> ExecuteManualResolution(
+    private Task<ManualResolutionResult> ExecuteManualResolution(
         Guid userId,
         Guid conflictId,
         ConflictResolution resolution,
@@ -1251,14 +1278,14 @@ public class CalendarConflictDetector : ICalendarConflictDetector, IDisposable
     {
         // Execute the manual resolution
         // This would involve actual event modifications based on the resolution type
-        return new ManualResolutionResult(
+        return Task.FromResult(new ManualResolutionResult(
             conflictId,
             userId,
             true,
             "Manual resolution applied successfully",
             resolution.ResolvedEventData,
             DateTime.UtcNow
-        );
+        ));
     }
 
     private bool IsResolutionTypeValid(ConflictResolutionType resolutionType)
@@ -1277,16 +1304,16 @@ public class CalendarConflictDetector : ICalendarConflictDetector, IDisposable
         return (errors, warnings);
     }
 
-    private async Task<IEnumerable<PotentialConflict>> CheckForPotentialConflicts(
+    private Task<IEnumerable<PotentialConflict>> CheckForPotentialConflicts(
         Guid userId,
         ConflictResolution resolution,
         CancellationToken cancellationToken)
     {
         // Check if applying this resolution might create new conflicts
-        return new List<PotentialConflict>(); // Placeholder
+        return Task.FromResult<IEnumerable<PotentialConflict>>(new List<PotentialConflict>()); // Placeholder
     }
 
-    private async Task RecordResolutionHistory(
+    private Task RecordResolutionHistory(
         Guid userId,
         Guid conflictId,
         ConflictResolution resolution,
@@ -1307,15 +1334,16 @@ public class CalendarConflictDetector : ICalendarConflictDetector, IDisposable
         {
             _resolutionHistoryCache[userId] = new List<HistoricalResolution>();
         }
-        
+
         _resolutionHistoryCache[userId].Add(historyEntry);
+        return Task.CompletedTask;
     }
 
-    private async Task<UserConflictPreferences> GetUserPreferences(Guid userId, CancellationToken cancellationToken)
+    private Task<UserConflictPreferences> GetUserPreferences(Guid userId, CancellationToken cancellationToken)
     {
         if (_userPreferencesCache.TryGetValue(userId, out var cachedPreferences))
         {
-            return cachedPreferences;
+            return Task.FromResult(cachedPreferences);
         }
 
         // Load from database or create default preferences
@@ -1329,15 +1357,15 @@ public class CalendarConflictDetector : ICalendarConflictDetector, IDisposable
         );
 
         _userPreferencesCache[userId] = defaultPreferences;
-        return defaultPreferences;
+        return Task.FromResult(defaultPreferences);
     }
 
-    private async Task<IEnumerable<HistoricalResolution>> GetUserResolutionHistory(Guid userId, CancellationToken cancellationToken)
+    private Task<IEnumerable<HistoricalResolution>> GetUserResolutionHistory(Guid userId, CancellationToken cancellationToken)
     {
-        return _resolutionHistoryCache.GetValueOrDefault(userId, new List<HistoricalResolution>());
+        return Task.FromResult<IEnumerable<HistoricalResolution>>(_resolutionHistoryCache.GetValueOrDefault(userId, new List<HistoricalResolution>()));
     }
 
-    private async Task<IEnumerable<ResolutionSuggestion>> GenerateIntelligentSuggestions(
+    private Task<IEnumerable<ResolutionSuggestion>> GenerateIntelligentSuggestions(
         DetectedConflict conflict,
         UserConflictPreferences preferences,
         IEnumerable<HistoricalResolution> history,
@@ -1359,10 +1387,10 @@ public class CalendarConflictDetector : ICalendarConflictDetector, IDisposable
             ));
         }
 
-        return suggestions;
+        return Task.FromResult<IEnumerable<ResolutionSuggestion>>(suggestions);
     }
 
-    private async Task<IEnumerable<PredictedConflict>> PredictChangePotentialConflicts(
+    private Task<IEnumerable<PredictedConflict>> PredictChangePotentialConflicts(
         PlannedSyncChange plannedChange,
         CalendarSyncState currentState,
         CancellationToken cancellationToken)
@@ -1372,7 +1400,7 @@ public class CalendarConflictDetector : ICalendarConflictDetector, IDisposable
         // Analyze the planned change and predict potential conflicts
         // This would involve complex prediction algorithms
 
-        return predictions;
+        return Task.FromResult<IEnumerable<PredictedConflict>>(predictions);
     }
 
     private ConflictStatistics CalculateConflictStatistics(List<HistoricalResolution> relevantHistory, TimeRange timeRange)
@@ -1425,7 +1453,7 @@ public class CalendarConflictDetector : ICalendarConflictDetector, IDisposable
         );
     }
 
-    private async Task<InternalCalendarEvent> ExecuteEventMerge(
+    private Task<InternalCalendarEvent> ExecuteEventMerge(
         IEnumerable<ConflictingEventData> conflictingEvents,
         EventMergeStrategy mergeStrategy,
         CancellationToken cancellationToken)
@@ -1452,13 +1480,13 @@ public class CalendarConflictDetector : ICalendarConflictDetector, IDisposable
             CalendarProvider.None
         );
 
-        return mergedEvent;
+        return Task.FromResult(mergedEvent);
     }
 
     private string MergeField(IEnumerable<ConflictingEventData> events, Func<ConflictingEventData, string?> fieldSelector, EventMergeStrategy strategy)
     {
         var values = events.Select(fieldSelector).Where(v => !string.IsNullOrEmpty(v)).Distinct().ToList();
-        
+
         return strategy.StrategyType switch
         {
             EventMergeStrategyType.PreferFirst => values.FirstOrDefault() ?? "",
@@ -1470,12 +1498,15 @@ public class CalendarConflictDetector : ICalendarConflictDetector, IDisposable
 
     public void Dispose()
     {
-        if (_disposed) return;
-        
+        if (_disposed)
+        {
+            return;
+        }
+
         _cacheSemaphore?.Dispose();
         _userPreferencesCache.Clear();
         _resolutionHistoryCache.Clear();
-        
+
         _disposed = true;
     }
 }

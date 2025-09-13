@@ -14,8 +14,8 @@ public interface IMotivationalContentService
     /// <param name="contentContext">Optional context for content selection</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Personalized content or null if no suitable content available</returns>
-    Task<PersonalizedContentResult?> GetPersonalizedContentAsync(Guid userId, 
-        ContentSelectionContext? contentContext = null, 
+    Task<PersonalizedContentResult?> GetPersonalizedContentAsync(Guid userId,
+        ContentSelectionContext? contentContext = null,
         CancellationToken cancellationToken = default);
 
     /// <summary>
@@ -26,9 +26,9 @@ public interface IMotivationalContentService
     /// <param name="contentContext">Optional context for content selection</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>List of personalized content items</returns>
-    Task<IEnumerable<PersonalizedContentResult>> GetPersonalizedContentBatchAsync(Guid userId, 
-        int maxItems, 
-        ContentSelectionContext? contentContext = null, 
+    Task<IEnumerable<PersonalizedContentResult>> GetPersonalizedContentBatchAsync(Guid userId,
+        int maxItems,
+        ContentSelectionContext? contentContext = null,
         CancellationToken cancellationToken = default);
 
     /// <summary>
@@ -42,8 +42,8 @@ public interface IMotivationalContentService
     /// <param name="viewDuration">Optional view duration</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>True if engagement was logged successfully</returns>
-    Task<bool> LogContentEngagementAsync(Guid userId, 
-        Guid contentId, 
+    Task<bool> LogContentEngagementAsync(Guid userId,
+        Guid contentId,
         ContentEngagementType engagementType,
         Guid? deliveryLogId = null,
         Dictionary<string, object>? engagementMetadata = null,
@@ -61,8 +61,8 @@ public interface IMotivationalContentService
     /// <param name="abTestGroup">A/B test group if applicable</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Delivery log ID for tracking engagement</returns>
-    Task<Guid> RecordContentDeliveryAsync(Guid userId, 
-        Guid contentId, 
+    Task<Guid> RecordContentDeliveryAsync(Guid userId,
+        Guid contentId,
         ContentDeliveryChannel deliveryChannel,
         Dictionary<string, object>? deliveryContext = null,
         double? personalizationScore = null,
@@ -76,8 +76,8 @@ public interface IMotivationalContentService
     /// <param name="testName">Name of the A/B test</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Assigned test group</returns>
-    Task<string> AssignABTestGroupAsync(Guid userId, 
-        string testName, 
+    Task<string> AssignABTestGroupAsync(Guid userId,
+        string testName,
         CancellationToken cancellationToken = default);
 
     /// <summary>
@@ -88,9 +88,9 @@ public interface IMotivationalContentService
     /// <param name="endDate">End date for metrics</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>A/B test effectiveness metrics</returns>
-    Task<ABTestMetrics> GetABTestMetricsAsync(string testName, 
-        DateTime startDate, 
-        DateTime endDate, 
+    Task<ABTestMetrics> GetABTestMetricsAsync(string testName,
+        DateTime startDate,
+        DateTime endDate,
         CancellationToken cancellationToken = default);
 
     /// <summary>
@@ -101,9 +101,9 @@ public interface IMotivationalContentService
     /// <param name="endDate">End date for analytics</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Content performance metrics</returns>
-    Task<ContentPerformanceMetrics> GetContentPerformanceAsync(Guid contentId, 
-        DateTime startDate, 
-        DateTime endDate, 
+    Task<ContentPerformanceMetrics> GetContentPerformanceAsync(Guid contentId,
+        DateTime startDate,
+        DateTime endDate,
         CancellationToken cancellationToken = default);
 
     /// <summary>
@@ -112,7 +112,7 @@ public interface IMotivationalContentService
     /// <param name="userId">User identifier</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>True if preferences were updated</returns>
-    Task<bool> UpdateUserPreferencesFromEngagementAsync(Guid userId, 
+    Task<bool> UpdateUserPreferencesFromEngagementAsync(Guid userId,
         CancellationToken cancellationToken = default);
 
     /// <summary>
@@ -122,8 +122,8 @@ public interface IMotivationalContentService
     /// <param name="timeWindow">Time window to check (daily/weekly)</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>True if user has reached limits</returns>
-    Task<bool> HasReachedContentLimitsAsync(Guid userId, 
-        ContentLimitTimeWindow timeWindow, 
+    Task<bool> HasReachedContentLimitsAsync(Guid userId,
+        ContentLimitTimeWindow timeWindow,
         CancellationToken cancellationToken = default);
 
     /// <summary>
@@ -133,8 +133,8 @@ public interface IMotivationalContentService
     /// <param name="contentId">Content identifier</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Recommendation score (0-1)</returns>
-    Task<double> GetContentRecommendationScoreAsync(Guid userId, 
-        Guid contentId, 
+    Task<double> GetContentRecommendationScoreAsync(Guid userId,
+        Guid contentId,
         CancellationToken cancellationToken = default);
 
     /// <summary>

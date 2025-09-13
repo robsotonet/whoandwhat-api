@@ -198,7 +198,7 @@ public class MotivationalContentBuilder
     {
         _targetConditions ??= new Dictionary<string, object>();
         _targetConditions["experienceLevel"] = level;
-        
+
         // Adjust content based on experience level
         switch (level)
         {
@@ -277,7 +277,7 @@ public class MotivationalContentBuilder
     public List<MotivationalContent> BuildMany(int count)
     {
         var contents = new List<MotivationalContent>();
-        
+
         for (int i = 0; i < count; i++)
         {
             var builder = New()

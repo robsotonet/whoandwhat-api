@@ -84,7 +84,9 @@ public class ScheduledItem : BaseEntity
     public List<string> GetTags()
     {
         if (string.IsNullOrEmpty(Tags))
+        {
             return new List<string>();
+        }
 
         return Tags
             .Split(',', StringSplitOptions.RemoveEmptyEntries)
@@ -107,7 +109,9 @@ public class ScheduledItem : BaseEntity
     public void MarkAsCompleted()
     {
         if (IsCompleted)
+        {
             return;
+        }
 
         IsCompleted = true;
         CompletedAt = DateTime.UtcNow;
@@ -120,7 +124,9 @@ public class ScheduledItem : BaseEntity
     public void Reopen()
     {
         if (!IsCompleted)
+        {
             return;
+        }
 
         IsCompleted = false;
         CompletedAt = null;
@@ -133,7 +139,9 @@ public class ScheduledItem : BaseEntity
     public void Reschedule(DateTime newStartTime, DateTime newEndTime, string reason = "")
     {
         if (newStartTime >= newEndTime)
+        {
             throw new ArgumentException("Start time must be before end time");
+        }
 
         var oldStartTime = StartTime;
         var oldEndTime = EndTime;
@@ -155,7 +163,9 @@ public class ScheduledItem : BaseEntity
     public void ExtendDuration(TimeSpan extension, string reason = "")
     {
         if (extension <= TimeSpan.Zero)
+        {
             throw new ArgumentException("Extension must be positive");
+        }
 
         EndTime = EndTime.Add(extension);
         EstimatedDuration = EstimatedDuration.Add(extension);
@@ -186,7 +196,9 @@ public class ScheduledItem : BaseEntity
     public bool ConflictsWith(ScheduledItem other)
     {
         if (other == null || Id == other.Id)
+        {
             return false;
+        }
 
         return StartTime < other.EndTime && other.StartTime < EndTime;
     }
@@ -198,10 +210,14 @@ public class ScheduledItem : BaseEntity
     {
         // More buffer time for important, inflexible items
         if (!IsFlexible && Priority >= (int)Domain.ValueObjects.Priority.High)
+        {
             return TimeSpan.FromMinutes(20);
+        }
 
         if (ItemType == (int)ScheduledItemType.Meeting)
+        {
             return TimeSpan.FromMinutes(15);
+        }
 
         return TimeSpan.FromMinutes(10);
     }
@@ -236,7 +252,9 @@ public class ScheduledItem : BaseEntity
     private List<dynamic> GetSchedulingReasons()
     {
         if (string.IsNullOrEmpty(SchedulingReasons))
+        {
             return new List<dynamic>();
+        }
 
         try
         {

@@ -11,22 +11,22 @@ public interface IContentABTestingService
     /// Creates a new A/B test configuration for content testing
     /// </summary>
     Task<ABTestConfiguration> CreateABTestAsync(string testName, string description, List<Guid> contentIds, Dictionary<string, double>? groupWeights = null, TimeSpan? testDuration = null, CancellationToken cancellationToken = default);
-    
+
     /// <summary>
     /// Analyzes current A/B test results with statistical significance
     /// </summary>
     Task<ABTestResults> AnalyzeABTestAsync(string testName, bool includeStatisticalAnalysis = true, CancellationToken cancellationToken = default);
-    
+
     /// <summary>
     /// Promotes the winning variant and disables losing variants
     /// </summary>
     Task<bool> PromoteWinnerAsync(string testName, string? winnerGroup = null, CancellationToken cancellationToken = default);
-    
+
     /// <summary>
     /// Gets all currently active A/B tests
     /// </summary>
     Task<List<ABTestSummary>> GetActiveABTestsAsync(CancellationToken cancellationToken = default);
-    
+
     /// <summary>
     /// Stops an active A/B test
     /// </summary>

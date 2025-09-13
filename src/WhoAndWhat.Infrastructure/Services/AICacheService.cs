@@ -387,7 +387,7 @@ public class AICacheService : IAICacheService, IDisposable
 
             if (success)
             {
-                _logger.LogInformation("Successfully invalidated AI cache types {CacheTypes} for user {UserId}", 
+                _logger.LogInformation("Successfully invalidated AI cache types {CacheTypes} for user {UserId}",
                     string.Join(",", cacheTypes), userId);
             }
 
@@ -400,7 +400,7 @@ public class AICacheService : IAICacheService, IDisposable
         }
     }
 
-    public async Task<AICacheMetrics> GetAICacheMetricsAsync(CancellationToken cancellationToken = default)
+    public Task<AICacheMetrics> GetAICacheMetricsAsync(CancellationToken cancellationToken = default)
     {
         try
         {
@@ -418,20 +418,20 @@ public class AICacheService : IAICacheService, IDisposable
             {
                 var typeRequests = kvp.Value.HitCount + kvp.Value.MissCount;
                 var typeHitRate = typeRequests > 0 ? (double)kvp.Value.HitCount / typeRequests : 0.0;
-                
+
                 entriesByType[kvp.Key] = kvp.Value.HitCount; // Approximate entries count
                 hitRatesByType[kvp.Key] = typeHitRate;
             }
 
-            var lastResetTime = _metricsTracker.Values.Any() 
-                ? _metricsTracker.Values.Min(m => m.LastResetTime) 
+            var lastResetTime = _metricsTracker.Values.Any()
+                ? _metricsTracker.Values.Min(m => m.LastResetTime)
                 : DateTime.UtcNow;
 
             var averageResponseTime = _metricsTracker.Values.Any()
                 ? TimeSpan.FromMilliseconds(_metricsTracker.Values.Average(m => m.AverageResponseTimeMs))
                 : TimeSpan.Zero;
 
-            return new AICacheMetrics(
+            return Task.FromResult(new AICacheMetrics(
                 TotalEntries: totalEntries,
                 TotalSizeBytes: totalSizeBytes,
                 HitCount: totalHits,
@@ -441,13 +441,13 @@ public class AICacheService : IAICacheService, IDisposable
                 HitRatesByType: hitRatesByType,
                 LastResetTime: lastResetTime,
                 AverageResponseTime: averageResponseTime
-            );
+            ));
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to get AI cache metrics");
-            return new AICacheMetrics(0, 0, 0, 0, 0.0, new Dictionary<AICacheType, int>(), 
-                new Dictionary<AICacheType, double>(), DateTime.UtcNow, TimeSpan.Zero);
+            return Task.FromResult(new AICacheMetrics(0, 0, 0, 0, 0.0, new Dictionary<AICacheType, int>(),
+                new Dictionary<AICacheType, double>(), DateTime.UtcNow, TimeSpan.Zero));
         }
     }
 
@@ -477,7 +477,7 @@ public class AICacheService : IAICacheService, IDisposable
 
                     if (!keys.IsNull)
                     {
-                        var redisKeys = keys is RedisResult[] keyArray 
+                        var redisKeys = keys is RedisResult[] keyArray
                             ? keyArray.Where(k => !k.IsNull).Select(k => (RedisKey)k).ToArray()
                             : Array.Empty<RedisKey>();
 
@@ -510,7 +510,7 @@ public class AICacheService : IAICacheService, IDisposable
         }
     }
 
-    public async Task<int> WarmUserAICacheAsync(Guid userId, CancellationToken cancellationToken = default)
+    public Task<int> WarmUserAICacheAsync(Guid userId, CancellationToken cancellationToken = default)
     {
         try
         {
@@ -521,12 +521,12 @@ public class AICacheService : IAICacheService, IDisposable
             // This is a placeholder implementation
 
             _logger.LogInformation("AI cache warming completed for user {UserId}, warmed {Count} entries", userId, warmedCount);
-            return warmedCount;
+            return Task.FromResult(warmedCount);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to warm AI cache for user {UserId}", userId);
-            return 0;
+            return Task.FromResult(0);
         }
     }
 
@@ -553,7 +553,7 @@ public class AICacheService : IAICacheService, IDisposable
 
                 if (!keys.IsNull)
                 {
-                    var redisKeys = keys is RedisResult[] keyArray 
+                    var redisKeys = keys is RedisResult[] keyArray
                         ? keyArray.Where(k => !k.IsNull).Select(k => (RedisKey)k).ToArray()
                         : Array.Empty<RedisKey>();
 

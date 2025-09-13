@@ -10,7 +10,7 @@ namespace WhoAndWhat.Application.Features.Dashboard.Queries.GetDashboardMetrics;
 /// <summary>
 /// Handler for retrieving comprehensive dashboard metrics
 /// </summary>
-public sealed class GetDashboardMetricsQueryHandler 
+public sealed class GetDashboardMetricsQueryHandler
     : IRequestHandler<GetDashboardMetricsQuery, Result<GetDashboardMetricsResponse>>
 {
     private readonly IAppTaskRepository _taskRepository;
@@ -25,7 +25,7 @@ public sealed class GetDashboardMetricsQueryHandler
     }
 
     public async Task<Result<GetDashboardMetricsResponse>> Handle(
-        GetDashboardMetricsQuery request, 
+        GetDashboardMetricsQuery request,
         CancellationToken cancellationToken)
     {
         try
@@ -48,10 +48,10 @@ public sealed class GetDashboardMetricsQueryHandler
             var completedToday = completedTasks.Count(t => t.UpdatedAt.Date == today);
             var completedThisWeek = completedTasks.Count(t => t.UpdatedAt >= startOfWeek);
             var completedThisMonth = completedTasks.Count(t => t.UpdatedAt >= startOfMonth);
-            
+
             var totalActive = activeTasks.Count;
             var overdueTasks = activeTasks.Count(t => t.DueDate.HasValue && t.DueDate.Value.Date < today);
-            
+
             // On-time completion metrics
             var tasksWithDueDates = completedTasks.Where(t => t.DueDate.HasValue).ToList();
             var onTimeTasks = tasksWithDueDates.Count(t => t.DueDate.HasValue && t.UpdatedAt <= t.DueDate.Value);
@@ -132,7 +132,7 @@ public sealed class GetDashboardMetricsQueryHandler
         {
             var date = today.AddDays(-i);
             var dayCompleted = completedTasks.Count(t => t.UpdatedAt.Date == date);
-            
+
             // For creation count, we'd need to track CreatedAt - using a placeholder
             var dayCreated = dayCompleted + new Random().Next(0, 3); // Placeholder logic
             var dayRate = dayCreated > 0 ? (double)dayCompleted / dayCreated : 0.0;
@@ -151,10 +151,10 @@ public sealed class GetDashboardMetricsQueryHandler
         {
             var weekStart = today.AddDays(-7 * (i + 1) + -(int)today.DayOfWeek);
             var weekEnd = weekStart.AddDays(7);
-            
-            var weekCompleted = completedTasks.Count(t => 
+
+            var weekCompleted = completedTasks.Count(t =>
                 t.UpdatedAt >= weekStart && t.UpdatedAt < weekEnd);
-            
+
             // Placeholder for created tasks
             var weekCreated = weekCompleted + new Random().Next(0, 10);
             var weekRate = weekCreated > 0 ? (double)weekCompleted / weekCreated : 0.0;

@@ -38,14 +38,14 @@ public class CalendarSyncService : ICalendarSyncService, IDisposable
 
         _providerCache = new ConcurrentDictionary<CalendarProvider, ICalendarProviderService>();
         _userSyncSemaphores = new ConcurrentDictionary<Guid, SemaphoreSlim>();
-        
+
         InitializeProviderCache();
     }
 
     public async Task<CalendarSyncResult> SyncCalendarAsync(
-        Guid userId, 
-        CalendarProvider provider, 
-        SyncMode syncMode, 
+        Guid userId,
+        CalendarProvider provider,
+        SyncMode syncMode,
         CancellationToken cancellationToken = default)
     {
         if (!_settings.Enabled)
@@ -59,7 +59,7 @@ public class CalendarSyncService : ICalendarSyncService, IDisposable
         try
         {
             await semaphore.WaitAsync(cancellationToken);
-            _logger.LogInformation("Starting full calendar sync for user {UserId} with provider {Provider} in {SyncMode} mode", 
+            _logger.LogInformation("Starting full calendar sync for user {UserId} with provider {Provider} in {SyncMode} mode",
                 userId, provider, syncMode);
 
             var providerService = GetProviderService(provider);
@@ -97,7 +97,7 @@ public class CalendarSyncService : ICalendarSyncService, IDisposable
                             refreshResult.ExpiresAt,
                             refreshResult.Scopes ?? []
                         );
-                        await _cacheService.CacheAccessTokenAsync(userId, provider, tokenData, 
+                        await _cacheService.CacheAccessTokenAsync(userId, provider, tokenData,
                             _settings.Providers[provider].TokenCacheExpirationMinutes, cancellationToken);
                     }
                     else
@@ -113,16 +113,16 @@ public class CalendarSyncService : ICalendarSyncService, IDisposable
 
             // Get external calendars
             var calendars = await providerService.GetCalendarsAsync(userId, tokenData.AccessToken, cancellationToken);
-            
+
             // Cache calendar metadata
-            await _cacheService.CacheCalendarMetadataAsync(userId, provider, calendars, 
+            await _cacheService.CacheCalendarMetadataAsync(userId, provider, calendars,
                 _settings.Providers[provider].CacheSettings.DefaultExpirationMinutes, cancellationToken);
 
-            var syncResult = await PerformFullSynchronization(userId, provider, syncMode, providerService, 
+            var syncResult = await PerformFullSynchronization(userId, provider, syncMode, providerService,
                 tokenData, calendars, syncStartTime, cancellationToken);
 
             _logger.LogInformation("Completed full calendar sync for user {UserId} with provider {Provider}. " +
-                                  "Events synced: {EventsSynced}, Conflicts: {ConflictsDetected}", 
+                                  "Events synced: {EventsSynced}, Conflicts: {ConflictsDetected}",
                                   userId, provider, syncResult.EventsSynced, syncResult.ConflictsDetected);
 
             return syncResult;
@@ -144,9 +144,9 @@ public class CalendarSyncService : ICalendarSyncService, IDisposable
     }
 
     public async Task<IncrementalSyncResult> SyncCalendarIncrementalAsync(
-        Guid userId, 
-        CalendarProvider provider, 
-        string lastSyncToken, 
+        Guid userId,
+        CalendarProvider provider,
+        string lastSyncToken,
         CancellationToken cancellationToken = default)
     {
         if (!_settings.Enabled)
@@ -166,10 +166,10 @@ public class CalendarSyncService : ICalendarSyncService, IDisposable
         }
 
         var syncStartTime = DateTime.UtcNow;
-        
+
         try
         {
-            _logger.LogInformation("Starting incremental calendar sync for user {UserId} with provider {Provider}", 
+            _logger.LogInformation("Starting incremental calendar sync for user {UserId} with provider {Provider}",
                 userId, provider);
 
             var providerService = GetProviderService(provider);
@@ -207,11 +207,11 @@ public class CalendarSyncService : ICalendarSyncService, IDisposable
                 );
             }
 
-            var syncResult = await PerformIncrementalSynchronization(userId, provider, lastSyncToken, 
+            var syncResult = await PerformIncrementalSynchronization(userId, provider, lastSyncToken,
                 providerService, tokenData, syncStartTime, cancellationToken);
 
             _logger.LogInformation("Completed incremental calendar sync for user {UserId} with provider {Provider}. " +
-                                  "Changes processed: {TotalChanges}", 
+                                  "Changes processed: {TotalChanges}",
                                   userId, provider, syncResult.TotalChanges);
 
             return syncResult;
@@ -251,10 +251,10 @@ public class CalendarSyncService : ICalendarSyncService, IDisposable
     }
 
     public async Task<IEnumerable<EventSyncResult>> SyncEventsAsync(
-        Guid userId, 
-        IEnumerable<Guid> eventIds, 
-        CalendarProvider provider, 
-        SyncDirection syncDirection, 
+        Guid userId,
+        IEnumerable<Guid> eventIds,
+        CalendarProvider provider,
+        SyncDirection syncDirection,
         CancellationToken cancellationToken = default)
     {
         if (!_settings.Enabled)
@@ -272,7 +272,7 @@ public class CalendarSyncService : ICalendarSyncService, IDisposable
 
         try
         {
-            _logger.LogInformation("Starting event sync for user {UserId} with {EventCount} events in {Direction} direction", 
+            _logger.LogInformation("Starting event sync for user {UserId} with {EventCount} events in {Direction} direction",
                 userId, eventIds.Count(), syncDirection);
 
             var providerService = GetProviderService(provider);
@@ -305,12 +305,12 @@ public class CalendarSyncService : ICalendarSyncService, IDisposable
             }
 
             var results = new List<EventSyncResult>();
-            
+
             foreach (var eventId in eventIds)
             {
                 try
                 {
-                    var result = await SyncSingleEvent(userId, eventId, provider, syncDirection, 
+                    var result = await SyncSingleEvent(userId, eventId, provider, syncDirection,
                         providerService, tokenData, cancellationToken);
                     results.Add(result);
                 }
@@ -347,10 +347,10 @@ public class CalendarSyncService : ICalendarSyncService, IDisposable
     }
 
     public async Task<IEnumerable<TaskToEventSyncResult>> SyncTasksAsEventsAsync(
-        Guid userId, 
-        IEnumerable<Guid> taskIds, 
-        CalendarProvider provider, 
-        TaskToEventConversionOptions conversionOptions, 
+        Guid userId,
+        IEnumerable<Guid> taskIds,
+        CalendarProvider provider,
+        TaskToEventConversionOptions conversionOptions,
         CancellationToken cancellationToken = default)
     {
         if (!_settings.Enabled)
@@ -368,7 +368,7 @@ public class CalendarSyncService : ICalendarSyncService, IDisposable
 
         try
         {
-            _logger.LogInformation("Starting task-to-event sync for user {UserId} with {TaskCount} tasks", 
+            _logger.LogInformation("Starting task-to-event sync for user {UserId} with {TaskCount} tasks",
                 userId, taskIds.Count());
 
             var providerService = GetProviderService(provider);
@@ -401,12 +401,12 @@ public class CalendarSyncService : ICalendarSyncService, IDisposable
             }
 
             var results = new List<TaskToEventSyncResult>();
-            
+
             foreach (var taskId in taskIds)
             {
                 try
                 {
-                    var result = await ConvertAndSyncTaskAsEvent(userId, taskId, provider, conversionOptions, 
+                    var result = await ConvertAndSyncTaskAsEvent(userId, taskId, provider, conversionOptions,
                         providerService, tokenData, cancellationToken);
                     results.Add(result);
                 }
@@ -443,8 +443,8 @@ public class CalendarSyncService : ICalendarSyncService, IDisposable
     }
 
     public async Task<CalendarSyncStatus> GetSyncStatusAsync(
-        Guid userId, 
-        CalendarProvider provider, 
+        Guid userId,
+        CalendarProvider provider,
         CancellationToken cancellationToken = default)
     {
         try
@@ -459,7 +459,7 @@ public class CalendarSyncService : ICalendarSyncService, IDisposable
             // Build sync status from current state
             var providerService = GetProviderService(provider);
             var isProviderAvailable = providerService != null && await providerService.IsAvailableAsync(cancellationToken);
-            
+
             var tokenData = await _cacheService.GetCachedAccessTokenAsync(userId, provider, cancellationToken);
             var hasValidToken = tokenData != null && tokenData.ExpiresAt > DateTime.UtcNow;
 
@@ -477,8 +477,8 @@ public class CalendarSyncService : ICalendarSyncService, IDisposable
             );
 
             // Cache the status for future requests
-            await _cacheService.CacheSyncStatusAsync(userId, provider, status, 
-                _settings.Providers.GetValueOrDefault(provider)?.CacheSettings.DefaultExpirationMinutes ?? 15, 
+            await _cacheService.CacheSyncStatusAsync(userId, provider, status,
+                _settings.Providers.GetValueOrDefault(provider)?.CacheSettings.DefaultExpirationMinutes ?? 15,
                 cancellationToken);
 
             return status;
@@ -502,23 +502,29 @@ public class CalendarSyncService : ICalendarSyncService, IDisposable
     }
 
     public async Task<IEnumerable<AvailableCalendarProvider>> GetAvailableProvidersAsync(
-        Guid userId, 
+        Guid userId,
         CancellationToken cancellationToken = default)
     {
         var providers = new List<AvailableCalendarProvider>();
 
         foreach (var provider in Enum.GetValues<CalendarProvider>())
         {
-            if (provider == CalendarProvider.None) continue;
+            if (provider == CalendarProvider.None)
+            {
+                continue;
+            }
 
             var providerService = GetProviderService(provider);
-            if (providerService == null) continue;
+            if (providerService == null)
+            {
+                continue;
+            }
 
             try
             {
                 var isAvailable = await providerService.IsAvailableAsync(cancellationToken);
                 var capabilities = providerService.GetCapabilities();
-                
+
                 var tokenData = await _cacheService.GetCachedAccessTokenAsync(userId, provider, cancellationToken);
                 var isConfigured = tokenData != null && tokenData.ExpiresAt > DateTime.UtcNow;
 
@@ -549,13 +555,13 @@ public class CalendarSyncService : ICalendarSyncService, IDisposable
     }
 
     public async Task<CalendarProviderConfigResult> ConfigureProviderAsync(
-        Guid userId, 
-        CalendarProviderConfiguration providerConfig, 
+        Guid userId,
+        CalendarProviderConfiguration providerConfig,
         CancellationToken cancellationToken = default)
     {
         try
         {
-            _logger.LogInformation("Configuring provider {Provider} for user {UserId}", 
+            _logger.LogInformation("Configuring provider {Provider} for user {UserId}",
                 providerConfig.Provider, userId);
 
             var providerService = GetProviderService(providerConfig.Provider);
@@ -573,9 +579,9 @@ public class CalendarSyncService : ICalendarSyncService, IDisposable
 
             // Authenticate with provider
             var authResult = await providerService.AuthenticateAsync(
-                userId, 
-                providerConfig.AuthorizationCode, 
-                providerConfig.RedirectUri, 
+                userId,
+                providerConfig.AuthorizationCode,
+                providerConfig.RedirectUri,
                 cancellationToken);
 
             if (!authResult.Success)
@@ -598,7 +604,7 @@ public class CalendarSyncService : ICalendarSyncService, IDisposable
                 authResult.Scopes
             );
 
-            await _cacheService.CacheAccessTokenAsync(userId, providerConfig.Provider, tokenData, 
+            await _cacheService.CacheAccessTokenAsync(userId, providerConfig.Provider, tokenData,
                 _settings.Providers[providerConfig.Provider].TokenCacheExpirationMinutes, cancellationToken);
 
             return new CalendarProviderConfigResult(
@@ -612,7 +618,7 @@ public class CalendarSyncService : ICalendarSyncService, IDisposable
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to configure provider {Provider} for user {UserId}", 
+            _logger.LogError(ex, "Failed to configure provider {Provider} for user {UserId}",
                 providerConfig.Provider, userId);
             return new CalendarProviderConfigResult(
                 userId,
@@ -626,18 +632,18 @@ public class CalendarSyncService : ICalendarSyncService, IDisposable
     }
 
     public async Task<CalendarDisconnectResult> DisconnectProviderAsync(
-        Guid userId, 
-        CalendarProvider provider, 
-        bool deleteData, 
+        Guid userId,
+        CalendarProvider provider,
+        bool deleteData,
         CancellationToken cancellationToken = default)
     {
         try
         {
-            _logger.LogInformation("Disconnecting provider {Provider} for user {UserId}, deleteData: {DeleteData}", 
+            _logger.LogInformation("Disconnecting provider {Provider} for user {UserId}, deleteData: {DeleteData}",
                 provider, userId, deleteData);
 
             // Invalidate all cached data for this user and provider
-            await _cacheService.InvalidateCalendarCacheByTypeAsync(userId, provider, 
+            await _cacheService.InvalidateCalendarCacheByTypeAsync(userId, provider,
                 [CalendarCacheType.All], cancellationToken);
 
             // If deleteData is true, we would also delete synced events from the database
@@ -667,8 +673,8 @@ public class CalendarSyncService : ICalendarSyncService, IDisposable
     }
 
     public async Task<IEnumerable<CalendarSyncConflict>> GetPendingConflictsAsync(
-        Guid userId, 
-        CalendarProvider? provider = null, 
+        Guid userId,
+        CalendarProvider? provider = null,
         CancellationToken cancellationToken = default)
     {
         try
@@ -683,7 +689,7 @@ public class CalendarSyncService : ICalendarSyncService, IDisposable
             );
 
             var conflicts = await _conflictDetector.GetPendingConflictsAsync(userId, filterOptions, cancellationToken);
-            
+
             return conflicts.Select(conflict => new CalendarSyncConflict(
                 conflict.ConflictId,
                 userId,
@@ -704,9 +710,9 @@ public class CalendarSyncService : ICalendarSyncService, IDisposable
     }
 
     public async Task<ConflictResolutionResult> ResolveConflictAsync(
-        Guid userId, 
-        Guid conflictId, 
-        ConflictResolution resolution, 
+        Guid userId,
+        Guid conflictId,
+        ConflictResolution resolution,
         CancellationToken cancellationToken = default)
     {
         try
@@ -716,7 +722,7 @@ public class CalendarSyncService : ICalendarSyncService, IDisposable
             // Validate the resolution
             var validationResult = await _conflictDetector.ValidateResolutionAsync(
                 userId, conflictId, resolution, cancellationToken);
-            
+
             if (!validationResult.IsValid)
             {
                 return new ConflictResolutionResult(
@@ -736,7 +742,7 @@ public class CalendarSyncService : ICalendarSyncService, IDisposable
             if (resolutionResult.Success)
             {
                 // Cache the resolution for future reference
-                await _cacheService.CacheConflictResolutionAsync(userId, conflictId, resolution, 
+                await _cacheService.CacheConflictResolutionAsync(userId, conflictId, resolution,
                     _settings.ConflictResolution.ResolutionCacheExpirationMinutes, cancellationToken);
             }
 
@@ -835,9 +841,9 @@ public class CalendarSyncService : ICalendarSyncService, IDisposable
         );
     }
 
-    public async Task<CalendarBackupResult> BackupCalendarDataAsync(
-        Guid userId, 
-        CalendarBackupOptions backupOptions, 
+    public Task<CalendarBackupResult> BackupCalendarDataAsync(
+        Guid userId,
+        CalendarBackupOptions backupOptions,
         CancellationToken cancellationToken = default)
     {
         try
@@ -846,10 +852,10 @@ public class CalendarSyncService : ICalendarSyncService, IDisposable
 
             // Implementation would backup calendar data based on options
             // This is a placeholder for the actual backup implementation
-            
+
             var backupId = Guid.NewGuid().ToString();
-            
-            return new CalendarBackupResult(
+
+            return Task.FromResult(new CalendarBackupResult(
                 backupId,
                 userId,
                 true,
@@ -857,12 +863,12 @@ public class CalendarSyncService : ICalendarSyncService, IDisposable
                 0, // Size would be calculated during actual backup
                 "Calendar data backed up successfully",
                 DateTime.UtcNow
-            );
+            ));
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to backup calendar data for user {UserId}", userId);
-            return new CalendarBackupResult(
+            return Task.FromResult(new CalendarBackupResult(
                 string.Empty,
                 userId,
                 false,
@@ -870,14 +876,14 @@ public class CalendarSyncService : ICalendarSyncService, IDisposable
                 0,
                 ex.Message,
                 DateTime.UtcNow
-            );
+            ));
         }
     }
 
-    public async Task<CalendarRestoreResult> RestoreCalendarDataAsync(
-        Guid userId, 
-        string backupId, 
-        CalendarRestoreOptions restoreOptions, 
+    public Task<CalendarRestoreResult> RestoreCalendarDataAsync(
+        Guid userId,
+        string backupId,
+        CalendarRestoreOptions restoreOptions,
         CancellationToken cancellationToken = default)
     {
         try
@@ -886,8 +892,8 @@ public class CalendarSyncService : ICalendarSyncService, IDisposable
 
             // Implementation would restore calendar data from backup
             // This is a placeholder for the actual restore implementation
-            
-            return new CalendarRestoreResult(
+
+            return Task.FromResult(new CalendarRestoreResult(
                 backupId,
                 userId,
                 true,
@@ -895,12 +901,12 @@ public class CalendarSyncService : ICalendarSyncService, IDisposable
                 0, // Items would be counted during actual restore
                 "Calendar data restored successfully",
                 DateTime.UtcNow
-            );
+            ));
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to restore calendar data for user {UserId} from backup {BackupId}", userId, backupId);
-            return new CalendarRestoreResult(
+            return Task.FromResult(new CalendarRestoreResult(
                 backupId,
                 userId,
                 false,
@@ -908,7 +914,7 @@ public class CalendarSyncService : ICalendarSyncService, IDisposable
                 0,
                 ex.Message,
                 DateTime.UtcNow
-            );
+            ));
         }
     }
 
@@ -945,7 +951,7 @@ public class CalendarSyncService : ICalendarSyncService, IDisposable
         );
     }
 
-    private async Task<CalendarSyncResult> PerformFullSynchronization(
+    private Task<CalendarSyncResult> PerformFullSynchronization(
         Guid userId,
         CalendarProvider provider,
         SyncMode syncMode,
@@ -958,11 +964,11 @@ public class CalendarSyncService : ICalendarSyncService, IDisposable
         // This is a simplified implementation
         // Full implementation would involve getting events from each calendar,
         // detecting conflicts, resolving them, and syncing changes
-        
+
         var syncEndTime = DateTime.UtcNow;
         var duration = syncEndTime - syncStartTime;
 
-        return new CalendarSyncResult(
+        return Task.FromResult(new CalendarSyncResult(
             userId,
             provider,
             true,
@@ -980,10 +986,10 @@ public class CalendarSyncService : ICalendarSyncService, IDisposable
             syncEndTime,
             syncMode == SyncMode.BiDirectional ? SyncDirection.BiDirectional : SyncDirection.ToExternal,
             new SyncStatistics(0, 0, 0, 0, 0, 0)
-        );
+        ));
     }
 
-    private async Task<IncrementalSyncResult> PerformIncrementalSynchronization(
+    private Task<IncrementalSyncResult> PerformIncrementalSynchronization(
         Guid userId,
         CalendarProvider provider,
         string lastSyncToken,
@@ -994,11 +1000,11 @@ public class CalendarSyncService : ICalendarSyncService, IDisposable
     {
         // This is a simplified implementation
         // Full implementation would use the sync token to get only changes
-        
+
         var syncEndTime = DateTime.UtcNow;
         var duration = syncEndTime - syncStartTime;
 
-        return new IncrementalSyncResult(
+        return Task.FromResult(new IncrementalSyncResult(
             userId,
             provider,
             true,
@@ -1009,10 +1015,10 @@ public class CalendarSyncService : ICalendarSyncService, IDisposable
             duration,
             [],
             syncStartTime
-        );
+        ));
     }
 
-    private async Task<EventSyncResult> SyncSingleEvent(
+    private Task<EventSyncResult> SyncSingleEvent(
         Guid userId,
         Guid eventId,
         CalendarProvider provider,
@@ -1022,7 +1028,7 @@ public class CalendarSyncService : ICalendarSyncService, IDisposable
         CancellationToken cancellationToken)
     {
         // This is a placeholder for single event sync implementation
-        return new EventSyncResult(
+        return Task.FromResult(new EventSyncResult(
             eventId,
             Guid.NewGuid().ToString(), // ExternalEventId
             true,
@@ -1030,10 +1036,10 @@ public class CalendarSyncService : ICalendarSyncService, IDisposable
             null,
             null,
             DateTime.UtcNow
-        );
+        ));
     }
 
-    private async Task<TaskToEventSyncResult> ConvertAndSyncTaskAsEvent(
+    private Task<TaskToEventSyncResult> ConvertAndSyncTaskAsEvent(
         Guid userId,
         Guid taskId,
         CalendarProvider provider,
@@ -1043,7 +1049,7 @@ public class CalendarSyncService : ICalendarSyncService, IDisposable
         CancellationToken cancellationToken)
     {
         // This is a placeholder for task-to-event conversion and sync implementation
-        return new TaskToEventSyncResult(
+        return Task.FromResult(new TaskToEventSyncResult(
             taskId,
             Guid.NewGuid().ToString(), // ExternalEventId
             true,
@@ -1051,12 +1057,15 @@ public class CalendarSyncService : ICalendarSyncService, IDisposable
             null,
             null,
             DateTime.UtcNow
-        );
+        ));
     }
 
     public void Dispose()
     {
-        if (_disposed) return;
+        if (_disposed)
+        {
+            return;
+        }
 
         foreach (var semaphore in _userSyncSemaphores.Values)
         {

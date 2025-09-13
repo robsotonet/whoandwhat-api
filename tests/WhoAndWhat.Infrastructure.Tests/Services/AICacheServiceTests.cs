@@ -421,7 +421,7 @@ public class AICacheServiceTests : IDisposable
     public void ComputeContentHash_Should_Generate_32_Character_Hash()
     {
         // Arrange - Use reflection to access the private ComputeContentHash method
-        var method = typeof(AICacheService).GetMethod("ComputeContentHash", 
+        var method = typeof(AICacheService).GetMethod("ComputeContentHash",
             System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
         var testContent = "This is a test content for hash generation";
 
@@ -438,7 +438,7 @@ public class AICacheServiceTests : IDisposable
     public void ComputeContentHash_Should_Generate_Different_Hashes_For_Different_Content()
     {
         // Arrange
-        var method = typeof(AICacheService).GetMethod("ComputeContentHash", 
+        var method = typeof(AICacheService).GetMethod("ComputeContentHash",
             System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
         var content1 = "Content 1";
         var content2 = "Content 2";
@@ -470,7 +470,7 @@ public class AICacheServiceTests : IDisposable
         // Act & Assert - Should not throw exception due to null cursor
         var action = async () => await _aiCacheService.ClearAllAICacheAsync();
         await action.Should().NotThrowAsync<NullReferenceException>("Null cursor should be handled safely");
-        
+
         var result = await _aiCacheService.ClearAllAICacheAsync();
         result.Should().BeTrue();
     }

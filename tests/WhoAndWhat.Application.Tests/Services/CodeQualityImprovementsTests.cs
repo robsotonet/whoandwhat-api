@@ -1,8 +1,8 @@
+using System.Security.Cryptography;
+using System.Text;
 using FluentAssertions;
 using Microsoft.Extensions.Logging;
 using Moq;
-using System.Security.Cryptography;
-using System.Text;
 using WhoAndWhat.Application.Interfaces;
 using WhoAndWhat.Application.Services;
 using WhoAndWhat.Domain.Entities;
@@ -124,7 +124,7 @@ public class CodeQualityImprovementsTests : IDisposable
         var actualHash = (int)method!.Invoke(_service, new object[] { userId, testName })!;
 
         // Assert
-        actualHash.Should().Be(expectedHash, 
+        actualHash.Should().Be(expectedHash,
             "Deterministic hash should match manual SHA256 calculation");
     }
 
@@ -152,11 +152,11 @@ public class CodeQualityImprovementsTests : IDisposable
 
         // Assert - Check basic distribution properties
         var uniqueHashes = hashes.Distinct().Count();
-        uniqueHashes.Should().BeGreaterThan(sampleSize / 2, 
+        uniqueHashes.Should().BeGreaterThan(sampleSize / 2,
             "Hash distribution should be reasonably uniform");
 
         var averageHash = hashes.Average();
-        averageHash.Should().BeInRange(40, 60, 
+        averageHash.Should().BeInRange(40, 60,
             "Average hash should be near the middle of the range for good distribution");
     }
 
@@ -168,7 +168,7 @@ public class CodeQualityImprovementsTests : IDisposable
     {
         // Arrange & Act & Assert
         _service.Should().NotBeNull();
-        
+
         // Verify that the service can be used without throwing exceptions
         var healthCheckAction = () => _service.GetType();
         healthCheckAction.Should().NotThrow();
@@ -202,7 +202,7 @@ public class CodeQualityImprovementsTests : IDisposable
         var hash2 = (int)method!.Invoke(secondService, new object[] { userId, testName })!;
 
         // Assert
-        hash1.Should().Be(hash2, 
+        hash1.Should().Be(hash2,
             "Hash should be consistent across different service instances");
     }
 
@@ -229,10 +229,10 @@ public class StatisticalImprovementsTests
 
         // Assert
         chiSquareDistribution.Should().NotBeNull();
-        
+
         // Test basic functionality
         var pValue = 1.0 - chiSquareDistribution.CumulativeDistribution(3.84);
-        pValue.Should().BeApproximately(0.05, 0.01, 
+        pValue.Should().BeApproximately(0.05, 0.01,
             "Chi-square distribution should calculate p-values correctly");
     }
 

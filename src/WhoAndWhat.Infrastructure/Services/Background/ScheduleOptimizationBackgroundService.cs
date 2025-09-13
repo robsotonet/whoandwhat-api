@@ -90,12 +90,12 @@ public class ScheduleOptimizationBackgroundService : BackgroundService
                 {
                     // Check if user has an active schedule that could be optimized
                     var hasActiveSchedule = await HasActiveScheduleAsync(userId, cancellationToken);
-                    
+
                     if (hasActiveSchedule)
                     {
                         // Perform optimization (this is a placeholder - real implementation would be more complex)
                         var optimizationResult = await PerformUserScheduleOptimizationAsync(userId, smartSchedulingService, cancellationToken);
-                        
+
                         if (optimizationResult.WasOptimized)
                         {
                             optimizedSchedules++;
@@ -132,7 +132,7 @@ public class ScheduleOptimizationBackgroundService : BackgroundService
             // 2. Haven't been optimized recently
             // 3. Have enough activity data for meaningful optimization
             var activeUsers = await userRepository.GetAllActiveUsersAsync(cancellationToken);
-            
+
             // Filter to users who might benefit from optimization
             var usersForOptimization = activeUsers
                 .Where(u => ShouldOptimizeUserSchedule(u.Id))
@@ -156,7 +156,7 @@ public class ScheduleOptimizationBackgroundService : BackgroundService
         // - User activity level
         // - Schedule complexity
         // - User preferences for automatic optimization
-        
+
         // For now, use simple time-based logic
         var random = new Random(userId.GetHashCode());
         return random.NextDouble() < 0.1; // 10% chance per cycle
@@ -168,14 +168,14 @@ public class ScheduleOptimizationBackgroundService : BackgroundService
         // - Tasks scheduled for today or upcoming days
         // - Recent scheduling activity
         // - Pending tasks that could be rescheduled
-        
+
         // For now, return true for demonstration
         return await Task.FromResult(true);
     }
 
     private async Task<OptimizationResult> PerformUserScheduleOptimizationAsync(
-        Guid userId, 
-        ISmartSchedulingService smartSchedulingService, 
+        Guid userId,
+        ISmartSchedulingService smartSchedulingService,
         CancellationToken cancellationToken)
     {
         try
@@ -190,7 +190,7 @@ public class ScheduleOptimizationBackgroundService : BackgroundService
 
             // Placeholder logic - would contain actual optimization
             var wasOptimized = await Task.FromResult(false); // No actual optimization in this demo
-            
+
             return new OptimizationResult(wasOptimized, "Background optimization completed");
         }
         catch (Exception ex)

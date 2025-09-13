@@ -37,7 +37,7 @@ public static class AIPlanningServiceCollectionExtensions
 
         // Add AI service health checks
         services.AddHealthChecks()
-            .AddCheck<AIServiceHealthCheck>("ai_service", 
+            .AddCheck<AIServiceHealthCheck>("ai_service",
                 failureStatus: Microsoft.Extensions.Diagnostics.HealthChecks.HealthStatus.Degraded,
                 tags: new[] { "ai", "external" });
 
@@ -155,7 +155,7 @@ public class AIServiceHealthCheck : IHealthCheck
         try
         {
             var isAvailable = await _aiService.IsAIServiceAvailableAsync(cancellationToken);
-            
+
             if (isAvailable)
             {
                 return HealthCheckResult.Healthy("AI planning service is available and responding");
@@ -164,7 +164,7 @@ public class AIServiceHealthCheck : IHealthCheck
             // Get detailed health status for more information
             var healthStatus = await _aiService.GetAIServiceHealthAsync(cancellationToken);
             var failedChecks = healthStatus.DetailedChecks.Where(c => !c.Passed).ToList();
-            
+
             if (failedChecks.Any())
             {
                 var errorMessage = $"AI service health checks failed: {string.Join(", ", failedChecks.Select(c => c.ErrorMessage))}";

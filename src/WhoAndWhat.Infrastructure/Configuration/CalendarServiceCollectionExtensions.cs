@@ -26,7 +26,7 @@ public static class CalendarServiceCollectionExtensions
         var calendarSettings = new CalendarSyncSettings();
         configuration.GetSection(CalendarSyncSettings.SectionName).Bind(calendarSettings);
 
-        services.Configure<CalendarSyncSettings>(options => 
+        services.Configure<CalendarSyncSettings>(options =>
             configuration.GetSection(CalendarSyncSettings.SectionName).Bind(options));
 
         // Core calendar services
@@ -139,7 +139,7 @@ public static class CalendarServiceCollectionExtensions
     /// <param name="enabledProviders">Providers to enable</param>
     /// <returns>Service collection for method chaining</returns>
     public static IServiceCollection AddCalendarSynchronization(
-        this IServiceCollection services, 
+        this IServiceCollection services,
         IConfiguration configuration,
         params CalendarProvider[] enabledProviders)
     {
@@ -219,11 +219,11 @@ public class CalendarSyncHealthCheck : IHealthCheck
         try
         {
             var isAvailable = await _calendarSyncService.IsCalendarSyncAvailableAsync(cancellationToken);
-            
+
             if (isAvailable)
             {
                 var healthStatus = await _calendarSyncService.GetSyncHealthAsync(cancellationToken);
-                
+
                 var data = new Dictionary<string, object>
                 {
                     ["IsEnabled"] = healthStatus.IsEnabled,
@@ -233,7 +233,7 @@ public class CalendarSyncHealthCheck : IHealthCheck
                     ["CheckTime"] = healthStatus.CheckTime
                 };
 
-                return healthStatus.IsHealthy 
+                return healthStatus.IsHealthy
                     ? HealthCheckResult.Healthy("Calendar sync service is healthy", data)
                     : HealthCheckResult.Degraded("Calendar sync service has issues", data);
             }
@@ -275,14 +275,14 @@ public class CalendarCacheHealthCheck : IHealthCheck
             var testToken = $"test-token-{DateTime.UtcNow:yyyyMMddHHmmss}";
 
             // Test sync token caching
-            var cacheResult = await _cacheService.CacheSyncTokenAsync(testUserId, testProvider, testCalendarId, testToken, 1, cancellationToken);
+            var cacheResult = await _cacheService.CacheSyncTokenAsync(testUserId, (Application.DTOs.Calendar.CalendarProvider)testProvider, testCalendarId, testToken, 1, cancellationToken);
             if (!cacheResult)
             {
                 return HealthCheckResult.Degraded("Failed to cache test sync token");
             }
 
             // Test sync token retrieval
-            var retrievedToken = await _cacheService.GetCachedSyncTokenAsync(testUserId, testProvider, testCalendarId, cancellationToken);
+            var retrievedToken = await _cacheService.GetCachedSyncTokenAsync(testUserId, (Application.DTOs.Calendar.CalendarProvider)testProvider, testCalendarId, cancellationToken);
             if (retrievedToken != testToken)
             {
                 return HealthCheckResult.Degraded("Failed to retrieve cached sync token");
@@ -290,7 +290,7 @@ public class CalendarCacheHealthCheck : IHealthCheck
 
             // Get cache metrics
             var metrics = await _cacheService.GetCalendarCacheMetricsAsync(cancellationToken);
-            
+
             var data = new Dictionary<string, object>
             {
                 ["TotalEntries"] = metrics.TotalEntries,
@@ -366,13 +366,13 @@ public class CalendarProvidersHealthCheck : IHealthCheck
             }
 
             var healthStatus = healthyProviders == totalProviders ? HealthCheckResult.Healthy(
-                $"All {totalProviders} calendar providers are healthy", 
+                $"All {totalProviders} calendar providers are healthy",
                 providerResults) :
                 healthyProviders > 0 ? HealthCheckResult.Degraded(
-                $"{healthyProviders}/{totalProviders} calendar providers are healthy", 
+                $"{healthyProviders}/{totalProviders} calendar providers are healthy",
                 providerResults) :
                 HealthCheckResult.Unhealthy(
-                "No calendar providers are available", 
+                "No calendar providers are available",
                 providerResults);
 
             return healthStatus;
@@ -457,7 +457,7 @@ public class CalendarSyncMonitoringService : BackgroundService
 
                 // Get and log performance metrics every 5 minutes
                 var metrics = await performanceOptimizer.GetPerformanceMetricsAsync(stoppingToken);
-                
+
                 _logger.LogInformation("Calendar sync performance - Operations: {Total}, Success Rate: {SuccessRate:P1}, Avg Response: {AvgResponse}ms",
                     metrics.TotalOperations, metrics.OverallSuccessRate, metrics.AverageResponseTime.TotalMilliseconds);
 

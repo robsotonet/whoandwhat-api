@@ -43,9 +43,9 @@ public class GoogleCalendarProviderService : ICalendarProviderService, IDisposab
         {
             using var request = new HttpRequestMessage(HttpMethod.Get, $"{GoogleCalendarApiBaseUrl}/users/me/calendarList?maxResults=1");
             request.Headers.Add("Authorization", "Bearer test_token_for_health_check");
-            
+
             var response = await _httpClient.SendAsync(request, cancellationToken);
-            
+
             // We expect 401 (unauthorized) which means the API is available but we need proper auth
             // 503 or timeout would indicate service unavailability
             return response.StatusCode != System.Net.HttpStatusCode.ServiceUnavailable;
@@ -66,9 +66,9 @@ public class GoogleCalendarProviderService : ICalendarProviderService, IDisposab
     }
 
     public async Task<CalendarAuthResult> AuthenticateAsync(
-        Guid userId, 
-        string authorizationCode, 
-        string redirectUri, 
+        Guid userId,
+        string authorizationCode,
+        string redirectUri,
         CancellationToken cancellationToken = default)
     {
         try
@@ -85,7 +85,7 @@ public class GoogleCalendarProviderService : ICalendarProviderService, IDisposab
             };
 
             var tokenResponse = await SendTokenRequest(tokenRequest, cancellationToken);
-            
+
             if (!tokenResponse.Success)
             {
                 return new CalendarAuthResult(
@@ -100,7 +100,7 @@ public class GoogleCalendarProviderService : ICalendarProviderService, IDisposab
 
             // Verify token by getting user profile
             var userInfo = await GetUserInfo(tokenResponse.AccessToken!, cancellationToken);
-            
+
             return new CalendarAuthResult(
                 true,
                 tokenResponse.AccessToken!,
@@ -127,8 +127,8 @@ public class GoogleCalendarProviderService : ICalendarProviderService, IDisposab
     }
 
     public async Task<TokenRefreshResult> RefreshTokensAsync(
-        Guid userId, 
-        string refreshToken, 
+        Guid userId,
+        string refreshToken,
         CancellationToken cancellationToken = default)
     {
         try
@@ -181,8 +181,8 @@ public class GoogleCalendarProviderService : ICalendarProviderService, IDisposab
     }
 
     public async Task<IEnumerable<ExternalCalendar>> GetCalendarsAsync(
-        Guid userId, 
-        string accessToken, 
+        Guid userId,
+        string accessToken,
         CancellationToken cancellationToken = default)
     {
         try
@@ -229,12 +229,12 @@ public class GoogleCalendarProviderService : ICalendarProviderService, IDisposab
     }
 
     public async Task<ExternalCalendarEventsResult> GetEventsAsync(
-        Guid userId, 
-        string calendarId, 
-        string accessToken, 
-        DateTime startDate, 
-        DateTime endDate, 
-        string? syncToken = null, 
+        Guid userId,
+        string calendarId,
+        string accessToken,
+        DateTime startDate,
+        DateTime endDate,
+        string? syncToken = null,
         CancellationToken cancellationToken = default)
     {
         try
@@ -276,7 +276,7 @@ public class GoogleCalendarProviderService : ICalendarProviderService, IDisposab
                 }
             }
 
-            _logger.LogInformation("Retrieved {EventCount} events for user {UserId} from calendar {CalendarId}", 
+            _logger.LogInformation("Retrieved {EventCount} events for user {UserId} from calendar {CalendarId}",
                 events.Count, userId, calendarId);
 
             return new ExternalCalendarEventsResult(
@@ -301,10 +301,10 @@ public class GoogleCalendarProviderService : ICalendarProviderService, IDisposab
     }
 
     public async Task<ExternalEventResult> CreateEventAsync(
-        Guid userId, 
-        string calendarId, 
-        string accessToken, 
-        ExternalEventCreateRequest eventData, 
+        Guid userId,
+        string calendarId,
+        string accessToken,
+        ExternalEventCreateRequest eventData,
         CancellationToken cancellationToken = default)
     {
         try
@@ -345,16 +345,16 @@ public class GoogleCalendarProviderService : ICalendarProviderService, IDisposab
     }
 
     public async Task<ExternalEventResult> UpdateEventAsync(
-        Guid userId, 
-        string calendarId, 
-        string eventId, 
-        string accessToken, 
-        ExternalEventUpdateRequest eventData, 
+        Guid userId,
+        string calendarId,
+        string eventId,
+        string accessToken,
+        ExternalEventUpdateRequest eventData,
         CancellationToken cancellationToken = default)
     {
         try
         {
-            _logger.LogInformation("Updating event {EventId} for user {UserId} in calendar {CalendarId}", 
+            _logger.LogInformation("Updating event {EventId} for user {UserId} in calendar {CalendarId}",
                 eventId, userId, calendarId);
 
             var googleEvent = ConvertToGoogleEvent(eventData);
@@ -380,7 +380,7 @@ public class GoogleCalendarProviderService : ICalendarProviderService, IDisposab
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to update event {EventId} for user {UserId} in calendar {CalendarId}", 
+            _logger.LogError(ex, "Failed to update event {EventId} for user {UserId} in calendar {CalendarId}",
                 eventId, userId, calendarId);
             return new ExternalEventResult(
                 false,
@@ -392,15 +392,15 @@ public class GoogleCalendarProviderService : ICalendarProviderService, IDisposab
     }
 
     public async Task<ExternalEventDeleteResult> DeleteEventAsync(
-        Guid userId, 
-        string calendarId, 
-        string eventId, 
-        string accessToken, 
+        Guid userId,
+        string calendarId,
+        string eventId,
+        string accessToken,
         CancellationToken cancellationToken = default)
     {
         try
         {
-            _logger.LogInformation("Deleting event {EventId} for user {UserId} from calendar {CalendarId}", 
+            _logger.LogInformation("Deleting event {EventId} for user {UserId} from calendar {CalendarId}",
                 eventId, userId, calendarId);
 
             var url = $"{GoogleCalendarApiBaseUrl}/calendars/{Uri.EscapeDataString(calendarId)}/events/{Uri.EscapeDataString(eventId)}";
@@ -418,7 +418,7 @@ public class GoogleCalendarProviderService : ICalendarProviderService, IDisposab
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to delete event {EventId} for user {UserId} from calendar {CalendarId}", 
+            _logger.LogError(ex, "Failed to delete event {EventId} for user {UserId} from calendar {CalendarId}",
                 eventId, userId, calendarId);
             return new ExternalEventDeleteResult(
                 false,
@@ -429,19 +429,19 @@ public class GoogleCalendarProviderService : ICalendarProviderService, IDisposab
     }
 
     public async Task<IEnumerable<ExternalEventResult>> CreateEventsAsync(
-        Guid userId, 
-        string calendarId, 
-        string accessToken, 
-        IEnumerable<ExternalEventCreateRequest> eventRequests, 
+        Guid userId,
+        string calendarId,
+        string accessToken,
+        IEnumerable<ExternalEventCreateRequest> eventRequests,
         CancellationToken cancellationToken = default)
     {
         var results = new List<ExternalEventResult>();
-        
+
         foreach (var eventRequest in eventRequests)
         {
             var result = await CreateEventAsync(userId, calendarId, accessToken, eventRequest, cancellationToken);
             results.Add(result);
-            
+
             // Add small delay to respect rate limits
             if (results.Count > 1)
             {
@@ -453,20 +453,20 @@ public class GoogleCalendarProviderService : ICalendarProviderService, IDisposab
     }
 
     public async Task<IEnumerable<ExternalEventResult>> UpdateEventsAsync(
-        Guid userId, 
-        string calendarId, 
-        string accessToken, 
-        IEnumerable<ExternalEventUpdateWithId> eventUpdates, 
+        Guid userId,
+        string calendarId,
+        string accessToken,
+        IEnumerable<ExternalEventUpdateWithId> eventUpdates,
         CancellationToken cancellationToken = default)
     {
         var results = new List<ExternalEventResult>();
-        
+
         foreach (var eventUpdate in eventUpdates)
         {
-            var result = await UpdateEventAsync(userId, calendarId, eventUpdate.EventId, accessToken, 
+            var result = await UpdateEventAsync(userId, calendarId, eventUpdate.EventId, accessToken,
                 eventUpdate.UpdateRequest, cancellationToken);
             results.Add(result);
-            
+
             // Add small delay to respect rate limits
             if (results.Count > 1)
             {
@@ -478,10 +478,10 @@ public class GoogleCalendarProviderService : ICalendarProviderService, IDisposab
     }
 
     public async Task<FreeBusyResult> GetFreeBusyAsync(
-        Guid userId, 
-        IEnumerable<string> calendarIds, 
-        string accessToken, 
-        IEnumerable<TimeRange> timeRanges, 
+        Guid userId,
+        IEnumerable<string> calendarIds,
+        string accessToken,
+        IEnumerable<TimeRange> timeRanges,
         CancellationToken cancellationToken = default)
     {
         try
@@ -497,7 +497,7 @@ public class GoogleCalendarProviderService : ICalendarProviderService, IDisposab
 
             var json = JsonSerializer.Serialize(request, GetJsonOptions());
             var url = $"{GoogleCalendarApiBaseUrl}/freeBusy";
-            
+
             using var httpRequest = new HttpRequestMessage(HttpMethod.Post, url);
             httpRequest.Headers.Add("Authorization", $"Bearer {accessToken}");
             httpRequest.Content = new StringContent(json, Encoding.UTF8, "application/json");
@@ -509,13 +509,13 @@ public class GoogleCalendarProviderService : ICalendarProviderService, IDisposab
             var freeBusyResponse = JsonSerializer.Deserialize<GoogleFreeBusyResponse>(responseContent, GetJsonOptions());
 
             var freeBusyInfo = new List<CalendarFreeBusy>();
-            
+
             if (freeBusyResponse?.Calendars != null)
             {
                 foreach (var calendar in freeBusyResponse.Calendars)
                 {
                     var busyTimes = calendar.Value.Busy?.Select(b => new TimeRange(
-                        DateTime.Parse(b.Start), 
+                        DateTime.Parse(b.Start),
                         DateTime.Parse(b.End)
                     )).ToList() ?? [];
 
@@ -545,11 +545,11 @@ public class GoogleCalendarProviderService : ICalendarProviderService, IDisposab
     }
 
     public async Task<CalendarWatchResult> WatchCalendarAsync(
-        Guid userId, 
-        string calendarId, 
-        string accessToken, 
-        string webhookUrl, 
-        DateTime expirationTime, 
+        Guid userId,
+        string calendarId,
+        string accessToken,
+        string webhookUrl,
+        DateTime expirationTime,
         CancellationToken cancellationToken = default)
     {
         try
@@ -566,7 +566,7 @@ public class GoogleCalendarProviderService : ICalendarProviderService, IDisposab
 
             var json = JsonSerializer.Serialize(watchRequest, GetJsonOptions());
             var url = $"{GoogleCalendarApiBaseUrl}/calendars/{Uri.EscapeDataString(calendarId)}/events/watch";
-            
+
             using var request = new HttpRequestMessage(HttpMethod.Post, url);
             request.Headers.Add("Authorization", $"Bearer {accessToken}");
             request.Content = new StringContent(json, Encoding.UTF8, "application/json");
@@ -599,9 +599,9 @@ public class GoogleCalendarProviderService : ICalendarProviderService, IDisposab
     }
 
     public async Task<CalendarWatchStopResult> StopWatchingAsync(
-        Guid userId, 
-        string watchId, 
-        string accessToken, 
+        Guid userId,
+        string watchId,
+        string accessToken,
         CancellationToken cancellationToken = default)
     {
         try
@@ -616,7 +616,7 @@ public class GoogleCalendarProviderService : ICalendarProviderService, IDisposab
 
             var json = JsonSerializer.Serialize(stopRequest, GetJsonOptions());
             var url = $"{GoogleCalendarApiBaseUrl}/channels/stop";
-            
+
             using var request = new HttpRequestMessage(HttpMethod.Post, url);
             request.Headers.Add("Authorization", $"Bearer {accessToken}");
             request.Content = new StringContent(json, Encoding.UTF8, "application/json");
@@ -641,9 +641,9 @@ public class GoogleCalendarProviderService : ICalendarProviderService, IDisposab
         }
     }
 
-    public async Task<WebhookProcessResult> ProcessWebhookAsync(
-        string webhookData, 
-        IDictionary<string, string> headers, 
+    public Task<WebhookProcessResult> ProcessWebhookAsync(
+        string webhookData,
+        IDictionary<string, string> headers,
         CancellationToken cancellationToken = default)
     {
         try
@@ -655,53 +655,53 @@ public class GoogleCalendarProviderService : ICalendarProviderService, IDisposab
                 headers.TryGetValue("X-Goog-Resource-State", out var resourceState))
             {
                 var changeType = MapGoogleResourceState(resourceState);
-                
-                return new WebhookProcessResult(
+
+                return Task.FromResult(new WebhookProcessResult(
                     true,
                     changeType,
                     channelId,
                     headers.GetValueOrDefault("X-Goog-Resource-Id"),
                     null
-                );
+                ));
             }
 
-            return new WebhookProcessResult(
+            return Task.FromResult(new WebhookProcessResult(
                 false,
                 WebhookChangeType.Unknown,
                 null,
                 null,
                 "Invalid webhook headers"
-            );
+            ));
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to process Google Calendar webhook");
-            return new WebhookProcessResult(
+            return Task.FromResult(new WebhookProcessResult(
                 false,
                 WebhookChangeType.Unknown,
                 null,
                 null,
                 ex.Message
-            );
+            ));
         }
     }
 
-    public async Task<ProviderRateLimitStatus> GetRateLimitStatusAsync(CancellationToken cancellationToken = default)
+    public Task<ProviderRateLimitStatus> GetRateLimitStatusAsync(CancellationToken cancellationToken = default)
     {
         // Google Calendar API rate limits are typically:
         // - 1,000,000 queries per day
         // - 100 queries per 100 seconds per user
-        return new ProviderRateLimitStatus(
+        return Task.FromResult(new ProviderRateLimitStatus(
             _googleSettings.RateLimit.RequestsPerMinute,
             _googleSettings.RateLimit.RequestsPerMinute, // Assuming we haven't tracked usage
             TimeSpan.FromMinutes(1),
             false // Not currently throttled
-        );
+        ));
     }
 
     public async Task<TokenValidationResult> ValidateTokenAsync(
-        Guid userId, 
-        string accessToken, 
+        Guid userId,
+        string accessToken,
         CancellationToken cancellationToken = default)
     {
         try
@@ -738,7 +738,7 @@ public class GoogleCalendarProviderService : ICalendarProviderService, IDisposab
             SupportsAttendees: true,
             SupportsAttachments: true,
             SupportedEventFields: [
-                "summary", "description", "start", "end", "location", 
+                "summary", "description", "start", "end", "location",
                 "attendees", "recurrence", "attachments", "reminders"
             ],
             MaxBatchSize: TimeSpan.FromDays(365), // Google allows up to 1 year of events
@@ -747,7 +747,7 @@ public class GoogleCalendarProviderService : ICalendarProviderService, IDisposab
     }
 
     public ExternalEventCreateRequest ConvertFromInternalEvent(
-        InternalCalendarEvent internalEvent, 
+        InternalCalendarEvent internalEvent,
         EventConversionOptions conversionOptions)
     {
         return new ExternalEventCreateRequest(
@@ -780,7 +780,7 @@ public class GoogleCalendarProviderService : ICalendarProviderService, IDisposab
     }
 
     public InternalCalendarEvent ConvertToInternalEvent(
-        ExternalCalendarEvent externalEvent, 
+        ExternalCalendarEvent externalEvent,
         EventConversionOptions conversionOptions)
     {
         return new InternalCalendarEvent(
@@ -801,7 +801,7 @@ public class GoogleCalendarProviderService : ICalendarProviderService, IDisposab
             )).ToList() ?? [],
             externalEvent.Recurrence?.FirstOrDefault(),
             externalEvent.Reminders?.Select(r => new InternalEventReminder(
-                MapExternalReminderMethod(r.Method),
+                MapExternalReminderMethod((ExternalReminderMethod)r.Method),
                 r.MinutesBeforeStart
             )).ToList() ?? [],
             externalEvent.Attachments?.Select(a => new InternalEventAttachment(
@@ -826,11 +826,11 @@ public class GoogleCalendarProviderService : ICalendarProviderService, IDisposab
     }
 
     private async Task<GoogleTokenResponse> SendTokenRequest(
-        Dictionary<string, string> parameters, 
+        Dictionary<string, string> parameters,
         CancellationToken cancellationToken)
     {
         var content = new FormUrlEncodedContent(parameters);
-        
+
         using var request = new HttpRequestMessage(HttpMethod.Post, GoogleOAuthBaseUrl);
         request.Content = content;
 
@@ -844,9 +844,9 @@ public class GoogleCalendarProviderService : ICalendarProviderService, IDisposab
         }
 
         var errorResponse = JsonSerializer.Deserialize<GoogleErrorResponse>(responseContent, GetJsonOptions());
-        return new GoogleTokenResponse 
-        { 
-            Success = false, 
+        return new GoogleTokenResponse
+        {
+            Success = false,
             Error = errorResponse?.ErrorDescription ?? errorResponse?.Error ?? "Unknown error"
         };
     }
@@ -929,9 +929,15 @@ public class GoogleCalendarProviderService : ICalendarProviderService, IDisposab
     private static DateTime ParseDateTime(string? dateTime, string? date)
     {
         if (!string.IsNullOrEmpty(dateTime) && DateTime.TryParse(dateTime, out var dt))
+        {
             return dt;
+        }
+
         if (!string.IsNullOrEmpty(date) && DateTime.TryParse(date, out var d))
+        {
             return d;
+        }
+
         return DateTime.UtcNow;
     }
 
@@ -942,10 +948,10 @@ public class GoogleCalendarProviderService : ICalendarProviderService, IDisposab
             summary = eventData.Title,
             description = eventData.Description,
             location = eventData.Location,
-            start = eventData.IsAllDay 
+            start = eventData.IsAllDay
                 ? new { date = eventData.StartTime.ToString("yyyy-MM-dd") }
                 : new { dateTime = eventData.StartTime.ToString("yyyy-MM-ddTHH:mm:ssZ") },
-            end = eventData.IsAllDay 
+            end = eventData.IsAllDay
                 ? new { date = eventData.EndTime.ToString("yyyy-MM-dd") }
                 : new { dateTime = eventData.EndTime.ToString("yyyy-MM-ddTHH:mm:ssZ") },
             attendees = eventData.Attendees?.Select(a => new
@@ -962,7 +968,7 @@ public class GoogleCalendarProviderService : ICalendarProviderService, IDisposab
                 useDefault = false,
                 overrides = eventData.Reminders.Select(r => new
                 {
-                    method = MapToGoogleReminderMethod(r.Method),
+                    method = MapToGoogleReminderMethod((ExternalReminderMethod)r.Method),
                     minutes = r.MinutesBeforeStart
                 }).ToArray()
             } : new { useDefault = true }
@@ -978,10 +984,10 @@ public class GoogleCalendarProviderService : ICalendarProviderService, IDisposab
             summary = eventData.Title,
             description = eventData.Description,
             location = eventData.Location,
-            start = eventData.IsAllDay 
+            start = (bool)eventData.IsAllDay
                 ? new { date = eventData.StartTime.ToString("yyyy-MM-dd") }
                 : new { dateTime = eventData.StartTime.ToString("yyyy-MM-ddTHH:mm:ssZ") },
-            end = eventData.IsAllDay 
+            end = (bool)eventData.IsAllDay
                 ? new { date = eventData.EndTime.ToString("yyyy-MM-dd") }
                 : new { dateTime = eventData.EndTime.ToString("yyyy-MM-ddTHH:mm:ssZ") },
             attendees = eventData.Attendees?.Select(a => new
@@ -998,7 +1004,7 @@ public class GoogleCalendarProviderService : ICalendarProviderService, IDisposab
                 useDefault = false,
                 overrides = eventData.Reminders.Select(r => new
                 {
-                    method = MapToGoogleReminderMethod(r.Method),
+                    method = MapToGoogleReminderMethod((ExternalReminderMethod)r.Method),
                     minutes = r.MinutesBeforeStart
                 }).ToArray()
             } : new { useDefault = true }
@@ -1099,7 +1105,11 @@ public class GoogleCalendarProviderService : ICalendarProviderService, IDisposab
 
     public void Dispose()
     {
-        if (_disposed) return;
+        if (_disposed)
+        {
+            return;
+        }
+
         _disposed = true;
     }
 }

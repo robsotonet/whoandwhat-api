@@ -26,7 +26,7 @@ public class GetCompletionStatsQueryHandlerTests
     {
         _mockTaskRepository = new Mock<IAppTaskRepository>();
         _mockLogger = new Mock<ILogger<GetCompletionStatsQueryHandler>>();
-        
+
         _handler = new GetCompletionStatsQueryHandler(
             _mockTaskRepository.Object,
             _mockLogger.Object);
@@ -49,13 +49,13 @@ public class GetCompletionStatsQueryHandlerTests
         // Assert
         result.IsSuccess.Should().BeTrue();
         var response = result.Value;
-        
+
         response.Overview.TotalTasksCreated.Should().Be(0);
         response.Overview.TotalTasksCompleted.Should().Be(0);
         response.Overview.CompletionRate.Should().Be(0.0);
         response.Overview.OnTimeCompletionRate.Should().Be(0.0);
         response.Overview.AverageCompletionTime.Should().Be(TimeSpan.Zero);
-        
+
         response.Trends.DailyData.Should().NotBeEmpty(); // Should have data points even with no tasks
         response.Breakdown.ByCategory.Should().BeEmpty();
         response.Insights.Should().BeEmpty();
@@ -82,7 +82,7 @@ public class GetCompletionStatsQueryHandlerTests
 
         // Assert
         result.IsSuccess.Should().BeTrue();
-        
+
         // Verify that repository was called with appropriate filter for the period
         _mockTaskRepository.Verify(
             x => x.GetTasksByUserIdAsync(
@@ -108,7 +108,7 @@ public class GetCompletionStatsQueryHandlerTests
 
         // Assert
         result.IsSuccess.Should().BeTrue();
-        
+
         // Should default to month period calculation
         _mockTaskRepository.Verify(
             x => x.GetTasksByUserIdAsync(_testUserId, It.IsAny<TaskFilter>(), It.IsAny<CancellationToken>()),
@@ -121,7 +121,7 @@ public class GetCompletionStatsQueryHandlerTests
         // Arrange
         var query = new GetCompletionStatsQuery(_testUserId, "month");
         var now = DateTime.UtcNow;
-        
+
         var tasks = new List<AppTask>
         {
             CreateCompletedTask("Task 1", now.AddDays(-5), now.AddDays(-3)), // 2 days to complete
@@ -140,7 +140,7 @@ public class GetCompletionStatsQueryHandlerTests
         // Assert
         result.IsSuccess.Should().BeTrue();
         var overview = result.Value.Overview;
-        
+
         overview.TotalTasksCreated.Should().Be(4);
         overview.TotalTasksCompleted.Should().Be(2);
         overview.TasksInProgress.Should().Be(1);
@@ -155,7 +155,7 @@ public class GetCompletionStatsQueryHandlerTests
         // Arrange
         var query = new GetCompletionStatsQuery(_testUserId, "month");
         var now = DateTime.UtcNow;
-        
+
         var tasks = new List<AppTask>
         {
             // On-time completion (completed before due date)
@@ -181,7 +181,7 @@ public class GetCompletionStatsQueryHandlerTests
         // Assert
         result.IsSuccess.Should().BeTrue();
         var overview = result.Value.Overview;
-        
+
         overview.OnTimeCompletionRate.Should().Be(66.7); // 2/3 with due dates completed on time, rounded to 66.7%
         overview.TasksCompletedAheadOfSchedule.Should().Be(2); // On Time 1 and Early 1
         overview.TasksCompletedLate.Should().Be(1); // Late 1
@@ -193,7 +193,7 @@ public class GetCompletionStatsQueryHandlerTests
         // Arrange
         var query = new GetCompletionStatsQuery(_testUserId, "week");
         var startOfWeek = DateTime.UtcNow.Date.AddDays(-(int)DateTime.UtcNow.DayOfWeek);
-        
+
         var tasks = new List<AppTask>
         {
             CreateCompletedTask("Day 1 Task", startOfWeek, startOfWeek.AddHours(2)),
@@ -211,11 +211,11 @@ public class GetCompletionStatsQueryHandlerTests
         // Assert
         result.IsSuccess.Should().BeTrue();
         var trends = result.Value.Trends;
-        
+
         trends.DailyData.Should().NotBeEmpty();
         trends.DailyData.Should().BeInAscendingOrder(d => d.Date);
         trends.DailyData.First().Date.Should().Be(startOfWeek);
-        
+
         // Verify daily completion tracking
         var day1Data = trends.DailyData.First(d => d.Date == startOfWeek);
         day1Data.TasksCompleted.Should().Be(1);
@@ -240,13 +240,13 @@ public class GetCompletionStatsQueryHandlerTests
         // Assert
         result.IsSuccess.Should().BeTrue();
         var trends = result.Value.Trends;
-        
+
         trends.WeeklyData.Should().HaveCount(4); // Last 4 weeks
         trends.MonthlyData.Should().HaveCount(6); // Last 6 months
-        
+
         trends.WeeklyData.Should().BeInAscendingOrder(w => w.WeekStarting);
         trends.MonthlyData.Should().BeInAscendingOrder(m => m.Month);
-        
+
         // Verify velocity calculations
         trends.Velocity.Should().NotBeNull();
         trends.Velocity.TasksPerDay.Should().BeGreaterThanOrEqualTo(0);
@@ -270,17 +270,17 @@ public class GetCompletionStatsQueryHandlerTests
         // Assert
         result.IsSuccess.Should().BeTrue();
         var breakdown = result.Value.Breakdown;
-        
+
         breakdown.ByCategory.Should().NotBeEmpty();
         breakdown.ByPriority.Should().NotBeEmpty();
-        
+
         // Verify category stats
         breakdown.ByCategory.Should().ContainKey("ToDo");
         var todoStats = breakdown.ByCategory["ToDo"];
         todoStats.TotalTasks.Should().BeGreaterThan(0);
         todoStats.CompletionRate.Should().BeInRange(0, 100);
         todoStats.AverageTimeToComplete.Should().BeGreaterThanOrEqualTo(TimeSpan.Zero);
-        
+
         // Verify priority stats
         breakdown.ByPriority.Should().ContainKey("High");
         var highPriorityStats = breakdown.ByPriority["High"];
@@ -304,18 +304,18 @@ public class GetCompletionStatsQueryHandlerTests
         // Assert
         result.IsSuccess.Should().BeTrue();
         var breakdown = result.Value.Breakdown;
-        
+
         breakdown.ByHourOfDay.Should().NotBeEmpty();
         breakdown.ByDayOfWeek.Should().NotBeEmpty();
         breakdown.ByTimeRange.Should().NotBeEmpty();
-        
+
         // Verify time range breakdown structure
         breakdown.ByTimeRange.Should().ContainKey("Same Day");
         breakdown.ByTimeRange.Should().ContainKey("1-3 Days");
         breakdown.ByTimeRange.Should().ContainKey("4-7 Days");
         breakdown.ByTimeRange.Should().ContainKey("1-2 Weeks");
         breakdown.ByTimeRange.Should().ContainKey("2+ Weeks");
-        
+
         // Verify percentages sum to reasonable total
         var totalPercentage = breakdown.ByTimeRange.Values.Sum(tr => tr.Percentage);
         totalPercentage.Should().BeInRange(90, 110); // Allow for rounding differences
@@ -338,7 +338,7 @@ public class GetCompletionStatsQueryHandlerTests
         // Assert
         result.IsSuccess.Should().BeTrue();
         var comparison = result.Value.Comparison;
-        
+
         comparison.CurrentPeriodRate.Should().BeInRange(0, 100);
         comparison.PreviousPeriodRate.Should().BeInRange(0, 100);
         comparison.Trend.Should().BeOneOf("Improving", "Declining", "Stable");
@@ -365,9 +365,9 @@ public class GetCompletionStatsQueryHandlerTests
         // Assert
         result.IsSuccess.Should().BeTrue();
         var insights = result.Value.Insights;
-        
+
         insights.Should().Contain(i => i.Type == "Performance" && i.Title.Contains("Low Completion Rate"));
-        
+
         var performanceInsight = insights.First(i => i.Type == "Performance");
         performanceInsight.Severity.Should().Be("Medium");
         performanceInsight.Recommendation.Should().Contain("breaking large tasks");
@@ -391,9 +391,9 @@ public class GetCompletionStatsQueryHandlerTests
         // Assert
         result.IsSuccess.Should().BeTrue();
         var insights = result.Value.Insights;
-        
+
         insights.Should().Contain(i => i.Type == "Timing" && i.Title.Contains("Tasks Often Completed Late"));
-        
+
         var timingInsight = insights.First(i => i.Type == "Timing");
         timingInsight.Recommendation.Should().Contain("realistic deadlines");
     }
@@ -415,7 +415,7 @@ public class GetCompletionStatsQueryHandlerTests
         // Assert
         result.IsSuccess.Should().BeTrue();
         var insights = result.Value.Insights;
-        
+
         var patternInsights = insights.Where(i => i.Type == "Pattern").ToList();
         if (patternInsights.Any())
         {
@@ -442,13 +442,13 @@ public class GetCompletionStatsQueryHandlerTests
 
         // Assert
         result.IsSuccess.Should().BeTrue();
-        
+
         // Verify that the repository was called with a quarter-based date range
         _mockTaskRepository.Verify(
             x => x.GetTasksByUserIdAsync(
                 _testUserId,
-                It.Is<TaskFilter>(f => 
-                    f.CreatedAfter.HasValue && 
+                It.Is<TaskFilter>(f =>
+                    f.CreatedAfter.HasValue &&
                     f.CreatedBefore.HasValue &&
                     (f.CreatedBefore.Value - f.CreatedAfter.Value).Days >= 89 && // Quarter is ~90 days
                     (f.CreatedBefore.Value - f.CreatedAfter.Value).Days <= 92),
@@ -473,7 +473,7 @@ public class GetCompletionStatsQueryHandlerTests
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("Failed to retrieve completion stats");
         result.Error.Should().Contain("Database connection failed");
-        
+
         // Verify logging
         _mockLogger.Verify(
             x => x.Log(
@@ -501,7 +501,7 @@ public class GetCompletionStatsQueryHandlerTests
 
         // Assert
         result.IsSuccess.Should().BeTrue();
-        
+
         // Verify logging
         _mockLogger.Verify(
             x => x.Log(
@@ -511,7 +511,7 @@ public class GetCompletionStatsQueryHandlerTests
                 It.IsAny<Exception>(),
                 It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
             Times.Once);
-            
+
         _mockLogger.Verify(
             x => x.Log(
                 LogLevel.Information,
@@ -540,7 +540,7 @@ public class GetCompletionStatsQueryHandlerTests
     {
         var now = DateTime.UtcNow;
         var tasks = new List<AppTask>();
-        
+
         // Create tasks over the last few weeks for trend analysis
         for (int week = 0; week < 4; week++)
         {
@@ -550,7 +550,7 @@ public class GetCompletionStatsQueryHandlerTests
                 tasks.Add(CreateCompletedTask($"Week {week} Day {day}", date.AddHours(-8), date));
             }
         }
-        
+
         return tasks;
     }
 
@@ -596,7 +596,7 @@ public class GetCompletionStatsQueryHandlerTests
         var now = DateTime.UtcNow;
         var monthStart = new DateTime(now.Year, now.Month, 1);
         var lastMonthStart = monthStart.AddMonths(-1);
-        
+
         return new List<AppTask>
         {
             // Current month tasks (3 created, 2 completed = 66.7% rate)
@@ -616,18 +616,18 @@ public class GetCompletionStatsQueryHandlerTests
     {
         var now = DateTime.UtcNow;
         var tasks = new List<AppTask>();
-        
+
         // Create 10 tasks with only 4 completed (40% completion rate)
         for (int i = 1; i <= 4; i++)
         {
             tasks.Add(CreateCompletedTask($"Completed {i}", now.AddDays(-i * 2), now.AddDays(-i)));
         }
-        
+
         for (int i = 5; i <= 10; i++)
         {
             tasks.Add(CreateInProgressTask($"In Progress {i}", now.AddDays(-i)));
         }
-        
+
         return tasks;
     }
 
@@ -649,27 +649,27 @@ public class GetCompletionStatsQueryHandlerTests
     {
         var now = DateTime.UtcNow;
         var tasks = new List<AppTask>();
-        
+
         // Create multiple tasks completed at 10 AM to establish a pattern
         for (int i = 0; i < 5; i++)
         {
             tasks.Add(CreateCompletedTaskWithHour("10 AM Task", now.Date.AddDays(-i).AddHours(10)));
         }
-        
+
         // Create fewer tasks at other hours
         tasks.Add(CreateCompletedTaskWithHour("2 PM Task", now.Date.AddDays(-1).AddHours(14)));
         tasks.Add(CreateCompletedTaskWithHour("4 PM Task", now.Date.AddDays(-2).AddHours(16)));
-        
+
         return tasks;
     }
 
     private AppTask CreateTask(string title, AppTaskStatus status, DateTime createdAt)
     {
         var task = new AppTask { Title = title, Category = (int)AppTaskCategory.ToDo, UserId = _testUserId, Status = (int)AppTaskStatus.Pending };
-        
+
         SetTaskStatus(task, status);
         SetTaskCreationTime(task, createdAt);
-        
+
         return task;
     }
 
@@ -690,12 +690,12 @@ public class GetCompletionStatsQueryHandlerTests
     private AppTask CreateCompletedTaskWithCategory(string title, AppTaskCategory category, Priority priority, DateTime createdAt, DateTime completedAt)
     {
         var task = new AppTask { Title = title, Category = (int)category, UserId = _testUserId, Status = (int)AppTaskStatus.Pending };
-        
+
         SetTaskStatus(task, AppTaskStatus.Completed);
         SetTaskPriority(task, priority);
         SetTaskCreationTime(task, createdAt);
         SetTaskCompletionTime(task, completedAt);
-        
+
         return task;
     }
 
@@ -713,11 +713,11 @@ public class GetCompletionStatsQueryHandlerTests
     private AppTask CreateInProgressTaskWithCategory(string title, AppTaskCategory category, Priority priority, DateTime createdAt)
     {
         var task = new AppTask { Title = title, Category = (int)category, UserId = _testUserId, Status = (int)AppTaskStatus.Pending };
-        
+
         SetTaskStatus(task, AppTaskStatus.InProgress);
         SetTaskPriority(task, priority);
         SetTaskCreationTime(task, createdAt);
-        
+
         return task;
     }
 

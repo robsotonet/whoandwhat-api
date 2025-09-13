@@ -79,8 +79,8 @@ public sealed record UpdateDashboardSettingsRequestDto(
     DisplaySettingsRequestDto? DisplaySettings = null
 )
 {
-    public UpdateDashboardSettingsRequestDto() : this("light", "en", true, true, true, true, 300, 
-        new List<string> { "completion-stats", "productivity-streak", "overdue-tasks", "motivational-content" }, 
+    public UpdateDashboardSettingsRequestDto() : this("light", "en", true, true, true, true, 300,
+        new List<string> { "completion-stats", "productivity-streak", "overdue-tasks", "motivational-content" },
         null, null, null)
     {
     }
@@ -100,7 +100,7 @@ public sealed record NotificationSettingsRequestDto(
     List<int> QuietHours = default!
 )
 {
-    public NotificationSettingsRequestDto() : this(true, true, false, 3, "weekly", 
+    public NotificationSettingsRequestDto() : this(true, true, false, 3, "weekly",
         new List<int> { 22, 23, 0, 1, 2, 3, 4, 5, 6, 7 })
     {
     }

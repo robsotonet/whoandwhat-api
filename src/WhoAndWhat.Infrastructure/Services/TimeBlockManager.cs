@@ -245,7 +245,7 @@ public class TimeBlockManager : ITimeBlockManager
         }
     }
 
-    public async Task<List<TimeBlockSuggestion>> CreateBufferBlocksAsync(
+    public Task<List<TimeBlockSuggestion>> CreateBufferBlocksAsync(
         Guid userId,
         List<SmartScheduledItem> scheduledItems,
         TimeSpan bufferDuration,
@@ -290,16 +290,16 @@ public class TimeBlockManager : ITimeBlockManager
                 }
             }
 
-            return bufferBlocks;
+            return Task.FromResult(bufferBlocks);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error creating buffer blocks for user {UserId}", userId);
-            return new List<TimeBlockSuggestion>();
+            return Task.FromResult(new List<TimeBlockSuggestion>());
         }
     }
 
-    public async Task<TimeBlockAnalysis> AnalyzeTimeBlockEffectivenessAsync(
+    public Task<TimeBlockAnalysis> AnalyzeTimeBlockEffectivenessAsync(
         Guid userId,
         List<TimeBlockSuggestion> timeBlocks,
         CancellationToken cancellationToken = default)
@@ -326,7 +326,7 @@ public class TimeBlockManager : ITimeBlockManager
             // Calculate metrics
             var metrics = CalculateTimeBlockMetrics(timeBlocks);
 
-            return new TimeBlockAnalysis(
+            return Task.FromResult(new TimeBlockAnalysis(
                 userId,
                 DateTime.UtcNow,
                 overallEffectiveness,
@@ -334,7 +334,7 @@ public class TimeBlockManager : ITimeBlockManager
                 insights,
                 recommendations,
                 metrics
-            );
+            ));
         }
         catch (Exception ex)
         {
@@ -352,7 +352,7 @@ public class TimeBlockManager : ITimeBlockManager
         {
             // Get user-specific patterns if available
             var patterns = await _userPreferenceService.GetUserSchedulingPatternsAsync(userId, cancellationToken);
-            
+
             var recommendation = blockPurpose switch
             {
                 TimeBlockPurpose.DeepWork => new TimeBlockDurationRecommendation(
@@ -441,7 +441,7 @@ public class TimeBlockManager : ITimeBlockManager
             // If no scheduled items, the entire working day is available
             var startTime = DateTime.Today.Add(workingHours.StartTime);
             var endTime = DateTime.Today.Add(workingHours.EndTime);
-            
+
             availableSlots.Add(new TimeSlot(startTime, endTime, true, null, TimeSlotType.Work));
             return availableSlots;
         }
@@ -485,9 +485,9 @@ public class TimeBlockManager : ITimeBlockManager
         foreach (var breakTime in preferences.PreferredBreakTimes)
         {
             var breakDateTime = DateTime.Today.Add(breakTime);
-            
+
             // Check if break time conflicts with scheduled items
-            var hasConflict = scheduledItems.Any(item => 
+            var hasConflict = scheduledItems.Any(item =>
                 breakDateTime >= item.StartTime && breakDateTime <= item.EndTime);
 
             if (!hasConflict)
@@ -516,7 +516,7 @@ public class TimeBlockManager : ITimeBlockManager
         return breakBlocks;
     }
 
-    private async Task<List<TimeBlockSuggestion>> GenerateProductivityBasedBlocks(
+    private Task<List<TimeBlockSuggestion>> GenerateProductivityBasedBlocks(
         Guid userId,
         DateTime startTime,
         DateTime endTime,
@@ -549,7 +549,7 @@ public class TimeBlockManager : ITimeBlockManager
                 break;
         }
 
-        return blocks.Where(b => b.StartTime >= startTime && b.EndTime <= endTime).ToList();
+        return Task.FromResult(blocks.Where(b => b.StartTime >= startTime && b.EndTime <= endTime).ToList());
     }
 
     private TimeBlockSuggestion CreateProductivityBlock(string title, DateTime startTime, TimeSpan duration, TimeBlockPurpose purpose)
@@ -615,7 +615,7 @@ public class TimeBlockManager : ITimeBlockManager
     private bool IsOptimalForDeepWork(DateTime startTime, ProductivityPatterns pattern)
     {
         var hour = startTime.Hour;
-        
+
         return pattern switch
         {
             ProductivityPatterns.MorningPerson => hour >= 8 && hour <= 11,
@@ -628,7 +628,7 @@ public class TimeBlockManager : ITimeBlockManager
     private double GetProductivityScoreForTime(DateTime time, ProductivityPatterns pattern)
     {
         var hour = time.Hour;
-        
+
         return pattern switch
         {
             ProductivityPatterns.MorningPerson => hour <= 12 ? 1.0 - (hour - 8) * 0.1 : 0.5,
@@ -646,7 +646,7 @@ public class TimeBlockManager : ITimeBlockManager
         foreach (var block in sortedBlocks)
         {
             var currentBlock = block;
-            
+
             // Check for overlaps with already resolved blocks
             foreach (var resolvedBlock in resolvedBlocks)
             {
@@ -655,10 +655,10 @@ public class TimeBlockManager : ITimeBlockManager
                     // Move the current block after the resolved block
                     var newStartTime = resolvedBlock.EndTime;
                     var duration = currentBlock.EndTime - currentBlock.StartTime;
-                    currentBlock = currentBlock with 
-                    { 
-                        StartTime = newStartTime, 
-                        EndTime = newStartTime.Add(duration) 
+                    currentBlock = currentBlock with
+                    {
+                        StartTime = newStartTime,
+                        EndTime = newStartTime.Add(duration)
                     };
                 }
             }
@@ -680,7 +680,7 @@ public class TimeBlockManager : ITimeBlockManager
         {
             var optimalDuration = await GetOptimalBlockDurationAsync(userId, block.Purpose, cancellationToken);
             var currentDuration = block.EndTime - block.StartTime;
-            
+
             // Adjust duration if it's significantly different from optimal
             if (currentDuration < optimalDuration.MinimumDuration || currentDuration > optimalDuration.MaximumDuration)
             {
@@ -700,7 +700,7 @@ public class TimeBlockManager : ITimeBlockManager
     {
         // Order blocks by productivity pattern optimal sequence
         var optimizedSequence = timeBlocks.OrderBy(tb => GetOptimalSequenceScore(tb, preferences.ProductivityPattern)).ToList();
-        
+
         // Adjust start times based on optimal sequence
         var currentTime = timeBlocks.Min(tb => tb.StartTime);
         var resequencedBlocks = new List<TimeBlockSuggestion>();
@@ -708,10 +708,10 @@ public class TimeBlockManager : ITimeBlockManager
         foreach (var block in optimizedSequence)
         {
             var duration = block.EndTime - block.StartTime;
-            resequencedBlocks.Add(block with 
-            { 
-                StartTime = currentTime, 
-                EndTime = currentTime.Add(duration) 
+            resequencedBlocks.Add(block with
+            {
+                StartTime = currentTime,
+                EndTime = currentTime.Add(duration)
             });
             currentTime = currentTime.Add(duration);
         }
@@ -727,24 +727,24 @@ public class TimeBlockManager : ITimeBlockManager
         for (int i = 0; i < sortedBlocks.Count; i++)
         {
             var currentBlock = sortedBlocks[i];
-            
+
             if (i > 0)
             {
                 var previousBlock = adjustedBlocks[i - 1];
                 var gap = currentBlock.StartTime - previousBlock.EndTime;
-                
+
                 if (gap < minimumGap)
                 {
                     var newStartTime = previousBlock.EndTime.Add(minimumGap);
                     var duration = currentBlock.EndTime - currentBlock.StartTime;
-                    currentBlock = currentBlock with 
-                    { 
-                        StartTime = newStartTime, 
-                        EndTime = newStartTime.Add(duration) 
+                    currentBlock = currentBlock with
+                    {
+                        StartTime = newStartTime,
+                        EndTime = newStartTime.Add(duration)
                     };
                 }
             }
-            
+
             adjustedBlocks.Add(currentBlock);
         }
 
@@ -820,7 +820,7 @@ public class TimeBlockManager : ITimeBlockManager
 
         // Analyze time block distribution
         var purposeDistribution = timeBlocks.GroupBy(tb => tb.Purpose).ToDictionary(g => g.Key, g => g.Count());
-        
+
         if (purposeDistribution.GetValueOrDefault(TimeBlockPurpose.DeepWork, 0) < 2)
         {
             insights.Add(new TimeBlockInsight(
@@ -875,8 +875,8 @@ public class TimeBlockManager : ITimeBlockManager
     {
         var blocksByPurpose = timeBlocks.GroupBy(tb => tb.Purpose).ToDictionary(g => g.Key, g => g.Count());
         var totalDuration = timeBlocks.Aggregate(TimeSpan.Zero, (total, block) => total.Add(block.EndTime - block.StartTime));
-        var averageDuration = timeBlocks.Any() ? 
-            TimeSpan.FromMinutes(totalDuration.TotalMinutes / timeBlocks.Count) : 
+        var averageDuration = timeBlocks.Any() ?
+            TimeSpan.FromMinutes(totalDuration.TotalMinutes / timeBlocks.Count) :
             TimeSpan.Zero;
 
         return new TimeBlockMetrics(

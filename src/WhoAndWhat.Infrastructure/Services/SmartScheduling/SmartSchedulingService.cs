@@ -35,17 +35,17 @@ public sealed class SmartSchedulingService : ISmartSchedulingService
     }
 
     public async Task<SmartScheduleResponse> GenerateSmartScheduleAsync(
-        GenerateSmartScheduleRequest request, 
+        GenerateSmartScheduleRequest request,
         CancellationToken cancellationToken = default)
     {
-        _logger.LogInformation("Generating smart schedule for user {UserId} from {StartDate} to {EndDate}", 
+        _logger.LogInformation("Generating smart schedule for user {UserId} from {StartDate} to {EndDate}",
             request.UserId, request.StartDate, request.EndDate);
 
         try
         {
             // Get user preferences
             var preferences = request.Preferences ?? await _preferenceService.GetUserPreferencesAsync(request.UserId, cancellationToken);
-            
+
             // Get tasks to schedule
             var tasks = new List<SmartScheduledItem>();
             foreach (var taskId in request.TaskIds)
@@ -86,18 +86,18 @@ public sealed class SmartSchedulingService : ISmartSchedulingService
 
             // Optimize schedule
             var optimizationResult = await _optimizationEngine.OptimizeScheduleAsync(request.UserId, optimizationContext, cancellationToken);
-            
+
             // Generate time blocks
             var timeBlocks = await _timeBlockManager.GenerateTimeBlocksAsync(
-                request.UserId, 
-                optimizationResult.OptimizedSchedule, 
-                preferences, 
+                request.UserId,
+                optimizationResult.OptimizedSchedule,
+                preferences,
                 cancellationToken);
 
             // Calculate metrics
             var metrics = CalculateScheduleMetrics(optimizationResult.OptimizedSchedule, timeBlocks);
-            
-            _logger.LogInformation("Successfully generated smart schedule for user {UserId} with {TaskCount} tasks and {BlockCount} time blocks", 
+
+            _logger.LogInformation("Successfully generated smart schedule for user {UserId} with {TaskCount} tasks and {BlockCount} time blocks",
                 request.UserId, optimizationResult.OptimizedSchedule.Count, timeBlocks.Count);
 
             return new SmartScheduleResponse(
@@ -118,17 +118,17 @@ public sealed class SmartSchedulingService : ISmartSchedulingService
     }
 
     public async Task<ScheduleOptimizationResponse> OptimizeScheduleAsync(
-        OptimizeScheduleRequest request, 
+        OptimizeScheduleRequest request,
         CancellationToken cancellationToken = default)
     {
-        _logger.LogInformation("Optimizing existing schedule {ScheduleId} for user {UserId}", 
+        _logger.LogInformation("Optimizing existing schedule {ScheduleId} for user {UserId}",
             request.ScheduleId, request.UserId);
 
         try
         {
             // Get user preferences
             var preferences = await _preferenceService.GetUserPreferencesAsync(request.UserId, cancellationToken);
-            
+
             // Create optimization context
             var optimizationContext = new OptimizationContext(
                 ExistingSchedule: request.CurrentSchedule,
@@ -140,11 +140,11 @@ public sealed class SmartSchedulingService : ISmartSchedulingService
 
             // Perform optimization
             var result = await _optimizationEngine.OptimizeExistingScheduleAsync(request.UserId, optimizationContext, cancellationToken);
-            
+
             // Calculate optimization metrics
             var metrics = CalculateOptimizationMetrics(request.CurrentSchedule, result.OptimizedSchedule);
-            
-            _logger.LogInformation("Successfully optimized schedule for user {UserId}, improvement score: {ImprovementScore}", 
+
+            _logger.LogInformation("Successfully optimized schedule for user {UserId}, improvement score: {ImprovementScore}",
                 request.UserId, result.ImprovementScore);
 
             return new ScheduleOptimizationResponse(
@@ -174,10 +174,10 @@ public sealed class SmartSchedulingService : ISmartSchedulingService
     }
 
     public async Task<SchedulingSuggestionsResponse> GetSchedulingSuggestionsAsync(
-        GetSchedulingSuggestionsRequest request, 
+        GetSchedulingSuggestionsRequest request,
         CancellationToken cancellationToken = default)
     {
-        _logger.LogInformation("Getting scheduling suggestions for user {UserId} on {Date}", 
+        _logger.LogInformation("Getting scheduling suggestions for user {UserId} on {Date}",
             request.UserId, request.Date);
 
         try
@@ -191,8 +191,8 @@ public sealed class SmartSchedulingService : ISmartSchedulingService
                 if (task != null)
                 {
                     var optimalTimes = await _preferenceService.PredictOptimalTimesAsync(
-                        request.UserId, 
-                        task.Category?.Name ?? "General", 
+                        request.UserId,
+                        task.Category?.Name ?? "General",
                         cancellationToken);
 
                     if (optimalTimes.Any())
@@ -230,7 +230,7 @@ public sealed class SmartSchedulingService : ISmartSchedulingService
     }
 
     public async Task<UpdateSchedulingPreferencesResponse> UpdateUserSchedulingPreferencesAsync(
-        UpdateSchedulingPreferencesRequest request, 
+        UpdateSchedulingPreferencesRequest request,
         CancellationToken cancellationToken = default)
     {
         _logger.LogInformation("Updating scheduling preferences for user {UserId}", request.UserId);
@@ -238,8 +238,8 @@ public sealed class SmartSchedulingService : ISmartSchedulingService
         try
         {
             var updatedPreferences = await _preferenceService.UpdatePreferencesAsync(
-                request.UserId, 
-                request.Preferences, 
+                request.UserId,
+                request.Preferences,
                 cancellationToken);
 
             return new UpdateSchedulingPreferencesResponse(
@@ -262,26 +262,26 @@ public sealed class SmartSchedulingService : ISmartSchedulingService
     }
 
     public async Task<UserSchedulingPatternsResponse> AnalyzeUserSchedulingPatternsAsync(
-        GetUserSchedulingPatternsRequest request, 
+        GetUserSchedulingPatternsRequest request,
         CancellationToken cancellationToken = default)
     {
         return await _preferenceService.AnalyzeSchedulingPatternsAsync(
-            request.UserId, 
-            request.StartDate, 
-            request.EndDate, 
+            request.UserId,
+            request.StartDate,
+            request.EndDate,
             cancellationToken);
     }
 
     public async Task<SmartSchedulingPreferences> GetUserSchedulingPreferencesAsync(
-        Guid userId, 
+        Guid userId,
         CancellationToken cancellationToken = default)
     {
         return await _preferenceService.GetUserPreferencesAsync(userId, cancellationToken);
     }
 
-    public async Task<ScheduleValidationResult> ValidateScheduleAsync(
-        Guid userId, 
-        List<SmartScheduledItem> scheduledItems, 
+    public Task<ScheduleValidationResult> ValidateScheduleAsync(
+        Guid userId,
+        List<SmartScheduledItem> scheduledItems,
         CancellationToken cancellationToken = default)
     {
         var conflicts = new List<ScheduleConflict>();
@@ -303,9 +303,9 @@ public sealed class SmartSchedulingService : ISmartSchedulingService
                         ConflictingItemIds: new List<Guid> { item1.Id, item2.Id },
                         Description: $"Time overlap between '{item1.Title}' and '{item2.Title}'",
                         Severity: "High",
-                        ResolutionSuggestions: new List<string> 
-                        { 
-                            "Move one task to a different time slot", 
+                        ResolutionSuggestions: new List<string>
+                        {
+                            "Move one task to a different time slot",
                             "Reduce duration of one task",
                             "Split one task into smaller segments"
                         }
@@ -332,33 +332,33 @@ public sealed class SmartSchedulingService : ISmartSchedulingService
             recommendations.Add("Add more break time between intensive tasks");
         }
 
-        return new ScheduleValidationResult(
+        return Task.FromResult(new ScheduleValidationResult(
             IsValid: !conflicts.Any(),
             Conflicts: conflicts,
             Warnings: warnings,
             Recommendations: recommendations
-        );
+        ));
     }
 
     public async Task<SmartScheduleResponse> ApplyRealTimeScheduleAdjustmentAsync(
-        Guid userId, 
-        Guid scheduleId, 
-        List<ScheduleChange> changes, 
+        Guid userId,
+        Guid scheduleId,
+        List<ScheduleChange> changes,
         CancellationToken cancellationToken = default)
     {
-        _logger.LogInformation("Applying real-time schedule adjustments for user {UserId}, schedule {ScheduleId}", 
+        _logger.LogInformation("Applying real-time schedule adjustments for user {UserId}, schedule {ScheduleId}",
             userId, scheduleId);
 
         try
         {
             var preferences = await _preferenceService.GetUserPreferencesAsync(userId, cancellationToken);
-            
+
             // TODO: In Phase 4, implement full schedule fetching from database
             // For now, create a basic adjustment response based on the provided changes
-            
+
             var adjustedItems = new List<SmartScheduledItem>();
             var appliedChanges = new List<string>();
-            
+
             // Process each change and apply basic adjustments
             foreach (var change in changes)
             {
@@ -367,44 +367,44 @@ public sealed class SmartSchedulingService : ISmartSchedulingService
                     case "reschedule":
                         appliedChanges.Add($"Rescheduled '{change.ItemTitle}' based on new constraints");
                         break;
-                        
+
                     case "cancel":
                         appliedChanges.Add($"Cancelled '{change.ItemTitle}' and adjusted surrounding tasks");
                         break;
-                        
+
                     case "extend":
                         appliedChanges.Add($"Extended duration of '{change.ItemTitle}' and shifted subsequent tasks");
                         break;
-                        
+
                     case "urgent":
                         appliedChanges.Add($"Prioritized '{change.ItemTitle}' and reorganized schedule");
                         break;
-                        
+
                     default:
                         appliedChanges.Add($"Applied change to '{change.ItemTitle}': {change.Reason}");
                         break;
                 }
             }
-            
+
             // Generate time block recommendations for the adjusted schedule
             var timeBlocks = await _timeBlockManager.GetTimeBlockRecommendationsAsync(
-                userId, 
-                DateTime.Today, 
-                preferences, 
+                userId,
+                DateTime.Today,
+                preferences,
                 cancellationToken);
-            
+
             var insights = new List<string>
             {
                 $"Applied {changes.Count} real-time adjustments successfully",
                 "Schedule optimized to minimize disruption to existing tasks",
                 "Buffer time added between adjusted tasks to prevent conflicts"
             };
-            
+
             if (changes.Any(c => c.ChangeType.ToLower() == "urgent"))
             {
                 insights.Add("High-priority changes were accommodated while preserving productivity flow");
             }
-            
+
             var metrics = new SmartScheduleMetrics(
                 TotalTasks: adjustedItems.Count,
                 ScheduledTasks: adjustedItems.Count,
@@ -416,10 +416,10 @@ public sealed class SmartSchedulingService : ISmartSchedulingService
                 ProductivityScore: CalculateAdjustmentProductivityScore(changes, preferences),
                 OptimizationWarnings: ValidateAdjustmentWarnings(changes)
             );
-            
-            _logger.LogInformation("Successfully applied {ChangeCount} real-time adjustments for user {UserId}", 
+
+            _logger.LogInformation("Successfully applied {ChangeCount} real-time adjustments for user {UserId}",
                 changes.Count, userId);
-                
+
             return new SmartScheduleResponse(
                 UserId: userId,
                 GeneratedAt: DateTime.UtcNow,
@@ -438,15 +438,15 @@ public sealed class SmartSchedulingService : ISmartSchedulingService
     }
 
     public async Task<List<TimeBlockSuggestion>> GetTimeBlockRecommendationsAsync(
-        Guid userId, 
-        DateTime date, 
+        Guid userId,
+        DateTime date,
         CancellationToken cancellationToken = default)
     {
         var preferences = await _preferenceService.GetUserPreferencesAsync(userId, cancellationToken);
         return await _timeBlockManager.GenerateTimeBlockRecommendationsAsync(
-            userId, 
-            date, 
-            preferences, 
+            userId,
+            date,
+            preferences,
             cancellationToken);
     }
 
@@ -457,7 +457,7 @@ public sealed class SmartSchedulingService : ISmartSchedulingService
             var engineAvailable = await _optimizationEngine.IsAvailableAsync(cancellationToken);
             var timeBlockAvailable = await _timeBlockManager.IsAvailableAsync(cancellationToken);
             var preferenceAvailable = await _preferenceService.IsAvailableAsync(cancellationToken);
-            
+
             return engineAvailable && timeBlockAvailable && preferenceAvailable;
         }
         catch (Exception ex)
@@ -488,24 +488,24 @@ public sealed class SmartSchedulingService : ISmartSchedulingService
         );
     }
 
-    private async Task<List<ExternalCalendarEvent>> GetCalendarEventsAsync(
-        Guid userId, 
-        DateTime startDate, 
-        DateTime endDate, 
+    private Task<List<ExternalCalendarEvent>> GetCalendarEventsAsync(
+        Guid userId,
+        DateTime startDate,
+        DateTime endDate,
         CancellationToken cancellationToken)
     {
         // This would integrate with calendar providers
         // For now, return empty list
-        return new List<ExternalCalendarEvent>();
+        return Task.FromResult(new List<ExternalCalendarEvent>());
     }
 
     private SmartScheduleMetrics CalculateScheduleMetrics(
-        List<SmartScheduledItem> scheduledItems, 
+        List<SmartScheduledItem> scheduledItems,
         List<TimeBlockSuggestion> timeBlocks)
     {
         var tasks = scheduledItems.Where(i => i.ItemType == ScheduledItemType.Task).ToList();
         var totalTime = tasks.Sum(t => (t.EndTime - t.StartTime).TotalHours);
-        
+
         return new SmartScheduleMetrics(
             TotalTasks: tasks.Count,
             ScheduledTasks: tasks.Count(t => t.StartTime > DateTime.MinValue),
@@ -520,7 +520,7 @@ public sealed class SmartSchedulingService : ISmartSchedulingService
     }
 
     private OptimizationMetrics CalculateOptimizationMetrics(
-        List<SmartScheduledItem> original, 
+        List<SmartScheduledItem> original,
         List<SmartScheduledItem> optimized)
     {
         return new OptimizationMetrics(
@@ -534,7 +534,7 @@ public sealed class SmartSchedulingService : ISmartSchedulingService
     }
 
     private double CalculateConfidenceScore(
-        ScheduleOptimizationResult result, 
+        ScheduleOptimizationResult result,
         SmartSchedulingPreferences preferences)
     {
         // Simple confidence calculation based on optimization metrics
@@ -542,7 +542,7 @@ public sealed class SmartSchedulingService : ISmartSchedulingService
     }
 
     private double CalculateProductivityScore(
-        List<SmartScheduledItem> scheduledItems, 
+        List<SmartScheduledItem> scheduledItems,
         List<TimeBlockSuggestion> timeBlocks)
     {
         // Simple productivity score calculation
@@ -571,68 +571,74 @@ public sealed class SmartSchedulingService : ISmartSchedulingService
 
     private double CalculateAdjustmentProductivityScore(List<ScheduleChange> changes, SmartSchedulingPreferences preferences)
     {
-        if (!changes.Any()) return 0.8;
-        
+        if (!changes.Any())
+        {
+            return 0.8;
+        }
+
         // Higher score for fewer disruptive changes
-        var disruptiveChanges = changes.Count(c => 
+        var disruptiveChanges = changes.Count(c =>
             c.ChangeType.ToLower() is "cancel" or "reschedule" or "urgent");
-            
+
         var disruptionScore = Math.Max(0.3, 1.0 - (disruptiveChanges * 0.1));
-        
+
         // Bonus for changes that align with preferences
-        var alignmentBonus = changes.Any(c => c.ChangeType.ToLower() == "urgent") && 
+        var alignmentBonus = changes.Any(c => c.ChangeType.ToLower() == "urgent") &&
                            preferences.ProductivityPattern == ProductivityPatterns.MorningPerson ? 0.1 : 0.0;
-        
+
         return Math.Min(1.0, disruptionScore + alignmentBonus);
     }
 
     private List<string> ValidateAdjustmentWarnings(List<ScheduleChange> changes)
     {
         var warnings = new List<string>();
-        
+
         var cancelledCount = changes.Count(c => c.ChangeType.ToLower() == "cancel");
         if (cancelledCount > 2)
         {
             warnings.Add($"High number of cancellations ({cancelledCount}) may impact productivity");
         }
-        
+
         var urgentCount = changes.Count(c => c.ChangeType.ToLower() == "urgent");
         if (urgentCount > 1)
         {
             warnings.Add($"Multiple urgent changes ({urgentCount}) may cause schedule conflicts");
         }
-        
+
         if (changes.Count > 5)
         {
             warnings.Add("Large number of changes may require manual review");
         }
-        
+
         return warnings;
     }
 
     private double CalculateAdjustmentConfidence(List<ScheduleChange> changes, SmartSchedulingPreferences preferences)
     {
-        if (!changes.Any()) return 0.9;
-        
+        if (!changes.Any())
+        {
+            return 0.9;
+        }
+
         // Start with base confidence
         var confidence = 0.8;
-        
+
         // Reduce confidence for complex changes
-        var complexChanges = changes.Count(c => 
+        var complexChanges = changes.Count(c =>
             c.ChangeType.ToLower() is "reschedule" or "extend");
         confidence -= complexChanges * 0.05;
-        
+
         // Reduce confidence for many changes
         if (changes.Count > 3)
         {
             confidence -= (changes.Count - 3) * 0.03;
         }
-        
+
         // Increase confidence if changes are simple
-        var simpleChanges = changes.Count(c => 
+        var simpleChanges = changes.Count(c =>
             c.ChangeType.ToLower() is "cancel" or "urgent");
         confidence += simpleChanges * 0.02;
-        
+
         return Math.Max(0.5, Math.Min(1.0, confidence));
     }
 }

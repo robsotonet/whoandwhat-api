@@ -29,7 +29,7 @@ public class GetMotivationalContentQueryHandlerTests
         _mockPreferencesRepository = new Mock<IUserContentPreferencesRepository>();
         _mockEngagementService = new Mock<IOptimizedContentEngagementService>();
         _mockLogger = new Mock<ILogger<GetMotivationalContentQueryHandler>>();
-        
+
         _handler = new GetMotivationalContentQueryHandler(
             _mockContentRepository.Object,
             _mockPreferencesRepository.Object,
@@ -131,9 +131,9 @@ public class GetMotivationalContentQueryHandlerTests
         result.Value.Contents.Should().BeEmpty();
         result.Value.TotalAvailable.Should().Be(0);
         result.Value.PersonalizationInfo.Should().NotBeNull();
-        
+
         _mockEngagementService.Verify(
-            x => x.GetPersonalizedContentAsync(It.IsAny<Guid>(), It.IsAny<int>(), It.IsAny<CancellationToken>()), 
+            x => x.GetPersonalizedContentAsync(It.IsAny<Guid>(), It.IsAny<int>(), It.IsAny<CancellationToken>()),
             Times.Never);
     }
 
@@ -187,7 +187,7 @@ public class GetMotivationalContentQueryHandlerTests
         // Assert
         result.IsSuccess.Should().BeTrue();
         _mockEngagementService.Verify(
-            x => x.GetPersonalizedContentAsync(_testUserId, requestedCount, It.IsAny<CancellationToken>()), 
+            x => x.GetPersonalizedContentAsync(_testUserId, requestedCount, It.IsAny<CancellationToken>()),
             Times.Once);
     }
 
@@ -261,7 +261,7 @@ public class GetMotivationalContentQueryHandlerTests
         // Since the method likely has parameters, we need to set it up properly
         Mock.Get(preferences)
             .Setup(x => x.CanDeliverContentNow(
-                It.IsAny<ContentDeliveryChannel>(), 
+                It.IsAny<ContentDeliveryChannel>(),
                 It.IsAny<MotivationalContentType>()))
             .Returns(canDeliver);
     }

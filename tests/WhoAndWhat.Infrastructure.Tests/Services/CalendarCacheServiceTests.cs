@@ -146,7 +146,7 @@ public class CalendarCacheServiceTests : IDisposable
     {
         // Arrange
         var testEvents = CreateTestEvents(2);
-        
+
         _mockDistributedCache.Setup(x => x.SetStringAsync(
                 It.IsAny<string>(),
                 It.IsAny<string>(),
@@ -684,14 +684,14 @@ public class CalendarCacheServiceTests : IDisposable
     {
         var mockServer = new Mock<IServer>();
         var mockEndPoint = new Mock<System.Net.EndPoint>();
-        
+
         mockServer.Setup(x => x.IsConnected).Returns(true);
         mockServer.Setup(x => x.KeysAsync(It.IsAny<int>(), pattern, It.IsAny<int>(), It.IsAny<long>(), It.IsAny<int>(), It.IsAny<CommandFlags>()))
             .Returns(keys.ToAsyncEnumerable());
 
         _mockRedis.Setup(x => x.GetEndPoints(It.IsAny<bool>()))
             .Returns(new[] { mockEndPoint.Object });
-        
+
         _mockRedis.Setup(x => x.GetServer(mockEndPoint.Object, It.IsAny<object>()))
             .Returns(mockServer.Object);
     }
@@ -742,7 +742,7 @@ internal static class AsyncEnumerableExtensions
         return ToAsyncEnumerableInternal(source);
     }
 
-    private static async IAsyncEnumerable<T> ToAsyncEnumerableInternal<T>(IEnumerable<T> source)
+    private static IAsyncEnumerable<T> ToAsyncEnumerableInternal<T>(IEnumerable<T> source)
     {
         foreach (var item in source)
         {

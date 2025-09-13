@@ -15,7 +15,7 @@ public interface IAIPlanningService
     /// <param name="preferences">User preferences and constraints for planning</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>AI-generated day plan with suggested task scheduling and time blocks</returns>
-    Task<AIGeneratedPlan?> GenerateDayPlanAsync(Guid userId, DateTime planDate, UserPlanningPreferences preferences, CancellationToken cancellationToken = default);
+    public Task<AIGeneratedPlan?> GenerateDayPlanAsync(Guid userId, DateTime planDate, UserPlanningPreferences preferences, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Get AI-powered task priority suggestions based on task content, context, and user patterns
@@ -25,7 +25,7 @@ public interface IAIPlanningService
     /// <param name="analysisContext">Additional context for priority analysis</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>List of task priority suggestions with AI reasoning</returns>
-    Task<IEnumerable<TaskPrioritySuggestion>?> GetTaskPrioritySuggestionsAsync(Guid userId, IEnumerable<TaskAnalysisContext> taskContexts, PriorityAnalysisContext analysisContext, CancellationToken cancellationToken = default);
+    public Task<IEnumerable<TaskPrioritySuggestion>?> GetTaskPrioritySuggestionsAsync(Guid userId, IEnumerable<TaskAnalysisContext> taskContexts, PriorityAnalysisContext analysisContext, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Generate AI-powered schedule optimizations for better productivity and time management
@@ -35,7 +35,7 @@ public interface IAIPlanningService
     /// <param name="optimizationPreferences">User preferences for schedule optimization</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Schedule optimization suggestions with productivity insights</returns>
-    Task<ScheduleOptimizationResult?> GenerateScheduleOptimizationsAsync(Guid userId, IEnumerable<TimeSlot> timeSlots, ScheduleOptimizationPreferences optimizationPreferences, CancellationToken cancellationToken = default);
+    public Task<ScheduleOptimizationResult?> GenerateScheduleOptimizationsAsync(Guid userId, IEnumerable<TimeSlot> timeSlots, ScheduleOptimizationPreferences optimizationPreferences, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Get AI-generated break and rest recommendations based on user activity patterns
@@ -44,7 +44,7 @@ public interface IAIPlanningService
     /// <param name="workloadAnalysis">Current workload and productivity analysis</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Break recommendations with timing and activity suggestions</returns>
-    Task<IEnumerable<BreakRecommendation>?> GetBreakRecommendationsAsync(Guid userId, WorkloadAnalysis workloadAnalysis, CancellationToken cancellationToken = default);
+    public Task<IEnumerable<BreakRecommendation>?> GetBreakRecommendationsAsync(Guid userId, WorkloadAnalysis workloadAnalysis, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Get AI-powered productivity insights and patterns analysis
@@ -53,7 +53,7 @@ public interface IAIPlanningService
     /// <param name="analysisTimeframe">Timeframe for productivity analysis</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Productivity insights with actionable recommendations</returns>
-    Task<ProductivityInsights?> GetProductivityInsightsAsync(Guid userId, TimeframeAnalysis analysisTimeframe, CancellationToken cancellationToken = default);
+    public Task<ProductivityInsights?> GetProductivityInsightsAsync(Guid userId, TimeframeAnalysis analysisTimeframe, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Generate smart task categorization suggestions using AI content analysis
@@ -63,21 +63,21 @@ public interface IAIPlanningService
     /// <param name="userCategoryHistory">User's historical categorization patterns</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Category suggestions with confidence scores</returns>
-    Task<IEnumerable<CategorySuggestion>?> GetTaskCategorizationSuggestionsAsync(Guid userId, string taskContent, UserCategoryHistory userCategoryHistory, CancellationToken cancellationToken = default);
+    public Task<IEnumerable<CategorySuggestion>?> GetTaskCategorizationSuggestionsAsync(Guid userId, string taskContent, UserCategoryHistory userCategoryHistory, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Check if AI planning service is properly configured and available
     /// </summary>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>True if AI service is ready and responding</returns>
-    Task<bool> IsAIServiceAvailableAsync(CancellationToken cancellationToken = default);
+    public Task<bool> IsAIServiceAvailableAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Get AI service health status with detailed diagnostics
     /// </summary>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Detailed health status including response times and service capabilities</returns>
-    Task<AIServiceHealthStatus> GetAIServiceHealthAsync(CancellationToken cancellationToken = default);
+    public Task<AIServiceHealthStatus> GetAIServiceHealthAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Generate AI-powered task completion time estimates
@@ -87,5 +87,5 @@ public interface IAIPlanningService
     /// <param name="historicalPerformance">User's historical task completion performance</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Time estimates with confidence intervals and factors affecting estimation</returns>
-    Task<IEnumerable<TaskTimeEstimate>?> GenerateTaskTimeEstimatesAsync(Guid userId, IEnumerable<TaskEstimationRequest> taskEstimationRequests, UserHistoricalPerformance historicalPerformance, CancellationToken cancellationToken = default);
+    public Task<IEnumerable<TaskTimeEstimate>?> GenerateTaskTimeEstimatesAsync(Guid userId, IEnumerable<TaskEstimationRequest> taskEstimationRequests, UserHistoricalPerformance historicalPerformance, CancellationToken cancellationToken = default);
 }

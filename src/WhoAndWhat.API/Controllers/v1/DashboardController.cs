@@ -4,15 +4,15 @@ using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using WhoAndWhat.Application.DTOs.Dashboard;
-using WhoAndWhat.Application.Features.Dashboard.Queries.GetMotivationalContent;
-using WhoAndWhat.Application.Features.Dashboard.Queries.GetDashboardMetrics;
-using WhoAndWhat.Application.Features.Dashboard.Queries.GetProductivityStreak;
-using WhoAndWhat.Application.Features.Dashboard.Queries.GetOverdueTasks;
-using WhoAndWhat.Application.Features.Dashboard.Queries.GetCompletionStats;
-using WhoAndWhat.Application.Features.Dashboard.Commands.UpdateDashboardSettings;
 using WhoAndWhat.Application.Features.Dashboard.Commands.ResetDashboardPreferences;
+using WhoAndWhat.Application.Features.Dashboard.Commands.UpdateDashboardSettings;
 using WhoAndWhat.Application.Features.Dashboard.Queries.ExportDashboardData;
 using WhoAndWhat.Application.Features.Dashboard.Queries.GenerateDashboardReport;
+using WhoAndWhat.Application.Features.Dashboard.Queries.GetCompletionStats;
+using WhoAndWhat.Application.Features.Dashboard.Queries.GetDashboardMetrics;
+using WhoAndWhat.Application.Features.Dashboard.Queries.GetMotivationalContent;
+using WhoAndWhat.Application.Features.Dashboard.Queries.GetOverdueTasks;
+using WhoAndWhat.Application.Features.Dashboard.Queries.GetProductivityStreak;
 
 namespace WhoAndWhat.API.Controllers.v1;
 
@@ -101,7 +101,7 @@ public class DashboardController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "Unexpected error getting motivational content");
-            
+
             return StatusCode(StatusCodes.Status500InternalServerError, new ProblemDetails
             {
                 Title = "Internal Server Error",
@@ -164,10 +164,10 @@ public class DashboardController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "Unexpected error recording content interaction");
-            
+
             return Task.FromResult<ActionResult>(StatusCode(StatusCodes.Status500InternalServerError, new ProblemDetails
             {
-                Title = "Internal Server Error", 
+                Title = "Internal Server Error",
                 Detail = "An unexpected error occurred while recording content interaction",
                 Status = StatusCodes.Status500InternalServerError
             }));

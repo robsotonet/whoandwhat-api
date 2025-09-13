@@ -45,7 +45,7 @@ public class SmartSchedulingController : ControllerBase
         try
         {
             var userId = GetUserId();
-            
+
             _logger.LogInformation("Generating smart schedule for user {UserId}", userId);
 
             var command = new GenerateSmartScheduleCommand(
@@ -88,7 +88,7 @@ public class SmartSchedulingController : ControllerBase
         try
         {
             var userId = GetUserId();
-            
+
             _logger.LogInformation("Optimizing schedule {ScheduleId} for user {UserId}", request.ScheduleId, userId);
 
             var command = new OptimizeScheduleCommand(
@@ -134,7 +134,7 @@ public class SmartSchedulingController : ControllerBase
         try
         {
             var userId = GetUserId();
-            
+
             _logger.LogInformation("Getting scheduling suggestions for user {UserId} on {Date}", userId, date);
 
             var taskIdList = new List<Guid>();
@@ -177,7 +177,7 @@ public class SmartSchedulingController : ControllerBase
         try
         {
             var userId = GetUserId();
-            
+
             _logger.LogInformation("Updating scheduling preferences for user {UserId}", userId);
 
             var command = new UpdateSchedulingPreferencesCommand(userId, preferences);
@@ -204,12 +204,12 @@ public class SmartSchedulingController : ControllerBase
     [HttpGet("preferences")]
     [ProducesResponseType(typeof(SmartSchedulingPreferences), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status500InternalServerError)]
-    public async Task<ActionResult<SmartSchedulingPreferences>> GetSchedulingPreferences()
+    public Task<ActionResult<SmartSchedulingPreferences>> GetSchedulingPreferences()
     {
         try
         {
             var userId = GetUserId();
-            
+
             _logger.LogInformation("Getting scheduling preferences for user {UserId}", userId);
 
             // This would ideally be a separate query, but for simplicity we'll use the service directly
@@ -237,12 +237,12 @@ public class SmartSchedulingController : ControllerBase
                 new List<ScheduleConstraint>()
             );
 
-            return Ok(preferences);
+            return Task.FromResult<ActionResult<SmartSchedulingPreferences>>(Ok(preferences));
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error getting scheduling preferences");
-            return StatusCode(500, new ErrorResponse("An error occurred while getting scheduling preferences"));
+            return Task.FromResult<ActionResult<SmartSchedulingPreferences>>(StatusCode(500, new ErrorResponse("An error occurred while getting scheduling preferences")));
         }
     }
 
@@ -263,7 +263,7 @@ public class SmartSchedulingController : ControllerBase
         try
         {
             var userId = GetUserId();
-            
+
             _logger.LogInformation("Getting scheduling patterns for user {UserId} from {StartDate} to {EndDate}",
                 userId, startDate, endDate);
 
@@ -293,12 +293,12 @@ public class SmartSchedulingController : ControllerBase
     [ProducesResponseType(typeof(List<TimeBlockSuggestion>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status500InternalServerError)]
-    public async Task<ActionResult<List<TimeBlockSuggestion>>> GetTimeBlockRecommendations([FromQuery] DateTime date)
+    public Task<ActionResult<List<TimeBlockSuggestion>>> GetTimeBlockRecommendations([FromQuery] DateTime date)
     {
         try
         {
             var userId = GetUserId();
-            
+
             _logger.LogInformation("Getting time block recommendations for user {UserId} on {Date}", userId, date);
 
             // For now, return sample time blocks
@@ -329,12 +329,12 @@ public class SmartSchedulingController : ControllerBase
                 )
             };
 
-            return Ok(timeBlocks);
+            return Task.FromResult<ActionResult<List<TimeBlockSuggestion>>>(Ok(timeBlocks));
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error getting time block recommendations");
-            return StatusCode(500, new ErrorResponse("An error occurred while getting time block recommendations"));
+            return Task.FromResult<ActionResult<List<TimeBlockSuggestion>>>(StatusCode(500, new ErrorResponse("An error occurred while getting time block recommendations")));
         }
     }
 
@@ -344,7 +344,7 @@ public class SmartSchedulingController : ControllerBase
     /// <returns>Service availability status</returns>
     [HttpGet("health")]
     [ProducesResponseType(typeof(HealthStatusResponse), StatusCodes.Status200OK)]
-    public async Task<ActionResult<HealthStatusResponse>> GetServiceHealth()
+    public Task<ActionResult<HealthStatusResponse>> GetServiceHealth()
     {
         try
         {
@@ -358,17 +358,17 @@ public class SmartSchedulingController : ControllerBase
                 DateTime.UtcNow
             );
 
-            return Ok(healthStatus);
+            return Task.FromResult<ActionResult<HealthStatusResponse>>(Ok(healthStatus));
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error checking service health");
-            return Ok(new HealthStatusResponse(
+            return Task.FromResult<ActionResult<HealthStatusResponse>>(Ok(new HealthStatusResponse(
                 false,
                 "Service health check failed",
                 new List<string>(),
                 DateTime.UtcNow
-            ));
+            )));
         }
     }
 

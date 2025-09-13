@@ -157,7 +157,7 @@ public class DashboardPerformanceMonitoringServiceTests : IDisposable
 
         // Assert
         latestSnapshotField.Should().NotBeNull("_latestSnapshot field should exist for performance optimization");
-        
+
         var fieldValue = latestSnapshotField!.GetValue(_service);
         fieldValue.Should().BeNull("_latestSnapshot should be initialized as null");
     }
@@ -194,19 +194,19 @@ public class DashboardPerformanceMonitoringServiceTests : IDisposable
 
         // Act
         await _service.StartAsync(CancellationToken.None);
-        
+
         // Allow some time for background processing if needed
         await Task.Delay(100);
-        
+
         await _service.StopAsync(CancellationToken.None);
 
         // Assert
         _service.Should().NotBeNull("Service lifecycle should complete successfully");
-        
+
         // Verify that the cache services were set up correctly for metrics collection
         _mockDashboardCacheService.Verify(x => x.GetDashboardCacheMetricsAsync(It.IsAny<CancellationToken>()), Times.Never());
         _mockTaskCacheService.Verify(x => x.GetCacheMetricsAsync(It.IsAny<CancellationToken>()), Times.Never());
-        
+
         // Note: The actual timer callbacks are private and run on background threads,
         // so we can't easily test them synchronously. This test validates the setup.
     }
@@ -220,7 +220,7 @@ public class DashboardPerformanceMonitoringServiceTests : IDisposable
     {
         // Arrange & Act
         var services = new List<DashboardPerformanceMonitoringService>();
-        
+
         // Create multiple instances
         for (int i = 0; i < 10; i++)
         {
@@ -229,7 +229,7 @@ public class DashboardPerformanceMonitoringServiceTests : IDisposable
                 _mockTaskCacheService.Object,
                 _cacheSettings,
                 _mockLogger.Object);
-            
+
             services.Add(service);
         }
 

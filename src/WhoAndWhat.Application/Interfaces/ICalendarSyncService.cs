@@ -15,7 +15,7 @@ public interface ICalendarSyncService
     /// <param name="syncMode">Synchronization mode (bidirectional, one-way, etc.)</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Synchronization result with success status and statistics</returns>
-    Task<CalendarSyncResult> SyncCalendarAsync(Guid userId, CalendarProvider provider, SyncMode syncMode, CancellationToken cancellationToken = default);
+    public Task<CalendarSyncResult> SyncCalendarAsync(Guid userId, CalendarProvider provider, SyncMode syncMode, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Perform incremental calendar synchronization (only sync changes since last sync)
@@ -25,7 +25,7 @@ public interface ICalendarSyncService
     /// <param name="lastSyncToken">Token from previous sync operation</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Incremental sync result with changes and new sync token</returns>
-    Task<IncrementalSyncResult> SyncCalendarIncrementalAsync(Guid userId, CalendarProvider provider, string lastSyncToken, CancellationToken cancellationToken = default);
+    public Task<IncrementalSyncResult> SyncCalendarIncrementalAsync(Guid userId, CalendarProvider provider, string lastSyncToken, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Sync specific events between WhoAndWhat and external calendar
@@ -36,7 +36,7 @@ public interface ICalendarSyncService
     /// <param name="syncDirection">Direction of synchronization</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Event sync results with individual operation status</returns>
-    Task<IEnumerable<EventSyncResult>> SyncEventsAsync(Guid userId, IEnumerable<Guid> eventIds, CalendarProvider provider, SyncDirection syncDirection, CancellationToken cancellationToken = default);
+    public Task<IEnumerable<EventSyncResult>> SyncEventsAsync(Guid userId, IEnumerable<Guid> eventIds, CalendarProvider provider, SyncDirection syncDirection, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Convert WhoAndWhat tasks to calendar events and sync to external calendar
@@ -47,7 +47,7 @@ public interface ICalendarSyncService
     /// <param name="conversionOptions">Options for task-to-event conversion</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Task conversion and sync results</returns>
-    Task<IEnumerable<TaskToEventSyncResult>> SyncTasksAsEventsAsync(Guid userId, IEnumerable<Guid> taskIds, CalendarProvider provider, TaskToEventConversionOptions conversionOptions, CancellationToken cancellationToken = default);
+    public Task<IEnumerable<TaskToEventSyncResult>> SyncTasksAsEventsAsync(Guid userId, IEnumerable<Guid> taskIds, CalendarProvider provider, TaskToEventConversionOptions conversionOptions, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Get synchronization status and statistics for a user's calendar integration
@@ -56,7 +56,7 @@ public interface ICalendarSyncService
     /// <param name="provider">Calendar provider</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Detailed sync status and statistics</returns>
-    Task<CalendarSyncStatus> GetSyncStatusAsync(Guid userId, CalendarProvider provider, CancellationToken cancellationToken = default);
+    public Task<CalendarSyncStatus> GetSyncStatusAsync(Guid userId, CalendarProvider provider, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Get all calendar providers configured and available for a user
@@ -64,7 +64,7 @@ public interface ICalendarSyncService
     /// <param name="userId">User ID</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>List of available calendar providers with configuration status</returns>
-    Task<IEnumerable<AvailableCalendarProvider>> GetAvailableProvidersAsync(Guid userId, CancellationToken cancellationToken = default);
+    public Task<IEnumerable<AvailableCalendarProvider>> GetAvailableProvidersAsync(Guid userId, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Configure calendar provider for a user (OAuth setup, credentials, preferences)
@@ -73,7 +73,7 @@ public interface ICalendarSyncService
     /// <param name="providerConfig">Calendar provider configuration</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Configuration result with success status</returns>
-    Task<CalendarProviderConfigResult> ConfigureProviderAsync(Guid userId, CalendarProviderConfiguration providerConfig, CancellationToken cancellationToken = default);
+    public Task<CalendarProviderConfigResult> ConfigureProviderAsync(Guid userId, CalendarProviderConfiguration providerConfig, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Disconnect and remove calendar provider integration for a user
@@ -83,7 +83,7 @@ public interface ICalendarSyncService
     /// <param name="deleteData">Whether to delete synced data</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Disconnection result</returns>
-    Task<CalendarDisconnectResult> DisconnectProviderAsync(Guid userId, CalendarProvider provider, bool deleteData, CancellationToken cancellationToken = default);
+    public Task<CalendarDisconnectResult> DisconnectProviderAsync(Guid userId, CalendarProvider provider, bool deleteData, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Get calendar synchronization conflicts that require user resolution
@@ -92,7 +92,7 @@ public interface ICalendarSyncService
     /// <param name="provider">Optional provider filter</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>List of conflicts requiring resolution</returns>
-    Task<IEnumerable<CalendarSyncConflict>> GetPendingConflictsAsync(Guid userId, CalendarProvider? provider = null, CancellationToken cancellationToken = default);
+    public Task<IEnumerable<CalendarSyncConflict>> GetPendingConflictsAsync(Guid userId, CalendarProvider? provider = null, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Resolve a specific calendar synchronization conflict
@@ -102,21 +102,21 @@ public interface ICalendarSyncService
     /// <param name="resolution">User's conflict resolution choice</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Conflict resolution result</returns>
-    Task<ConflictResolutionResult> ResolveConflictAsync(Guid userId, Guid conflictId, ConflictResolution resolution, CancellationToken cancellationToken = default);
+    public Task<ConflictResolutionResult> ResolveConflictAsync(Guid userId, Guid conflictId, ConflictResolution resolution, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Check if calendar sync service is properly configured and available
     /// </summary>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>True if service is ready and responding</returns>
-    Task<bool> IsCalendarSyncAvailableAsync(CancellationToken cancellationToken = default);
+    public Task<bool> IsCalendarSyncAvailableAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Get calendar sync service health status with detailed diagnostics
     /// </summary>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Detailed health status including provider availability</returns>
-    Task<CalendarSyncHealthStatus> GetSyncHealthAsync(CancellationToken cancellationToken = default);
+    public Task<CalendarSyncHealthStatus> GetSyncHealthAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Backup calendar synchronization data for a user
@@ -125,7 +125,7 @@ public interface ICalendarSyncService
     /// <param name="backupOptions">Backup configuration options</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Backup operation result</returns>
-    Task<CalendarBackupResult> BackupCalendarDataAsync(Guid userId, CalendarBackupOptions backupOptions, CancellationToken cancellationToken = default);
+    public Task<CalendarBackupResult> BackupCalendarDataAsync(Guid userId, CalendarBackupOptions backupOptions, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Restore calendar synchronization data from backup
@@ -135,5 +135,5 @@ public interface ICalendarSyncService
     /// <param name="restoreOptions">Restore configuration options</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Restore operation result</returns>
-    Task<CalendarRestoreResult> RestoreCalendarDataAsync(Guid userId, string backupId, CalendarRestoreOptions restoreOptions, CancellationToken cancellationToken = default);
+    public Task<CalendarRestoreResult> RestoreCalendarDataAsync(Guid userId, string backupId, CalendarRestoreOptions restoreOptions, CancellationToken cancellationToken = default);
 }

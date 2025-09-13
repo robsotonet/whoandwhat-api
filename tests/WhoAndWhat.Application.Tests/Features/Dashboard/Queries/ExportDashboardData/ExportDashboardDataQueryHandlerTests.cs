@@ -1,8 +1,8 @@
+using System.Text;
+using System.Text.Json;
 using FluentAssertions;
 using Microsoft.Extensions.Logging;
 using Moq;
-using System.Text;
-using System.Text.Json;
 using WhoAndWhat.Application.Common;
 using WhoAndWhat.Application.DTOs;
 using WhoAndWhat.Application.Features.Dashboard.Queries.ExportDashboardData;
@@ -30,7 +30,7 @@ public class ExportDashboardDataQueryHandlerTests
         _mockTaskRepository = new Mock<IAppTaskRepository>();
         _mockUserRepository = new Mock<IUserRepository>();
         _mockLogger = new Mock<ILogger<ExportDashboardDataQueryHandler>>();
-        
+
         _handler = new ExportDashboardDataQueryHandler(
             _mockTaskRepository.Object,
             _mockUserRepository.Object,
@@ -43,7 +43,7 @@ public class ExportDashboardDataQueryHandlerTests
         // Arrange
         var options = new ExportOptionsDto();
         var query = new ExportDashboardDataQuery(_testUserId, "csv", options);
-        
+
         var user = CreateTestUser();
         var tasks = CreateTestTasks();
 
@@ -55,7 +55,7 @@ public class ExportDashboardDataQueryHandlerTests
         // Assert
         result.IsSuccess.Should().BeTrue();
         var response = result.Value;
-        
+
         response.FileContent.Should().NotBeEmpty();
         response.FileName.Should().EndWith(".csv");
         response.ContentType.Should().Be("text/csv");
@@ -64,7 +64,7 @@ public class ExportDashboardDataQueryHandlerTests
         response.Metadata.ExportedBy.Should().Be(user.Username);
         response.Metadata.FileSizeBytes.Should().BeGreaterThan(0);
         response.Metadata.ChecksumHash.Should().NotBeNullOrEmpty();
-        
+
         // Verify CSV content
         var csvContent = Encoding.UTF8.GetString(response.FileContent);
         csvContent.Should().Contain("Type,Date,Title,Category,Priority,Status,DueDate,CompletedAt,Description");
@@ -80,7 +80,7 @@ public class ExportDashboardDataQueryHandlerTests
         // Arrange
         var options = new ExportOptionsDto();
         var query = new ExportDashboardDataQuery(_testUserId, format, options);
-        
+
         var user = CreateTestUser();
         var tasks = CreateTestTasks();
         SetupMocks(user, tasks);
@@ -91,7 +91,7 @@ public class ExportDashboardDataQueryHandlerTests
         // Assert
         result.IsSuccess.Should().BeTrue();
         var response = result.Value;
-        
+
         response.ContentType.Should().Be(expectedContentType);
         response.FileName.Should().EndWith(expectedExtension);
         response.FileContent.Should().NotBeEmpty();
@@ -103,7 +103,7 @@ public class ExportDashboardDataQueryHandlerTests
         // Arrange
         var options = new ExportOptionsDto();
         var query = new ExportDashboardDataQuery(_testUserId, "json", options);
-        
+
         var user = CreateTestUser();
         var tasks = CreateTestTasksWithVariousData();
         SetupMocks(user, tasks);
@@ -114,17 +114,17 @@ public class ExportDashboardDataQueryHandlerTests
         // Assert
         result.IsSuccess.Should().BeTrue();
         var response = result.Value;
-        
+
         var jsonContent = Encoding.UTF8.GetString(response.FileContent);
-        
+
         // Should be valid JSON
         var jsonDocument = JsonDocument.Parse(jsonContent);
-        
+
         // Verify structure
         jsonDocument.RootElement.TryGetProperty("exportInfo", out var exportInfo).Should().BeTrue();
         jsonDocument.RootElement.TryGetProperty("tasks", out var tasksJson).Should().BeTrue();
         jsonDocument.RootElement.TryGetProperty("metrics", out var metricsJson).Should().BeTrue();
-        
+
         // Verify tasks contain expected fields
         var firstTask = tasksJson.EnumerateArray().FirstOrDefault();
         firstTask.TryGetProperty("title", out var title).Should().BeTrue();
@@ -139,7 +139,7 @@ public class ExportDashboardDataQueryHandlerTests
         // Arrange
         var options = new ExportOptionsDto();
         var query = new ExportDashboardDataQuery(_testUserId, "csv", options);
-        
+
         _mockUserRepository
             .Setup(x => x.GetByIdAsync(_testUserId, It.IsAny<CancellationToken>()))
             .ReturnsAsync((User)null!);
@@ -162,7 +162,7 @@ public class ExportDashboardDataQueryHandlerTests
         // Arrange
         var options = new ExportOptionsDto();
         var query = new ExportDashboardDataQuery(_testUserId, invalidFormat, options);
-        
+
         var user = CreateTestUser();
         _mockUserRepository
             .Setup(x => x.GetByIdAsync(_testUserId, It.IsAny<CancellationToken>()))
@@ -183,7 +183,7 @@ public class ExportDashboardDataQueryHandlerTests
         // Arrange
         var options = new ExportOptionsDto(DataTypes: new List<string> { "tasks", "metrics" });
         var query = new ExportDashboardDataQuery(_testUserId, "json", options);
-        
+
         var user = CreateTestUser();
         var tasks = CreateTestTasks();
         SetupMocks(user, tasks);
@@ -194,22 +194,22 @@ public class ExportDashboardDataQueryHandlerTests
         // Assert
         result.IsSuccess.Should().BeTrue();
         var response = result.Value;
-        
+
         response.Metadata.RecordCounts.Should().ContainKey("tasks");
         response.Metadata.RecordCounts.Should().ContainKey("metrics");
         response.Metadata.RecordCounts.Should().NotContainKey("streaks");
         response.Metadata.RecordCounts.Should().NotContainKey("analytics");
-        
+
         var jsonContent = Encoding.UTF8.GetString(response.FileContent);
         var jsonDocument = JsonDocument.Parse(jsonContent);
-        
+
         jsonDocument.RootElement.TryGetProperty("tasks", out var tasksJson).Should().BeTrue();
         jsonDocument.RootElement.TryGetProperty("metrics", out var metricsJson).Should().BeTrue();
-        
+
         // Streaks and analytics should be empty arrays since not requested
         jsonDocument.RootElement.TryGetProperty("streaks", out var streaksJson).Should().BeTrue();
         streaksJson.EnumerateArray().Should().BeEmpty();
-        
+
         jsonDocument.RootElement.TryGetProperty("analytics", out var analyticsJson).Should().BeTrue();
         analyticsJson.EnumerateArray().Should().BeEmpty();
     }
@@ -222,7 +222,7 @@ public class ExportDashboardDataQueryHandlerTests
         var endDate = new DateTime(2024, 1, 31);
         var options = new ExportOptionsDto(StartDate: startDate, EndDate: endDate);
         var query = new ExportDashboardDataQuery(_testUserId, "json", options);
-        
+
         var user = CreateTestUser();
         var tasks = CreateTestTasksWithDifferentDates();
         SetupMocks(user, tasks);
@@ -233,14 +233,14 @@ public class ExportDashboardDataQueryHandlerTests
         // Assert
         result.IsSuccess.Should().BeTrue();
         var response = result.Value;
-        
+
         response.Metadata.Options.StartDate.Should().Be(startDate);
         response.Metadata.Options.EndDate.Should().Be(endDate);
-        
+
         // Verify that task repository was called with correct filter
         _mockTaskRepository.Verify(
             x => x.GetTasksByUserIdAsync(
-                _testUserId, 
+                _testUserId,
                 It.Is<TaskFilter>(f => f.CreatedAfter == startDate && f.CreatedBefore == endDate),
                 It.IsAny<CancellationToken>()),
             Times.AtLeastOnce);
@@ -252,7 +252,7 @@ public class ExportDashboardDataQueryHandlerTests
         // Arrange
         var options = new ExportOptionsDto(IncludeCategories: new List<string> { "ToDo", "Project" });
         var query = new ExportDashboardDataQuery(_testUserId, "csv", options);
-        
+
         var user = CreateTestUser();
         var tasks = CreateTestTasksWithDifferentCategories();
         SetupMocks(user, tasks);
@@ -262,11 +262,11 @@ public class ExportDashboardDataQueryHandlerTests
 
         // Assert
         result.IsSuccess.Should().BeTrue();
-        
+
         // Verify that task repository was called with category filter
         _mockTaskRepository.Verify(
             x => x.GetTasksByUserIdAsync(
-                _testUserId, 
+                _testUserId,
                 It.Is<TaskFilter>(f => f.Categories != null && f.Categories.Any()),
                 It.IsAny<CancellationToken>()),
             Times.AtLeastOnce);
@@ -278,7 +278,7 @@ public class ExportDashboardDataQueryHandlerTests
         // Arrange
         var options = new ExportOptionsDto(IncludeDeleted: true);
         var query = new ExportDashboardDataQuery(_testUserId, "csv", options);
-        
+
         var user = CreateTestUser();
         var tasks = CreateTestTasksIncludingDeleted();
         SetupMocks(user, tasks);
@@ -288,11 +288,11 @@ public class ExportDashboardDataQueryHandlerTests
 
         // Assert
         result.IsSuccess.Should().BeTrue();
-        
+
         // Verify that task repository was called with IncludeDeleted flag
         _mockTaskRepository.Verify(
             x => x.GetTasksByUserIdAsync(
-                _testUserId, 
+                _testUserId,
                 It.Is<TaskFilter>(f => f.IncludeDeleted == true),
                 It.IsAny<CancellationToken>()),
             Times.AtLeastOnce);
@@ -304,7 +304,7 @@ public class ExportDashboardDataQueryHandlerTests
         // Arrange
         var options = new ExportOptionsDto(DataTypes: new List<string> { "tasks", "metrics" });
         var query = new ExportDashboardDataQuery(_testUserId, "json", options);
-        
+
         var user = CreateTestUser();
         var tasks = CreateTestTasksForMetricsCalculation();
         SetupMocks(user, tasks);
@@ -315,18 +315,18 @@ public class ExportDashboardDataQueryHandlerTests
         // Assert
         result.IsSuccess.Should().BeTrue();
         var response = result.Value;
-        
+
         var jsonContent = Encoding.UTF8.GetString(response.FileContent);
         var jsonDocument = JsonDocument.Parse(jsonContent);
-        
+
         jsonDocument.RootElement.TryGetProperty("metrics", out var metricsJson).Should().BeTrue();
-        
+
         metricsJson.TryGetProperty("totalTasks", out var totalTasks).Should().BeTrue();
         totalTasks.GetInt32().Should().Be(5); // As defined in test data
-        
+
         metricsJson.TryGetProperty("completedTasks", out var completedTasks).Should().BeTrue();
         completedTasks.GetInt32().Should().Be(3); // As defined in test data
-        
+
         metricsJson.TryGetProperty("completionRate", out var completionRate).Should().BeTrue();
         completionRate.GetDouble().Should().Be(60.0); // 3/5 * 100
     }
@@ -337,7 +337,7 @@ public class ExportDashboardDataQueryHandlerTests
         // Arrange
         var options = new ExportOptionsDto(DataTypes: new List<string> { "streaks" });
         var query = new ExportDashboardDataQuery(_testUserId, "json", options);
-        
+
         var user = CreateTestUser();
         var tasks = CreateTestTasksWithStreaks();
         SetupMocks(user, tasks);
@@ -348,19 +348,19 @@ public class ExportDashboardDataQueryHandlerTests
         // Assert
         result.IsSuccess.Should().BeTrue();
         var response = result.Value;
-        
+
         var jsonContent = Encoding.UTF8.GetString(response.FileContent);
         var jsonDocument = JsonDocument.Parse(jsonContent);
-        
+
         jsonDocument.RootElement.TryGetProperty("streaks", out var streaksJson).Should().BeTrue();
-        
+
         var streaksArray = streaksJson.EnumerateArray();
         streaksArray.Should().NotBeEmpty();
-        
+
         var firstStreak = streaksArray.FirstOrDefault();
         firstStreak.TryGetProperty("duration", out var duration).Should().BeTrue();
         duration.GetInt32().Should().BeGreaterThan(0);
-        
+
         firstStreak.TryGetProperty("tasksCompleted", out var tasksCompleted).Should().BeTrue();
         tasksCompleted.GetInt32().Should().BeGreaterThan(0);
     }
@@ -371,7 +371,7 @@ public class ExportDashboardDataQueryHandlerTests
         // Arrange
         var options = new ExportOptionsDto(DataTypes: new List<string> { "analytics" });
         var query = new ExportDashboardDataQuery(_testUserId, "json", options);
-        
+
         var user = CreateTestUser();
         var tasks = CreateTestTasksForAnalytics();
         SetupMocks(user, tasks);
@@ -382,19 +382,19 @@ public class ExportDashboardDataQueryHandlerTests
         // Assert
         result.IsSuccess.Should().BeTrue();
         var response = result.Value;
-        
+
         var jsonContent = Encoding.UTF8.GetString(response.FileContent);
         var jsonDocument = JsonDocument.Parse(jsonContent);
-        
+
         jsonDocument.RootElement.TryGetProperty("analytics", out var analyticsJson).Should().BeTrue();
-        
+
         var analyticsArray = analyticsJson.EnumerateArray();
         analyticsArray.Should().NotBeEmpty();
-        
+
         // Should have daily productivity entries
         var dailyEntries = analyticsArray.Where(a => a.GetProperty("metric").GetString() == "DailyProductivity");
         dailyEntries.Should().NotBeEmpty();
-        
+
         // Should have weekly trend entries
         var weeklyEntries = analyticsArray.Where(a => a.GetProperty("metric").GetString() == "WeeklyTrend");
         weeklyEntries.Should().NotBeEmpty();
@@ -406,7 +406,7 @@ public class ExportDashboardDataQueryHandlerTests
         // Arrange
         var options = new ExportOptionsDto();
         var query = new ExportDashboardDataQuery(_testUserId, "csv", options);
-        
+
         var user = CreateTestUser();
         var tasks = CreateTestTasksWithSpecialCharacters();
         SetupMocks(user, tasks);
@@ -417,9 +417,9 @@ public class ExportDashboardDataQueryHandlerTests
         // Assert
         result.IsSuccess.Should().BeTrue();
         var response = result.Value;
-        
+
         var csvContent = Encoding.UTF8.GetString(response.FileContent);
-        
+
         // Should properly escape quotes and commas
         csvContent.Should().Contain("\"Task with, comma\"");
         csvContent.Should().Contain("\"Task with \"\"quotes\"\"\"");
@@ -432,7 +432,7 @@ public class ExportDashboardDataQueryHandlerTests
         // Arrange
         var options = new ExportOptionsDto();
         var query = new ExportDashboardDataQuery(_testUserId, "csv", options);
-        
+
         var user = CreateTestUser();
         _mockUserRepository
             .Setup(x => x.GetByIdAsync(_testUserId, It.IsAny<CancellationToken>()))
@@ -449,7 +449,7 @@ public class ExportDashboardDataQueryHandlerTests
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("Failed to export dashboard data");
         result.Error.Should().Contain("Database connection failed");
-        
+
         // Verify logging
         _mockLogger.Verify(
             x => x.Log(
@@ -467,7 +467,7 @@ public class ExportDashboardDataQueryHandlerTests
         // Arrange
         var options = new ExportOptionsDto();
         var query = new ExportDashboardDataQuery(_testUserId, "csv", options);
-        
+
         var user = CreateTestUser();
         var tasks = CreateTestTasks();
         SetupMocks(user, tasks);
@@ -477,7 +477,7 @@ public class ExportDashboardDataQueryHandlerTests
 
         // Assert
         result.IsSuccess.Should().BeTrue();
-        
+
         // Verify logging
         _mockLogger.Verify(
             x => x.Log(
@@ -487,7 +487,7 @@ public class ExportDashboardDataQueryHandlerTests
                 It.IsAny<Exception>(),
                 It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
             Times.Once);
-            
+
         _mockLogger.Verify(
             x => x.Log(
                 LogLevel.Information,
@@ -504,7 +504,7 @@ public class ExportDashboardDataQueryHandlerTests
         // Arrange
         var options = new ExportOptionsDto();
         var query = new ExportDashboardDataQuery(_testUserId, "json", options);
-        
+
         var user = CreateTestUser();
         var emptyTasks = new List<AppTask>();
         SetupMocks(user, emptyTasks);
@@ -515,14 +515,14 @@ public class ExportDashboardDataQueryHandlerTests
         // Assert
         result.IsSuccess.Should().BeTrue();
         var response = result.Value;
-        
+
         response.RecordCount.Should().Be(1); // Only metrics record
         response.Metadata.RecordCounts["tasks"].Should().Be(0);
         response.Metadata.RecordCounts["metrics"].Should().Be(1);
-        
+
         var jsonContent = Encoding.UTF8.GetString(response.FileContent);
         var jsonDocument = JsonDocument.Parse(jsonContent);
-        
+
         jsonDocument.RootElement.TryGetProperty("tasks", out var tasksJson).Should().BeTrue();
         tasksJson.EnumerateArray().Should().BeEmpty();
     }
@@ -582,21 +582,21 @@ public class ExportDashboardDataQueryHandlerTests
     private List<AppTask> CreateTestTasksWithDifferentDates()
     {
         var tasks = new List<AppTask>();
-        
+
         // Tasks within date range (January 2024)
         var task1 = CreateTask("Jan Task 1", AppTaskCategory.ToDo, AppTaskStatus.Completed);
         SetTaskCreationTime(task1, new DateTime(2024, 1, 15));
         tasks.Add(task1);
-        
+
         var task2 = CreateTask("Jan Task 2", AppTaskCategory.ToDo, AppTaskStatus.InProgress);
         SetTaskCreationTime(task2, new DateTime(2024, 1, 25));
         tasks.Add(task2);
-        
+
         // Tasks outside date range (should be filtered out based on filter)
         var task3 = CreateTask("Dec Task", AppTaskCategory.ToDo, AppTaskStatus.Completed);
         SetTaskCreationTime(task3, new DateTime(2023, 12, 15));
         tasks.Add(task3);
-        
+
         return tasks;
     }
 
@@ -626,7 +626,7 @@ public class ExportDashboardDataQueryHandlerTests
     {
         var tasks = new List<AppTask>();
         var today = DateTime.UtcNow.Date;
-        
+
         // Create consecutive completed tasks for streak calculation
         for (int i = 0; i < 5; i++)
         {
@@ -634,7 +634,7 @@ public class ExportDashboardDataQueryHandlerTests
             SetTaskCompletionTime(task, today.AddDays(-i));
             tasks.Add(task);
         }
-        
+
         return tasks;
     }
 
@@ -642,7 +642,7 @@ public class ExportDashboardDataQueryHandlerTests
     {
         var tasks = new List<AppTask>();
         var now = DateTime.UtcNow;
-        
+
         // Create tasks at different dates for analytics
         for (int day = 1; day <= 7; day++)
         {
@@ -650,7 +650,7 @@ public class ExportDashboardDataQueryHandlerTests
             SetTaskCreationTime(task, now.Date.AddDays(-day));
             tasks.Add(task);
         }
-        
+
         return tasks;
     }
 
@@ -676,26 +676,26 @@ public class ExportDashboardDataQueryHandlerTests
     private AppTask CreateTask(string title, AppTaskCategory category, AppTaskStatus status, Priority? priority = null)
     {
         var task = new AppTask { Title = title, Category = (int)category, UserId = _testUserId, Status = (int)AppTaskStatus.Pending };
-        
+
         // Set status using reflection
         var statusField = typeof(AppTask).GetField("_status", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
         statusField?.SetValue(task, (int)status);
-        
+
         // Set priority using reflection
         var priorityField = typeof(AppTask).GetField("_priority", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
         priorityField?.SetValue(task, (int)(priority ?? Priority.Medium));
-        
+
         return task;
     }
 
     private AppTask CreateDeletedTask(string title, AppTaskCategory category)
     {
         var task = new AppTask { Title = title, Category = (int)category, UserId = _testUserId, Status = (int)AppTaskStatus.Pending };
-        
+
         // Set as deleted using reflection
         var isDeletedField = typeof(AppTask).GetField("_isDeleted", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
         isDeletedField?.SetValue(task, true);
-        
+
         return task;
     }
 

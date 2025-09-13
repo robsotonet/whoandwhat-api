@@ -46,7 +46,7 @@ public class ICloudCalDAVProviderService : ICalendarProviderService, IDisposable
         {
             var optionsRequest = new HttpRequestMessage(HttpMethod.Options, $"{ICloudCalDAVBaseUrl}/");
             var response = await _httpClient.SendAsync(optionsRequest, cancellationToken);
-            
+
             // CalDAV server should respond to OPTIONS request with DAV headers
             return response.Headers.Contains("DAV") || response.StatusCode != System.Net.HttpStatusCode.ServiceUnavailable;
         }
@@ -66,9 +66,9 @@ public class ICloudCalDAVProviderService : ICalendarProviderService, IDisposable
     }
 
     public async Task<CalendarAuthResult> AuthenticateAsync(
-        Guid userId, 
-        string authorizationCode, 
-        string redirectUri, 
+        Guid userId,
+        string authorizationCode,
+        string redirectUri,
         CancellationToken cancellationToken = default)
     {
         try
@@ -78,7 +78,7 @@ public class ICloudCalDAVProviderService : ICalendarProviderService, IDisposable
             // For iCloud CalDAV, "authorizationCode" would be the app-specific password
             // The redirectUri would contain the username (Apple ID)
             var credentials = ParseCredentials(authorizationCode, redirectUri);
-            
+
             if (string.IsNullOrEmpty(credentials.Username) || string.IsNullOrEmpty(credentials.Password))
             {
                 return new CalendarAuthResult(
@@ -93,7 +93,7 @@ public class ICloudCalDAVProviderService : ICalendarProviderService, IDisposable
 
             // Test authentication by discovering principal URL
             var principalUrl = await DiscoverPrincipalUrl(credentials.Username, credentials.Password, cancellationToken);
-            
+
             if (string.IsNullOrEmpty(principalUrl))
             {
                 return new CalendarAuthResult(
@@ -108,7 +108,7 @@ public class ICloudCalDAVProviderService : ICalendarProviderService, IDisposable
 
             // For CalDAV, we store the credentials as "tokens" (base64 encoded)
             var accessToken = Convert.ToBase64String(Encoding.UTF8.GetBytes($"{credentials.Username}:{credentials.Password}"));
-            
+
             return new CalendarAuthResult(
                 true,
                 accessToken,
@@ -135,8 +135,8 @@ public class ICloudCalDAVProviderService : ICalendarProviderService, IDisposable
     }
 
     public async Task<TokenRefreshResult> RefreshTokensAsync(
-        Guid userId, 
-        string refreshToken, 
+        Guid userId,
+        string refreshToken,
         CancellationToken cancellationToken = default)
     {
         try
@@ -183,8 +183,8 @@ public class ICloudCalDAVProviderService : ICalendarProviderService, IDisposable
     }
 
     public async Task<IEnumerable<ExternalCalendar>> GetCalendarsAsync(
-        Guid userId, 
-        string accessToken, 
+        Guid userId,
+        string accessToken,
         CancellationToken cancellationToken = default)
     {
         try
@@ -193,21 +193,21 @@ public class ICloudCalDAVProviderService : ICalendarProviderService, IDisposable
 
             var credentials = ParseTokenToCredentials(accessToken);
             var principalUrl = await DiscoverPrincipalUrl(credentials.Username, credentials.Password, cancellationToken);
-            
+
             if (string.IsNullOrEmpty(principalUrl))
             {
                 return [];
             }
 
             var calendarHomeUrl = await DiscoverCalendarHomeSet(principalUrl, credentials, cancellationToken);
-            
+
             if (string.IsNullOrEmpty(calendarHomeUrl))
             {
                 return [];
             }
 
             var calendars = await DiscoverCalendars(calendarHomeUrl, credentials, cancellationToken);
-            
+
             _logger.LogInformation("Retrieved {CalendarCount} calendars for user {UserId}", calendars.Count(), userId);
             return calendars;
         }
@@ -219,12 +219,12 @@ public class ICloudCalDAVProviderService : ICalendarProviderService, IDisposable
     }
 
     public async Task<ExternalCalendarEventsResult> GetEventsAsync(
-        Guid userId, 
-        string calendarId, 
-        string accessToken, 
-        DateTime startDate, 
-        DateTime endDate, 
-        string? syncToken = null, 
+        Guid userId,
+        string calendarId,
+        string accessToken,
+        DateTime startDate,
+        DateTime endDate,
+        string? syncToken = null,
         CancellationToken cancellationToken = default)
     {
         try
@@ -250,7 +250,7 @@ public class ICloudCalDAVProviderService : ICalendarProviderService, IDisposable
             var responseContent = await response.Content.ReadAsStringAsync(cancellationToken);
             var events = await ParseCalendarEventsFromResponse(responseContent, calendarUrl, credentials, cancellationToken);
 
-            _logger.LogInformation("Retrieved {EventCount} events for user {UserId} from calendar {CalendarId}", 
+            _logger.LogInformation("Retrieved {EventCount} events for user {UserId} from calendar {CalendarId}",
                 events.Count(), userId, calendarId);
 
             return new ExternalCalendarEventsResult(
@@ -275,10 +275,10 @@ public class ICloudCalDAVProviderService : ICalendarProviderService, IDisposable
     }
 
     public async Task<ExternalEventResult> CreateEventAsync(
-        Guid userId, 
-        string calendarId, 
-        string accessToken, 
-        ExternalEventCreateRequest eventData, 
+        Guid userId,
+        string calendarId,
+        string accessToken,
+        ExternalEventCreateRequest eventData,
         CancellationToken cancellationToken = default)
     {
         try
@@ -325,16 +325,16 @@ public class ICloudCalDAVProviderService : ICalendarProviderService, IDisposable
     }
 
     public async Task<ExternalEventResult> UpdateEventAsync(
-        Guid userId, 
-        string calendarId, 
-        string eventId, 
-        string accessToken, 
-        ExternalEventUpdateRequest eventData, 
+        Guid userId,
+        string calendarId,
+        string eventId,
+        string accessToken,
+        ExternalEventUpdateRequest eventData,
         CancellationToken cancellationToken = default)
     {
         try
         {
-            _logger.LogInformation("Updating event {EventId} for user {UserId} in calendar {CalendarId}", 
+            _logger.LogInformation("Updating event {EventId} for user {UserId} in calendar {CalendarId}",
                 eventId, userId, calendarId);
 
             var credentials = ParseTokenToCredentials(accessToken);
@@ -364,7 +364,7 @@ public class ICloudCalDAVProviderService : ICalendarProviderService, IDisposable
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to update event {EventId} for user {UserId} in calendar {CalendarId}", 
+            _logger.LogError(ex, "Failed to update event {EventId} for user {UserId} in calendar {CalendarId}",
                 eventId, userId, calendarId);
             return new ExternalEventResult(
                 false,
@@ -376,15 +376,15 @@ public class ICloudCalDAVProviderService : ICalendarProviderService, IDisposable
     }
 
     public async Task<ExternalEventDeleteResult> DeleteEventAsync(
-        Guid userId, 
-        string calendarId, 
-        string eventId, 
-        string accessToken, 
+        Guid userId,
+        string calendarId,
+        string eventId,
+        string accessToken,
         CancellationToken cancellationToken = default)
     {
         try
         {
-            _logger.LogInformation("Deleting event {EventId} for user {UserId} from calendar {CalendarId}", 
+            _logger.LogInformation("Deleting event {EventId} for user {UserId} from calendar {CalendarId}",
                 eventId, userId, calendarId);
 
             var credentials = ParseTokenToCredentials(accessToken);
@@ -407,7 +407,7 @@ public class ICloudCalDAVProviderService : ICalendarProviderService, IDisposable
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to delete event {EventId} for user {UserId} from calendar {CalendarId}", 
+            _logger.LogError(ex, "Failed to delete event {EventId} for user {UserId} from calendar {CalendarId}",
                 eventId, userId, calendarId);
             return new ExternalEventDeleteResult(
                 false,
@@ -418,19 +418,19 @@ public class ICloudCalDAVProviderService : ICalendarProviderService, IDisposable
     }
 
     public async Task<IEnumerable<ExternalEventResult>> CreateEventsAsync(
-        Guid userId, 
-        string calendarId, 
-        string accessToken, 
-        IEnumerable<ExternalEventCreateRequest> eventRequests, 
+        Guid userId,
+        string calendarId,
+        string accessToken,
+        IEnumerable<ExternalEventCreateRequest> eventRequests,
         CancellationToken cancellationToken = default)
     {
         var results = new List<ExternalEventResult>();
-        
+
         foreach (var eventRequest in eventRequests)
         {
             var result = await CreateEventAsync(userId, calendarId, accessToken, eventRequest, cancellationToken);
             results.Add(result);
-            
+
             // Add small delay to respect rate limits
             if (results.Count > 1)
             {
@@ -442,20 +442,20 @@ public class ICloudCalDAVProviderService : ICalendarProviderService, IDisposable
     }
 
     public async Task<IEnumerable<ExternalEventResult>> UpdateEventsAsync(
-        Guid userId, 
-        string calendarId, 
-        string accessToken, 
-        IEnumerable<ExternalEventUpdateWithId> eventUpdates, 
+        Guid userId,
+        string calendarId,
+        string accessToken,
+        IEnumerable<ExternalEventUpdateWithId> eventUpdates,
         CancellationToken cancellationToken = default)
     {
         var results = new List<ExternalEventResult>();
-        
+
         foreach (var eventUpdate in eventUpdates)
         {
-            var result = await UpdateEventAsync(userId, calendarId, eventUpdate.EventId, accessToken, 
+            var result = await UpdateEventAsync(userId, calendarId, eventUpdate.EventId, accessToken,
                 eventUpdate.UpdateRequest, cancellationToken);
             results.Add(result);
-            
+
             // Add small delay to respect rate limits
             if (results.Count > 1)
             {
@@ -467,10 +467,10 @@ public class ICloudCalDAVProviderService : ICalendarProviderService, IDisposable
     }
 
     public async Task<FreeBusyResult> GetFreeBusyAsync(
-        Guid userId, 
-        IEnumerable<string> calendarIds, 
-        string accessToken, 
-        IEnumerable<TimeRange> timeRanges, 
+        Guid userId,
+        IEnumerable<string> calendarIds,
+        string accessToken,
+        IEnumerable<TimeRange> timeRanges,
         CancellationToken cancellationToken = default)
     {
         try
@@ -490,15 +490,15 @@ public class ICloudCalDAVProviderService : ICalendarProviderService, IDisposable
                     foreach (var timeRange in timeRanges)
                     {
                         // Get events in the time range and mark as busy
-                        var eventsResult = await GetEventsAsync(userId, calendarId, accessToken, 
+                        var eventsResult = await GetEventsAsync(userId, calendarId, accessToken,
                             timeRange.Start, timeRange.End, null, cancellationToken);
-                        
+
                         if (eventsResult.Success && eventsResult.Events != null)
                         {
                             var eventBusyTimes = eventsResult.Events
                                 .Where(e => !e.IsAllDay) // All-day events don't typically block time
                                 .Select(e => new TimeRange(e.StartTime, e.EndTime));
-                            
+
                             busyTimes.AddRange(eventBusyTimes);
                         }
                     }
@@ -536,70 +536,70 @@ public class ICloudCalDAVProviderService : ICalendarProviderService, IDisposable
         }
     }
 
-    public async Task<CalendarWatchResult> WatchCalendarAsync(
-        Guid userId, 
-        string calendarId, 
-        string accessToken, 
-        string webhookUrl, 
-        DateTime expirationTime, 
+    public Task<CalendarWatchResult> WatchCalendarAsync(
+        Guid userId,
+        string calendarId,
+        string accessToken,
+        string webhookUrl,
+        DateTime expirationTime,
         CancellationToken cancellationToken = default)
     {
         // CalDAV doesn't have built-in webhook support like Google Calendar or Outlook
         // This would require a polling mechanism or server-specific extensions
         _logger.LogWarning("CalDAV does not support native webhooks. Consider implementing polling for calendar {CalendarId}", calendarId);
-        
-        return new CalendarWatchResult(
+
+        return Task.FromResult(new CalendarWatchResult(
             false,
             string.Empty,
             string.Empty,
             expirationTime,
             "CalDAV does not support native webhook notifications. Polling is required for change detection."
-        );
+        ));
     }
 
-    public async Task<CalendarWatchStopResult> StopWatchingAsync(
-        Guid userId, 
-        string watchId, 
-        string accessToken, 
+    public Task<CalendarWatchStopResult> StopWatchingAsync(
+        Guid userId,
+        string watchId,
+        string accessToken,
         CancellationToken cancellationToken = default)
     {
         // Since CalDAV doesn't support webhooks, there's nothing to stop
-        return new CalendarWatchStopResult(
+        return Task.FromResult(new CalendarWatchStopResult(
             true,
             watchId,
             "No active watch to stop (CalDAV doesn't support webhooks)"
-        );
+        ));
     }
 
-    public async Task<WebhookProcessResult> ProcessWebhookAsync(
-        string webhookData, 
-        IDictionary<string, string> headers, 
+    public Task<WebhookProcessResult> ProcessWebhookAsync(
+        string webhookData,
+        IDictionary<string, string> headers,
         CancellationToken cancellationToken = default)
     {
         // CalDAV doesn't support webhooks natively
-        return new WebhookProcessResult(
+        return Task.FromResult(new WebhookProcessResult(
             false,
             WebhookChangeType.Unknown,
             null,
             null,
             "CalDAV does not support webhook notifications"
-        );
+        ));
     }
 
-    public async Task<ProviderRateLimitStatus> GetRateLimitStatusAsync(CancellationToken cancellationToken = default)
+    public Task<ProviderRateLimitStatus> GetRateLimitStatusAsync(CancellationToken cancellationToken = default)
     {
         // iCloud CalDAV has informal rate limits, typically much lower than API-based services
-        return new ProviderRateLimitStatus(
+        return Task.FromResult(new ProviderRateLimitStatus(
             _iCloudSettings.RateLimit.RequestsPerMinute,
             _iCloudSettings.RateLimit.RequestsPerMinute, // Assuming we haven't tracked usage
             TimeSpan.FromMinutes(1),
             false // Not currently throttled
-        );
+        ));
     }
 
     public async Task<TokenValidationResult> ValidateTokenAsync(
-        Guid userId, 
-        string accessToken, 
+        Guid userId,
+        string accessToken,
         CancellationToken cancellationToken = default)
     {
         try
@@ -608,7 +608,7 @@ public class ICloudCalDAVProviderService : ICalendarProviderService, IDisposable
             var principalUrl = await DiscoverPrincipalUrl(credentials.Username, credentials.Password, cancellationToken);
 
             var isValid = !string.IsNullOrEmpty(principalUrl);
-            
+
             return new TokenValidationResult(
                 isValid,
                 isValid ? null : "Invalid credentials or server unreachable",
@@ -636,7 +636,7 @@ public class ICloudCalDAVProviderService : ICalendarProviderService, IDisposable
             SupportsAttendees: true, // iCalendar supports attendees
             SupportsAttachments: true, // iCalendar supports attachments
             SupportedEventFields: [
-                "summary", "description", "dtstart", "dtend", "location", 
+                "summary", "description", "dtstart", "dtend", "location",
                 "attendee", "rrule", "attach", "alarm"
             ],
             MaxBatchSize: TimeSpan.FromDays(31), // Reasonable range for CalDAV queries
@@ -645,7 +645,7 @@ public class ICloudCalDAVProviderService : ICalendarProviderService, IDisposable
     }
 
     public ExternalEventCreateRequest ConvertFromInternalEvent(
-        InternalCalendarEvent internalEvent, 
+        InternalCalendarEvent internalEvent,
         EventConversionOptions conversionOptions)
     {
         return new ExternalEventCreateRequest(
@@ -678,7 +678,7 @@ public class ICloudCalDAVProviderService : ICalendarProviderService, IDisposable
     }
 
     public InternalCalendarEvent ConvertToInternalEvent(
-        ExternalCalendarEvent externalEvent, 
+        ExternalCalendarEvent externalEvent,
         EventConversionOptions conversionOptions)
     {
         return new InternalCalendarEvent(
@@ -699,7 +699,7 @@ public class ICloudCalDAVProviderService : ICalendarProviderService, IDisposable
             )).ToList() ?? [],
             externalEvent.Recurrence?.FirstOrDefault(),
             externalEvent.Reminders?.Select(r => new InternalEventReminder(
-                MapExternalReminderMethod(r.Method),
+                MapExternalReminderMethod((ExternalReminderMethod)r.Method),
                 r.MinutesBeforeStart
             )).ToList() ?? [],
             externalEvent.Attachments?.Select(a => new InternalEventAttachment(
@@ -755,22 +755,24 @@ public class ICloudCalDAVProviderService : ICalendarProviderService, IDisposable
                 </d:propfind>";
 
             using var request = new HttpRequestMessage(new HttpMethod("PROPFIND"), $"{ICloudCalDAVBaseUrl}/");
-            request.Headers.Authorization = new AuthenticationHeaderValue("Basic", 
+            request.Headers.Authorization = new AuthenticationHeaderValue("Basic",
                 Convert.ToBase64String(Encoding.UTF8.GetBytes($"{username}:{password}")));
             request.Headers.Add("Depth", "0");
             request.Content = new StringContent(propFindXml, Encoding.UTF8, "application/xml");
 
             var response = await _httpClient.SendAsync(request, cancellationToken);
-            
+
             if (!response.IsSuccessStatusCode)
+            {
                 return null;
+            }
 
             var responseContent = await response.Content.ReadAsStringAsync(cancellationToken);
             var doc = XDocument.Parse(responseContent);
-            
+
             var principalElement = doc.Descendants(XName.Get("current-user-principal", CalDAVNamespace)).FirstOrDefault();
             var hrefElement = principalElement?.Descendants(XName.Get("href", CalDAVNamespace)).FirstOrDefault();
-            
+
             return hrefElement?.Value;
         }
         catch (Exception ex)
@@ -794,22 +796,24 @@ public class ICloudCalDAVProviderService : ICalendarProviderService, IDisposable
             var fullUrl = principalUrl.StartsWith("http") ? principalUrl : $"{ICloudCalDAVBaseUrl}{principalUrl}";
 
             using var request = new HttpRequestMessage(new HttpMethod("PROPFIND"), fullUrl);
-            request.Headers.Authorization = new AuthenticationHeaderValue("Basic", 
+            request.Headers.Authorization = new AuthenticationHeaderValue("Basic",
                 Convert.ToBase64String(Encoding.UTF8.GetBytes($"{credentials.Username}:{credentials.Password}")));
             request.Headers.Add("Depth", "0");
             request.Content = new StringContent(propFindXml, Encoding.UTF8, "application/xml");
 
             var response = await _httpClient.SendAsync(request, cancellationToken);
-            
+
             if (!response.IsSuccessStatusCode)
+            {
                 return null;
+            }
 
             var responseContent = await response.Content.ReadAsStringAsync(cancellationToken);
             var doc = XDocument.Parse(responseContent);
-            
+
             var calendarHomeElement = doc.Descendants(XName.Get("calendar-home-set", CalDAVCalendarNamespace)).FirstOrDefault();
             var hrefElement = calendarHomeElement?.Descendants(XName.Get("href", CalDAVNamespace)).FirstOrDefault();
-            
+
             return hrefElement?.Value;
         }
         catch (Exception ex)
@@ -837,7 +841,7 @@ public class ICloudCalDAVProviderService : ICalendarProviderService, IDisposable
             var fullUrl = calendarHomeUrl.StartsWith("http") ? calendarHomeUrl : $"{ICloudCalDAVBaseUrl}{calendarHomeUrl}";
 
             using var request = new HttpRequestMessage(new HttpMethod("PROPFIND"), fullUrl);
-            request.Headers.Authorization = new AuthenticationHeaderValue("Basic", 
+            request.Headers.Authorization = new AuthenticationHeaderValue("Basic",
                 Convert.ToBase64String(Encoding.UTF8.GetBytes($"{credentials.Username}:{credentials.Password}")));
             request.Headers.Add("Depth", "1");
             request.Content = new StringContent(propFindXml, Encoding.UTF8, "application/xml");
@@ -847,7 +851,7 @@ public class ICloudCalDAVProviderService : ICalendarProviderService, IDisposable
 
             var responseContent = await response.Content.ReadAsStringAsync(cancellationToken);
             var doc = XDocument.Parse(responseContent);
-            
+
             var calendars = new List<ExternalCalendar>();
             var responseElements = doc.Descendants(XName.Get("response", CalDAVNamespace));
 
@@ -857,19 +861,19 @@ public class ICloudCalDAVProviderService : ICalendarProviderService, IDisposable
                 var propstatElement = responseElement.Element(XName.Get("propstat", CalDAVNamespace));
                 var propElement = propstatElement?.Element(XName.Get("prop", CalDAVNamespace));
                 var resourceTypeElement = propElement?.Element(XName.Get("resourcetype", CalDAVNamespace));
-                
+
                 // Check if this is a calendar resource
                 if (resourceTypeElement?.Element(XName.Get("calendar", CalDAVCalendarNamespace)) != null)
                 {
                     var displayName = propElement?.Element(XName.Get("displayname", CalDAVNamespace))?.Value ?? "Unnamed Calendar";
                     var description = propElement?.Element(XName.Get("calendar-description", CalDAVCalendarNamespace))?.Value;
                     var color = propElement?.Element(XName.Get("calendar-color", "http://apple.com/ns/ical/"))?.Value ?? "#3174ad";
-                    
+
                     var calendarUrl = hrefElement?.Value;
                     if (!string.IsNullOrEmpty(calendarUrl))
                     {
                         var calendarId = EncodeCalendarId(calendarUrl);
-                        
+
                         calendars.Add(new ExternalCalendar(
                             calendarId,
                             displayName,
@@ -922,10 +926,10 @@ public class ICloudCalDAVProviderService : ICalendarProviderService, IDisposable
             </c:calendar-query>";
     }
 
-    private async Task<IEnumerable<ExternalCalendarEvent>> ParseCalendarEventsFromResponse(
-        string responseContent, 
-        string calendarUrl, 
-        (string Username, string Password) credentials, 
+    private Task<IEnumerable<ExternalCalendarEvent>> ParseCalendarEventsFromResponse(
+        string responseContent,
+        string calendarUrl,
+        (string Username, string Password) credentials,
         CancellationToken cancellationToken)
     {
         try
@@ -939,7 +943,7 @@ public class ICloudCalDAVProviderService : ICalendarProviderService, IDisposable
                 var propstatElement = responseElement.Element(XName.Get("propstat", CalDAVNamespace));
                 var propElement = propstatElement?.Element(XName.Get("prop", CalDAVNamespace));
                 var calendarDataElement = propElement?.Element(XName.Get("calendar-data", CalDAVCalendarNamespace));
-                
+
                 if (!string.IsNullOrEmpty(calendarDataElement?.Value))
                 {
                     var iCalData = calendarDataElement.Value;
@@ -948,19 +952,19 @@ public class ICloudCalDAVProviderService : ICalendarProviderService, IDisposable
                 }
             }
 
-            return events;
+            return Task.FromResult<IEnumerable<ExternalCalendarEvent>>(events);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to parse calendar events from CalDAV response");
-            return [];
+            return Task.FromResult<IEnumerable<ExternalCalendarEvent>>([]);
         }
     }
 
     private static IEnumerable<ExternalCalendarEvent> ParseICalendarEvents(string iCalData)
     {
         var events = new List<ExternalCalendarEvent>();
-        
+
         try
         {
             // Basic iCalendar parsing - in a real implementation, you'd use a proper iCalendar library
@@ -971,7 +975,7 @@ public class ICloudCalDAVProviderService : ICalendarProviderService, IDisposable
             foreach (var line in lines)
             {
                 var trimmedLine = line.Trim();
-                
+
                 if (trimmedLine.StartsWith("BEGIN:VEVENT"))
                 {
                     eventBuilder.Clear();
@@ -991,14 +995,25 @@ public class ICloudCalDAVProviderService : ICalendarProviderService, IDisposable
                 else if (trimmedLine.Contains(':'))
                 {
                     var colonIndex = trimmedLine.IndexOf(':');
-                    var property = trimmedLine.Substring(0, colonIndex);
-                    var value = trimmedLine.Substring(colonIndex + 1);
-                    
-                    // Handle property parameters (e.g., DTSTART;VALUE=DATE:20230101)
-                    var propertyParts = property.Split(';');
-                    var propertyName = propertyParts[0];
-                    
-                    eventBuilder[propertyName] = value;
+
+                    // Validate bounds to prevent potential substring exceptions
+                    if (colonIndex >= 0 && colonIndex < trimmedLine.Length)
+                    {
+                        var property = trimmedLine.Substring(0, colonIndex);
+                        var value = colonIndex + 1 < trimmedLine.Length
+                            ? trimmedLine.Substring(colonIndex + 1)
+                            : string.Empty;
+
+                        // Handle property parameters (e.g., DTSTART;VALUE=DATE:20230101)
+                        var propertyParts = property.Split(';');
+                        var propertyName = propertyParts[0];
+
+                        // Only add non-empty property names
+                        if (!string.IsNullOrWhiteSpace(propertyName))
+                        {
+                            eventBuilder[propertyName] = value;
+                        }
+                    }
                 }
             }
         }
@@ -1015,17 +1030,19 @@ public class ICloudCalDAVProviderService : ICalendarProviderService, IDisposable
         try
         {
             if (!properties.ContainsKey("UID"))
+            {
                 return null;
+            }
 
             var eventId = properties["UID"];
             var title = properties.GetValueOrDefault("SUMMARY", "Untitled Event");
             var description = properties.GetValueOrDefault("DESCRIPTION");
             var location = properties.GetValueOrDefault("LOCATION");
-            
+
             var startTime = ParseICalDateTime(properties.GetValueOrDefault("DTSTART"));
             var endTime = ParseICalDateTime(properties.GetValueOrDefault("DTEND"));
             var isAllDay = properties.GetValueOrDefault("DTSTART", "").Contains("VALUE=DATE");
-            
+
             var createdTime = ParseICalDateTime(properties.GetValueOrDefault("CREATED")) ?? DateTime.UtcNow;
             var updatedTime = ParseICalDateTime(properties.GetValueOrDefault("LAST-MODIFIED")) ?? DateTime.UtcNow;
 
@@ -1061,7 +1078,9 @@ public class ICloudCalDAVProviderService : ICalendarProviderService, IDisposable
     private static DateTime? ParseICalDateTime(string? iCalDateTime)
     {
         if (string.IsNullOrEmpty(iCalDateTime))
+        {
             return null;
+        }
 
         try
         {
@@ -1083,7 +1102,9 @@ public class ICloudCalDAVProviderService : ICalendarProviderService, IDisposable
         {
             // Fallback to standard parsing
             if (DateTime.TryParse(iCalDateTime, out var result))
+            {
                 return result;
+            }
         }
 
         return null;
@@ -1103,12 +1124,12 @@ public class ICloudCalDAVProviderService : ICalendarProviderService, IDisposable
         ical.AppendLine($"DTSTART:{string.Format(startFormat, eventData.StartTime)}");
         ical.AppendLine($"DTEND:{string.Format(endFormat, eventData.EndTime)}");
         ical.AppendLine($"SUMMARY:{EscapeICalText(eventData.Title)}");
-        
+
         if (!string.IsNullOrEmpty(eventData.Description))
         {
             ical.AppendLine($"DESCRIPTION:{EscapeICalText(eventData.Description)}");
         }
-        
+
         if (!string.IsNullOrEmpty(eventData.Location))
         {
             ical.AppendLine($"LOCATION:{EscapeICalText(eventData.Location)}");
@@ -1125,8 +1146,8 @@ public class ICloudCalDAVProviderService : ICalendarProviderService, IDisposable
 
     private static string ConvertToICalendar(ExternalEventUpdateRequest eventData, string eventId)
     {
-        var startFormat = eventData.IsAllDay ? "VALUE=DATE:{0:yyyyMMdd}" : "{0:yyyyMMddTHHmmssZ}";
-        var endFormat = eventData.IsAllDay ? "VALUE=DATE:{0:yyyyMMdd}" : "{0:yyyyMMddTHHmmssZ}";
+        var startFormat = (bool)eventData.IsAllDay ? "VALUE=DATE:{0:yyyyMMdd}" : "{0:yyyyMMddTHHmmssZ}";
+        var endFormat = (bool)eventData.IsAllDay ? "VALUE=DATE:{0:yyyyMMdd}" : "{0:yyyyMMddTHHmmssZ}";
 
         var ical = new StringBuilder();
         ical.AppendLine("BEGIN:VCALENDAR");
@@ -1137,12 +1158,12 @@ public class ICloudCalDAVProviderService : ICalendarProviderService, IDisposable
         ical.AppendLine($"DTSTART:{string.Format(startFormat, eventData.StartTime)}");
         ical.AppendLine($"DTEND:{string.Format(endFormat, eventData.EndTime)}");
         ical.AppendLine($"SUMMARY:{EscapeICalText(eventData.Title)}");
-        
+
         if (!string.IsNullOrEmpty(eventData.Description))
         {
             ical.AppendLine($"DESCRIPTION:{EscapeICalText(eventData.Description)}");
         }
-        
+
         if (!string.IsNullOrEmpty(eventData.Location))
         {
             ical.AppendLine($"LOCATION:{EscapeICalText(eventData.Location)}");
@@ -1170,17 +1191,19 @@ public class ICloudCalDAVProviderService : ICalendarProviderService, IDisposable
         try
         {
             using var request = new HttpRequestMessage(HttpMethod.Get, eventUrl);
-            request.Headers.Authorization = new AuthenticationHeaderValue("Basic", 
+            request.Headers.Authorization = new AuthenticationHeaderValue("Basic",
                 Convert.ToBase64String(Encoding.UTF8.GetBytes($"{credentials.Username}:{credentials.Password}")));
 
             var response = await _httpClient.SendAsync(request, cancellationToken);
-            
+
             if (!response.IsSuccessStatusCode)
+            {
                 return null;
+            }
 
             var iCalData = await response.Content.ReadAsStringAsync(cancellationToken);
             var events = ParseICalendarEvents(iCalData);
-            
+
             return events.FirstOrDefault();
         }
         catch
@@ -1243,7 +1266,11 @@ public class ICloudCalDAVProviderService : ICalendarProviderService, IDisposable
 
     public void Dispose()
     {
-        if (_disposed) return;
+        if (_disposed)
+        {
+            return;
+        }
+
         _disposed = true;
     }
 }

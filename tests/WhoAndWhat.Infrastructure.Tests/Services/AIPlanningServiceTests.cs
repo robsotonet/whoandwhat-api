@@ -27,9 +27,9 @@ public class AIPlanningServiceTests : IDisposable
         _loggerMock = new Mock<ILogger<AIPlanningService>>();
         _cacheServiceMock = new Mock<IAICacheService>();
         _httpMessageHandlerMock = new Mock<HttpMessageHandler>();
-        
+
         _httpClient = new HttpClient(_httpMessageHandlerMock.Object);
-        
+
         _aiSettings = new AISettings
         {
             Enabled = true,
@@ -72,7 +72,7 @@ public class AIPlanningServiceTests : IDisposable
         optionsMock.Setup(x => x.Value).Returns(_aiSettings);
 
         _aiPlanningService = new AIPlanningService(
-            optionsMock.Object, 
+            optionsMock.Object,
             _loggerMock.Object,
             _httpClient,
             _cacheServiceMock.Object);
@@ -392,14 +392,14 @@ public class AIPlanningServiceTests : IDisposable
     {
         // Arrange
         var initialTimeout = _httpClient.Timeout;
-        
+
         // Act
         _aiPlanningService.Dispose();
-        
+
         // Assert - HttpClient should still be usable after service disposal
         // This verifies that the service doesn't dispose the HttpClient it doesn't own
         _httpClient.Timeout.Should().Be(initialTimeout);
-        
+
         // HttpClient should still be accessible and not throw ObjectDisposedException
         var action = () => _ = _httpClient.BaseAddress;
         action.Should().NotThrow<ObjectDisposedException>();

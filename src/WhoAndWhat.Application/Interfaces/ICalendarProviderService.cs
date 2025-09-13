@@ -10,14 +10,14 @@ public interface ICalendarProviderService
     /// <summary>
     /// Calendar provider type this service handles
     /// </summary>
-    CalendarProvider ProviderType { get; }
+    public CalendarProvider ProviderType { get; }
 
     /// <summary>
     /// Check if this provider is properly configured and available
     /// </summary>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>True if provider is available</returns>
-    Task<bool> IsAvailableAsync(CancellationToken cancellationToken = default);
+    public Task<bool> IsAvailableAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Authenticate user with calendar provider and obtain access tokens
@@ -27,7 +27,7 @@ public interface ICalendarProviderService
     /// <param name="redirectUri">OAuth redirect URI used in authorization</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Authentication result with access tokens</returns>
-    Task<CalendarAuthResult> AuthenticateAsync(Guid userId, string authorizationCode, string redirectUri, CancellationToken cancellationToken = default);
+    public Task<CalendarAuthResult> AuthenticateAsync(Guid userId, string authorizationCode, string redirectUri, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Refresh expired access tokens using refresh token
@@ -36,7 +36,7 @@ public interface ICalendarProviderService
     /// <param name="refreshToken">Refresh token from previous authentication</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Token refresh result with new access tokens</returns>
-    Task<TokenRefreshResult> RefreshTokensAsync(Guid userId, string refreshToken, CancellationToken cancellationToken = default);
+    public Task<TokenRefreshResult> RefreshTokensAsync(Guid userId, string refreshToken, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Get all calendars available for the authenticated user
@@ -45,7 +45,7 @@ public interface ICalendarProviderService
     /// <param name="accessToken">Valid access token for the provider</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>List of available calendars</returns>
-    Task<IEnumerable<ExternalCalendar>> GetCalendarsAsync(Guid userId, string accessToken, CancellationToken cancellationToken = default);
+    public Task<IEnumerable<ExternalCalendar>> GetCalendarsAsync(Guid userId, string accessToken, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Get events from external calendar within specified date range
@@ -58,7 +58,7 @@ public interface ICalendarProviderService
     /// <param name="syncToken">Optional sync token for incremental sync</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Events from external calendar with sync information</returns>
-    Task<ExternalCalendarEventsResult> GetEventsAsync(Guid userId, string calendarId, string accessToken, DateTime startDate, DateTime endDate, string? syncToken = null, CancellationToken cancellationToken = default);
+    public Task<ExternalCalendarEventsResult> GetEventsAsync(Guid userId, string calendarId, string accessToken, DateTime startDate, DateTime endDate, string? syncToken = null, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Create new event in external calendar
@@ -69,7 +69,7 @@ public interface ICalendarProviderService
     /// <param name="eventData">Event data to create</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Created event information</returns>
-    Task<ExternalEventResult> CreateEventAsync(Guid userId, string calendarId, string accessToken, ExternalEventCreateRequest eventData, CancellationToken cancellationToken = default);
+    public Task<ExternalEventResult> CreateEventAsync(Guid userId, string calendarId, string accessToken, ExternalEventCreateRequest eventData, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Update existing event in external calendar
@@ -81,7 +81,7 @@ public interface ICalendarProviderService
     /// <param name="eventData">Updated event data</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Updated event information</returns>
-    Task<ExternalEventResult> UpdateEventAsync(Guid userId, string calendarId, string eventId, string accessToken, ExternalEventUpdateRequest eventData, CancellationToken cancellationToken = default);
+    public Task<ExternalEventResult> UpdateEventAsync(Guid userId, string calendarId, string eventId, string accessToken, ExternalEventUpdateRequest eventData, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Delete event from external calendar
@@ -92,7 +92,7 @@ public interface ICalendarProviderService
     /// <param name="accessToken">Valid access token</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Deletion result</returns>
-    Task<ExternalEventDeleteResult> DeleteEventAsync(Guid userId, string calendarId, string eventId, string accessToken, CancellationToken cancellationToken = default);
+    public Task<ExternalEventDeleteResult> DeleteEventAsync(Guid userId, string calendarId, string eventId, string accessToken, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Batch create multiple events in external calendar
@@ -103,7 +103,7 @@ public interface ICalendarProviderService
     /// <param name="eventRequests">List of events to create</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Batch operation results for each event</returns>
-    Task<IEnumerable<ExternalEventResult>> CreateEventsAsync(Guid userId, string calendarId, string accessToken, IEnumerable<ExternalEventCreateRequest> eventRequests, CancellationToken cancellationToken = default);
+    public Task<IEnumerable<ExternalEventResult>> CreateEventsAsync(Guid userId, string calendarId, string accessToken, IEnumerable<ExternalEventCreateRequest> eventRequests, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Batch update multiple events in external calendar
@@ -114,7 +114,7 @@ public interface ICalendarProviderService
     /// <param name="eventUpdates">List of events to update with their IDs</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Batch operation results for each event</returns>
-    Task<IEnumerable<ExternalEventResult>> UpdateEventsAsync(Guid userId, string calendarId, string accessToken, IEnumerable<ExternalEventUpdateWithId> eventUpdates, CancellationToken cancellationToken = default);
+    public Task<IEnumerable<ExternalEventResult>> UpdateEventsAsync(Guid userId, string calendarId, string accessToken, IEnumerable<ExternalEventUpdateWithId> eventUpdates, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Get free/busy information for specified time ranges
@@ -125,7 +125,7 @@ public interface ICalendarProviderService
     /// <param name="timeRanges">Time ranges to check for free/busy status</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Free/busy information for requested calendars and times</returns>
-    Task<FreeBusyResult> GetFreeBusyAsync(Guid userId, IEnumerable<string> calendarIds, string accessToken, IEnumerable<TimeRange> timeRanges, CancellationToken cancellationToken = default);
+    public Task<FreeBusyResult> GetFreeBusyAsync(Guid userId, IEnumerable<string> calendarIds, string accessToken, IEnumerable<TimeRange> timeRanges, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Watch for changes in external calendar (webhooks/notifications)
@@ -137,7 +137,7 @@ public interface ICalendarProviderService
     /// <param name="expirationTime">When the watch should expire</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Watch setup result with watch ID</returns>
-    Task<CalendarWatchResult> WatchCalendarAsync(Guid userId, string calendarId, string accessToken, string webhookUrl, DateTime expirationTime, CancellationToken cancellationToken = default);
+    public Task<CalendarWatchResult> WatchCalendarAsync(Guid userId, string calendarId, string accessToken, string webhookUrl, DateTime expirationTime, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Stop watching calendar changes
@@ -147,7 +147,7 @@ public interface ICalendarProviderService
     /// <param name="accessToken">Valid access token</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Watch stop result</returns>
-    Task<CalendarWatchStopResult> StopWatchingAsync(Guid userId, string watchId, string accessToken, CancellationToken cancellationToken = default);
+    public Task<CalendarWatchStopResult> StopWatchingAsync(Guid userId, string watchId, string accessToken, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Process webhook notification from calendar provider
@@ -156,14 +156,14 @@ public interface ICalendarProviderService
     /// <param name="headers">HTTP headers from webhook request</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Processed webhook result with change information</returns>
-    Task<WebhookProcessResult> ProcessWebhookAsync(string webhookData, IDictionary<string, string> headers, CancellationToken cancellationToken = default);
+    public Task<WebhookProcessResult> ProcessWebhookAsync(string webhookData, IDictionary<string, string> headers, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Get provider-specific rate limiting information
     /// </summary>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Current rate limiting status</returns>
-    Task<ProviderRateLimitStatus> GetRateLimitStatusAsync(CancellationToken cancellationToken = default);
+    public Task<ProviderRateLimitStatus> GetRateLimitStatusAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Validate access token and check if it's still valid
@@ -172,13 +172,13 @@ public interface ICalendarProviderService
     /// <param name="accessToken">Access token to validate</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Token validation result</returns>
-    Task<TokenValidationResult> ValidateTokenAsync(Guid userId, string accessToken, CancellationToken cancellationToken = default);
+    public Task<TokenValidationResult> ValidateTokenAsync(Guid userId, string accessToken, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Get provider-specific capabilities and limitations
     /// </summary>
     /// <returns>Provider capabilities information</returns>
-    ProviderCapabilities GetCapabilities();
+    public ProviderCapabilities GetCapabilities();
 
     /// <summary>
     /// Convert internal WhoAndWhat event to provider-specific event format
@@ -186,7 +186,7 @@ public interface ICalendarProviderService
     /// <param name="internalEvent">Internal event data</param>
     /// <param name="conversionOptions">Conversion options and preferences</param>
     /// <returns>Provider-specific event data</returns>
-    ExternalEventCreateRequest ConvertFromInternalEvent(InternalCalendarEvent internalEvent, EventConversionOptions conversionOptions);
+    public ExternalEventCreateRequest ConvertFromInternalEvent(InternalCalendarEvent internalEvent, EventConversionOptions conversionOptions);
 
     /// <summary>
     /// Convert provider-specific event to internal WhoAndWhat event format
@@ -194,5 +194,5 @@ public interface ICalendarProviderService
     /// <param name="externalEvent">External event data</param>
     /// <param name="conversionOptions">Conversion options and preferences</param>
     /// <returns>Internal event data</returns>
-    InternalCalendarEvent ConvertToInternalEvent(ExternalCalendarEvent externalEvent, EventConversionOptions conversionOptions);
+    public InternalCalendarEvent ConvertToInternalEvent(ExternalCalendarEvent externalEvent, EventConversionOptions conversionOptions);
 }

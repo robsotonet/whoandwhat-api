@@ -14,9 +14,9 @@ public interface IScheduleOptimizationEngine
     /// <param name="context">Optimization context with tasks, calendar, and preferences</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Optimized schedule with improved task placement</returns>
-    Task<ScheduleOptimizationResult> OptimizeScheduleAsync(
-        Guid userId, 
-        ScheduleOptimizationContext context, 
+    public Task<ScheduleOptimizationResult> OptimizeScheduleAsync(
+        Guid userId,
+        ScheduleOptimizationContext context,
         CancellationToken cancellationToken = default);
 
     /// <summary>
@@ -26,9 +26,9 @@ public interface IScheduleOptimizationEngine
     /// <param name="context">Optimization context with current schedule and goals</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Optimization result with improved schedule</returns>
-    Task<ScheduleOptimizationEngineResult> OptimizeExistingScheduleAsync(
-        Guid userId, 
-        OptimizationContext context, 
+    public Task<ScheduleOptimizationEngineResult> OptimizeExistingScheduleAsync(
+        Guid userId,
+        OptimizationContext context,
         CancellationToken cancellationToken = default);
 
     /// <summary>
@@ -40,7 +40,7 @@ public interface IScheduleOptimizationEngine
     /// <param name="preferences">User scheduling preferences</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Optimal time slot assignments</returns>
-    Task<List<TimeSlotAssignment>> FindOptimalTimeSlotsAsync(
+    public Task<List<TimeSlotAssignment>> FindOptimalTimeSlotsAsync(
         Guid userId,
         List<Guid> taskIds,
         List<AvailableTimeSlot> availableSlots,
@@ -54,7 +54,7 @@ public interface IScheduleOptimizationEngine
     /// <param name="schedule">Schedule to analyze</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Quality analysis with improvement suggestions</returns>
-    Task<ScheduleQualityAnalysis> AnalyzeScheduleQualityAsync(
+    public Task<ScheduleQualityAnalysis> AnalyzeScheduleQualityAsync(
         Guid userId,
         List<SmartScheduledItem> schedule,
         CancellationToken cancellationToken = default);
@@ -67,7 +67,7 @@ public interface IScheduleOptimizationEngine
     /// <param name="preferences">User preferences</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Productivity score and contributing factors</returns>
-    Task<ProductivityScore> CalculateProductivityScoreAsync(
+    public Task<ProductivityScore> CalculateProductivityScoreAsync(
         Guid userId,
         List<SmartScheduledItem> schedule,
         SmartSchedulingPreferences preferences,
@@ -78,7 +78,7 @@ public interface IScheduleOptimizationEngine
     /// </summary>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>True if engine is ready for optimization operations</returns>
-    Task<bool> IsAvailableAsync(CancellationToken cancellationToken = default);
+    public Task<bool> IsAvailableAsync(CancellationToken cancellationToken = default);
 }
 
 /// <summary>

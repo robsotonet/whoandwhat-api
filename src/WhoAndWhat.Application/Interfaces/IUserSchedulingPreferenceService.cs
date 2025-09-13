@@ -13,7 +13,7 @@ public interface IUserSchedulingPreferenceService
     /// <param name="userId">User identifier</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Current user scheduling preferences</returns>
-    Task<SmartSchedulingPreferences> GetUserPreferencesAsync(Guid userId, CancellationToken cancellationToken = default);
+    public Task<SmartSchedulingPreferences> GetUserPreferencesAsync(Guid userId, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Update user's scheduling preferences
@@ -22,7 +22,7 @@ public interface IUserSchedulingPreferenceService
     /// <param name="preferences">New preferences to update</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Updated preferences</returns>
-    Task<SmartSchedulingPreferences> UpdatePreferencesAsync(Guid userId, SmartSchedulingPreferences preferences, CancellationToken cancellationToken = default);
+    public Task<SmartSchedulingPreferences> UpdatePreferencesAsync(Guid userId, SmartSchedulingPreferences preferences, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Analyze user's scheduling patterns from historical data
@@ -32,7 +32,7 @@ public interface IUserSchedulingPreferenceService
     /// <param name="endDate">End date for pattern analysis</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Detected scheduling patterns and insights</returns>
-    Task<UserSchedulingPatternsResponse> AnalyzeSchedulingPatternsAsync(Guid userId, DateTime startDate, DateTime endDate, CancellationToken cancellationToken = default);
+    public Task<UserSchedulingPatternsResponse> AnalyzeSchedulingPatternsAsync(Guid userId, DateTime startDate, DateTime endDate, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Get user's scheduling patterns (cached or recently analyzed)
@@ -40,7 +40,7 @@ public interface IUserSchedulingPreferenceService
     /// <param name="userId">User identifier</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>User's scheduling patterns</returns>
-    Task<UserSchedulingPatternsResponse> GetUserSchedulingPatternsAsync(Guid userId, CancellationToken cancellationToken = default);
+    public Task<UserSchedulingPatternsResponse> GetUserSchedulingPatternsAsync(Guid userId, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Record scheduling activity to learn from user behavior
@@ -49,7 +49,7 @@ public interface IUserSchedulingPreferenceService
     /// <param name="scheduledItems">Items that were scheduled</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Task representing the async operation</returns>
-    Task RecordSchedulingActivityAsync(Guid userId, List<SmartScheduledItem> scheduledItems, CancellationToken cancellationToken = default);
+    public Task RecordSchedulingActivityAsync(Guid userId, List<SmartScheduledItem> scheduledItems, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Record user feedback on schedule quality
@@ -59,7 +59,7 @@ public interface IUserSchedulingPreferenceService
     /// <param name="feedback">User feedback on the schedule</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Task representing the async operation</returns>
-    Task RecordScheduleFeedbackAsync(Guid userId, Guid scheduleId, ScheduleFeedback feedback, CancellationToken cancellationToken = default);
+    public Task RecordScheduleFeedbackAsync(Guid userId, Guid scheduleId, ScheduleFeedback feedback, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Learn and update preferences based on user behavior
@@ -67,7 +67,7 @@ public interface IUserSchedulingPreferenceService
     /// <param name="userId">User identifier</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Updated preferences based on learned patterns</returns>
-    Task<SmartSchedulingPreferences> LearnAndUpdatePreferencesAsync(Guid userId, CancellationToken cancellationToken = default);
+    public Task<SmartSchedulingPreferences> LearnAndUpdatePreferencesAsync(Guid userId, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Get productivity insights based on user's scheduling history
@@ -76,7 +76,7 @@ public interface IUserSchedulingPreferenceService
     /// <param name="timeframe">Timeframe for analysis</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Productivity insights and recommendations</returns>
-    Task<ProductivityInsightsResponse> GetProductivityInsightsAsync(Guid userId, AnalysisTimeframe timeframe, CancellationToken cancellationToken = default);
+    public Task<ProductivityInsightsResponse> GetProductivityInsightsAsync(Guid userId, AnalysisTimeframe timeframe, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Predict optimal times for specific task types based on user patterns
@@ -85,7 +85,7 @@ public interface IUserSchedulingPreferenceService
     /// <param name="taskCategory">Category of task to predict optimal time for</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Predicted optimal time slots</returns>
-    Task<List<OptimalTimeSlot>> PredictOptimalTimesAsync(Guid userId, string taskCategory, CancellationToken cancellationToken = default);
+    public Task<List<OptimalTimeSlot>> PredictOptimalTimesAsync(Guid userId, string taskCategory, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Get user's energy level predictions for different times of day
@@ -94,7 +94,7 @@ public interface IUserSchedulingPreferenceService
     /// <param name="date">Date to predict energy levels for</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Energy level predictions throughout the day</returns>
-    Task<List<EnergyLevelPrediction>> GetEnergyLevelPredictionsAsync(Guid userId, DateTime date, CancellationToken cancellationToken = default);
+    public Task<List<EnergyLevelPrediction>> GetEnergyLevelPredictionsAsync(Guid userId, DateTime date, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Initialize default preferences for a new user
@@ -103,14 +103,14 @@ public interface IUserSchedulingPreferenceService
     /// <param name="timezone">User's timezone</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Default preferences for the user</returns>
-    Task<SmartSchedulingPreferences> InitializeDefaultPreferencesAsync(Guid userId, string timezone, CancellationToken cancellationToken = default);
+    public Task<SmartSchedulingPreferences> InitializeDefaultPreferencesAsync(Guid userId, string timezone, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Check if the user preference service is available
     /// </summary>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>True if service is available</returns>
-    Task<bool> IsAvailableAsync(CancellationToken cancellationToken = default);
+    public Task<bool> IsAvailableAsync(CancellationToken cancellationToken = default);
 }
 
 /// <summary>

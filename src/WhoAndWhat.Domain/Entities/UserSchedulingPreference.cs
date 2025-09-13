@@ -60,7 +60,9 @@ public class UserSchedulingPreference : BaseEntity
     public List<DayOfWeek> GetWorkingDays()
     {
         if (string.IsNullOrEmpty(WorkingDays))
+        {
             return new List<DayOfWeek>();
+        }
 
         return WorkingDays
             .Split(',', StringSplitOptions.RemoveEmptyEntries)
@@ -83,7 +85,9 @@ public class UserSchedulingPreference : BaseEntity
     public List<TimeSpan> GetPreferredBreakTimes()
     {
         if (string.IsNullOrEmpty(PreferredBreakTimes))
+        {
             return new List<TimeSpan>();
+        }
 
         return PreferredBreakTimes
             .Split(',', StringSplitOptions.RemoveEmptyEntries)
@@ -106,7 +110,9 @@ public class UserSchedulingPreference : BaseEntity
     public List<string> GetPreferredTaskCategories()
     {
         if (string.IsNullOrEmpty(PreferredTaskCategories))
+        {
             return new List<string>();
+        }
 
         return PreferredTaskCategories
             .Split(',', StringSplitOptions.RemoveEmptyEntries)
@@ -182,7 +188,9 @@ public class UserSchedulingPreference : BaseEntity
     public bool NeedsReanalysis(TimeSpan threshold = default)
     {
         if (threshold == default)
+        {
             threshold = TimeSpan.FromDays(7); // Default: weekly analysis
+        }
 
         return !LastAnalyzed.HasValue ||
                DateTime.UtcNow - LastAnalyzed.Value > threshold;

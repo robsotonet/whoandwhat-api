@@ -65,8 +65,8 @@ public class UserSchedulingPreferenceService : IUserSchedulingPreferenceService,
     }
 
     public async Task<SmartSchedulingPreferences> UpdatePreferencesAsync(
-        Guid userId, 
-        SmartSchedulingPreferences preferences, 
+        Guid userId,
+        SmartSchedulingPreferences preferences,
         CancellationToken cancellationToken = default)
     {
         try
@@ -93,9 +93,9 @@ public class UserSchedulingPreferenceService : IUserSchedulingPreferenceService,
     }
 
     public async Task<UserSchedulingPatternsResponse> AnalyzeSchedulingPatternsAsync(
-        Guid userId, 
-        DateTime startDate, 
-        DateTime endDate, 
+        Guid userId,
+        DateTime startDate,
+        DateTime endDate,
         CancellationToken cancellationToken = default)
     {
         try
@@ -105,7 +105,7 @@ public class UserSchedulingPreferenceService : IUserSchedulingPreferenceService,
 
             // Get user's task history
             var taskHistory = await GetUserTaskHistory(userId, startDate, endDate, cancellationToken);
-            
+
             // Get scheduling activity records
             var activityRecords = GetUserActivityRecords(userId);
 
@@ -137,7 +137,7 @@ public class UserSchedulingPreferenceService : IUserSchedulingPreferenceService,
     }
 
     public async Task<UserSchedulingPatternsResponse> GetUserSchedulingPatternsAsync(
-        Guid userId, 
+        Guid userId,
         CancellationToken cancellationToken = default)
     {
         try
@@ -155,7 +155,7 @@ public class UserSchedulingPreferenceService : IUserSchedulingPreferenceService,
             // Analyze patterns for the last 30 days
             var endDate = DateTime.UtcNow;
             var startDate = endDate.AddDays(-30);
-            
+
             return await AnalyzeSchedulingPatternsAsync(userId, startDate, endDate, cancellationToken);
         }
         catch (Exception ex)
@@ -166,8 +166,8 @@ public class UserSchedulingPreferenceService : IUserSchedulingPreferenceService,
     }
 
     public async Task RecordSchedulingActivityAsync(
-        Guid userId, 
-        List<SmartScheduledItem> scheduledItems, 
+        Guid userId,
+        List<SmartScheduledItem> scheduledItems,
         CancellationToken cancellationToken = default)
     {
         try
@@ -206,9 +206,9 @@ public class UserSchedulingPreferenceService : IUserSchedulingPreferenceService,
     }
 
     public async Task RecordScheduleFeedbackAsync(
-        Guid userId, 
-        Guid scheduleId, 
-        ScheduleFeedback feedback, 
+        Guid userId,
+        Guid scheduleId,
+        ScheduleFeedback feedback,
         CancellationToken cancellationToken = default)
     {
         try
@@ -238,7 +238,7 @@ public class UserSchedulingPreferenceService : IUserSchedulingPreferenceService,
     }
 
     public async Task<SmartSchedulingPreferences> LearnAndUpdatePreferencesAsync(
-        Guid userId, 
+        Guid userId,
         CancellationToken cancellationToken = default)
     {
         try
@@ -273,8 +273,8 @@ public class UserSchedulingPreferenceService : IUserSchedulingPreferenceService,
     }
 
     public async Task<ProductivityInsightsResponse> GetProductivityInsightsAsync(
-        Guid userId, 
-        AnalysisTimeframe timeframe, 
+        Guid userId,
+        AnalysisTimeframe timeframe,
         CancellationToken cancellationToken = default)
     {
         try
@@ -283,7 +283,7 @@ public class UserSchedulingPreferenceService : IUserSchedulingPreferenceService,
                 userId, timeframe.StartDate, timeframe.EndDate);
 
             var taskHistory = await GetUserTaskHistory(userId, timeframe.StartDate, timeframe.EndDate, cancellationToken);
-            var activityRecords = GetUserActivityRecords(userId).Where(r => 
+            var activityRecords = GetUserActivityRecords(userId).Where(r =>
                 r.RecordedAt >= timeframe.StartDate && r.RecordedAt <= timeframe.EndDate).ToList();
 
             var insights = AnalyzeProductivityInsights(userId, taskHistory, activityRecords, timeframe);
@@ -299,8 +299,8 @@ public class UserSchedulingPreferenceService : IUserSchedulingPreferenceService,
     }
 
     public async Task<List<OptimalTimeSlot>> PredictOptimalTimesAsync(
-        Guid userId, 
-        string taskCategory, 
+        Guid userId,
+        string taskCategory,
         CancellationToken cancellationToken = default)
     {
         try
@@ -322,8 +322,8 @@ public class UserSchedulingPreferenceService : IUserSchedulingPreferenceService,
     }
 
     public async Task<List<EnergyLevelPrediction>> GetEnergyLevelPredictionsAsync(
-        Guid userId, 
-        DateTime date, 
+        Guid userId,
+        DateTime date,
         CancellationToken cancellationToken = default)
     {
         try
@@ -345,8 +345,8 @@ public class UserSchedulingPreferenceService : IUserSchedulingPreferenceService,
     }
 
     public async Task<SmartSchedulingPreferences> InitializeDefaultPreferencesAsync(
-        Guid userId, 
-        string timezone, 
+        Guid userId,
+        string timezone,
         CancellationToken cancellationToken = default)
     {
         try
@@ -406,11 +406,11 @@ public class UserSchedulingPreferenceService : IUserSchedulingPreferenceService,
 
     // Private helper methods
 
-    private async Task<SmartSchedulingPreferences?> LoadUserPreferencesFromStorage(Guid userId, CancellationToken cancellationToken)
+    private Task<SmartSchedulingPreferences?> LoadUserPreferencesFromStorage(Guid userId, CancellationToken cancellationToken)
     {
         // In a real implementation, this would load from database
         // For now, return null to trigger default initialization
-        return null;
+        return Task.FromResult<SmartSchedulingPreferences?>(null);
     }
 
     private async Task SaveUserPreferencesToStorage(Guid userId, SmartSchedulingPreferences preferences, CancellationToken cancellationToken)
@@ -484,7 +484,7 @@ public class UserSchedulingPreferenceService : IUserSchedulingPreferenceService,
         {
             var creationTimeGroups = taskHistory.GroupBy(t => t.CreatedAt.Hour).OrderByDescending(g => g.Count());
             var mostActiveHour = creationTimeGroups.First();
-            
+
             patterns.Add(new SchedulingPattern(
                 "TaskCreationPattern",
                 $"Most active task creation time: {mostActiveHour.Key}:00",
@@ -500,7 +500,7 @@ public class UserSchedulingPreferenceService : IUserSchedulingPreferenceService,
         {
             var categoryGroups = taskHistory.GroupBy(t => t.Category.ToString()).OrderByDescending(g => g.Count());
             var preferredCategory = categoryGroups.First();
-            
+
             patterns.Add(new SchedulingPattern(
                 "CategoryPreference",
                 $"Preferred task category: {preferredCategory.Key}",
@@ -524,7 +524,7 @@ public class UserSchedulingPreferenceService : IUserSchedulingPreferenceService,
             {
                 var completionHours = completedTasks.Select(t => t.UpdatedAt?.Hour ?? 12).ToList();
                 var averageHour = completionHours.Average();
-                
+
                 return averageHour switch
                 {
                     < 12 => ProductivityPatterns.MorningPerson,
@@ -543,7 +543,7 @@ public class UserSchedulingPreferenceService : IUserSchedulingPreferenceService,
         var insights = new List<string>();
 
         insights.Add($"Your productivity pattern is: {productivityPattern}");
-        
+
         foreach (var pattern in patterns)
         {
             insights.Add($"Pattern detected: {pattern.Description} (frequency: {pattern.Frequency:P0})");
@@ -576,7 +576,10 @@ public class UserSchedulingPreferenceService : IUserSchedulingPreferenceService,
 
     private double CalculateScheduleQualityScore(List<SmartScheduledItem> scheduledItems)
     {
-        if (!scheduledItems.Any()) return 0.0;
+        if (!scheduledItems.Any())
+        {
+            return 0.0;
+        }
 
         // Simple quality calculation based on various factors
         var score = 0.8; // Base score
@@ -612,7 +615,7 @@ public class UserSchedulingPreferenceService : IUserSchedulingPreferenceService,
             ["TotalItems"] = scheduledItems.Count,
             ["Categories"] = scheduledItems.Select(i => i.Category).Distinct().ToList(),
             ["AverageDuration"] = scheduledItems.Any() ? scheduledItems.Average(i => i.EstimatedDuration.TotalMinutes) : 0,
-            ["TimeRange"] = scheduledItems.Any() ? 
+            ["TimeRange"] = scheduledItems.Any() ?
                 (scheduledItems.Max(i => i.EndTime) - scheduledItems.Min(i => i.StartTime)).TotalHours : 0
         };
     }
@@ -640,8 +643,8 @@ public class UserSchedulingPreferenceService : IUserSchedulingPreferenceService,
     }
 
     private SmartSchedulingPreferences ApplyMachineLearning(
-        SmartSchedulingPreferences currentPreferences, 
-        UserSchedulingPatternsResponse patterns, 
+        SmartSchedulingPreferences currentPreferences,
+        UserSchedulingPatternsResponse patterns,
         List<SchedulingActivityRecord> activityRecords)
     {
         var updatedPreferences = currentPreferences;
@@ -684,14 +687,14 @@ public class UserSchedulingPreferenceService : IUserSchedulingPreferenceService,
         // Check if there are significant differences between preferences
         var workingHoursChanged = Math.Abs((current.PreferredWorkingHours.StartTime - updated.PreferredWorkingHours.StartTime).TotalMinutes) > 30;
         var productivityPatternChanged = current.ProductivityPattern != updated.ProductivityPattern;
-        
+
         return workingHoursChanged || productivityPatternChanged;
     }
 
     private ProductivityInsightsResponse AnalyzeProductivityInsights(
-        Guid userId, 
-        List<Domain.Entities.AppTask> taskHistory, 
-        List<SchedulingActivityRecord> activityRecords, 
+        Guid userId,
+        List<Domain.Entities.AppTask> taskHistory,
+        List<SchedulingActivityRecord> activityRecords,
         AnalysisTimeframe timeframe)
     {
         var productivityByTimeOfDay = new Dictionary<string, double>();
@@ -707,7 +710,7 @@ public class UserSchedulingPreferenceService : IUserSchedulingPreferenceService,
                 var hourlyProductivity = completedTasks
                     .GroupBy(t => t.UpdatedAt?.Hour ?? 12)
                     .ToDictionary(g => $"{g.Key}:00", g => g.Count() / (double)completedTasks.Count());
-                
+
                 productivityByTimeOfDay = hourlyProductivity;
             }
 
@@ -716,7 +719,7 @@ public class UserSchedulingPreferenceService : IUserSchedulingPreferenceService,
                 .Where(t => t.Status == Domain.ValueObjects.AppTaskStatus.Completed)
                 .GroupBy(t => t.Category.ToString())
                 .ToDictionary(g => g.Key, g => g.Count() / (double)taskHistory.Count());
-            
+
             productivityByCategory = categoryProductivity;
         }
 
@@ -750,8 +753,8 @@ public class UserSchedulingPreferenceService : IUserSchedulingPreferenceService,
     }
 
     private List<OptimalTimeSlot> PredictOptimalTimesForCategory(
-        UserSchedulingPatternsResponse patterns, 
-        SmartSchedulingPreferences preferences, 
+        UserSchedulingPatternsResponse patterns,
+        SmartSchedulingPreferences preferences,
         string taskCategory)
     {
         var optimalSlots = new List<OptimalTimeSlot>();
@@ -794,8 +797,8 @@ public class UserSchedulingPreferenceService : IUserSchedulingPreferenceService,
     }
 
     private List<EnergyLevelPrediction> PredictEnergyLevels(
-        SmartSchedulingPreferences preferences, 
-        UserSchedulingPatternsResponse patterns, 
+        SmartSchedulingPreferences preferences,
+        UserSchedulingPatternsResponse patterns,
         DateTime date)
     {
         var predictions = new List<EnergyLevelPrediction>();
@@ -843,7 +846,10 @@ public class UserSchedulingPreferenceService : IUserSchedulingPreferenceService,
 
     public void Dispose()
     {
-        if (_disposed) return;
+        if (_disposed)
+        {
+            return;
+        }
 
         _cacheSemaphore?.Dispose();
         _preferencesCache.Clear();

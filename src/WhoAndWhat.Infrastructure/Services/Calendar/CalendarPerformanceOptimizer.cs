@@ -37,7 +37,7 @@ public class CalendarPerformanceOptimizer : IDisposable
         _backupSemaphore = new SemaphoreSlim(1, 1);
 
         InitializeRateLimiters();
-        
+
         // Reset metrics every hour
         _metricsResetTimer = new Timer(ResetMetrics, null, TimeSpan.FromHours(1), TimeSpan.FromHours(1));
     }
@@ -52,7 +52,7 @@ public class CalendarPerformanceOptimizer : IDisposable
     {
         var stopwatch = Stopwatch.StartNew();
         var batchId = Guid.NewGuid();
-        
+
         try
         {
             _logger.LogInformation("Starting batch sync {BatchId} for user {UserId} with {RequestCount} requests",
@@ -71,12 +71,12 @@ public class CalendarPerformanceOptimizer : IDisposable
                 foreach (var request in providerGroup)
                 {
                     await rateLimiter.WaitAsync(cancellationToken);
-                    
+
                     try
                     {
                         var result = await ProcessSingleSyncRequest(userId, request, cancellationToken);
                         providerResults.Add(result);
-                        
+
                         // Track performance metrics
                         RecordOperationMetrics($"BatchSync_{provider}", result.Success, result.ProcessingTime);
                     }
@@ -147,19 +147,19 @@ public class CalendarPerformanceOptimizer : IDisposable
         CancellationToken cancellationToken = default)
     {
         var stopwatch = Stopwatch.StartNew();
-        
+
         try
         {
             _logger.LogInformation("Starting differential sync for user {UserId} provider {Provider} calendar {CalendarId}",
                 userId, provider, calendarId);
 
             // Get cached events for comparison
-            var cachedEvents = await _cacheService.GetCachedCalendarEventsAsync(userId, provider, calendarId, null, cancellationToken) 
+            var cachedEvents = await _cacheService.GetCachedCalendarEventsAsync(userId, provider, calendarId, null, cancellationToken)
                               ?? new List<ExternalCalendarEvent>();
 
             // Calculate differences
             var changes = CalculateEventChanges(cachedEvents, currentEvents);
-            
+
             if (!changes.HasChanges)
             {
                 _logger.LogDebug("No changes detected for differential sync");
@@ -178,7 +178,7 @@ public class CalendarPerformanceOptimizer : IDisposable
             var updateResults = await ApplyDifferentialChanges(userId, provider, calendarId, changes, cancellationToken);
 
             // Update cache with new events
-            await _cacheService.CacheCalendarEventsAsync(userId, provider, calendarId, currentEvents, 
+            await _cacheService.CacheCalendarEventsAsync(userId, provider, calendarId, currentEvents,
                 _settings.Providers[provider].CacheSettings.DefaultExpirationMinutes, cancellationToken);
 
             stopwatch.Stop();
@@ -204,7 +204,7 @@ public class CalendarPerformanceOptimizer : IDisposable
         {
             _logger.LogError(ex, "Differential sync failed for user {UserId} provider {Provider} calendar {CalendarId}",
                 userId, provider, calendarId);
-            
+
             return new DifferentialSyncResult(
                 userId,
                 provider,
@@ -226,12 +226,12 @@ public class CalendarPerformanceOptimizer : IDisposable
         CancellationToken cancellationToken = default)
     {
         await _backupSemaphore.WaitAsync(cancellationToken);
-        
+
         try
         {
             var backupId = Guid.NewGuid().ToString("N");
             var startTime = DateTime.UtcNow;
-            
+
             _logger.LogInformation("Creating calendar backup {BackupId} for user {UserId}", backupId, userId);
 
             var backupData = new CalendarBackupData
@@ -268,12 +268,12 @@ public class CalendarPerformanceOptimizer : IDisposable
                 foreach (var provider in backupOptions.Providers)
                 {
                     var calendars = backupData.CalendarData.GetValueOrDefault(provider, new List<ExternalCalendar>());
-                    
+
                     foreach (var calendar in calendars)
                     {
-                        var events = await _cacheService.GetCachedCalendarEventsAsync(userId, provider, calendar.Id, 
+                        var events = await _cacheService.GetCachedCalendarEventsAsync(userId, provider, calendar.Id,
                             backupOptions.DateRange, cancellationToken);
-                        
+
                         if (events != null)
                         {
                             var key = $"{provider}:{calendar.Id}";
@@ -290,7 +290,7 @@ public class CalendarPerformanceOptimizer : IDisposable
                 foreach (var provider in backupOptions.Providers)
                 {
                     var calendars = backupData.CalendarData.GetValueOrDefault(provider, new List<ExternalCalendar>());
-                    
+
                     foreach (var calendar in calendars)
                     {
                         var syncToken = await _cacheService.GetCachedSyncTokenAsync(userId, provider, calendar.Id, cancellationToken);
@@ -306,7 +306,7 @@ public class CalendarPerformanceOptimizer : IDisposable
             // Store backup data (in a real implementation, this would be stored in a backup storage system)
             var backupJson = System.Text.Json.JsonSerializer.Serialize(backupData);
             totalSizeBytes = backupJson.Length;
-            
+
             // For demonstration, we'll simulate storing the backup
             await SimulateBackupStorage(backupId, backupJson, cancellationToken);
 
@@ -355,16 +355,16 @@ public class CalendarPerformanceOptimizer : IDisposable
         CancellationToken cancellationToken = default)
     {
         await _backupSemaphore.WaitAsync(cancellationToken);
-        
+
         try
         {
             var startTime = DateTime.UtcNow;
-            
+
             _logger.LogInformation("Restoring calendar backup {BackupId} for user {UserId}", backupId, userId);
 
             // Retrieve backup data (in a real implementation, this would be retrieved from backup storage)
             var backupJson = await SimulateBackupRetrieval(backupId, cancellationToken);
-            
+
             if (string.IsNullOrEmpty(backupJson))
             {
                 return new CalendarRestoreResult(
@@ -475,16 +475,16 @@ public class CalendarPerformanceOptimizer : IDisposable
     /// <summary>
     /// Gets comprehensive performance metrics for calendar operations
     /// </summary>
-    public async Task<CalendarPerformanceMetrics> GetPerformanceMetricsAsync(CancellationToken cancellationToken = default)
+    public Task<CalendarPerformanceMetrics> GetPerformanceMetricsAsync(CancellationToken cancellationToken = default)
     {
         try
         {
             var allMetrics = _performanceMetrics.Values.ToList();
-            
+
             var totalOperations = allMetrics.Sum(m => m.TotalOperations);
             var successfulOperations = allMetrics.Sum(m => m.SuccessfulOperations);
-            var averageResponseTime = allMetrics.Any() ? 
-                TimeSpan.FromMilliseconds(allMetrics.Average(m => m.AverageResponseTime.TotalMilliseconds)) : 
+            var averageResponseTime = allMetrics.Any() ?
+                TimeSpan.FromMilliseconds(allMetrics.Average(m => m.AverageResponseTime.TotalMilliseconds)) :
                 TimeSpan.Zero;
 
             var operationMetrics = allMetrics.ToDictionary(
@@ -510,7 +510,7 @@ public class CalendarPerformanceOptimizer : IDisposable
                 )
             );
 
-            return new CalendarPerformanceMetrics(
+            return Task.FromResult(new CalendarPerformanceMetrics(
                 totalOperations,
                 successfulOperations,
                 totalOperations - successfulOperations,
@@ -519,17 +519,17 @@ public class CalendarPerformanceOptimizer : IDisposable
                 operationMetrics,
                 rateLimitMetrics,
                 DateTime.UtcNow
-            );
+            ));
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to get performance metrics");
-            return new CalendarPerformanceMetrics(
+            return Task.FromResult(new CalendarPerformanceMetrics(
                 0, 0, 0, 0.0, TimeSpan.Zero,
                 new Dictionary<string, OperationPerformanceMetrics>(),
                 new Dictionary<CalendarProvider, RateLimitMetrics>(),
                 DateTime.UtcNow
-            );
+            ));
         }
     }
 
@@ -625,7 +625,7 @@ public class CalendarPerformanceOptimizer : IDisposable
 
     private RateLimiter GetRateLimiter(CalendarProvider provider)
     {
-        return _rateLimiters.GetValueOrDefault(provider, _rateLimiters.Values.FirstOrDefault() ?? 
+        return _rateLimiters.GetValueOrDefault(provider, _rateLimiters.Values.FirstOrDefault() ??
             new RateLimiter(60, TimeSpan.FromMinutes(1), 1000));
     }
 
@@ -635,14 +635,14 @@ public class CalendarPerformanceOptimizer : IDisposable
         CancellationToken cancellationToken)
     {
         var stopwatch = Stopwatch.StartNew();
-        
+
         try
         {
             // Simulate processing sync request
             await Task.Delay(100, cancellationToken); // Simulate API call
-            
+
             var eventsProcessed = Random.Shared.Next(1, 50); // Simulate event count
-            
+
             stopwatch.Stop();
             return new BatchSyncItemResult(
                 request.CalendarId,
@@ -676,7 +676,7 @@ public class CalendarPerformanceOptimizer : IDisposable
 
         var addedEvents = current.Values.Where(e => !cached.ContainsKey(e.Id)).ToList();
         var deletedEvents = cached.Values.Where(e => !current.ContainsKey(e.Id)).ToList();
-        var modifiedEvents = current.Values.Where(e => 
+        var modifiedEvents = current.Values.Where(e =>
             cached.ContainsKey(e.Id) && !AreEventsEqual(cached[e.Id], e)).ToList();
 
         return new EventChanges(addedEvents, modifiedEvents, deletedEvents);
@@ -701,7 +701,7 @@ public class CalendarPerformanceOptimizer : IDisposable
         {
             // In a real implementation, this would apply the changes to the external calendar
             await Task.Delay(50, cancellationToken); // Simulate API calls
-            
+
             return new UpdateResult(true, null);
         }
         catch (Exception ex)
@@ -729,7 +729,7 @@ public class CalendarPerformanceOptimizer : IDisposable
                 var totalOps = existing.TotalOperations + 1;
                 var successOps = existing.SuccessfulOperations + (success ? 1 : 0);
                 var failedOps = existing.FailedOperations + (success ? 0 : 1);
-                
+
                 var totalTime = existing.AverageResponseTime.TotalMilliseconds * existing.TotalOperations + responseTime.TotalMilliseconds;
                 var avgTime = TimeSpan.FromMilliseconds(totalTime / totalOps);
 
@@ -767,7 +767,7 @@ public class CalendarPerformanceOptimizer : IDisposable
         // In a real implementation, this would retrieve the backup from storage
         await Task.Delay(50, cancellationToken);
         _logger.LogDebug("Simulated retrieving backup {BackupId}", backupId);
-        
+
         // Return a mock backup for demonstration
         return System.Text.Json.JsonSerializer.Serialize(new CalendarBackupData
         {
@@ -799,7 +799,7 @@ public class CalendarPerformanceOptimizer : IDisposable
                         await AdjustRateLimiter(provider, cancellationToken);
                         appliedOptimizations.Add(new AppliedOptimization(recommendation.Type, "Adjusted rate limiter", true));
                         break;
-                        
+
                     case OptimizationType.Caching:
                         // Would adjust cache settings
                         appliedOptimizations.Add(new AppliedOptimization(recommendation.Type, "Increased cache duration", true));
@@ -815,17 +815,18 @@ public class CalendarPerformanceOptimizer : IDisposable
         return appliedOptimizations;
     }
 
-    private async Task AdjustRateLimiter(CalendarProvider provider, CancellationToken cancellationToken)
+    private Task AdjustRateLimiter(CalendarProvider provider, CancellationToken cancellationToken)
     {
         var rateLimiter = GetRateLimiter(provider);
-        
+
         // Reduce request rate by 25% when throttled
         var newRate = (int)(rateLimiter.RequestsPerMinute * 0.75);
         var newRateLimiter = new RateLimiter(newRate, TimeSpan.FromMinutes(1), rateLimiter.DelayMs + 500);
-        
+
         _rateLimiters[provider] = newRateLimiter;
-        _logger.LogInformation("Adjusted rate limiter for {Provider}: {OldRate} -> {NewRate} requests/minute", 
+        _logger.LogInformation("Adjusted rate limiter for {Provider}: {OldRate} -> {NewRate} requests/minute",
             provider, rateLimiter.RequestsPerMinute, newRate);
+        return Task.CompletedTask;
     }
 
     private void ResetMetrics(object? state)
@@ -836,7 +837,10 @@ public class CalendarPerformanceOptimizer : IDisposable
 
     public void Dispose()
     {
-        if (_disposed) return;
+        if (_disposed)
+        {
+            return;
+        }
 
         _metricsResetTimer?.Dispose();
         _backupSemaphore?.Dispose();
@@ -920,7 +924,7 @@ public class RateLimiter
     {
         await _semaphore.WaitAsync(cancellationToken);
         Interlocked.Increment(ref _currentRequests);
-        
+
         if (DelayMs > 0)
         {
             await Task.Delay(DelayMs, cancellationToken);
@@ -934,32 +938,43 @@ public class RateLimiter
             // Ensure we don't try to release more permits than available to prevent exceptions
             var currentCount = _semaphore.CurrentCount;
             var releaseCount = Math.Max(0, RequestsPerMinute - currentCount);
-            
+
             if (releaseCount > 0)
             {
                 // Additional safety: verify semaphore state before release
                 if (currentCount + releaseCount <= RequestsPerMinute)
                 {
                     var expectedCountAfterRelease = currentCount + releaseCount;
-                    _semaphore.Release(releaseCount);
-                    _logger.LogDebug("Released {ReleaseCount} semaphore permits, expected count: {ExpectedCount}", 
-                        releaseCount, expectedCountAfterRelease);
+                    try
+                    {
+                        _semaphore.Release(releaseCount);
+                        _logger.LogDebug("Released {ReleaseCount} semaphore permits, expected count: {ExpectedCount}",
+                            releaseCount, expectedCountAfterRelease);
+                    }
+                    catch (SemaphoreFullException ex)
+                    {
+                        // Handle race condition where another thread released permits between our check and release
+                        _logger.LogWarning(ex, "Semaphore release failed due to race condition. " +
+                            "Another thread likely released permits concurrently. " +
+                            "Attempted release: {ReleaseCount}, Expected count: {ExpectedCount}",
+                            releaseCount, expectedCountAfterRelease);
+                    }
                 }
                 else
                 {
                     _logger.LogWarning("Skipped semaphore release to prevent exceeding capacity. " +
-                        "Current: {CurrentCount}, Requested: {ReleaseCount}, Max: {RequestsPerMinute}", 
+                        "Current: {CurrentCount}, Requested: {ReleaseCount}, Max: {RequestsPerMinute}",
                         currentCount, releaseCount, RequestsPerMinute);
                 }
             }
-            
+
             Interlocked.Exchange(ref _currentRequests, 0);
             NextResetTime = DateTime.UtcNow.AddMinutes(1);
-            
+
             // Capture semaphore state before logging to avoid race conditions
             var currentPermits = _semaphore.CurrentCount;
             _logger.LogDebug("Rate limiter reset completed. Current requests: {CurrentRequests}, " +
-                "Semaphore permits available: {AvailablePermits}", 
+                "Semaphore permits available: {AvailablePermits}",
                 _currentRequests, currentPermits);
         }
         catch (ObjectDisposedException)
