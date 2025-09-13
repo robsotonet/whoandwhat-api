@@ -798,32 +798,6 @@ public sealed class TimeBlockManager : ITimeBlockManager
     }
 
     #endregion
-    timeBlocks.Add(suggestion);
-                    }
-                }
-            }
-
-            // Add strategic time blocks
-            timeBlocks.AddRange(await GenerateStrategicTimeBlocksAsync(userId, scheduledItems, preferences, cancellationToken));
-
-// Sort by start time and score
-timeBlocks = timeBlocks
-    .OrderByDescending(tb => tb.ProductivityScore)
-    .ThenBy(tb => tb.StartTime)
-    .Take(10) // Limit to top 10 suggestions
-    .ToList();
-
-_logger.LogInformation("Generated {BlockCount} time block suggestions for user {UserId}",
-    timeBlocks.Count, userId);
-
-return timeBlocks;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error generating time blocks for user {UserId}", userId);
-throw;
-        }
-    }
 
 private Task<List<TimeBlockSuggestion>> GenerateStrategicTimeBlocksAsync(
     Guid userId,
