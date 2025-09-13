@@ -929,14 +929,46 @@ public class RateLimiter
 
     private void ResetRequests(object? state)
     {
-        // Ensure we don't try to release more permits than available to prevent exceptions
-        var releaseCount = Math.Max(0, RequestsPerMinute - _semaphore.CurrentCount);
-        if (releaseCount > 0)
+        try
         {
-            _semaphore.Release(releaseCount);
+            // Ensure we don't try to release more permits than available to prevent exceptions
+            var currentCount = _semaphore.CurrentCount;
+            var releaseCount = Math.Max(0, RequestsPerMinute - currentCount);
+            
+            if (releaseCount > 0)
+            {
+                // Additional safety: verify semaphore state before release
+                if (currentCount + releaseCount <= RequestsPerMinute)
+                {
+                    _semaphore.Release(releaseCount);
+                    _logger.LogDebug("Released {ReleaseCount} semaphore permits, current count: {CurrentCount}", 
+                        releaseCount, _semaphore.CurrentCount);
+                }
+                else
+                {
+                    _logger.LogWarning("Skipped semaphore release to prevent exceeding capacity. " +
+                        "Current: {CurrentCount}, Requested: {ReleaseCount}, Max: {RequestsPerMinute}", 
+                        currentCount, releaseCount, RequestsPerMinute);
+                }
+            }
+            
+            Interlocked.Exchange(ref _currentRequests, 0);
+            NextResetTime = DateTime.UtcNow.AddMinutes(1);
+            
+            _logger.LogDebug("Rate limiter reset completed. Current requests: {CurrentRequests}, " +
+                "Semaphore permits available: {AvailablePermits}", 
+                _currentRequests, _semaphore.CurrentCount);
         }
-        Interlocked.Exchange(ref _currentRequests, 0);
-        NextResetTime = DateTime.UtcNow.AddMinutes(1);
+        catch (ObjectDisposedException)
+        {
+            // Semaphore was disposed, this is expected during shutdown
+            _logger.LogDebug("Semaphore reset skipped - semaphore was disposed");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error during semaphore reset operation");
+            // Don't rethrow - this runs on a timer thread
+        }
     }
 }
 

@@ -1,5 +1,4 @@
 using WhoAndWhat.Application.DTOs.SmartScheduling;
-using WhoAndWhat.Infrastructure.Services;
 
 namespace WhoAndWhat.Application.Interfaces;
 

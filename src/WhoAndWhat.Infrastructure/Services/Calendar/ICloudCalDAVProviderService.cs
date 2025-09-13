@@ -1004,7 +1004,7 @@ public class ICloudCalDAVProviderService : ICalendarProviderService, IDisposable
         }
         catch (Exception ex)
         {
-            // Log error but don't throw - return what we could parse
+            _logger.LogError(ex, "Error parsing iCloud CalDAV response, returning partial results");
         }
 
         return events;
@@ -1051,8 +1051,9 @@ public class ICloudCalDAVProviderService : ICalendarProviderService, IDisposable
                 }
             );
         }
-        catch
+        catch (Exception ex)
         {
+            _logger.LogWarning(ex, "Failed to parse CalDAV event properties for iCloud calendar");
             return null;
         }
     }

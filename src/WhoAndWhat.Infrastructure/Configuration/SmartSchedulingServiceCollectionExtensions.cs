@@ -1,7 +1,8 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using WhoAndWhat.Application.Interfaces;
-using WhoAndWhat.Infrastructure.Services;
+using WhoAndWhat.Infrastructure.Services.SmartScheduling;
+using WhoAndWhat.Infrastructure.Services.Background;
 
 namespace WhoAndWhat.Infrastructure.Configuration;
 

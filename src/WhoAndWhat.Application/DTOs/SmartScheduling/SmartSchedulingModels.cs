@@ -1,3 +1,5 @@
+using WhoAndWhat.Domain.ValueObjects;
+
 namespace WhoAndWhat.Application.DTOs.SmartScheduling;
 
 /// <summary>
@@ -348,3 +350,102 @@ public enum ConstraintType
     Resource,
     Energy
 }
+
+public enum TimeSlotType
+{
+    Available,
+    Busy,
+    Tentative,
+    OutOfOffice,
+    WorkingTime,
+    BreakTime,
+    FocusTime,
+    Buffer
+}
+
+// Additional types for smart scheduling infrastructure
+
+/// <summary>
+/// Context for schedule optimization operations
+/// </summary>
+public sealed record ScheduleOptimizationContext(
+    List<SmartScheduledItem> CurrentSchedule,
+    List<Guid> TaskIds,
+    DateTime StartDate,
+    DateTime EndDate,
+    SmartSchedulingPreferences Preferences,
+    List<ExternalCalendarEvent> CalendarEvents,
+    OptimizationGoals Goals
+);
+
+/// <summary>
+/// Result from schedule optimization
+/// </summary>
+public sealed record ScheduleOptimizationResult(
+    List<SmartScheduledItem> OptimizedSchedule,
+    List<ScheduleChange> Changes,
+    double ImprovementScore,
+    List<string> OptimizationInsights,
+    Dictionary<string, double> Metrics,
+    DateTime GeneratedAt
+);
+
+/// <summary>
+/// Context for existing schedule optimization
+/// </summary>
+public sealed record OptimizationContext(
+    List<SmartScheduledItem> ExistingSchedule,
+    OptimizationGoals Goals,
+    List<ScheduleConstraint> Constraints,
+    SmartSchedulingPreferences Preferences,
+    DateTime OptimizationDate
+);
+
+/// <summary>
+/// Represents a time slot for scheduling
+/// </summary>
+public sealed record TimeSlot(
+    DateTime StartTime,
+    DateTime EndTime,
+    TimeSlotType SlotType,
+    bool IsAvailable,
+    string Description = ""
+);
+
+/// <summary>
+/// Data point for trend analysis
+/// </summary>
+public sealed record TrendDataPoint(
+    DateTime Date,
+    double Value,
+    string Category,
+    Dictionary<string, object> Metadata
+);
+
+/// <summary>
+/// Enhanced scheduling constraint with more detail
+/// </summary>
+public sealed record SchedulingConstraint(
+    string Name,
+    ConstraintType Type,
+    DateTime? StartTime,
+    DateTime? EndTime,
+    List<Guid> AffectedTaskIds,
+    string Description,
+    bool IsHard,
+    double Weight,
+    Dictionary<string, object> Parameters
+);
+
+/// <summary>
+/// External calendar event for integration
+/// </summary>
+public sealed record ExternalCalendarEvent(
+    string Id,
+    string Title,
+    DateTime StartTime,
+    DateTime EndTime,
+    bool IsAllDay,
+    string CalendarSource,
+    bool IsBlockingTime
+);
